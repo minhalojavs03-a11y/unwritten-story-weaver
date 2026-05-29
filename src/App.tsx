@@ -51,6 +51,8 @@ import AdminIntegracoes from "./pages/admin/AdminIntegracoes";
 import NotFound from "./pages/NotFound.tsx";
 import ProposalWhatsappOficial from "./pages/ProposalWhatsappOficial";
 import UbertiProposta from "./pages/UbertiProposta";
+import InviteAcceptPage from "./pages/InviteAcceptPage";
+import ConvitesPage from "./pages/app/ConvitesPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,6 +78,7 @@ const App = () => (
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<ClientLoginPage />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route path="/invite/:token" element={<InviteAcceptPage />} />
             <Route path="/proposta-whatsapp-api-oficial" element={<ProposalWhatsappOficial />} />
             <Route path="/ubertiproposta" element={<UbertiProposta />} />
             <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
@@ -97,6 +100,7 @@ const App = () => (
               <Route path="/treinar-ia" element={<ProtectedRoute requireOwner><TreinarIAPage /></ProtectedRoute>} />
               <Route path="/configuracoes" element={<ProtectedRoute requireOwner><ConfiguracoesPage /></ProtectedRoute>} />
               <Route path="/configuracoes/acessos" element={<ProtectedRoute requireOwner><AcessosPage /></ProtectedRoute>} />
+              <Route path="/configuracoes/convites" element={<ProtectedRoute><ConvitesPage /></ProtectedRoute>} />
               <Route path="/perfil" element={<MyProfilePage />} />
               <Route path="/equipe" element={<ProtectedRoute requireOwner><EquipePage /></ProtectedRoute>} />
               <Route path="/consultores" element={<ConsultoresPage />} />
