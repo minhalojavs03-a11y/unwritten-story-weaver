@@ -47,7 +47,6 @@ import AdminAutomacoes from "./pages/admin/AdminAutomacoes";
 import AdminCampanhas from "./pages/admin/AdminCampanhas";
 import AdminFinanceiro from "./pages/admin/AdminFinanceiro";
 import AdminIntegracoes from "./pages/admin/AdminIntegracoes";
-import IntegracoesPage from "./pages/admin/AdminIntegracoes";
 
 import NotFound from "./pages/NotFound.tsx";
 import ProposalWhatsappOficial from "./pages/ProposalWhatsappOficial";
