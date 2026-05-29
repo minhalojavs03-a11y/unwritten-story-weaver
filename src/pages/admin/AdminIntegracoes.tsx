@@ -335,6 +335,65 @@ export default function AdminIntegracoes() {
           </Button>
         </div>
       )}
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Adicionar planilha do Google Sheets</DialogTitle>
+            <DialogDescription>
+              Cole o link da planilha onde o Meta Ads grava os leads. A planilha precisa estar compartilhada como "Qualquer pessoa com o link pode ver".
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>URL da planilha</Label>
+              <Input
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+                value={form.sheet_url}
+                onChange={(e) => setForm({ ...form, sheet_url: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Nome da aba</Label>
+                <Input value={form.tab_name} onChange={(e) => setForm({ ...form, tab_name: e.target.value })} />
+              </div>
+              <div>
+                <Label>Linha do cabeçalho</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={form.header_row}
+                  onChange={(e) => setForm({ ...form, header_row: Number(e.target.value) || 1 })}
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="mb-2 block">Colunas (letras: A, B, C…)</Label>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                {(["nome", "telefone", "email", "interesse"] as const).map((k) => (
+                  <div key={k}>
+                    <Label className="text-xs capitalize text-white/60">{k}</Label>
+                    <Input
+                      placeholder={k === "nome" ? "A" : k === "telefone" ? "B" : ""}
+                      value={(form as any)[k]}
+                      onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-white/40">Nome e telefone são obrigatórios. Email e interesse são opcionais.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
+            <Button onClick={createConfig} disabled={creating || !form.sheet_url}>
+              {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Adicionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
