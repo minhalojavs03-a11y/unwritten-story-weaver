@@ -121,6 +121,7 @@ export function AppLayout() {
       items.push({ to: "/distribuicao", label: "Distribuição de Leads", icon: Inbox });
       items.push({ to: "/equipe", label: "Equipe", icon: Users2 });
       items.push({ to: "/whatsapp", label: "WhatsApp", icon: Smartphone });
+      items.push({ to: "/integracoes", label: "Integrações", icon: Plug });
       items.push({ to: "/configuracoes", label: "Configurações", icon: Settings });
     } else if (can("view_team_metrics")) {
       items.push({ to: "/consultores", label: "Consultores", icon: Users2 });
