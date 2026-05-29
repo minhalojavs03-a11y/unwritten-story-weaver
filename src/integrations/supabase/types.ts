@@ -2163,8 +2163,18 @@ export type Database = {
       user_tenant_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
-      app_role: "superadmin"
-      tenant_role: "owner" | "supervisor" | "consultor"
+      app_role:
+        | "superadmin"
+        | "owner"
+        | "supervisor"
+        | "consultant"
+        | "attendant"
+      tenant_role:
+        | "owner"
+        | "supervisor"
+        | "consultor"
+        | "consultant"
+        | "attendant"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2292,8 +2302,20 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["superadmin"],
-      tenant_role: ["owner", "supervisor", "consultor"],
+      app_role: [
+        "superadmin",
+        "owner",
+        "supervisor",
+        "consultant",
+        "attendant",
+      ],
+      tenant_role: [
+        "owner",
+        "supervisor",
+        "consultor",
+        "consultant",
+        "attendant",
+      ],
     },
   },
 } as const
