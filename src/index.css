@@ -1,0 +1,343 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   Ótica Catelan — Design System
+   All colors MUST be HSL.
+   ============================================ */
+
+@layer base {
+  :root {
+    /* Surfaces */
+    --background: 210 40% 98%;        /* #F8FAFC */
+    --foreground: 222 47% 11%;        /* #0F172A */
+    --surface: 0 0% 100%;             /* #FFFFFF */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Brand — Feracon red #D11E26 */
+    --primary: 357 75% 47%;           /* #D11E26 */
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 357 90% 96%;     /* soft red wash */
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 357 90% 96%;
+    --accent-foreground: 357 75% 47%;
+
+    --destructive: 357 75% 47%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 357 75% 47%;
+
+    --radius: 0.625rem;
+
+    /* Lead temperature */
+    --hot: 0 84% 60%;                 /* #EF4444 */
+    --hot-bg: 0 86% 97%;              /* #FEF2F2 */
+    --warm: 25 95% 53%;               /* #F97316 */
+    --warm-bg: 33 100% 96%;           /* #FFF7ED */
+    --cold: 215 16% 47%;              /* #64748B */
+    --cold-bg: 210 40% 98%;           /* #F8FAFC */
+
+    /* Pipeline stages */
+    --stage-new: 239 84% 67%;         /* #6366F1 indigo */
+    --stage-service: 38 92% 50%;      /* #F59E0B amber */
+    --stage-scheduled: 357 75% 50%;   /* #3B82F6 blue */
+    --stage-attended: 160 84% 39%;    /* #10B981 emerald */
+    --stage-closed: 215 16% 47%;      /* slate */
+
+    /* Status */
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 210 80% 55%;
+    --info-foreground: 0 0% 100%;
+
+    /* Notification banner */
+    --notification-new-lead: 357 75% 47%;
+    --notification-lead-assigned: 221 83% 53%;
+    --notification-new-message: 32 95% 44%;
+    --notification-lead-status: 142 71% 45%;
+
+    /* Sidebar (admin) */
+    --sidebar-background: 0 0% 11%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 357 75% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 18%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 357 75% 50%;
+
+    /* Superadmin login */
+    --admin-login: 224 64% 12%;
+    --admin-login-foreground: 210 40% 98%;
+    --admin-login-panel: 222 47% 15%;
+    --admin-login-field: 222 47% 18%;
+    --admin-login-border: 217 33% 24%;
+    --admin-login-muted: 214 32% 78%;
+    --admin-login-accent: 357 75% 50%;
+    --admin-login-accent-foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html, body, #root {
+    height: 100%;
+  }
+  html {
+    scrollbar-gutter: stable;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  h1, h2, h3, h4, h5, .font-display {
+    font-family: 'DM Sans', 'Inter', sans-serif;
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer components {
+  .stat-number {
+    @apply font-display font-bold text-4xl tracking-tight;
+  }
+}
+
+@layer utilities {
+  /* Hot lead pulse */
+  @keyframes pulse-hot {
+    0%, 100% { box-shadow: 0 0 0 0 hsl(var(--hot) / 0.5); }
+    50% { box-shadow: 0 0 0 6px hsl(var(--hot) / 0); }
+  }
+  .animate-pulse-hot {
+    animation: pulse-hot 2.4s ease-in-out infinite;
+  }
+
+  .auth-glass {
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.08), hsl(0 0% 100% / 0.04));
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsl(0 0% 100% / 0.12);
+    box-shadow: 0 30px 60px -20px hsl(224 76% 8% / 0.6), inset 0 1px 0 hsl(0 0% 100% / 0.08);
+  }
+
+  .auth-icon-glow {
+    box-shadow: 0 0 0 1px hsl(0 0% 100% / 0.15), 0 10px 40px -5px hsl(var(--primary) / 0.7), 0 0 60px hsl(var(--primary) / 0.4);
+  }
+
+  .auth-icon-glow-amber {
+    box-shadow: 0 0 0 1px hsl(0 0% 100% / 0.15), 0 10px 40px -5px hsl(357 75% 50% / 0.7), 0 0 60px hsl(357 75% 50% / 0.4);
+  }
+
+  /* Admin (superadmin) refined theme */
+  .admin-shell {
+    background:
+      radial-gradient(1200px 600px at 0% 0%, hsl(357 75% 45% / 0.08), transparent 60%),
+      radial-gradient(900px 500px at 100% 100%, hsl(357 75% 47% / 0.08), transparent 60%),
+      hsl(224 64% 6%);
+    color: hsl(210 40% 96%);
+
+    /* Re-map design tokens so utility classes (bg-card, bg-background, bg-muted,
+       border, text-foreground, text-muted-foreground, inputs…) render dark
+       across every admin page. Tokens must be in oklch. */
+    --background: oklch(0.18 0.04 265);
+    --foreground: oklch(0.97 0.01 250);
+    --surface: oklch(0.22 0.04 265);
+    --card: oklch(0.22 0.04 265);
+    --card-foreground: oklch(0.97 0.01 250);
+    --popover: oklch(0.22 0.04 265);
+    --popover-foreground: oklch(0.97 0.01 250);
+    --secondary: oklch(0.27 0.04 265);
+    --secondary-foreground: oklch(0.97 0.01 250);
+    --muted: oklch(0.25 0.04 265);
+    --muted-foreground: oklch(0.75 0.02 255);
+    --accent: oklch(0.35 0.12 260);
+    --accent-foreground: oklch(0.98 0.01 250);
+    --border: oklch(0 0 0 / 0%);
+    --input: oklch(0.30 0.04 265);
+    --ring: oklch(0.65 0.18 255);
+  }
+  /* Refined gradient on cards/popovers/tables — no white borderlines */
+  .admin-shell [data-slot="card"],
+  .admin-shell .bg-card {
+    background-image: linear-gradient(145deg, hsl(224 50% 16% / 0.95), hsl(224 60% 10% / 0.95));
+    border-color: transparent !important;
+    box-shadow: 0 10px 30px -15px hsl(224 76% 4% / 0.6), inset 0 1px 0 hsl(357 75% 50% / 0.06);
+  }
+  .admin-shell table th,
+  .admin-shell table td,
+  .admin-shell .border,
+  .admin-shell .border-t,
+  .admin-shell .border-b,
+  .admin-shell .border-l,
+  .admin-shell .border-r,
+  .admin-shell .border-border {
+    border-color: transparent !important;
+  }
+  .admin-sidebar {
+    background: linear-gradient(180deg, hsl(0 0% 13%), hsl(0 0% 9%));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-right: 1px solid hsl(0 0% 100% / 0.06);
+  }
+  .admin-header {
+    background: linear-gradient(180deg, hsl(0 0% 13% / 0.85), hsl(0 0% 11% / 0.7));
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border-bottom: 1px solid hsl(0 0% 100% / 0.06);
+  }
+  .admin-nav-active {
+    background: linear-gradient(135deg, hsl(357 75% 50% / 0.18), hsl(357 75% 47% / 0.12));
+    color: hsl(0 0% 100%);
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.08), 0 8px 24px -10px hsl(357 75% 50% / 0.5);
+  }
+  .admin-card {
+    background: linear-gradient(180deg, hsl(224 64% 12% / 0.7), hsl(224 64% 9% / 0.7));
+    border: 1px solid hsl(0 0% 100% / 0.06);
+    box-shadow: 0 20px 40px -20px hsl(0 0% 0% / 0.5), inset 0 1px 0 hsl(0 0% 100% / 0.04);
+  }
+  .admin-stat {
+    background: linear-gradient(180deg, hsl(224 64% 14% / 0.7), hsl(224 64% 10% / 0.7));
+    border: 1px solid hsl(0 0% 100% / 0.06);
+    box-shadow: 0 20px 40px -25px hsl(0 0% 0% / 0.6), inset 0 1px 0 hsl(0 0% 100% / 0.05);
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+  }
+  .admin-stat:hover {
+    transform: translateY(-2px);
+    border-color: hsl(357 75% 50% / 0.25);
+    box-shadow: 0 25px 50px -20px hsl(357 75% 50% / 0.25), inset 0 1px 0 hsl(0 0% 100% / 0.06);
+  }
+
+  /* Client (light) refined theme — clean & sophisticated */
+  .client-shell {
+    background:
+      radial-gradient(900px 500px at -10% -10%, hsl(357 75% 47% / 0.06), transparent 60%),
+      radial-gradient(700px 400px at 110% 10%, hsl(357 75% 50% / 0.05), transparent 60%),
+      hsl(var(--background));
+  }
+  .client-sidebar {
+    background: #0b0b14;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+  }
+  .client-header {
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.85), hsl(0 0% 100% / 0.6));
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    border-bottom: 1px solid hsl(214 32% 91% / 0.6);
+  }
+  .client-nav-active {
+    background: #1f1f2e;
+    color: #ffffff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+  .client-nav-idle {
+    color: rgba(255, 255, 255, 0.76);
+  }
+  .client-nav-idle:hover {
+    background: #1a1a26;
+    color: #ffffff;
+  }
+  .client-brand-icon {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(357 80% 38%));
+    box-shadow: 0 8px 22px -8px hsl(var(--primary) / 0.55), inset 0 1px 0 hsl(0 0% 100% / 0.25);
+  }
+  .client-card {
+    background: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 40% 99%));
+    border: 1px solid hsl(214 32% 91% / 0.7);
+    box-shadow: 0 1px 0 hsl(0 0% 100%) inset, 0 10px 30px -18px hsl(224 64% 20% / 0.18);
+  }
+  .client-stat {
+    background: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 40% 99%));
+    border: 1px solid hsl(214 32% 91% / 0.7);
+    box-shadow: 0 1px 0 hsl(0 0% 100%) inset, 0 8px 24px -16px hsl(224 64% 20% / 0.18);
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+  }
+  .client-stat:hover {
+    transform: translateY(-2px);
+    border-color: hsl(var(--primary) / 0.25);
+    box-shadow: 0 14px 32px -16px hsl(var(--primary) / 0.25), 0 1px 0 hsl(0 0% 100%) inset;
+  }
+  .client-page-header {
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.9), hsl(210 40% 99% / 0.6));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid hsl(214 32% 91% / 0.6);
+  }
+
+  /* WhatsApp-like theme tokens (used only on Conversas page) */
+  .wa-bg-chat {
+    background-color: #efeae2;
+    background-image:
+      radial-gradient(hsl(0 0% 0% / 0.04) 1px, transparent 1px),
+      radial-gradient(hsl(0 0% 0% / 0.03) 1px, transparent 1px);
+    background-size: 24px 24px, 40px 40px;
+    background-position: 0 0, 12px 12px;
+  }
+  .wa-header { background-color: #f0f2f5; border-bottom: 1px solid #d1d7db; }
+  .wa-list   { background-color: #ffffff; border-right: 1px solid #d1d7db; }
+  .wa-list-search { background-color: #f0f2f5; }
+  .wa-list-item-active { background-color: #f0f2f5; }
+  .wa-bubble-out {
+    background-color: #d9fdd3;
+    color: #111b21;
+    border-radius: 7.5px;
+    box-shadow: 0 1px 0.5px hsl(0 0% 0% / 0.13);
+  }
+  .wa-bubble-in {
+    background-color: #ffffff;
+    color: #111b21;
+    border-radius: 7.5px;
+    box-shadow: 0 1px 0.5px hsl(0 0% 0% / 0.13);
+  }
+  .wa-composer { background-color: #f0f2f5; }
+  .wa-input {
+    background-color: #ffffff;
+    color: #111b21;
+    border-radius: 8px;
+  }
+  .wa-send {
+    background-color: #00a884;
+    color: #ffffff;
+  }
+  .wa-send:hover { background-color: #06cf9c; }
+  .wa-muted { color: #667781; }
+}
+
+@layer utilities {
+  .pipeline-scroll {
+    scrollbar-width: auto;
+    scrollbar-color: hsl(var(--primary) / 0.5) hsl(var(--muted));
+  }
+  .pipeline-scroll::-webkit-scrollbar {
+    height: 14px;
+  }
+  .pipeline-scroll::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 8px;
+    margin: 0 8px;
+  }
+  .pipeline-scroll::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.5);
+    border-radius: 8px;
+    border: 3px solid hsl(var(--muted));
+  }
+  .pipeline-scroll::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.8);
+  }
+}

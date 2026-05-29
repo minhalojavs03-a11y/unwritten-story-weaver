@@ -1,0 +1,1 @@
+DELETE FROM public.whatsapp_instances WHERE instance_token = 'OTICA CATELAN';

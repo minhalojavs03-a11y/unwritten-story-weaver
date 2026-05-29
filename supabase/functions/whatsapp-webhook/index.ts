@@ -1,0 +1,1023 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+
+function ok(body: unknown = { ok: true }, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+const CLASSIFY_PROMPT = `Você é um classificador de leads de uma administradora de consórcios brasileira (imóvel, automóvel e serviços). Leia o histórico recente da conversa via WhatsApp (cliente + loja) e responda em JSON válido com a estrutura EXATA:
+{"temperature":"hot|warm|cold","stage":"novo|qualificado|agendado|compareceu|comprou|perdido","lead_phase":"prospeccao|primeiro_contato|apresentacao|simulacao|negociacao|fechamento|pos_venda|null","qualification_status":"em_qualificacao|qualificado|desqualificado|oportunidade_futura|null","reasoning":"1 frase curta em pt-BR"}
+
+Regras de temperatura:
+- "hot": pede simulação detalhada, fala em fechar agora, quer assinar contrato, pede reunião urgente
+- "warm": pede valor de parcela/carta, tira dúvidas sobre prazo, taxa, sorteio ou contemplação, interesse sem urgência
+- "cold": curiosidade vaga, "vou pensar", primeiro contato genérico
+
+Regras de lead_phase (use a fase MAIS AVANÇADA já evidenciada na conversa):
+- "prospeccao": loja ainda não conseguiu engajar / só saudações
+- "primeiro_contato": cliente respondeu mas ainda não disse o que quer
+- "apresentacao": loja já explicou produto/condições para o cliente
+- "simulacao": uma simulação/carta foi enviada ou solicitada com valor/prazo definido
+- "negociacao": cliente está discutindo parcela, lance, prazo, entrada — quase fechando
+- "fechamento": cliente confirmou que vai fechar / pediu dados de pagamento / contrato
+- "pos_venda": contrato assinado / pagamento feito / cliente já é cotista
+
+Regras de qualification_status:
+- "qualificado": cliente tem interesse claro e perfil compatível
+- "em_qualificacao": ainda coletando informações (renda, bem desejado, urgência)
+- "desqualificado": cliente sem interesse, sem renda, número errado, já comprou em outro lugar
+- "oportunidade_futura": tem interesse mas só daqui a alguns meses
+
+Regras de stage (espelhe a fase): simulacao/apresentacao→agendado, negociacao/fechamento→compareceu, pos_venda→comprou, desqualificado→perdido, qualificado→qualificado, caso contrário→novo. Use null para campos sem evidência.`;
+
+
+async function classifyLead(history: { from: "client"|"loja"; text: string }[]): Promise<{
+  temperature: "hot"|"warm"|"cold";
+  stage: string;
+  lead_phase: string | null;
+  qualification_status: string | null;
+  reasoning: string;
+} | null> {
+  try {
+    const convo = history.slice(-12).map((m) => `${m.from === "client" ? "Cliente" : "Loja"}: ${m.text}`).join("\n");
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: CLASSIFY_PROMPT },
+          { role: "user", content: convo || "(sem histórico)" },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    const parsed = JSON.parse(d?.choices?.[0]?.message?.content ?? "{}");
+    if (!["hot","warm","cold"].includes(parsed.temperature)) parsed.temperature = "warm";
+    if (!["novo","qualificado","agendado","compareceu","comprou","perdido"].includes(parsed.stage)) parsed.stage = "novo";
+    const validPhases = ["prospeccao","primeiro_contato","apresentacao","simulacao","negociacao","fechamento","pos_venda"];
+    parsed.lead_phase = validPhases.includes(parsed.lead_phase) ? parsed.lead_phase : null;
+    const validQual = ["em_qualificacao","qualificado","desqualificado","oportunidade_futura"];
+    parsed.qualification_status = validQual.includes(parsed.qualification_status) ? parsed.qualification_status : null;
+    return parsed;
+  } catch (e) {
+    console.error("classify failed", e);
+    return null;
+  }
+}
+
+const STAGE_RANK: Record<string, number> = { novo: 0, qualificado: 1, agendado: 2, compareceu: 3, comprou: 4, perdido: -1 };
+
+async function extractAppointment(history: { from: "client"|"loja"; text: string; at: string }[]): Promise<{ has: boolean; iso?: string; type?: string; reasoning?: string } | null> {
+  if (!history.length) return null;
+  const nowIso = new Date().toISOString();
+  const sys = `Você analisa um trecho de conversa de WhatsApp entre uma ótica e um cliente. Sua tarefa: identificar se um AGENDAMENTO foi CONFIRMADO mutuamente (data + horário específicos) nesta conversa.
+
+Regras estritas:
+- "has": true SOMENTE se houver data E horário específicos confirmados (ex.: "amanhã às 15h", "sexta 10:30", "dia 12/05 às 09h"). Não conte propostas pendentes ("posso te encaixar amanhã?" sem confirmação).
+- Resolva datas relativas ("hoje", "amanhã", "segunda", "próxima semana") com base em AGORA: ${nowIso} (timezone America/Sao_Paulo, UTC-3).
+- Retorne "iso" no formato ISO 8601 com offset -03:00 (ex.: 2026-05-06T15:00:00-03:00).
+- "type": "consulta" | "retirada" | "ajuste" | "outro".
+- Se não houver agendamento confirmado, "has": false e omita os outros campos.
+- "reasoning": 1 frase curta em português.`;
+
+  const userText = history.map((h) => `[${h.at}] ${h.from === "client" ? "CLIENTE" : "LOJA"}: ${h.text}`).join("\n");
+
+  try {
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: sys },
+          { role: "user", content: userText },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!r.ok) { console.error("extractAppointment AI error", r.status, await r.text()); return null; }
+    const d = await r.json();
+    const parsed = JSON.parse(d?.choices?.[0]?.message?.content ?? "{}");
+    if (!parsed?.has) return { has: false };
+    if (!parsed?.iso || isNaN(new Date(parsed.iso).getTime())) return { has: false };
+    const when = new Date(parsed.iso).getTime();
+    // Sanidade: precisa estar no futuro próximo (até 180 dias) e não no passado >1h
+    if (when < Date.now() - 60 * 60 * 1000) return { has: false };
+    if (when > Date.now() + 180 * 24 * 60 * 60 * 1000) return { has: false };
+    return { has: true, iso: parsed.iso, type: parsed.type ?? "consulta", reasoning: parsed.reasoning };
+  } catch (e) {
+    console.error("extractAppointment failed", e);
+    return null;
+  }
+}
+
+function cleanName(value: any): string | null {
+  if (value === null || value === undefined) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  // ignore pure-digit / phone-like "names" returned by some providers
+  if (/^[\d+\s().-]+$/.test(raw)) return null;
+  return raw.length > 120 ? raw.slice(0, 120) : raw;
+}
+
+// BR phone variants (with/without the leading 9 after DDD) — mirrors whatsapp-manage
+export function phoneVariants(phone: string): string[] {
+  const digits = phone.replace(/\D/g, "");
+  const set = new Set<string>();
+  if (!digits) return [];
+  set.add(digits);
+  set.add(`+${digits}`);
+  if (digits.length === 13 && digits.startsWith("55") && digits[4] === "9") {
+    const w = digits.slice(0, 4) + digits.slice(5);
+    set.add(w); set.add(`+${w}`);
+  }
+  if (digits.length === 12 && digits.startsWith("55")) {
+    const w = digits.slice(0, 4) + "9" + digits.slice(4);
+    set.add(w); set.add(`+${w}`);
+  }
+  return [...set];
+}
+
+export function canonicalPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  let d = digits;
+  if (d.length === 12 && d.startsWith("55")) d = d.slice(0, 4) + "9" + d.slice(4);
+  else if (d.length === 11 && d[2] === "9") d = "55" + d;
+  return `+${d}`;
+}
+
+type ExtractedMedia = {
+  url: string | null;
+  base64: string | null;
+  mime: string | null;
+  kind: "audio" | "image" | "video" | "document" | "sticker" | null;
+  caption: string | null;
+  fileName: string | null;
+  durationSec: number | null;
+};
+
+function extractMediaFromPayload(payload: any, m: any): ExtractedMedia {
+  // uazapi flat fields
+  const flatType: string | undefined =
+    payload?.messageType ?? payload?.type ?? m?.messageType ?? m?.type;
+  const flatUrl: string | undefined =
+    m?.mediaUrl ?? m?.media_url ?? m?.fileUrl ?? m?.file_url ?? m?.url ??
+    payload?.mediaUrl ?? payload?.media_url ?? payload?.fileUrl ?? payload?.file_url ?? payload?.url;
+  const flatMime: string | undefined =
+    m?.mimetype ?? m?.mimeType ?? m?.mime ??
+    payload?.mimetype ?? payload?.mimeType ?? payload?.mime;
+  const flatB64: string | undefined =
+    m?.base64 ?? m?.fileBase64 ?? m?.file_base64 ?? payload?.base64 ?? payload?.fileBase64;
+  const flatCaption: string | undefined = m?.caption ?? payload?.caption;
+  const flatFileName: string | undefined = m?.fileName ?? m?.filename ?? payload?.fileName ?? payload?.filename;
+  const flatDuration: number | undefined = m?.seconds ?? m?.duration ?? payload?.seconds ?? payload?.duration;
+
+  // Baileys-style nested
+  const inner = m?.message ?? payload?.message ?? {};
+  const nested =
+    inner?.audioMessage ?? inner?.imageMessage ?? inner?.videoMessage ??
+    inner?.documentMessage ?? inner?.stickerMessage ?? inner?.pttMessage ?? null;
+  const nestedKind: ExtractedMedia["kind"] = inner?.audioMessage || inner?.pttMessage
+    ? "audio"
+    : inner?.imageMessage ? "image"
+    : inner?.videoMessage ? "video"
+    : inner?.documentMessage ? "document"
+    : inner?.stickerMessage ? "sticker"
+    : null;
+
+  let kind: ExtractedMedia["kind"] = nestedKind;
+  if (!kind && typeof flatType === "string") {
+    const t = flatType.toLowerCase();
+    if (t.includes("audio") || t === "ptt") kind = "audio";
+    else if (t.includes("image")) kind = "image";
+    else if (t.includes("video")) kind = "video";
+    else if (t.includes("document")) kind = "document";
+    else if (t.includes("sticker")) kind = "sticker";
+  }
+  if (!kind && flatMime) {
+    if (flatMime.startsWith("audio/")) kind = "audio";
+    else if (flatMime.startsWith("image/")) kind = "image";
+    else if (flatMime.startsWith("video/")) kind = "video";
+    else kind = "document";
+  }
+
+  if (!kind) return { url: null, base64: null, mime: null, kind: null, caption: null, fileName: null, durationSec: null };
+
+  return {
+    url: flatUrl ?? nested?.url ?? nested?.directPath ?? null,
+    base64: flatB64 ?? nested?.fileBase64 ?? null,
+    mime: flatMime ?? nested?.mimetype ?? null,
+    kind,
+    caption: flatCaption ?? nested?.caption ?? null,
+    fileName: flatFileName ?? nested?.fileName ?? null,
+    durationSec: typeof flatDuration === "number" ? flatDuration : (typeof nested?.seconds === "number" ? nested.seconds : null),
+  };
+}
+
+function extractMessage(payload: any): {
+  fromMe: boolean;
+  isGroup: boolean;
+  phone: string | null;
+  text: string | null;
+  externalId: string | null;
+  pushName: string | null;
+  avatar: string | null;
+  media: ExtractedMedia;
+} {
+  const m = payload?.message ?? payload?.data?.message ?? payload?.data ?? payload;
+  const chat = payload?.chat ?? m?.chat ?? payload?.data?.chat ?? {};
+  const sender = payload?.sender ?? m?.sender ?? payload?.data?.sender ?? {};
+  const contact = payload?.contact ?? m?.contact ?? payload?.data?.contact ?? {};
+  const key = m?.key ?? payload?.key ?? {};
+  const remoteJid: string = key.remoteJid ?? m?.remoteJid ?? m?.chatid ?? m?.from ?? chat?.wa_chatid ?? "";
+  const isGroup = remoteJid.endsWith?.("@g.us") || m?.isGroup === true || chat?.wa_isGroup === true;
+  const fromMe = key.fromMe === true || m?.fromMe === true || payload?.fromMe === true;
+  let phone: string | null = remoteJid ? remoteJid.split("@")[0] : (m?.from ?? null);
+  if (!phone && chat?.phone) phone = String(chat.phone).replace(/\D/g, "");
+  if (phone) phone = phone.replace(/\D/g, "") || null;
+  const text =
+    m?.message?.conversation ??
+    m?.message?.extendedTextMessage?.text ??
+    m?.body ??
+    m?.text ??
+    m?.content ??
+    null;
+  const externalId =
+    m?.messageid ??
+    m?.messageId ??
+    m?.id ??
+    key?.id ??
+    payload?.messageid ??
+    payload?.messageId ??
+    payload?.id ??
+    null;
+  const pushName =
+    cleanName(m?.pushName) ??
+    cleanName(m?.pushname) ??
+    cleanName(payload?.pushName) ??
+    cleanName(payload?.pushname) ??
+    cleanName(payload?.data?.pushName) ??
+    cleanName(payload?.data?.pushname) ??
+    cleanName(sender?.pushName) ??
+    cleanName(sender?.name) ??
+    cleanName(contact?.name) ??
+    cleanName(contact?.verifiedName) ??
+    cleanName(contact?.notify) ??
+    cleanName(chat?.wa_contactName) ??
+    cleanName(chat?.wa_name) ??
+    cleanName(chat?.lead_fullName) ??
+    cleanName(chat?.lead_name) ??
+    cleanName(chat?.name) ??
+    null;
+  const avatar = normalizeAvatar(
+    m?.image ?? m?.imagePreview ?? m?.profilePicUrl ?? m?.profilePictureUrl ?? m?.picture ?? m?.photo ?? m?.avatar ??
+    payload?.image ?? payload?.imagePreview ?? payload?.profilePicUrl ?? payload?.profilePictureUrl ??
+    payload?.data?.image ?? payload?.data?.profilePicUrl ?? null
+  );
+  const media = extractMediaFromPayload(payload, m);
+  return { fromMe, isGroup, phone, text, externalId: externalId ? String(externalId).trim() : null, pushName, avatar, media };
+}
+
+const MEDIA_EXT: Record<string, string> = {
+  "audio/ogg": "ogg", "audio/ogg; codecs=opus": "ogg", "audio/opus": "ogg",
+  "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/m4a": "m4a",
+  "audio/wav": "wav", "audio/webm": "webm",
+  "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif",
+  "video/mp4": "mp4", "video/webm": "webm", "video/quicktime": "mov", "video/3gpp": "3gp",
+  "application/pdf": "pdf",
+};
+
+function extFromMime(mime: string | null, fallback: string): string {
+  if (!mime) return fallback;
+  const clean = mime.split(";")[0].trim().toLowerCase();
+  return MEDIA_EXT[clean] ?? (clean.split("/")[1] || fallback);
+}
+
+const MEDIA_PLACEHOLDER: Record<string, string> = {
+  audio: "🎤 Mensagem de voz",
+  image: "📷 Imagem",
+  video: "🎬 Vídeo",
+  document: "📎 Documento",
+  sticker: "🌟 Figurinha",
+};
+
+async function uploadMediaToStorage(
+  admin: any,
+  instance: any,
+  tenantId: string,
+  conversationId: string,
+  media: ExtractedMedia,
+): Promise<{ url: string | null; mime: string | null }> {
+  try {
+    let bytes: Uint8Array | null = null;
+    let mime = media.mime ?? null;
+
+    if (media.base64) {
+      const b64 = media.base64.includes(",") ? media.base64.split(",").pop()! : media.base64;
+      const bin = atob(b64);
+      bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    } else if (media.url) {
+      const headers: Record<string, string> = {};
+      if (instance?.instance_token) headers["token"] = instance.instance_token;
+      const r = await fetch(media.url, { headers });
+      if (!r.ok) {
+        console.error("media download failed", r.status, media.url);
+        return { url: null, mime };
+      }
+      mime = mime ?? r.headers.get("content-type");
+      const buf = await r.arrayBuffer();
+      bytes = new Uint8Array(buf);
+    } else {
+      return { url: null, mime };
+    }
+
+    const ext = extFromMime(mime, media.kind === "audio" ? "ogg" : "bin");
+    const path = `${tenantId}/${conversationId}/${Date.now()}_${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await admin.storage.from("chat-media").upload(path, bytes, {
+      contentType: mime ?? "application/octet-stream",
+      upsert: false,
+    });
+    if (upErr) {
+      console.error("storage upload error", upErr);
+      return { url: null, mime };
+    }
+    const { data: pub } = admin.storage.from("chat-media").getPublicUrl(path);
+    return { url: pub?.publicUrl ?? null, mime };
+  } catch (e) {
+    console.error("uploadMediaToStorage error", e);
+    return { url: null, mime: media.mime ?? null };
+  }
+}
+
+function normalizeAvatar(value: any): string | null {
+  if (!value) return null;
+  const raw = typeof value === "string" ? value.trim() : (value.url ?? value.image ?? value.base64 ?? "").toString().trim();
+  if (!raw) return null;
+  if (raw.startsWith("data:image/")) return raw;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  const compact = raw.replace(/\s/g, "");
+  if (/^[A-Za-z0-9+/]+={0,2}$/.test(compact) && compact.length > 80) return `data:image/jpeg;base64,${compact}`;
+  return null;
+}
+
+async function callAI(systemPrompt: string, userText: string): Promise<string> {
+  return callAIWithHistory(systemPrompt, [], userText);
+}
+
+async function callAIWithHistory(
+  systemPrompt: string,
+  history: { role: "user" | "assistant"; content: string }[],
+  userText: string,
+): Promise<string> {
+  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...history,
+        { role: "user", content: userText },
+      ],
+    }),
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    console.error("AI error", r.status, t);
+    return ""; // never send fallback text to leads; stay silent on AI failure
+  }
+  const d = await r.json();
+  return d?.choices?.[0]?.message?.content ?? "";
+}
+
+// === MODO ESTABILIDADE: delay aleatório antes de cada envio para não sobrecarregar uazapi.
+// Remover (ou setar STABILITY_DELAYS=false) quando voltar ao modo normal.
+async function randomSendDelay(): Promise<void> {
+  let ms = 5000 + Math.floor(Math.random() * 55000); // 5s a 60s
+  if (Math.random() < 0.1) ms += 30000 + Math.floor(Math.random() * 60000); // ~10%: +30-90s
+  console.log("[stability] sleeping", ms, "ms before send");
+  await new Promise((r) => setTimeout(r, ms));
+}
+
+async function sendText(serverUrl: string, instanceToken: string, phone: string, text: string): Promise<string | null> {
+  await randomSendDelay();
+  try {
+    const r = await fetch(`${serverUrl}/send/text`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", token: instanceToken },
+      body: JSON.stringify({ number: phone, text, message: text }),
+    });
+    const raw = await r.text().catch(() => "");
+    let data: any = null;
+    try { data = raw ? JSON.parse(raw) : null; } catch { data = null; }
+    return data?.id ?? data?.messageId ?? data?.key?.id ?? null;
+  } catch (e) {
+    console.error("send failed", e);
+    return null;
+  }
+}
+
+async function notifySellerRoundRobin(admin: any, instance: any, lead: any, firstMessage: string) {
+  try {
+    const { data: sellers } = await admin
+      .from("whatsapp_sellers")
+      .select("id, name, phone, last_notified_at")
+      .eq("whatsapp_instance_id", instance.id)
+      .eq("notify_on_new_lead", true)
+      .not("phone", "is", null)
+      .order("last_notified_at", { ascending: true, nullsFirst: true })
+      .limit(1);
+    const seller = sellers?.[0];
+    if (!seller?.phone) {
+      console.log("notifySellerRoundRobin: no eligible seller");
+      return;
+    }
+    const sellerPhone = seller.phone.toString().replace(/[^0-9]/g, "");
+    if (sellerPhone.length < 10) {
+      console.log("notifySellerRoundRobin: invalid seller phone", seller.phone);
+      return;
+    }
+    const leadName = lead?.name ?? lead?.phone ?? "novo contato";
+    const leadPhone = lead?.phone ?? "";
+    const msg = `🔔 *Novo lead na loja*\n\n👤 ${leadName}\n📱 ${leadPhone}\n💬 "${(firstMessage ?? "").slice(0, 160)}"\n\nAcesse o CRM para atender.`;
+    await sendText(instance.server_url, instance.instance_token, sellerPhone, msg);
+    await Promise.all([
+      admin.from("whatsapp_sellers").update({ last_notified_at: new Date().toISOString() }).eq("id", seller.id),
+      seller.user_id
+        ? admin.from("leads").update({ assigned_to: seller.user_id }).eq("id", lead.id)
+        : Promise.resolve(),
+    ]);
+    console.log("notifySellerRoundRobin: notified", seller.name, sellerPhone);
+  } catch (e) {
+    console.error("notifySellerRoundRobin failed", e);
+  }
+}
+
+async function detectHumanHandoff(text: string): Promise<boolean> {
+  const lower = text.toLowerCase();
+  // Fast path: óbvios
+  if (/(atendente humano|falar com (alguem|algu[ée]m|humano|pessoa|consultor|vendedor|gerente)|atendimento humano|quero (um )?humano|pessoa de verdade|n[aã]o (quero|gosto) (de )?(rob[oô]|bot|ia))/i.test(lower)) {
+    return true;
+  }
+  try {
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          { role: "system", content: `Você decide se o cliente está pedindo CLARAMENTE para falar com um humano (vendedor, consultor, atendente, gerente, pessoa de verdade) em vez de continuar com a IA. Responda APENAS em JSON: {"wants_human": true|false}. Se houver qualquer dúvida ou só reclamação genérica, retorne false.` },
+          { role: "user", content: text },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!r.ok) return false;
+    const d = await r.json();
+    const parsed = JSON.parse(d?.choices?.[0]?.message?.content ?? "{}");
+    return parsed?.wants_human === true;
+  } catch (e) {
+    console.error("detectHumanHandoff failed", e);
+    return false;
+  }
+}
+
+async function notifyAllSellersHandoff(admin: any, instance: any, lead: any, lastMessage: string) {
+  try {
+    const { data: sellers } = await admin
+      .from("whatsapp_sellers")
+      .select("id, name, phone")
+      .eq("tenant_id", instance.tenant_id)
+      .eq("notify_on_new_lead", true)
+      .not("phone", "is", null);
+    if (!sellers?.length) {
+      console.log("notifyAllSellersHandoff: no sellers");
+      return;
+    }
+    const leadName = lead?.name ?? lead?.phone ?? "Cliente";
+    const leadPhone = lead?.phone ?? "";
+    const msg = `🚨 *Cliente pedindo atendimento HUMANO*\n\n👤 ${leadName}\n📱 ${leadPhone}\n💬 "${(lastMessage ?? "").slice(0, 200)}"\n\n⚡ Assuma o atendimento o quanto antes.`;
+    await Promise.all(
+      sellers.map(async (s: any) => {
+        const ph = s.phone.toString().replace(/[^0-9]/g, "");
+        if (ph.length < 10) return;
+        try {
+          await sendText(instance.server_url, instance.instance_token, ph, msg);
+          await admin.from("lead_notifications").insert({
+            tenant_id: instance.tenant_id,
+            lead_id: lead.id,
+            type: "human_handoff",
+            recipient_phone: ph,
+            message_sent: msg,
+            delivered: true,
+          });
+        } catch (e) {
+          console.error("notifyAllSellersHandoff send failed", s.name, e);
+        }
+      }),
+    );
+  } catch (e) {
+    console.error("notifyAllSellersHandoff error", e);
+  }
+}
+
+const WEEKDAYS = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+
+async function buildKnowledgePrompt(admin: any, tenantId: string, tenantName: string | undefined, aiCfg: any, isFirstContact: boolean): Promise<string> {
+  const parts: string[] = [];
+  const name = tenantName ?? "nossa administradora de consórcios";
+  parts.push(`Você é o assistente virtual de pré-atendimento da ${name} no WhatsApp. Sua função é qualificar o lead até que O CONSULTOR RESPONSÁVEL (humano, já designado para esse lead) assuma a conversa por aqui mesmo. Tom: ${aiCfg?.tone ?? "amigavel"}.
+
+MISSÃO:
+- Receber o lead imediatamente, sem deixá-lo esperando.
+- AQUECER o lead com perguntas curtas e objetivas para entender o que ele quer (tipo de bem: imóvel/auto/serviço, valor da carta desejada, prazo, urgência).
+- Manter a conversa fluindo até que o consultor responsável assuma.
+- Se o cliente pedir para falar com humano/atendente/consultor/vendedor, NÃO responder a dúvida — apenas confirmar que o consultor já foi avisado e vai dar sequência aqui no WhatsApp.
+
+REGRAS DE ESTILO (OBRIGATÓRIAS):
+- SEJA OBJETIVO. Como uma pessoa real no WhatsApp.
+- Máximo 2 frases curtas por resposta (idealmente 1). Limite ~280 caracteres.
+- UMA pergunta por vez. Nunca empilhe perguntas.
+- Sem listas, sem markdown, sem títulos. Texto corrido. No máximo 1 emoji quando fizer sentido.
+- Se o cliente pedir algo simples (parcela, prazo, taxa, endereço), responda direto.
+- Use SOMENTE as informações abaixo. Se não souber, diga em 1 frase que vai verificar com o consultor. NUNCA invente valores, taxas ou regras de contemplação.
+
+REGRAS SOBRE O CONSULTOR (CRÍTICO — NÃO ALUCINAR):
+- Sempre diga "o consultor" (artigo definido), nunca "um consultor". O lead já tem um consultor designado.
+- NUNCA invente nome, telefone, e-mail ou horário do consultor.
+- NUNCA prometa "vou verificar", "vou trazer mais informações", "já te retorno com os detalhes" ou similar. Você NÃO tem acesso a nada além das informações abaixo. Se a resposta não está na base, diga em 1 frase que o consultor vai assumir a conversa em instantes para passar os detalhes — e PARE de tentar responder a dúvida técnica.
+- Ligação telefônica pode ser oferecida normalmente quando o cliente preferir; o consultor entra em contato. Não invente número nem horário específico.
+${isFirstContact ? `\nPRIMEIRO CONTATO:\n- Cumprimente pelo nome (se souber) de forma calorosa e breve.\n- Já faça UMA pergunta objetiva de qualificação (ex.: "Você está pensando em consórcio de imóvel, automóvel ou serviço?").` : ""}`);
+
+  if (aiCfg?.business_description) parts.push(`SOBRE A ADMINISTRADORA:\n${aiCfg.business_description}`);
+  const contact: string[] = [];
+  if (aiCfg?.address) contact.push(`Endereço: ${aiCfg.address}`);
+  if (aiCfg?.phone) contact.push(`Telefone: ${aiCfg.phone}`);
+  if (aiCfg?.whatsapp) contact.push(`WhatsApp: ${aiCfg.whatsapp}`);
+  if (aiCfg?.website) contact.push(`Site: ${aiCfg.website}`);
+  if (contact.length) parts.push(`CONTATO:\n${contact.join("\n")}`);
+
+  if (aiCfg?.services) parts.push(`TIPOS DE CONSÓRCIO / SEGMENTOS:\n${aiCfg.services}`);
+  if (aiCfg?.insurance_plans) parts.push(`ADMINISTRADORAS PARCEIRAS / GRUPOS:\n${aiCfg.insurance_plans}`);
+  if (aiCfg?.payment_methods) parts.push(`FORMAS DE PAGAMENTO DA PARCELA:\n${aiCfg.payment_methods}`);
+  if (aiCfg?.differentials) parts.push(`DIFERENCIAIS:\n${aiCfg.differentials}`);
+  if (aiCfg?.extra_notes) parts.push(`OBSERVAÇÕES IMPORTANTES:\n${aiCfg.extra_notes}`);
+
+  const { data: hours } = await admin.from("business_hours").select("*").eq("tenant_id", tenantId).order("weekday");
+  if (hours?.length) {
+    const lines = hours.map((h: any) => `${WEEKDAYS[h.weekday]}: ${h.closed ? "Fechado" : `${h.open_time ?? "-"} às ${h.close_time ?? "-"}`}`);
+    parts.push(`HORÁRIO DE FUNCIONAMENTO:\n${lines.join("\n")}`);
+  }
+
+  const { data: faqs } = await admin.from("faqs").select("question,answer").eq("tenant_id", tenantId).order("position");
+  if (faqs?.length) {
+    parts.push(`PERGUNTAS FREQUENTES:\n${faqs.map((f: any) => `P: ${f.question}\nR: ${f.answer}`).join("\n\n")}`);
+  }
+
+  const { data: products } = await admin.from("products").select("name,category,price").eq("tenant_id", tenantId).eq("is_active", true).limit(80);
+  if (products?.length) {
+    const lines = products.map((p: any) => {
+      const bits = [p.name];
+      if (p.category) bits.push(p.category);
+      if (p.price != null) bits.push(`R$ ${Number(p.price).toFixed(2)}`);
+      return `- ${bits.join(" · ")}`;
+    });
+    parts.push(`CARTAS DE CRÉDITO DISPONÍVEIS (parcial):\n${lines.join("\n")}`);
+  }
+
+  if (aiCfg?.system_prompt) parts.push(`INSTRUÇÕES ADICIONAIS:\n${aiCfg.system_prompt}`);
+
+  return parts.join("\n\n");
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  try {
+    const url = new URL(req.url);
+    const secret = url.searchParams.get("secret");
+    if (!secret) return ok({ error: "missing secret" }, 401);
+
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+    const { data: instance } = await admin
+      .from("whatsapp_instances")
+      .select("*")
+      .eq("webhook_secret", secret)
+      .maybeSingle();
+    if (!instance) return ok({ error: "instance not found" }, 404);
+
+    const payload = await req.json().catch(() => ({}));
+    const evt = String(payload?.event ?? payload?.type ?? "").toLowerCase();
+    console.log("webhook payload event=", evt);
+
+    // Bloqueia eventos de sincronização de histórico que o provedor dispara ao
+    // (re)conectar o número. O usuário só deve receber conversas antigas se
+    // clicar manualmente em "Importar conversas".
+    if (
+      evt.includes("history") ||
+      evt.includes("chats.set") ||
+      evt.includes("messages.set") ||
+      evt === "messages_history" ||
+      payload?.isHistorySync === true ||
+      payload?.history === true ||
+      payload?.data?.isHistorySync === true
+    ) {
+      console.log("webhook ignored: history-sync event", evt);
+      return ok({ ignored: "history_sync" });
+    }
+
+    // ACK / status updates ("messages.update", "ack", "message_ack", etc.):
+    // o provedor envia o id externo da mensagem com um novo status quando o
+    // lead recebe (delivered) ou abre (read/played) o que mandamos.
+    const isAckEvent =
+      evt.includes("ack") ||
+      evt === "messages.update" ||
+      evt === "message.update" ||
+      evt === "message_status" ||
+      payload?.ack != null ||
+      payload?.data?.ack != null ||
+      payload?.status != null ||
+      payload?.data?.status != null;
+    if (isAckEvent) {
+      const d = payload?.data ?? payload;
+      const extId: string | null = (
+        d?.key?.id ?? d?.messageid ?? d?.messageId ?? d?.id ??
+        payload?.key?.id ?? payload?.messageid ?? payload?.messageId ?? payload?.id ?? null
+      )?.toString() ?? null;
+      const ackNum: number | null = (() => {
+        const n = Number(d?.ack ?? payload?.ack);
+        return isNaN(n) ? null : n;
+      })();
+      const ackStr: string = String(
+        d?.update?.status ?? d?.status ?? payload?.status ?? ""
+      ).toUpperCase();
+      let newStatus: "delivered" | "read" | null = null;
+      if (ackNum != null) {
+        if (ackNum >= 3) newStatus = "read";
+        else if (ackNum === 2) newStatus = "delivered";
+      } else if (ackStr) {
+        if (/READ|PLAYED/.test(ackStr)) newStatus = "read";
+        else if (/DELIVER|SERVER_ACK/.test(ackStr)) newStatus = "delivered";
+      }
+      if (extId && newStatus) {
+        const patch: Record<string, any> = { status: newStatus };
+        if (newStatus === "read") patch.read_at = new Date().toISOString();
+        const { error: ackErr } = await admin
+          .from("messages")
+          .update(patch)
+          .eq("tenant_id", instance.tenant_id)
+          .eq("external_id", extId);
+        if (ackErr) console.error("ack update error", ackErr);
+        return ok({ ack: newStatus, external_id: extId });
+      }
+      // se não conseguir mapear, segue o fluxo (pode ser uma mensagem nova)
+    }
+
+    const { fromMe, isGroup, phone, text: rawText, externalId, pushName, avatar, media } = extractMessage(payload);
+    const hasMedia = !!media.kind && (!!media.url || !!media.base64);
+    if (fromMe || isGroup || !phone || (!rawText && !hasMedia)) {
+      console.log("webhook ignored", JSON.stringify({ fromMe, isGroup, phone, hasText: !!rawText, hasMedia, payload }).slice(0, 2000));
+      return ok({ ignored: true });
+    }
+
+    // Descarta mensagens com timestamp antigo (> 5 min) — tipicamente histórico
+    // empurrado pelo provedor após sincronização inicial da instância.
+    const tsRaw =
+      payload?.messageTimestamp ?? payload?.message?.messageTimestamp ??
+      payload?.data?.messageTimestamp ?? payload?.t ?? payload?.timestamp ??
+      payload?.message?.t ?? payload?.data?.t ?? null;
+    let tsMs: number | null = null;
+    if (tsRaw != null) {
+      const n = Number(tsRaw);
+      if (!isNaN(n) && n > 0) tsMs = n < 1e12 ? n * 1000 : n;
+    }
+    if (tsMs && Date.now() - tsMs > 5 * 60 * 1000) {
+      console.log("webhook ignored: old message", new Date(tsMs).toISOString());
+      return ok({ ignored: "old_message", age_seconds: Math.round((Date.now() - tsMs) / 1000) });
+    }
+
+    const text = rawText ?? (hasMedia ? (media.caption ?? MEDIA_PLACEHOLDER[media.kind!] ?? "📎 Mídia") : "");
+
+    // Persist lead + message (best-effort)
+    let isNewLead = false;
+    const variants = phoneVariants(phone);
+    const canonical = canonicalPhone(phone);
+    let { data: lead } = await admin
+      .from("leads")
+      .select("*")
+      .eq("tenant_id", instance.tenant_id)
+      .in("phone", variants)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    // Números marcados como lead de teste (sempre tageados como 'teste' no CRM)
+    const TEST_PHONES = ["17997091070", "5517997091070"];
+    const phoneDigits = (phone ?? "").replace(/\D/g, "");
+    const isTestLead = TEST_PHONES.some((p) => phoneDigits.endsWith(p));
+
+    if (!lead) {
+      const initialName = pushName ?? canonical;
+      const { data: created, error: createErr } = await admin.from("leads").insert({
+        tenant_id: instance.tenant_id,
+        name: initialName,
+        phone: canonical,
+        source: isTestLead ? "Teste" : "WhatsApp",
+        tags: isTestLead ? ["teste"] : [],
+        last_message_at: new Date().toISOString(),
+      }).select("*").single();
+      if (createErr || !created) {
+        console.error("lead create error", createErr);
+        return ok({ error: "lead create failed", detail: createErr?.message }, 500);
+      }
+      lead = created;
+      isNewLead = true;
+    } else {
+      const existingTags: string[] = Array.isArray(lead.tags) ? lead.tags : [];
+      const needsTestTag = isTestLead && !existingTags.includes("teste");
+      const patch: Record<string, any> = { last_message_at: new Date().toISOString() };
+      if (lead.phone !== canonical) patch.phone = canonical;
+      // Backfill name when it's missing or just a phone-like placeholder
+      const currentName = (lead.name ?? "").toString().trim();
+      const nameLooksLikePhone = !currentName || /^[\d+\s().-]+$/.test(currentName);
+      if (nameLooksLikePhone && pushName) patch.name = pushName;
+      if (needsTestTag) patch.tags = [...existingTags, "teste"];
+      const { data: upd } = await admin.from("leads").update(patch).eq("id", lead.id).select("*").single();
+      if (upd) lead = upd;
+    }
+
+    let { data: conv } = await admin
+      .from("conversations")
+      .select("*")
+      .eq("lead_id", lead!.id)
+      .eq("whatsapp_instance_id", instance.id)
+      .maybeSingle();
+    if (!conv) {
+      const { data: createdConv } = await admin.from("conversations").insert({
+        tenant_id: instance.tenant_id,
+        lead_id: lead!.id,
+        whatsapp_instance_id: instance.id,
+        last_message_preview: text.slice(0, 120),
+        last_message_at: new Date().toISOString(),
+        unread_count: 1,
+      }).select("*").single();
+      conv = createdConv;
+    } else {
+      await admin.from("conversations").update({
+        last_message_preview: text.slice(0, 120),
+        last_message_at: new Date().toISOString(),
+        unread_count: (conv.unread_count ?? 0) + 1,
+      }).eq("id", conv.id);
+    }
+
+    let storedMediaUrl: string | null = null;
+    let storedMime: string | null = null;
+    if (hasMedia) {
+      const r = await uploadMediaToStorage(admin, instance, instance.tenant_id, conv!.id, media);
+      storedMediaUrl = r.url;
+      storedMime = r.mime;
+    }
+
+    await admin.from("messages").insert({
+      tenant_id: instance.tenant_id,
+      conversation_id: conv!.id,
+      lead_id: lead!.id,
+      whatsapp_instance_id: instance.id,
+      direction: "inbound",
+      body: text,
+      external_id: externalId,
+      message_type: hasMedia ? (media.kind ?? "text") : "text",
+      media_url: storedMediaUrl,
+      metadata: hasMedia
+        ? { media: { kind: media.kind, mime: storedMime ?? media.mime, duration: media.durationSec, file_name: media.fileName, source_url: media.url } }
+        : {},
+    });
+
+    // Notify a seller (round-robin) only on the very first message of a new lead
+    if (isNewLead) {
+      await notifySellerRoundRobin(admin, instance, lead, text);
+    }
+
+    // Auto-classify lead (temperature + phase + qualification + stage) from full conversation context
+    try {
+      const { data: msgsForCls } = await admin
+        .from("messages")
+        .select("direction, body, created_at")
+        .eq("conversation_id", conv!.id)
+        .order("created_at", { ascending: false })
+        .limit(15);
+      const clsHistory = (msgsForCls ?? []).reverse().map((m: any) => ({
+        from: m.direction === "inbound" ? "client" as const : "loja" as const,
+        text: m.body ?? "",
+      })).filter((m) => m.text);
+      const cls = await classifyLead(clsHistory);
+      if (cls && lead) {
+        const patch: Record<string, any> = {
+          temperature: cls.temperature,
+          last_interaction_at: new Date().toISOString(),
+        };
+        if (cls.lead_phase) patch.lead_phase = cls.lead_phase;
+        if (cls.qualification_status) patch.qualification_status = cls.qualification_status;
+
+        // Deriva stage da fase/qualificação (espelha a lógica do front em LeadsPage)
+        const phase = cls.lead_phase;
+        const qual = cls.qualification_status;
+        let derived: string | null = null;
+        if (qual === "desqualificado") derived = "perdido";
+        else if (phase === "pos_venda") derived = "comprou";
+        else if (phase === "fechamento" || phase === "negociacao") derived = "compareceu";
+        else if (phase === "simulacao" || phase === "apresentacao") derived = "agendado";
+        else if (qual === "qualificado" || qual === "oportunidade_futura") derived = "qualificado";
+        else if (qual === "em_qualificacao" || phase === "primeiro_contato") derived = "qualificado";
+        else if (cls.stage) derived = cls.stage;
+
+        const currentRank = STAGE_RANK[lead.stage ?? "novo"] ?? 0;
+        const newRank = STAGE_RANK[derived ?? "novo"] ?? 0;
+        // Permite avançar; só permite regressão para "perdido" se IA detectou desqualificação
+        if (derived && (newRank > currentRank || derived === "perdido")) {
+          patch.stage = derived;
+          if (derived === "comprou") patch.status = "won";
+          else if (derived === "perdido") patch.status = "lost";
+        }
+        if (cls.reasoning) {
+          patch.notes = `[IA ${new Date().toLocaleDateString("pt-BR")}] ${cls.reasoning}`;
+        }
+        await admin.from("leads").update(patch).eq("id", lead.id);
+      }
+    } catch (e) {
+      console.error("auto-classify error", e);
+    }
+
+    // Check silence
+    const { data: silence } = await admin
+      .from("whatsapp_silence")
+      .select("silenced_until")
+      .eq("tenant_id", instance.tenant_id)
+      .eq("whatsapp_instance_id", instance.id)
+      .eq("phone", phone)
+      .maybeSingle();
+    if (silence && new Date(silence.silenced_until).getTime() > Date.now()) {
+      return ok({ silenced: true });
+    }
+
+    // Pausa a IA apenas quando o consultor humano JÁ enviou ao menos uma
+    // mensagem nesta conversa (sent_by != null). Apenas estar atribuído
+    // (assigned_member_id) NÃO pausa, pois o pré-atendimento precisa continuar
+    // aquecendo o lead até o consultor entrar de fato.
+    {
+      const { data: humanMsg } = await admin
+        .from("messages")
+        .select("id")
+        .eq("conversation_id", conv!.id)
+        .eq("direction", "outbound")
+        .not("sent_by", "is", null)
+        .limit(1)
+        .maybeSingle();
+      if (humanMsg) {
+        console.log("AI paused: human consultant already replied in this conversation");
+        return ok({ assumed_by_human: true });
+      }
+    }
+
+    // Human handoff detection (literal OR AI-interpreted)
+    if (await detectHumanHandoff(text)) {
+      const until = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      await admin.from("whatsapp_silence").delete()
+        .eq("tenant_id", instance.tenant_id)
+        .eq("whatsapp_instance_id", instance.id)
+        .eq("phone", phone);
+      await admin.from("whatsapp_silence").insert({
+        tenant_id: instance.tenant_id,
+        whatsapp_instance_id: instance.id,
+        phone,
+        silenced_until: until,
+      });
+      const reply = "Claro! Já estou avisando nossa equipe e em instantes um consultor vai te chamar aqui. 👋";
+      const providerId = await sendText(instance.server_url, instance.instance_token, phone, reply);
+      await admin.from("messages").insert({
+        tenant_id: instance.tenant_id, conversation_id: conv!.id, lead_id: lead!.id,
+        whatsapp_instance_id: instance.id,
+        direction: "outbound", body: reply, external_id: providerId,
+      });
+      await notifyAllSellersHandoff(admin, instance, lead, text);
+      return ok({ handoff: true });
+    }
+
+    // Skip AI when message is media-only (audio/image/video) without caption.
+    // Transcrição/visão não está implementada — IA não tem como responder de forma útil.
+    if (hasMedia && !rawText && !media.caption) {
+      return ok({ media_only: true, kind: media.kind });
+    }
+
+    // Load tenant AI config
+    const { data: aiCfg } = await admin
+      .from("ai_config")
+      .select("*")
+      .eq("tenant_id", instance.tenant_id)
+      .maybeSingle();
+    if (aiCfg && aiCfg.enabled === false) return ok({ ai_disabled: true });
+
+    const { data: tenant } = await admin.from("tenants").select("name").eq("id", instance.tenant_id).maybeSingle();
+    const fullPrompt = await buildKnowledgePrompt(admin, instance.tenant_id, tenant?.name, aiCfg, isNewLead);
+
+    // Build short history for context (last 10 messages, excluding current inbound)
+    const { data: recentMsgs } = await admin
+      .from("messages")
+      .select("direction, body, created_at")
+      .eq("conversation_id", conv!.id)
+      .order("created_at", { ascending: false })
+      .limit(11);
+    const historyMsgs = (recentMsgs ?? [])
+      .reverse()
+      .slice(0, -1) // remove the just-inserted inbound
+      .map((m: any) => ({
+        role: m.direction === "inbound" ? "user" as const : "assistant" as const,
+        content: m.body ?? "",
+      }))
+      .filter((m: any) => m.content);
+
+    const reply = await callAIWithHistory(fullPrompt, historyMsgs, text);
+    if (!reply || !reply.trim()) {
+      console.log("AI returned empty reply; skipping send to lead");
+      return ok({ skipped: "empty_ai_reply" });
+    }
+    const providerId = await sendText(instance.server_url, instance.instance_token, phone, reply);
+    await admin.from("messages").insert({
+      tenant_id: instance.tenant_id, conversation_id: conv!.id, lead_id: lead!.id,
+      whatsapp_instance_id: instance.id,
+      direction: "outbound", body: reply, external_id: providerId,
+    });
+
+
+    // Detecta agendamento confirmado e cria automaticamente na agenda
+    try {
+      const { data: recent } = await admin
+        .from("messages")
+        .select("direction, body, created_at")
+        .eq("conversation_id", conv!.id)
+        .order("created_at", { ascending: false })
+        .limit(12);
+      const history = (recent ?? []).reverse().map((m: any) => ({
+        from: m.direction === "inbound" ? "client" as const : "loja" as const,
+        text: m.body ?? "",
+        at: m.created_at,
+      }));
+      // inclui a resposta recém-enviada (ainda pode não estar persistida na query acima por timing)
+      history.push({ from: "loja", text: reply, at: new Date().toISOString() });
+
+      const appt = await extractAppointment(history);
+      if (appt?.has && appt.iso) {
+        // Evita duplicar: já existe agendamento desse lead em ±2h dessa data?
+        const target = new Date(appt.iso);
+        const winStart = new Date(target.getTime() - 2 * 60 * 60 * 1000).toISOString();
+        const winEnd = new Date(target.getTime() + 2 * 60 * 60 * 1000).toISOString();
+        const { data: existing } = await admin
+          .from("appointments")
+          .select("id")
+          .eq("lead_id", lead!.id)
+          .gte("scheduled_at", winStart)
+          .lte("scheduled_at", winEnd)
+          .maybeSingle();
+        if (!existing) {
+          await admin.from("appointments").insert({
+            tenant_id: instance.tenant_id,
+            lead_id: lead!.id,
+            scheduled_at: target.toISOString(),
+            duration_minutes: 30,
+            type: appt.type ?? "consulta",
+            status: "agendado",
+            notes: `Criado automaticamente pela IA via WhatsApp. ${appt.reasoning ?? ""}`.trim(),
+          });
+          // Move o lead para o stage "agendado"
+          await admin.from("leads").update({
+            stage: "agendado",
+            last_interaction_at: new Date().toISOString(),
+          }).eq("id", lead!.id);
+          console.log("appointment auto-created", { lead: lead!.id, at: target.toISOString() });
+        }
+      }
+    } catch (e) {
+      console.error("auto-appointment error", e);
+    }
+
+    return ok({ replied: true });
+  } catch (e: any) {
+    console.error("webhook error", e);
+    return ok({ error: e?.message ?? "erro" }, 200); // 200 to prevent provider retries storm
+  }
+});

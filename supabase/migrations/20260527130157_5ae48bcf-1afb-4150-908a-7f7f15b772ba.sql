@@ -1,0 +1,1 @@
+ALTER TABLE public.tenant_members ADD COLUMN IF NOT EXISTS daily_lead_limit integer;
