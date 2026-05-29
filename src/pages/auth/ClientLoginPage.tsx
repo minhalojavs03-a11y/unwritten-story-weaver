@@ -14,7 +14,7 @@ export default function ClientLoginPage() {
   const navigate = useNavigate();
   const from = (location.state as { from?: { pathname?: string; search?: string } } | null)?.from;
   const redirectTo = from?.pathname ? `${from.pathname}${from.search ?? ""}` : "/crm";
-  const { loading: authLoading, session, isSuperadmin, user } = useAuth();
+  const { loading: authLoading, session, user } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +23,6 @@ export default function ClientLoginPage() {
   const [signingOut, setSigningOut] = useState(false);
 
   if (authLoading) return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Carregando…</div>;
-  if (session && isSuperadmin) return <Navigate to="/admin/dashboard" replace />;
   if (session) return <Navigate to={redirectTo} replace />;
 
   async function handleSignOut() {
