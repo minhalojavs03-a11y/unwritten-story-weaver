@@ -48,7 +48,8 @@ export default function AdminIntegracoes() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({
+  const FORM_STORAGE_KEY = "admin_integracoes_sheet_form";
+  const defaultForm = {
     sheet_url: "",
     tab_name: "Sheet1",
     header_row: 1,
@@ -56,7 +57,20 @@ export default function AdminIntegracoes() {
     telefone: "B",
     email: "",
     interesse: "",
+  };
+  const [form, setForm] = useState(() => {
+    try {
+      const saved = localStorage.getItem(FORM_STORAGE_KEY);
+      if (saved) return { ...defaultForm, ...JSON.parse(saved) };
+    } catch {}
+    return defaultForm;
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(form));
+    } catch {}
+  }, [form]);
 
   async function createConfig() {
     const sheet_id = extractSheetId(form.sheet_url);
@@ -88,7 +102,8 @@ export default function AdminIntegracoes() {
     if (error) return toast.error("Erro: " + error.message);
     toast.success("Planilha adicionada");
     setCreateOpen(false);
-    setForm({ sheet_url: "", tab_name: "Sheet1", header_row: 1, nome: "A", telefone: "B", email: "", interesse: "" });
+    setForm(defaultForm);
+    try { localStorage.removeItem(FORM_STORAGE_KEY); } catch {}
     load();
   }
 
