@@ -10,9 +10,9 @@ import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 import ClientLoginPage from "./pages/auth/ClientLoginPage";
 import AdminLoginPage from "./pages/auth/AdminLoginPage";
-import ClientLoginPage from "./pages/auth/ClientLoginPage";
-import AdminLoginPage from "./pages/auth/AdminLoginPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
+import RootRedirect from "./pages/RootRedirect";
+import InviteAcceptPage from "./pages/InviteAcceptPage";
 import OnboardingPage from "./pages/onboarding/OnboardingPage";
 
 import DashboardPage from "./pages/app/DashboardPage";
