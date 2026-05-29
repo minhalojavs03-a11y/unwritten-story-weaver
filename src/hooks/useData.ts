@@ -572,8 +572,11 @@ export function useUpdateAiConfig() {
 export function useToggleAiPreAttendance() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (enabled: boolean) => {
-      const { error } = await supabase.rpc("set_ai_pre_attendance", { _enabled: enabled });
+    mutationFn: async (input: { leadId: string; enabled: boolean } | boolean) => {
+      const payload = typeof input === "boolean"
+        ? { _lead_id: "", _enabled: input }
+        : { _lead_id: input.leadId, _enabled: input.enabled };
+      const { error } = await supabase.rpc("set_ai_pre_attendance", payload);
       if (error) throw new Error(error.message || "Não foi possível atualizar o pré-atendimento.");
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["ai_config"] }),

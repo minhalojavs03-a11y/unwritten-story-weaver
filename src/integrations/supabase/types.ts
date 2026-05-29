@@ -2119,12 +2119,10 @@ export type Database = {
       get_my_auth_context: {
         Args: never
         Returns: {
-          display_name: string
-          email: string
-          is_superadmin: boolean
           onboarding_completed: boolean
+          roles: Database["public"]["Enums"]["app_role"][]
           tenant_id: string
-          tenant_role: Database["public"]["Enums"]["tenant_role"]
+          username: string
         }[]
       }
       get_tenant_role: {
