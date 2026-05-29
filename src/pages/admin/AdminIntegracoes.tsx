@@ -63,10 +63,14 @@ export default function AdminIntegracoes() {
     if (!sheet_id) return toast.error("URL inválida do Google Sheets");
     setCreating(true);
     const { data: ctx } = await supabase.rpc("get_my_auth_context");
-    const tenant_id = (ctx as any)?.[0]?.tenant_id;
+    let tenant_id = (ctx as any)?.[0]?.tenant_id as string | null;
+    if (!tenant_id) {
+      const { data: t } = await supabase.from("tenants").select("id").limit(1).maybeSingle();
+      tenant_id = (t as any)?.id ?? null;
+    }
     if (!tenant_id) {
       setCreating(false);
-      return toast.error("Tenant não encontrado");
+      return toast.error("Nenhum tenant encontrado");
     }
     const mapping: Record<string, string> = { nome: form.nome.toUpperCase(), telefone: form.telefone.toUpperCase() };
     if (form.email) mapping.email = form.email.toUpperCase();
