@@ -274,7 +274,10 @@ export default function AdminIntegracoes() {
             </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-between gap-2">
+            <Button variant="ghost" size="sm" onClick={() => removeConfig(cfg.id)} className="text-red-300 hover:bg-red-500/10 hover:text-red-200">
+              <Trash2 className="mr-2 h-4 w-4" /> Remover
+            </Button>
             <Button onClick={() => saveConfig(cfg)} disabled={savingId === cfg.id}>
               {savingId === cfg.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar
