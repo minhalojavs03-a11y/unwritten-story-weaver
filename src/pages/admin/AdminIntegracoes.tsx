@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, FileSpreadsheet, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, RefreshCw, FileSpreadsheet, CheckCircle2, XCircle, Plus, Trash2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type Config = {
@@ -45,6 +46,55 @@ export default function AdminIntegracoes() {
   const [loading, setLoading] = useState(true);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({
+    sheet_url: "",
+    tab_name: "Sheet1",
+    header_row: 1,
+    nome: "A",
+    telefone: "B",
+    email: "",
+    interesse: "",
+  });
+
+  async function createConfig() {
+    const sheet_id = extractSheetId(form.sheet_url);
+    if (!sheet_id) return toast.error("URL inválida do Google Sheets");
+    setCreating(true);
+    const { data: ctx } = await supabase.rpc("get_my_auth_context");
+    const tenant_id = (ctx as any)?.[0]?.tenant_id;
+    if (!tenant_id) {
+      setCreating(false);
+      return toast.error("Tenant não encontrado");
+    }
+    const mapping: Record<string, string> = { nome: form.nome.toUpperCase(), telefone: form.telefone.toUpperCase() };
+    if (form.email) mapping.email = form.email.toUpperCase();
+    if (form.interesse) mapping.interesse = form.interesse.toUpperCase();
+    const { error } = await supabase.from("sheet_sync_config").insert({
+      tenant_id,
+      sheet_url: form.sheet_url,
+      sheet_id,
+      tab_name: form.tab_name || "Sheet1",
+      header_row: form.header_row || 1,
+      column_mapping: mapping,
+      is_active: true,
+    });
+    setCreating(false);
+    if (error) return toast.error("Erro: " + error.message);
+    toast.success("Planilha adicionada");
+    setCreateOpen(false);
+    setForm({ sheet_url: "", tab_name: "Sheet1", header_row: 1, nome: "A", telefone: "B", email: "", interesse: "" });
+    load();
+  }
+
+  async function removeConfig(id: string) {
+    if (!confirm("Remover esta planilha da sincronização?")) return;
+    const { error } = await supabase.from("sheet_sync_config").delete().eq("id", id);
+    if (error) return toast.error("Erro: " + error.message);
+    toast.success("Removida");
+    load();
+  }
 
   async function load() {
     setLoading(true);
@@ -123,13 +173,20 @@ export default function AdminIntegracoes() {
 
   return (
     <div className="space-y-6 p-4 pb-32 md:p-6 md:pb-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-white">Integrações</h1>
-        <p className="text-sm text-white/60">Sincronização de leads do Google Sheets (Meta Ads)</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-white">Integrações</h1>
+          <p className="text-sm text-white/60">Sincronização de leads do Google Sheets (Meta Ads)</p>
+        </div>
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Adicionar planilha
+        </Button>
       </div>
 
       {configs.length === 0 && (
-        <Card className="bg-white/5 p-6 text-white/70">Nenhuma planilha configurada.</Card>
+        <Card className="bg-white/5 p-6 text-white/70">
+          Nenhuma planilha configurada. Clique em <strong>Adicionar planilha</strong> para conectar uma planilha do Google Sheets que recebe os leads do Meta Ads.
+        </Card>
       )}
 
       {configs.map((cfg) => (
@@ -217,7 +274,10 @@ export default function AdminIntegracoes() {
             </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-between gap-2">
+            <Button variant="ghost" size="sm" onClick={() => removeConfig(cfg.id)} className="text-red-300 hover:bg-red-500/10 hover:text-red-200">
+              <Trash2 className="mr-2 h-4 w-4" /> Remover
+            </Button>
             <Button onClick={() => saveConfig(cfg)} disabled={savingId === cfg.id}>
               {savingId === cfg.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar
@@ -275,6 +335,65 @@ export default function AdminIntegracoes() {
           </Button>
         </div>
       )}
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Adicionar planilha do Google Sheets</DialogTitle>
+            <DialogDescription>
+              Cole o link da planilha onde o Meta Ads grava os leads. A planilha precisa estar compartilhada como "Qualquer pessoa com o link pode ver".
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>URL da planilha</Label>
+              <Input
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+                value={form.sheet_url}
+                onChange={(e) => setForm({ ...form, sheet_url: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Nome da aba</Label>
+                <Input value={form.tab_name} onChange={(e) => setForm({ ...form, tab_name: e.target.value })} />
+              </div>
+              <div>
+                <Label>Linha do cabeçalho</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={form.header_row}
+                  onChange={(e) => setForm({ ...form, header_row: Number(e.target.value) || 1 })}
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="mb-2 block">Colunas (letras: A, B, C…)</Label>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                {(["nome", "telefone", "email", "interesse"] as const).map((k) => (
+                  <div key={k}>
+                    <Label className="text-xs capitalize text-white/60">{k}</Label>
+                    <Input
+                      placeholder={k === "nome" ? "A" : k === "telefone" ? "B" : ""}
+                      value={(form as any)[k]}
+                      onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-white/40">Nome e telefone são obrigatórios. Email e interesse são opcionais.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
+            <Button onClick={createConfig} disabled={creating || !form.sheet_url}>
+              {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Adicionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
