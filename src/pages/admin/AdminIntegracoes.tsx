@@ -46,6 +46,55 @@ export default function AdminIntegracoes() {
   const [loading, setLoading] = useState(true);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({
+    sheet_url: "",
+    tab_name: "Sheet1",
+    header_row: 1,
+    nome: "A",
+    telefone: "B",
+    email: "",
+    interesse: "",
+  });
+
+  async function createConfig() {
+    const sheet_id = extractSheetId(form.sheet_url);
+    if (!sheet_id) return toast.error("URL inválida do Google Sheets");
+    setCreating(true);
+    const { data: ctx } = await supabase.rpc("get_my_auth_context");
+    const tenant_id = (ctx as any)?.[0]?.tenant_id;
+    if (!tenant_id) {
+      setCreating(false);
+      return toast.error("Tenant não encontrado");
+    }
+    const mapping: Record<string, string> = { nome: form.nome.toUpperCase(), telefone: form.telefone.toUpperCase() };
+    if (form.email) mapping.email = form.email.toUpperCase();
+    if (form.interesse) mapping.interesse = form.interesse.toUpperCase();
+    const { error } = await supabase.from("sheet_sync_config").insert({
+      tenant_id,
+      sheet_url: form.sheet_url,
+      sheet_id,
+      tab_name: form.tab_name || "Sheet1",
+      header_row: form.header_row || 1,
+      column_mapping: mapping,
+      is_active: true,
+    });
+    setCreating(false);
+    if (error) return toast.error("Erro: " + error.message);
+    toast.success("Planilha adicionada");
+    setCreateOpen(false);
+    setForm({ sheet_url: "", tab_name: "Sheet1", header_row: 1, nome: "A", telefone: "B", email: "", interesse: "" });
+    load();
+  }
+
+  async function removeConfig(id: string) {
+    if (!confirm("Remover esta planilha da sincronização?")) return;
+    const { error } = await supabase.from("sheet_sync_config").delete().eq("id", id);
+    if (error) return toast.error("Erro: " + error.message);
+    toast.success("Removida");
+    load();
+  }
 
   async function load() {
     setLoading(true);
