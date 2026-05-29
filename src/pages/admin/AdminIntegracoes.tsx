@@ -173,13 +173,20 @@ export default function AdminIntegracoes() {
 
   return (
     <div className="space-y-6 p-4 pb-32 md:p-6 md:pb-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-white">Integrações</h1>
-        <p className="text-sm text-white/60">Sincronização de leads do Google Sheets (Meta Ads)</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-white">Integrações</h1>
+          <p className="text-sm text-white/60">Sincronização de leads do Google Sheets (Meta Ads)</p>
+        </div>
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Adicionar planilha
+        </Button>
       </div>
 
       {configs.length === 0 && (
-        <Card className="bg-white/5 p-6 text-white/70">Nenhuma planilha configurada.</Card>
+        <Card className="bg-white/5 p-6 text-white/70">
+          Nenhuma planilha configurada. Clique em <strong>Adicionar planilha</strong> para conectar uma planilha do Google Sheets que recebe os leads do Meta Ads.
+        </Card>
       )}
 
       {configs.map((cfg) => (
