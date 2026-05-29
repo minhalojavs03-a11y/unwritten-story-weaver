@@ -242,6 +242,10 @@ export type Database = {
           tenant_id: string
         }[]
       }
+      create_tenant_with_owner: {
+        Args: { _display_name: string; _tenant_name: string }
+        Returns: string
+      }
       get_invite_by_token: {
         Args: { _token: string }
         Returns: {
