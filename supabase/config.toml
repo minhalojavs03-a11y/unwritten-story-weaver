@@ -1,10 +1,1 @@
-project_id = "rqaebwzoxuzfrnwdwufn"
-
-[functions.sheets-sync]
-verify_jwt = false
-
-[functions.suggest-reply]
-verify_jwt = false
-
-[functions.whatsapp-manage]
-verify_jwt = false
+project_id = "qwoilgpbxxzjzpltosas"
