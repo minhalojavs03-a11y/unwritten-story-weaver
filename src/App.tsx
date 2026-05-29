@@ -10,6 +10,7 @@ import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 import ClientLoginPage from "./pages/auth/ClientLoginPage";
 import AdminLoginPage from "./pages/auth/AdminLoginPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import RootRedirect from "./pages/RootRedirect";
 import InviteAcceptPage from "./pages/InviteAcceptPage";
 import OnboardingPage from "./pages/onboarding/OnboardingPage";
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<ClientLoginPage />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/invite/:token" element={<InviteAcceptPage />} />
             <Route path="/proposta-whatsapp-api-oficial" element={<ProposalWhatsappOficial />} />
             <Route path="/ubertiproposta" element={<UbertiProposta />} />
