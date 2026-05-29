@@ -106,6 +106,7 @@ const App = () => (
               <Route path="/ranking" element={<RankingPage />} />
               <Route path="/relatorios" element={<RelatoriosPage />} />
               <Route path="/coaching" element={<CoachingPage />} />
+              <Route path="/integracoes" element={<ProtectedRoute requireOwner><AdminIntegracoes /></ProtectedRoute>} />
             </Route>
 
             {/* Superadmin */}
