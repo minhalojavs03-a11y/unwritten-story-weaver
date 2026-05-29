@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS coaching_analyze_on_outbound ON public.messages;

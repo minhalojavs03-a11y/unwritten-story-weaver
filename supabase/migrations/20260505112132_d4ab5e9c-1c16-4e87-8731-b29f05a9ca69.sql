@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.create_charge_for_new_instance() FROM PUBLIC, anon, authenticated;

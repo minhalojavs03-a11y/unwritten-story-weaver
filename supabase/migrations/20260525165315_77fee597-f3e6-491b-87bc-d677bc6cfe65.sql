@@ -1,0 +1,1 @@
+UPDATE public.leads SET assigned_to = NULL, assigned_member_id = NULL, assigned_member_at = NULL, updated_at = now() WHERE id = 'e595da79-4170-470e-ad81-c5df4a6e294a';
