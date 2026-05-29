@@ -1,1 +1,0 @@
-ALTER TABLE public.tenant_members ADD COLUMN IF NOT EXISTS receives_leads boolean NOT NULL DEFAULT true;
