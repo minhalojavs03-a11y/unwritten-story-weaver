@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Home, MessageCircle, Kanban, Calendar, Users, UserPlus, Settings, LogOut, Eye, Shield, Smartphone, Menu, Sparkles, Inbox, User as UserIcon, Users2, MessageSquareText, ChevronLeft, ChevronRight, Video, History, Trophy, BarChart3, ChevronDown, Headphones, Briefcase, LineChart, Cog, Target } from "lucide-react";
+import { Home, MessageCircle, Kanban, Calendar, Users, UserPlus, Settings, LogOut, Eye, Shield, Smartphone, Menu, Sparkles, Inbox, User as UserIcon, Users2, MessageSquareText, ChevronLeft, ChevronRight, Video, History, Trophy, BarChart3, ChevronDown, Headphones, Briefcase, LineChart, Cog, Target, Plug } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -121,6 +121,7 @@ export function AppLayout() {
       items.push({ to: "/distribuicao", label: "Distribuição de Leads", icon: Inbox });
       items.push({ to: "/equipe", label: "Equipe", icon: Users2 });
       items.push({ to: "/whatsapp", label: "WhatsApp", icon: Smartphone });
+      items.push({ to: "/integracoes", label: "Integrações", icon: Plug });
       items.push({ to: "/configuracoes", label: "Configurações", icon: Settings });
     } else if (can("view_team_metrics")) {
       items.push({ to: "/consultores", label: "Consultores", icon: Users2 });
