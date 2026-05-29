@@ -24,22 +24,11 @@ export default function OnboardingPage() {
     if (!user) return;
     setSaving(true);
     try {
-      // 1. Create tenant
-      const { data: tenant, error: tErr } = await supabase
-        .from("tenants")
-        .insert({ name: tenantName.trim(), created_by: user.id, onboarding_completed: true })
-        .select()
-        .single();
-      if (tErr) throw tErr;
-
-      // 2. Update profile display_name
-      await supabase.from("profiles").update({ display_name: name.trim() }).eq("id", user.id);
-
-      // 3. Create owner membership (service role would be ideal, but RLS on insert is missing — see note)
-      const { error: mErr } = await supabase
-        .from("tenant_memberships")
-        .insert({ tenant_id: tenant.id, user_id: user.id, role: "owner", display_name: name.trim() });
-      if (mErr) throw mErr;
+      const { error } = await supabase.rpc("create_tenant_with_owner", {
+        _tenant_name: tenantName.trim(),
+        _display_name: name.trim(),
+      });
+      if (error) throw error;
 
       await refreshProfile();
       toast({ title: "Pronto!", description: "Sua conta foi criada." });
