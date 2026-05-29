@@ -102,7 +102,8 @@ export default function AdminIntegracoes() {
     if (error) return toast.error("Erro: " + error.message);
     toast.success("Planilha adicionada");
     setCreateOpen(false);
-    setForm({ sheet_url: "", tab_name: "Sheet1", header_row: 1, nome: "A", telefone: "B", email: "", interesse: "" });
+    setForm(defaultForm);
+    try { localStorage.removeItem(FORM_STORAGE_KEY); } catch {}
     load();
   }
 
