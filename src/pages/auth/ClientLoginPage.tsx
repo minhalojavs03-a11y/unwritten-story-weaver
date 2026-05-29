@@ -23,7 +23,6 @@ export default function ClientLoginPage() {
   const [signingOut, setSigningOut] = useState(false);
 
   if (authLoading) return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Carregando…</div>;
-  if (session && isSuperadmin) return <Navigate to="/admin/dashboard" replace />;
   if (session) return <Navigate to={redirectTo} replace />;
 
   async function handleSignOut() {
