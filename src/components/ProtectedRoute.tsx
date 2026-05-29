@@ -1,15 +1,20 @@
 import { Navigate, useLocation } from "react-router-dom";
-import type { ReactNode } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffectiveRole } from "@/hooks/useEffectiveRole";
+import { usePermissions } from "@/hooks/usePermissions";
+import type { ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
   requireSuperadmin?: boolean;
   requireOwner?: boolean;
+  allowSupervisor?: boolean;
 }
 
-export function ProtectedRoute({ children, requireSuperadmin = false, requireOwner = false }: Props) {
-  const { session, loading, isSuperadmin, isOwner, tenantId, onboardingCompleted } = useAuth();
+export function ProtectedRoute({ children, requireSuperadmin = false, requireOwner = false, allowSupervisor = false }: Props) {
+  const { session, loading } = useAuth();
+  const { isSuperadmin, isOwner } = useEffectiveRole();
+  const { can } = usePermissions();
   const location = useLocation();
 
   if (loading) {
@@ -18,17 +23,12 @@ export function ProtectedRoute({ children, requireSuperadmin = false, requireOwn
   if (!session) {
     return <Navigate to={requireSuperadmin ? "/admin/login" : "/login"} replace state={{ from: location }} />;
   }
-  if (requireSuperadmin && !isSuperadmin) return <Navigate to="/admin/login" replace />;
-  if (requireOwner && !isOwner && !isSuperadmin) return <Navigate to="/crm" replace />;
-
-  // If user has no tenant and isn't superadmin, force onboarding
-  if (!isSuperadmin && !tenantId && location.pathname !== "/onboarding") {
-    return <Navigate to="/onboarding" replace />;
+  if (requireSuperadmin && !isSuperadmin) {
+    return <Navigate to="/admin/login" replace />;
   }
-  // If onboarding pending
-  if (!isSuperadmin && tenantId && !onboardingCompleted && location.pathname !== "/onboarding") {
-    return <Navigate to="/onboarding" replace />;
+  if (requireOwner && !isOwner && !isSuperadmin) {
+    const supervisorOk = allowSupervisor && can("configure_whatsapp");
+    if (!supervisorOk) return <Navigate to="/crm" replace />;
   }
-
   return <>{children}</>;
 }

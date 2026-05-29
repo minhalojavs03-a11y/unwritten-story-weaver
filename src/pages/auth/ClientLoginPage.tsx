@@ -9,13 +9,19 @@ import { toast } from "@/hooks/use-toast";
 import opticaImage from "@/assets/feracon-login.png";
 import logoFeracon from "@/assets/logo-feracon-dark.png";
 
+const clientRoutes = ["/crm", "/conversas", "/pipeline", "/agenda", "/clientes", "/configuracoes"];
+
 export default function ClientLoginPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const LOGIN_GATE_KEY = "feracon.loginGate.passed";
   const from = (location.state as { from?: { pathname?: string; search?: string } } | null)?.from;
-  const redirectTo = from?.pathname ? `${from.pathname}${from.search ?? ""}` : "/crm";
-  const { loading: authLoading, session, user } = useAuth();
-  const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
+  const fromPath = from?.pathname;
+  const redirectTo = fromPath && clientRoutes.some((path) => fromPath === path || fromPath.startsWith(`${path}/`))
+    ? `${fromPath}${from?.search ?? ""}`
+    : "/crm";
+  const { loading: authLoading, session, isSuperadmin, user } = useAuth();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -23,40 +29,54 @@ export default function ClientLoginPage() {
   const [signingOut, setSigningOut] = useState(false);
 
   if (authLoading) return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Carregando…</div>;
-  if (session) return <Navigate to={redirectTo} replace />;
+  if (session && isSuperadmin) return <Navigate to="/admin/dashboard" replace />;
+  if (session) {
+    sessionStorage.setItem(LOGIN_GATE_KEY, "1");
+    return <Navigate to={redirectTo} replace />;
+  }
 
   async function handleSignOut() {
     setSigningOut(true);
-    try { await supabase.auth.signOut(); } finally { setSigningOut(false); }
+    try {
+      sessionStorage.removeItem(LOGIN_GATE_KEY);
+      await supabase.auth.signOut();
+    } finally {
+      setSigningOut(false);
+    }
+  }
+
+  function handleContinue() {
+    sessionStorage.setItem(LOGIN_GATE_KEY, "1");
+    navigate(redirectTo, { replace: true });
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
-      const normalizedEmail = email.trim().toLowerCase();
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email: normalizedEmail,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/crm`,
-            data: { display_name: fullName.trim() },
-          },
+        const normalizedEmail = email.trim().toLowerCase();
+        const { error: registerError } = await supabase.functions.invoke("register-client", {
+          body: { email: normalizedEmail, password, fullName, tenantName: fullName },
         });
-        if (error) throw error;
+        if (registerError) {
+          let message = registerError.message;
+          const response = (registerError as { context?: unknown }).context;
+          if (response instanceof Response) {
+            const body = await response.clone().json().catch(() => null) as { error?: string } | null;
+            message = body?.error ?? message;
+          }
+          throw new Error(message);
+        }
+
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+        if (signInError) throw signInError;
         toast({ title: "Conta criada", description: "Bem-vindo!" });
-      } else if (mode === "forgot") {
-        const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-          redirectTo: `${window.location.origin}/reset-password`,
-        });
-        if (error) throw error;
-        toast({ title: "Email enviado", description: "Confira sua caixa de entrada para redefinir a senha." });
-        setMode("signin");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
         if (error) throw error;
       }
+      sessionStorage.setItem(LOGIN_GATE_KEY, "1");
     } catch (err: unknown) {
       const raw = err instanceof Error ? err.message : "";
       let friendly = "Não foi possível continuar. Tente novamente.";
@@ -71,74 +91,68 @@ export default function ClientLoginPage() {
     }
   }
 
-  const title = mode === "signin" ? "Entre na sua conta" : mode === "signup" ? "Crie sua conta" : "Recuperar senha";
-
   return (
     <main className="grid min-h-screen bg-white text-slate-900 lg:grid-cols-2">
+      {/* Visual side */}
       <aside className="relative h-80 overflow-hidden sm:h-96 lg:order-last lg:h-auto">
-        <img src={opticaImage} alt="Consórcio Feracon" className="absolute inset-0 h-full w-full object-cover object-[center_20%] lg:object-center" />
+        <img src={opticaImage} alt="Consórcio Feracon" width={1280} height={1600} className="absolute inset-0 h-full w-full object-cover object-[center_20%] lg:object-center" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
         <div className="absolute bottom-6 left-6 right-6 lg:bottom-12 lg:left-12 lg:right-12">
           <span className="inline-block rounded-full bg-[hsl(0_84%_50%)] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-md">CRM Feracon</span>
           <h2 className="mt-3 font-display text-2xl font-bold leading-tight text-white drop-shadow-lg lg:text-4xl">O CRM Equipe Feracon</h2>
+          <p className="mt-2 max-w-md text-sm text-white/90 lg:text-base">Leads, atendimento e vendas conectados em um só lugar.</p>
         </div>
       </aside>
 
+      {/* Form side */}
       <section className="relative flex items-center justify-center p-6 sm:p-10 lg:p-16">
         <div className="relative z-10 w-full max-w-sm">
           <div className="mb-8 flex flex-col items-start">
             <img src={logoFeracon} alt="Consórcio Feracon" className="mb-5 h-20 w-auto object-contain" />
-            <h1 className="font-display text-2xl font-bold">{title}</h1>
             <p className="mt-1.5 text-sm text-slate-500">
-              {mode === "signup" ? "Use seu email para começar" : mode === "forgot" ? "Enviaremos um link para você redefinir" : "Bem-vindo de volta"}
+              {session ? "Você já está conectado" : mode === "signin" ? "Entre na sua conta de cliente" : "Crie sua conta de cliente"}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === "signup" && (
-              <div className="space-y-1.5">
-                <Label htmlFor="fullname">Seu nome</Label>
-                <Input id="fullname" value={fullName} onChange={(e) => setFullName(e.target.value)} required minLength={2} className="h-11" />
+          {session ? (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-500">Sessão ativa</p>
+                <p className="mt-1 break-all text-sm font-semibold text-slate-900">{user?.email}</p>
               </div>
-            )}
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="h-11" />
+              <Button
+                type="button"
+                onClick={handleContinue}
+                className="h-11 w-full bg-[hsl(0_84%_50%)] text-white shadow-md transition hover:bg-[hsl(0_84%_44%)]"
+              >
+                Continuar
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleSignOut}
+                disabled={signingOut}
+                className="h-11 w-full"
+              >
+                {signingOut ? "Saindo…" : "Sair e entrar com outra conta"}
+              </Button>
             </div>
-            {mode !== "forgot" && (
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Senha</Label>
-                  {mode === "signin" && (
-                    <button type="button" onClick={() => setMode("forgot")} className="text-xs text-[hsl(0_84%_50%)] hover:underline">
-                      Esqueci minha senha
-                    </button>
-                  )}
+          ) : (
+            <>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="client-email" className="text-slate-700">Email</Label>
+                  <Input id="client-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@feracon.com" required className="h-11 border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus-visible:ring-[hsl(0_84%_50%)]" />
                 </div>
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required className="h-11" />
-              </div>
-            )}
-            <Button type="submit" className="h-11 w-full bg-[hsl(0_84%_50%)] text-white hover:bg-[hsl(0_84%_44%)]" disabled={loading}>
-              {loading ? "Aguarde…" : mode === "signup" ? "Criar conta" : mode === "forgot" ? "Enviar link" : "Entrar"}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center text-sm text-slate-500">
-            {mode === "signin" && (
-              <>Não tem conta? <button onClick={() => setMode("signup")} className="font-medium text-[hsl(0_84%_50%)] hover:underline">Criar conta</button></>
-            )}
-            {mode === "signup" && (
-              <>Já tem conta? <button onClick={() => setMode("signin")} className="font-medium text-[hsl(0_84%_50%)] hover:underline">Entrar</button></>
-            )}
-            {mode === "forgot" && (
-              <button onClick={() => setMode("signin")} className="font-medium text-[hsl(0_84%_50%)] hover:underline">Voltar ao login</button>
-            )}
-          </div>
-
-          {user && (
-            <Button type="button" variant="outline" onClick={handleSignOut} disabled={signingOut} className="mt-4 h-11 w-full">
-              {signingOut ? "Saindo…" : "Sair"}
-            </Button>
+                <div className="space-y-1.5">
+                  <Label htmlFor="client-password" className="text-slate-700">Senha</Label>
+                  <Input id="client-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required className="h-11 border-slate-200 bg-slate-50 text-slate-900 focus-visible:ring-[hsl(0_84%_50%)]" />
+                </div>
+                <Button type="submit" className="h-11 w-full bg-[hsl(0_84%_50%)] text-white shadow-md transition hover:bg-[hsl(0_84%_44%)]" disabled={loading}>
+                  {loading ? "Aguarde…" : "Entrar"}
+                </Button>
+              </form>
+            </>
           )}
 
           <p className="mt-10 text-xs text-slate-400">© {new Date().getFullYear()} Consórcio Feracon</p>
