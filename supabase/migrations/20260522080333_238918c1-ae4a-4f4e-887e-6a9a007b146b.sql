@@ -1,1 +1,0 @@
-UPDATE public.leads SET stage = 'historico' WHERE source = 'WhatsApp' AND stage IN ('novo','novo_lead','new') AND NOT imported_from_sheet;
