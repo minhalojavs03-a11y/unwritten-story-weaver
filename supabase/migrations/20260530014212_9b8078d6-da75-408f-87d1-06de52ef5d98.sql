@@ -1,0 +1,2 @@
+INSERT INTO public.whatsapp_instances (tenant_id, instance_name, server_url, instance_token, status, is_connected)
+VALUES ('9ecb99e2-50ee-404f-920b-81cd94cc685e', 'Principal', 'https://ipazua.uazapi.com', 'd671fe9f-c73d-4ea9-8a76-e81997929745', 'connecting', false);
