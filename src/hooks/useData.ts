@@ -679,9 +679,19 @@ export function useAllInstances() {
   return useQuery({
     queryKey: ["all_instances"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("whatsapp_instances").select("*, tenant:tenants(name)").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("whatsapp_instances").select("*").order("created_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      const instances = data ?? [];
+      const tenantIds = [...new Set(instances.map((instance) => instance.tenant_id).filter(Boolean))];
+      if (tenantIds.length === 0) return instances.map((instance) => ({ ...instance, tenant: null }));
+
+      const { data: tenants } = await supabase.from("tenants").select("id, name").in("id", tenantIds);
+      const tenantById = new Map((tenants ?? []).map((tenant) => [tenant.id, tenant]));
+
+      return instances.map((instance) => ({
+        ...instance,
+        tenant: tenantById.get(instance.tenant_id) ?? null,
+      }));
     },
   });
 }
