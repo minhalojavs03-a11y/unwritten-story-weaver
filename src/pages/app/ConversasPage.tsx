@@ -68,10 +68,15 @@ export default function ConversasPage() {
   const autoImportAttemptedRef = useRef(false);
 
   useEffect(() => {
-    if (!tenantId || isLoading || conversations.length > 0 || autoImportAttemptedRef.current) return;
+    if (!tenantId || isLoading || autoImportAttemptedRef.current) return;
     autoImportAttemptedRef.current = true;
     let cancelled = false;
     (async () => {
+      const { count: messageCount } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("tenant_id", tenantId);
+      if (cancelled || (conversations.length > 0 && (messageCount ?? 0) > 0)) return;
       const { data: connectedInstances } = await supabase
         .from("whatsapp_instances")
         .select("id")
@@ -85,6 +90,7 @@ export default function ConversasPage() {
       })));
       if (cancelled) return;
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
       queryClient.invalidateQueries({ queryKey: ["leads"] });
     })();
     return () => { cancelled = true; };
