@@ -16,7 +16,8 @@ export function useEffectiveRole() {
 
   return {
     isSuperadmin,
-    isOwner: isOwner && memberIsOwner,
+    // Superadmin sempre tem poderes de dono, independente do membro ativo
+    isOwner: isSuperadmin || (isOwner && memberIsOwner),
     activeMember: member,
   };
 }
