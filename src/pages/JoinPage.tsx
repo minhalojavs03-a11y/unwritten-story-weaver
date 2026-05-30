@@ -30,11 +30,12 @@ export default function JoinPage() {
     if (!token) return;
     (async () => {
       const { data, error } = await supabase.rpc("get_role_invite_by_token" as never, { _token: token } as never);
-      if (error || !data || (Array.isArray(data) && data.length === 0)) {
+      const arr = data as unknown as InviteInfo[] | InviteInfo | null;
+      if (error || !arr || (Array.isArray(arr) && arr.length === 0)) {
         setError("Link inválido ou expirado");
         return;
       }
-      const row = (Array.isArray(data) ? data[0] : data) as InviteInfo;
+      const row = (Array.isArray(arr) ? arr[0] : arr) as InviteInfo;
       if (!row.is_active) setError("Este link foi desativado");
       else if (row.expires_at && new Date(row.expires_at) < new Date()) setError("Link expirado");
       else if (row.max_uses != null && row.uses_count >= row.max_uses) setError("Limite de usos atingido");

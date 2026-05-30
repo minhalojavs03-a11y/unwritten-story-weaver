@@ -24,6 +24,7 @@ export const ROLE_LABELS: Record<TenantRole, string> = {
   owner: "Dono da Unidade",
   supervisor: "Supervisor",
   consultant: "Consultor",
+  consultor: "Consultor",
   attendant: "Atendente",
 };
 
