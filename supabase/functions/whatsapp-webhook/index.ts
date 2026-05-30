@@ -691,13 +691,8 @@ Deno.serve(async (req: Request) => {
 
     const { fromMe, isGroup, phone, text: rawText, externalId, pushName, avatar, media } = extractMessage(payload);
     const hasMedia = !!media.kind && (!!media.url || !!media.base64);
-    if (fromMe || isGroup || !phone || (!rawText && !hasMedia)) {
-      console.log("webhook ignored", JSON.stringify({ fromMe, isGroup, phone, hasText: !!rawText, hasMedia, payload }).slice(0, 2000));
-      return ok({ ignored: true });
-    }
 
-    // Descarta mensagens com timestamp antigo (> 5 min) — tipicamente histórico
-    // empurrado pelo provedor após sincronização inicial da instância.
+    // Timestamp da mensagem (usado para descartar history-sync residual)
     const tsRaw =
       payload?.messageTimestamp ?? payload?.message?.messageTimestamp ??
       payload?.data?.messageTimestamp ?? payload?.t ?? payload?.timestamp ??
@@ -707,12 +702,91 @@ Deno.serve(async (req: Request) => {
       const n = Number(tsRaw);
       if (!isNaN(n) && n > 0) tsMs = n < 1e12 ? n * 1000 : n;
     }
-    if (tsMs && Date.now() - tsMs > 5 * 60 * 1000) {
-      console.log("webhook ignored: old message", new Date(tsMs).toISOString());
-      return ok({ ignored: "old_message", age_seconds: Math.round((Date.now() - tsMs) / 1000) });
-    }
+    const isOldMessage = !!(tsMs && Date.now() - tsMs > 5 * 60 * 1000);
 
     const text = rawText ?? (hasMedia ? (media.caption ?? MEDIA_PLACEHOLDER[media.kind!] ?? "📎 Mídia") : "");
+
+    // Persistência "raw" exclusiva do superadmin:
+    // grupos, mensagens enviadas pelo próprio número e history-sync residual NÃO
+    // viram lead nem disparam IA, mas ficam salvos como conversation sem lead_id.
+    // A RLS exige lead_id IS NOT NULL para donos/supervisores, então só o
+    // superadmin enxerga esse conteúdo.
+    const shouldPersistRawOnly = fromMe || isGroup || isOldMessage;
+    if (shouldPersistRawOnly) {
+      if (!phone || (!rawText && !hasMedia)) {
+        console.log("webhook ignored (raw skip)", JSON.stringify({ fromMe, isGroup, phone, hasText: !!rawText, hasMedia }).slice(0, 500));
+        return ok({ ignored: true });
+      }
+      try {
+        const peerKey = `${isGroup ? "group" : "dm"}:${phone}`;
+        let { data: rawConv } = await admin
+          .from("conversations")
+          .select("*")
+          .eq("tenant_id", instance.tenant_id)
+          .eq("whatsapp_instance_id", instance.id)
+          .is("lead_id", null)
+          .filter("metadata->>peer_key", "eq", peerKey)
+          .maybeSingle();
+        if (!rawConv) {
+          const { data: createdRaw } = await admin.from("conversations").insert({
+            tenant_id: instance.tenant_id,
+            whatsapp_instance_id: instance.id,
+            lead_id: null,
+            last_message_preview: text.slice(0, 120),
+            last_message_at: new Date(tsMs ?? Date.now()).toISOString(),
+            unread_count: 0,
+            metadata: {
+              peer_key: peerKey,
+              peer_phone: phone,
+              is_group: isGroup,
+              push_name: pushName,
+              raw_only: true,
+            },
+          }).select("*").single();
+          rawConv = createdRaw;
+        } else {
+          await admin.from("conversations").update({
+            last_message_preview: text.slice(0, 120),
+            last_message_at: new Date(tsMs ?? Date.now()).toISOString(),
+          }).eq("id", rawConv.id);
+        }
+        let rawMediaUrl: string | null = null;
+        let rawMime: string | null = null;
+        if (hasMedia && rawConv) {
+          const r = await uploadMediaToStorage(admin, instance, instance.tenant_id, rawConv.id, media);
+          rawMediaUrl = r.url;
+          rawMime = r.mime;
+        }
+        await admin.from("messages").insert({
+          tenant_id: instance.tenant_id,
+          conversation_id: rawConv?.id,
+          lead_id: null,
+          whatsapp_instance_id: instance.id,
+          direction: fromMe ? "outbound" : "inbound",
+          body: text,
+          external_id: externalId,
+          message_type: hasMedia ? (media.kind ?? "text") : "text",
+          media_url: rawMediaUrl,
+          metadata: {
+            raw_only: true,
+            is_group: isGroup,
+            from_me: fromMe,
+            old_message: isOldMessage,
+            push_name: pushName,
+            ...(hasMedia ? { media: { kind: media.kind, mime: rawMime ?? media.mime, duration: media.durationSec, file_name: media.fileName, source_url: media.url } } : {}),
+          },
+        });
+      } catch (e) {
+        console.error("raw-only persist error", e);
+      }
+      return ok({ persisted_raw: true, reason: fromMe ? "from_me" : isGroup ? "group" : "old" });
+    }
+
+    if (!phone || (!rawText && !hasMedia)) {
+      console.log("webhook ignored", JSON.stringify({ fromMe, isGroup, phone, hasText: !!rawText, hasMedia }).slice(0, 500));
+      return ok({ ignored: true });
+    }
+
 
     // Persist lead + message (best-effort)
     let isNewLead = false;
