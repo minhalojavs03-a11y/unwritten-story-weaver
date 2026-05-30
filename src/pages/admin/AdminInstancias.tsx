@@ -20,6 +20,7 @@ export default function AdminInstancias() {
   const [instanceToken, setInstanceToken] = useState("");
   const [busy, setBusy] = useState(false);
   const syncedRef = useRef(false);
+  const prevStatusRef = useRef<Record<string, boolean>>({});
 
   useEffect(() => {
     if (syncedRef.current || instances.length === 0) return;
@@ -27,6 +28,38 @@ export default function AdminInstancias() {
     Promise.allSettled(instances.map((i: any) => supabase.functions.invoke("whatsapp-manage", {
       body: { action: "status", tenant_id: i.tenant_id },
     }))).finally(() => qc.invalidateQueries({ queryKey: ["all_instances"] }));
+  }, [instances, qc]);
+
+  // Detecta mudanças de conexão e notifica via toast
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    const next: Record<string, boolean> = {};
+    for (const i of instances as any[]) {
+      const connected = !!(i.is_connected || i.status === "connected");
+      next[i.id] = connected;
+      if (i.id in prev && prev[i.id] !== connected) {
+        if (connected) {
+          toast({ title: "✅ Número conectado", description: `${i.tenant?.name ?? "Instância"}${i.phone_number ? ` · ${i.phone_number}` : ""}` });
+        } else {
+          toast({ title: "⚠️ Número desconectado", description: `${i.tenant?.name ?? "Instância"}`, variant: "destructive" });
+        }
+      }
+    }
+    prevStatusRef.current = next;
+  }, [instances]);
+
+  // Polling: a cada 5s atualiza o status das instâncias ainda não conectadas
+  useEffect(() => {
+    if (instances.length === 0) return;
+    const id = setInterval(async () => {
+      const pending = (instances as any[]).filter((i) => !(i.is_connected || i.status === "connected"));
+      if (pending.length === 0) return;
+      await Promise.allSettled(pending.map((i) => supabase.functions.invoke("whatsapp-manage", {
+        body: { action: "status", instance_id: i.id },
+      })));
+      qc.invalidateQueries({ queryKey: ["all_instances"] });
+    }, 5000);
+    return () => clearInterval(id);
   }, [instances, qc]);
 
   async function createInstance() {
