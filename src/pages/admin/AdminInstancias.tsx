@@ -39,7 +39,8 @@ export default function AdminInstancias() {
       next[i.id] = connected;
       if (i.id in prev && prev[i.id] !== connected) {
         if (connected) {
-          toast({ title: "✅ Número conectado", description: `${i.tenant?.name ?? "Instância"}${i.phone_number ? ` · ${i.phone_number}` : ""}` });
+          toast({ title: "✅ Número conectado", description: `${i.tenant?.name ?? "Instância"}${i.phone_number ? ` · ${i.phone_number}` : ""} — importando conversas…` });
+          supabase.functions.invoke("whatsapp-manage", { body: { action: "sync-history", instance_id: i.id } }).catch((e) => console.warn("auto sync-history failed", e));
         } else {
           toast({ title: "⚠️ Número desconectado", description: `${i.tenant?.name ?? "Instância"}`, variant: "destructive" });
         }
