@@ -585,29 +585,32 @@ async function syncHistory(admin: any, tenantId: string, instance: any, maxChats
       .maybeSingle();
     const cls = classifyByKeywords(lastPreview);
     if (!lead) {
-      const { data: created } = await admin.from("leads").insert({
+      const { data: created, error: createLeadError } = await admin.from("leads").insert({
         tenant_id: tenantId, phone: canonical, name, source: "WhatsApp",
-        avatar_url: avatar,
+        whatsapp_instance_id: instance.id,
         last_message_at: lastAt ?? new Date().toISOString(),
         temperature: cls.temperature,
         stage: "historico",
-        metadata: { imported_from_history: true },
+        metadata: { imported_from_history: true, ...(avatar ? { whatsapp_avatar_url: avatar } : {}) },
       }).select("*").single();
+      if (createLeadError) console.error("insert lead failed", createLeadError.message, { phone: canonical, name });
       lead = created;
     } else {
       const patch: Record<string, any> = {};
       if (lead.phone !== canonical) patch.phone = canonical;
       if ((!lead.name || lead.name === lead.phone) && name && name !== phone) patch.name = name;
-      if (shouldReplaceAvatar(lead.avatar_url, avatar)) patch.avatar_url = avatar;
+      if (!lead.whatsapp_instance_id) patch.whatsapp_instance_id = instance.id;
       if (lastAt) patch.last_message_at = lastAt;
       // Only refresh classification if lead is still in initial state
       if ((lead.stage ?? "novo") === "novo" && cls.stage) patch.stage = cls.stage;
       if ((lead.temperature ?? "warm") === "warm" && cls.temperature !== "warm") patch.temperature = cls.temperature;
       // Garante sinalizador de importação histórica
       const meta = (lead.metadata ?? {}) as Record<string, any>;
-      if (!meta.imported_from_history) patch.metadata = { ...meta, imported_from_history: true };
+      const metadataPatch = { ...meta, imported_from_history: true, ...(avatar && shouldReplaceAvatar(meta.whatsapp_avatar_url, avatar) ? { whatsapp_avatar_url: avatar } : {}) };
+      if (JSON.stringify(metadataPatch) !== JSON.stringify(meta)) patch.metadata = metadataPatch;
       if (Object.keys(patch).length) {
-        const { data: upd } = await admin.from("leads").update(patch).eq("id", lead.id).select("*").single();
+        const { data: upd, error: updateLeadError } = await admin.from("leads").update(patch).eq("id", lead.id).select("*").single();
+        if (updateLeadError) console.error("update lead failed", updateLeadError.message, { lead_id: lead.id });
         if (upd) lead = upd;
       }
     }
@@ -616,13 +619,18 @@ async function syncHistory(admin: any, tenantId: string, instance: any, maxChats
     // upsert conversation
     let { data: conv } = await admin.from("conversations").select("*").eq("lead_id", lead.id).maybeSingle();
     if (!conv) {
-      const { data: createdConv } = await admin.from("conversations").insert({
-        tenant_id: tenantId, lead_id: lead.id,
+      const { data: createdConv, error: createConvError } = await admin.from("conversations").insert({
+        tenant_id: tenantId, lead_id: lead.id, whatsapp_instance_id: instance.id,
         last_message_preview: lastPreview?.slice(0, 120) ?? null,
         last_message_at: lastAt,
         metadata: { imported_from_history: true },
       }).select("*").single();
+      if (createConvError) console.error("insert conversation failed", createConvError.message, { lead_id: lead.id });
       conv = createdConv;
+    } else if (!conv.whatsapp_instance_id) {
+      const { data: updatedConv, error: updateConvError } = await admin.from("conversations").update({ whatsapp_instance_id: instance.id }).eq("id", conv.id).select("*").single();
+      if (updateConvError) console.error("update conversation instance failed", updateConvError.message, { conversation_id: conv.id });
+      if (updatedConv) conv = updatedConv;
     }
     if (!conv) continue;
     importedChats++;
@@ -669,6 +677,7 @@ async function syncHistory(admin: any, tenantId: string, instance: any, maxChats
         tenant_id: tenantId,
         conversation_id: conv.id,
         lead_id: lead.id,
+        whatsapp_instance_id: instance.id,
         direction: fromMe ? "outbound" : "inbound",
         body: text,
         external_id: extId,
