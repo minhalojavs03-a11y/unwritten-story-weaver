@@ -1835,6 +1835,51 @@ export type Database = {
           },
         ]
       }
+      tenant_role_invites: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          role: Database["public"]["Enums"]["tenant_role"]
+          role_label: string | null
+          tenant_id: string
+          token: string
+          updated_at: string
+          uses_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          role: Database["public"]["Enums"]["tenant_role"]
+          role_label?: string | null
+          tenant_id: string
+          token?: string
+          updated_at?: string
+          uses_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          role?: Database["public"]["Enums"]["tenant_role"]
+          role_label?: string | null
+          tenant_id?: string
+          token?: string
+          updated_at?: string
+          uses_count?: number
+        }
+        Relationships: []
+      }
       tenants: {
         Row: {
           created_at: string
@@ -2047,6 +2092,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_role_invite: {
+        Args: { _token: string }
+        Returns: {
+          role: Database["public"]["Enums"]["tenant_role"]
+          tenant_id: string
+        }[]
+      }
       accept_tenant_invite: {
         Args: { _token: string }
         Returns: {
@@ -2068,6 +2120,7 @@ export type Database = {
         Returns: string
       }
       current_tenant_id: { Args: never; Returns: string }
+      ensure_tenant_role_invites: { Args: never; Returns: undefined }
       gamification_executive_overview: {
         Args: { _tenant_id: string }
         Returns: {
@@ -2125,6 +2178,19 @@ export type Database = {
           username: string
         }[]
       }
+      get_role_invite_by_token: {
+        Args: { _token: string }
+        Returns: {
+          expires_at: string
+          is_active: boolean
+          max_uses: number
+          role: Database["public"]["Enums"]["tenant_role"]
+          role_label: string
+          tenant_id: string
+          tenant_name: string
+          uses_count: number
+        }[]
+      }
       get_tenant_role: {
         Args: { _tenant_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["tenant_role"]
@@ -2151,6 +2217,7 @@ export type Database = {
           username: string
         }[]
       }
+      regenerate_role_invite: { Args: { _id: string }; Returns: string }
       release_lead: { Args: { _lead_id: string }; Returns: undefined }
       set_ai_pre_attendance: {
         Args: { _enabled: boolean; _lead_id: string }
