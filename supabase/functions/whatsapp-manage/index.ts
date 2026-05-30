@@ -352,17 +352,34 @@ function pickArray(d: any): any[] {
   if (Array.isArray(d)) return d;
   if (Array.isArray(d?.chats)) return d.chats;
   if (Array.isArray(d?.data)) return d.data;
+  if (Array.isArray(d?.data?.chats)) return d.data.chats;
+  if (Array.isArray(d?.data?.messages)) return d.data.messages;
+  if (Array.isArray(d?.data?.items)) return d.data.items;
+  if (Array.isArray(d?.data?.results)) return d.data.results;
   if (Array.isArray(d?.messages)) return d.messages;
+  if (Array.isArray(d?.items)) return d.items;
   if (Array.isArray(d?.results)) return d.results;
   if (Array.isArray(d?.response)) return d.response;
+  if (Array.isArray(d?.response?.chats)) return d.response.chats;
+  if (Array.isArray(d?.response?.messages)) return d.response.messages;
+  if (Array.isArray(d?.response?.items)) return d.response.items;
+  if (Array.isArray(d?.result?.chats)) return d.result.chats;
+  if (Array.isArray(d?.result?.messages)) return d.result.messages;
+  if (Array.isArray(d?.result?.items)) return d.result.items;
   return [];
 }
 
 function extractMsgText(m: any): string | null {
+  const content = m?.content;
+  if (typeof content === "string") return content;
   return (
     m?.text ?? m?.body ?? m?.content ?? m?.caption ??
+    m?.message?.content ??
     m?.message?.conversation ??
     m?.message?.extendedTextMessage?.text ??
+    m?.message?.imageMessage?.caption ??
+    m?.message?.videoMessage?.caption ??
+    m?.message?.documentMessage?.caption ??
     m?.messageText ?? null
   );
 }
