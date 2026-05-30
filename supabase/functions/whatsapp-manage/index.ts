@@ -693,6 +693,29 @@ async function syncHistory(admin: any, tenantId: string, instance: any, maxChats
   return { ok: true, chats: importedChats, messages: importedMsgs, skipped, total_chats: chats.length };
 }
 
+async function autoSyncHistoryOnce(admin: any, tenantId: string, instance: any, reason: string) {
+  if (!instance?.id || !(instance.is_connected || instance.status === "connected")) return null;
+  const metadata = (instance.metadata ?? {}) as Record<string, any>;
+  if (metadata.history_sync_started_at || metadata.history_sync_completed_at) return null;
+
+  const startedAt = new Date().toISOString();
+  await admin.from("whatsapp_instances").update({
+    metadata: { ...metadata, history_sync_started_at: startedAt, history_sync_reason: reason },
+  }).eq("id", instance.id);
+
+  const result = await syncHistory(admin, tenantId, instance, 80, 20);
+  await admin.from("whatsapp_instances").update({
+    metadata: {
+      ...metadata,
+      history_sync_started_at: startedAt,
+      history_sync_completed_at: new Date().toISOString(),
+      history_sync_reason: reason,
+      history_sync_result: result,
+    },
+  }).eq("id", instance.id);
+  return result;
+}
+
 async function syncProviderStatus(admin: any, instance: any): Promise<{ instance: any; connected: boolean }> {
   if (!instance?.server_url || !instance?.instance_token) return { instance, connected: !!instance?.is_connected };
   try {
