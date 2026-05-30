@@ -487,7 +487,8 @@ async function fetchChats(instance: any): Promise<any[]> {
 
 async function fetchMessages(instance: any, chatId: string, limit = 50): Promise<any[]> {
   const tryEndpoints = [
-    { url: `${instance.server_url}/message/find`, method: "POST", body: { chatid: chatId, limit, sort: "-messageTimestamp" } },
+    { url: `${instance.server_url}/message/find`, method: "POST", body: { chatId, limit } },
+    { url: `${instance.server_url}/message/find`, method: "POST", body: { chatId, limit, cursor: "" } },
     { url: `${instance.server_url}/message/find`, method: "POST", body: { chatid: chatId, limit } },
     { url: `${instance.server_url}/chat/messages`, method: "POST", body: { chatid: chatId, limit } },
   ];
