@@ -1219,6 +1219,11 @@ Deno.serve(async (req: Request) => {
           }).eq("id", instance.id).select("*").single();
           instance = upd ?? { ...instance, is_connected: true, status: "connected", qr_code: null, phone_number: newPhone };
           await registerWebhook(instance, webhookUrl);
+          try {
+            await autoSyncHistoryOnce(admin, tenantId, instance, "qrcode_connected");
+          } catch (e) {
+            console.error("auto sync-history after qrcode failed:", e);
+          }
         }
         return json({ qrcode, connected, instance: sanitize(instance) });
       }
@@ -1231,6 +1236,11 @@ Deno.serve(async (req: Request) => {
         if (connected) {
           // Best-effort: ensure webhook is registered on the provider for inbound messages
           await registerWebhook(instance, webhookUrl);
+          try {
+            await autoSyncHistoryOnce(admin, tenantId, instance, "status_connected");
+          } catch (e) {
+            console.error("auto sync-history after status failed:", e);
+          }
         }
         return json({ instance: sanitize(instance), connected });
       }
@@ -1244,22 +1254,12 @@ Deno.serve(async (req: Request) => {
       case "sync-history": {
         if (!instance) return json({ error: "sem instância" }, 404);
         if (!instance.is_connected) return json({ error: "instância não conectada" }, 400);
-        // Modo cauteloso: pequenos lotes para evitar risco de bloqueio do número
-        const maxChats = body?.maxChats ?? 50;
-        const msgsPerChat = body?.msgsPerChat ?? 15;
-        // Run in background to avoid edge function timeouts / dropped client connections
-        // when there are hundreds of chats. The UI will reflect imported conversations
-        // progressively as they land via realtime/polling.
-        const task = (async () => {
-          try {
-            const r = await syncHistory(admin, tenantId, instance, maxChats, msgsPerChat);
-            console.log("syncHistory done:", JSON.stringify(r));
-          } catch (e) {
-            console.error("syncHistory background failed:", e);
-          }
-        })();
-        try { (globalThis as any).EdgeRuntime?.waitUntil?.(task); } catch { /* ignore */ }
-        return json({ ok: true, started: true, message: "Importação iniciada. As conversas vão aparecendo aos poucos." });
+        // Executa na própria requisição para não perder a importação quando o Edge encerrar a execução.
+        const maxChats = body?.maxChats ?? 80;
+        const msgsPerChat = body?.msgsPerChat ?? 20;
+        const r = await syncHistory(admin, tenantId, instance, maxChats, msgsPerChat);
+        console.log("syncHistory done:", JSON.stringify(r));
+        return json({ ok: true, ...r, message: `Importação concluída: ${r.chats} conversas e ${r.messages} mensagens.` });
       }
 
       case "disconnect": {
