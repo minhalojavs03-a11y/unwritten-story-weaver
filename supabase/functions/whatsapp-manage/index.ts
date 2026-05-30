@@ -507,6 +507,7 @@ async function fetchMessages(instance: any, chatId: string, limit = 50): Promise
     { url: `${instance.server_url}/message/find`, method: "POST", body: { chatId, limit } },
     { url: `${instance.server_url}/message/find`, method: "POST", body: { chatId, limit, cursor: "" } },
     { url: `${instance.server_url}/message/find`, method: "POST", body: { chatid: chatId, limit } },
+    { url: `${instance.server_url}/message/find`, method: "POST", body: { where: { key: { remoteJid: chatId } }, page: 1, offset: limit } },
     { url: `${instance.server_url}/chat/messages`, method: "POST", body: { chatid: chatId, limit } },
   ];
   for (const ep of tryEndpoints) {
