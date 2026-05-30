@@ -718,49 +718,97 @@ Deno.serve(async (req: Request) => {
         return ok({ ignored: true });
       }
       try {
-        const peerKey = `${isGroup ? "group" : "dm"}:${phone}`;
-        let { data: rawConv } = await admin
-          .from("conversations")
-          .select("*")
-          .eq("tenant_id", instance.tenant_id)
-          .eq("whatsapp_instance_id", instance.id)
-          .is("lead_id", null)
-          .filter("metadata->>peer_key", "eq", peerKey)
-          .maybeSingle();
-        if (!rawConv) {
-          const { data: createdRaw } = await admin.from("conversations").insert({
-            tenant_id: instance.tenant_id,
-            whatsapp_instance_id: instance.id,
-            lead_id: null,
-            last_message_preview: text.slice(0, 120),
-            last_message_at: new Date(tsMs ?? Date.now()).toISOString(),
-            unread_count: 0,
-            metadata: {
-              peer_key: peerKey,
-              peer_phone: phone,
-              is_group: isGroup,
-              push_name: pushName,
-              raw_only: true,
-            },
-          }).select("*").single();
-          rawConv = createdRaw;
-        } else {
-          await admin.from("conversations").update({
-            last_message_preview: text.slice(0, 120),
-            last_message_at: new Date(tsMs ?? Date.now()).toISOString(),
-          }).eq("id", rawConv.id);
+        // Para mensagens fromMe em DM (não grupo), tente acoplar à conversa do
+        // lead existente — assim a resposta do consultor pelo WhatsApp pessoal
+        // aparece no thread do lead para toda a equipe, não só para o superadmin.
+        let attachedLead: any = null;
+        let attachedConv: any = null;
+        if (fromMe && !isGroup && phone) {
+          const variants = phoneVariants(phone);
+          const { data: leadMatch } = await admin
+            .from("leads")
+            .select("*")
+            .eq("tenant_id", instance.tenant_id)
+            .in("phone", variants)
+            .order("created_at", { ascending: true })
+            .limit(1)
+            .maybeSingle();
+          if (leadMatch) {
+            attachedLead = leadMatch;
+            const { data: convMatch } = await admin
+              .from("conversations")
+              .select("*")
+              .eq("lead_id", leadMatch.id)
+              .eq("whatsapp_instance_id", instance.id)
+              .maybeSingle();
+            if (convMatch) {
+              attachedConv = convMatch;
+              await admin.from("conversations").update({
+                last_message_preview: text.slice(0, 120),
+                last_message_at: new Date(tsMs ?? Date.now()).toISOString(),
+              }).eq("id", convMatch.id);
+            } else {
+              const { data: createdConv } = await admin.from("conversations").insert({
+                tenant_id: instance.tenant_id,
+                lead_id: leadMatch.id,
+                whatsapp_instance_id: instance.id,
+                last_message_preview: text.slice(0, 120),
+                last_message_at: new Date(tsMs ?? Date.now()).toISOString(),
+                unread_count: 0,
+              }).select("*").single();
+              attachedConv = createdConv;
+            }
+          }
         }
+
+        let convId: string | null = attachedConv?.id ?? null;
+        if (!convId) {
+          const peerKey = `${isGroup ? "group" : "dm"}:${phone}`;
+          let { data: rawConv } = await admin
+            .from("conversations")
+            .select("*")
+            .eq("tenant_id", instance.tenant_id)
+            .eq("whatsapp_instance_id", instance.id)
+            .is("lead_id", null)
+            .filter("metadata->>peer_key", "eq", peerKey)
+            .maybeSingle();
+          if (!rawConv) {
+            const { data: createdRaw } = await admin.from("conversations").insert({
+              tenant_id: instance.tenant_id,
+              whatsapp_instance_id: instance.id,
+              lead_id: null,
+              last_message_preview: text.slice(0, 120),
+              last_message_at: new Date(tsMs ?? Date.now()).toISOString(),
+              unread_count: 0,
+              metadata: {
+                peer_key: peerKey,
+                peer_phone: phone,
+                is_group: isGroup,
+                push_name: pushName,
+                raw_only: true,
+              },
+            }).select("*").single();
+            rawConv = createdRaw;
+          } else {
+            await admin.from("conversations").update({
+              last_message_preview: text.slice(0, 120),
+              last_message_at: new Date(tsMs ?? Date.now()).toISOString(),
+            }).eq("id", rawConv.id);
+          }
+          convId = rawConv?.id ?? null;
+        }
+
         let rawMediaUrl: string | null = null;
         let rawMime: string | null = null;
-        if (hasMedia && rawConv) {
-          const r = await uploadMediaToStorage(admin, instance, instance.tenant_id, rawConv.id, media);
+        if (hasMedia && convId) {
+          const r = await uploadMediaToStorage(admin, instance, instance.tenant_id, convId, media);
           rawMediaUrl = r.url;
           rawMime = r.mime;
         }
         await admin.from("messages").insert({
           tenant_id: instance.tenant_id,
-          conversation_id: rawConv?.id,
-          lead_id: null,
+          conversation_id: convId,
+          lead_id: attachedLead?.id ?? null,
           whatsapp_instance_id: instance.id,
           direction: fromMe ? "outbound" : "inbound",
           body: text,
@@ -768,7 +816,7 @@ Deno.serve(async (req: Request) => {
           message_type: hasMedia ? (media.kind ?? "text") : "text",
           media_url: rawMediaUrl,
           metadata: {
-            raw_only: true,
+            raw_only: !attachedLead,
             is_group: isGroup,
             from_me: fromMe,
             old_message: isOldMessage,
@@ -781,6 +829,7 @@ Deno.serve(async (req: Request) => {
       }
       return ok({ persisted_raw: true, reason: fromMe ? "from_me" : isGroup ? "group" : "old" });
     }
+
 
     if (!phone || (!rawText && !hasMedia)) {
       console.log("webhook ignored", JSON.stringify({ fromMe, isGroup, phone, hasText: !!rawText, hasMedia }).slice(0, 500));
