@@ -98,7 +98,8 @@ function InstanceCard({ instance, onChanged, canDestroy = true }: { instance: In
         wasConnectedRef.current = true;
         setJustConnected(true);
         setQrCode(null);
-        toast({ title: "✅ WhatsApp conectado!" });
+        toast({ title: "✅ WhatsApp conectado!", description: "Importando histórico de conversas…" });
+        call("sync-history", { instance_id: local.id }).catch((e) => console.warn("auto sync-history failed", e));
         onChanged();
       }
     } catch (e: any) {
