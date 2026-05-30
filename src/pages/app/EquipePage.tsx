@@ -5,6 +5,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { TeamMemberCard } from "@/components/profile/TeamMemberCard";
 import { InviteMemberModal } from "@/components/profile/InviteMemberModal";
 import { PendingInviteRow } from "@/components/profile/PendingInviteRow";
+import { RoleInvitesPanel } from "@/components/profile/RoleInvitesPanel";
 import { EditMemberModal } from "@/components/profile/EditMemberModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,9 +83,11 @@ export default function EquipePage() {
         </div>
       )}
 
+      {canManage && <RoleInvitesPanel />}
+
       {canManage && invites.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-foreground">Convites</h2>
+          <h2 className="text-sm font-semibold text-foreground">Convites por e-mail</h2>
           <div className="space-y-2">
             {invites.map((inv) => (
               <PendingInviteRow key={inv.id} invite={inv} />

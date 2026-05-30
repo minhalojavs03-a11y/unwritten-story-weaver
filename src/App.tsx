@@ -51,6 +51,7 @@ import AdminIntegracoes from "./pages/admin/AdminIntegracoes";
 import NotFound from "./pages/NotFound.tsx";
 import ProposalWhatsappOficial from "./pages/ProposalWhatsappOficial";
 import UbertiProposta from "./pages/UbertiProposta";
+import JoinPage from "./pages/JoinPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,6 +77,7 @@ const App = () => (
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<ClientLoginPage />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route path="/join/:token" element={<JoinPage />} />
             <Route path="/proposta-whatsapp-api-oficial" element={<ProposalWhatsappOficial />} />
             <Route path="/ubertiproposta" element={<UbertiProposta />} />
             <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
