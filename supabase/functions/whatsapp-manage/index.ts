@@ -558,8 +558,8 @@ async function syncHistory(admin: any, tenantId: string, instance: any, maxChats
   let importedChats = 0, importedMsgs = 0, skipped = 0;
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   for (const c of chats.slice(0, maxChats)) {
-    // Pequeno jitter entre chats para evitar padrão automatizado (300-700ms)
-    await sleep(300 + Math.floor(Math.random() * 400));
+    // Pequena pausa para não martelar o provedor sem estourar o tempo da Edge Function.
+    await sleep(40 + Math.floor(Math.random() * 60));
     if (c?.wa_isGroup === true) { skipped++; continue; }
     const chatJid: string = c?.wa_chatid ?? c?.chatid ?? c?.jid ?? c?.remoteJid ?? "";
     // Prefer the explicit phone field from uazapi (real number), then fall back to JID
