@@ -64,6 +64,31 @@ export default function ConversasPage() {
   }, [params]);
   const [query, setQuery] = useState("");
   const { data: conversations = [], isLoading } = useConversations();
+  const queryClient = useQueryClient();
+  const autoImportAttemptedRef = useRef(false);
+
+  useEffect(() => {
+    if (!tenantId || isLoading || conversations.length > 0 || autoImportAttemptedRef.current) return;
+    autoImportAttemptedRef.current = true;
+    let cancelled = false;
+    (async () => {
+      const { data: connectedInstances } = await supabase
+        .from("whatsapp_instances")
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .or("is_connected.eq.true,status.eq.connected")
+        .limit(3);
+      if (cancelled || !connectedInstances?.length) return;
+      toast({ title: "Importando conversas do WhatsApp", description: "Número conectado encontrado. As conversas vão aparecer aqui." });
+      await Promise.allSettled(connectedInstances.map((i: any) => supabase.functions.invoke("whatsapp-manage", {
+        body: { action: "sync-history", instance_id: i.id, maxChats: 80, msgsPerChat: 20 },
+      })));
+      if (cancelled) return;
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+    })();
+    return () => { cancelled = true; };
+  }, [tenantId, isLoading, conversations.length, queryClient]);
 
   // Leads atribuídos sem linha em "conversations" ainda.
   // Consultor restrito: apenas próprios leads. Dono/supervisor/superadmin: todos do tenant
