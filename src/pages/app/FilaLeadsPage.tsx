@@ -232,7 +232,7 @@ export default function FilaLeadsPage() {
 
 
   async function load() {
-    if (!tenantId) return;
+    if (!tenantId && !isSuperadmin) return;
     if (!canSendToOthers && !activeMember?.id) {
       setLeads([]);
       setAssigneeNames({});
@@ -243,12 +243,13 @@ export default function FilaLeadsPage() {
     }
     let query = supabase
       .from("leads")
-      .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id")
-      .eq("tenant_id", tenantId)
+      .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id,tenant_id")
       .not("stage", "in", "(perdido,comprou,historico)")
       .in("source", ["meta_ads", "importacao_planilha"]);
+    // Superadmin vê leads importados de todos os tenants.
+    if (!isSuperadmin) query = query.eq("tenant_id", tenantId!);
     if (!canSendToOthers) query = query.eq("assigned_member_id", activeMember!.id);
-    const { data, error } = await query.order("created_at", { ascending: false }).limit(100);
+    const { data, error } = await query.order("created_at", { ascending: false }).limit(200);
     if (error) toast.error(error.message);
     const rows = (data as any) || [];
     setLeads(rows);
