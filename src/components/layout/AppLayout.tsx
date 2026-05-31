@@ -327,6 +327,7 @@ export function AppLayout() {
         })}
       </nav>
     </div>
+    </PageHeaderProvider>
   );
 }
 
