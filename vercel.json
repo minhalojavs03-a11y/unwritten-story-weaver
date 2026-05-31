@@ -1,7 +1,7 @@
 {
   "rewrites": [
-    { "source": "/api/suggest-reply", "destination": "https://rqaebwzoxuzfrnwdwufn.supabase.co/functions/v1/suggest-reply" },
-    { "source": "/api/whatsapp-manage", "destination": "https://rqaebwzoxuzfrnwdwufn.supabase.co/functions/v1/whatsapp-manage" },
+    { "source": "/api/suggest-reply", "destination": "https://qwoilgpbxxzjzpltosas.supabase.co/functions/v1/suggest-reply" },
+    { "source": "/api/whatsapp-manage", "destination": "https://qwoilgpbxxzjzpltosas.supabase.co/functions/v1/whatsapp-manage" },
     { "source": "/((?!assets/|.*\\..*).*)", "destination": "/index.html" }
   ]
 }
