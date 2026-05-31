@@ -11,15 +11,16 @@ import { usePermissions } from "@/hooks/usePermissions";
  * - fila: total de leads na fila (ativos) no escopo do usuário
  */
 export function useNavBadges() {
-  const { tenantId } = useAuth();
+  const { tenantId, user } = useAuth();
   const { member } = useActiveMember();
   const { can } = usePermissions();
   const privileged = can("assume_any_lead");
   const memberId = member?.id ?? null;
+  const userId = user?.id ?? null;
   const queryClient = useQueryClient();
 
-  const enabled = !!tenantId && (privileged || !!memberId);
-  const queryKey = ["nav-badges", tenantId, privileged ? "all" : memberId];
+  const enabled = !!tenantId && (privileged || !!memberId || !!userId);
+  const queryKey = ["nav-badges", tenantId, privileged ? "all" : (memberId ?? `u:${userId}`)];
 
   const { data } = useQuery({
     enabled,
@@ -28,18 +29,28 @@ export function useNavBadges() {
     refetchInterval: 30_000,
     queryFn: async () => {
       // Conversas com mensagens não lidas
-      let convQuery = privileged
-        ? supabase
-            .from("conversations")
-            .select("id", { count: "exact", head: true })
-            .eq("tenant_id", tenantId!)
-            .gt("unread_count", 0)
-        : supabase
-            .from("conversations")
-            .select("id, lead:leads!inner(assigned_member_id)", { count: "exact", head: true })
-            .eq("tenant_id", tenantId!)
-            .eq("lead.assigned_member_id", memberId!)
-            .gt("unread_count", 0);
+      let convQuery;
+      if (privileged) {
+        convQuery = supabase
+          .from("conversations")
+          .select("id", { count: "exact", head: true })
+          .eq("tenant_id", tenantId!)
+          .gt("unread_count", 0);
+      } else if (memberId) {
+        convQuery = supabase
+          .from("conversations")
+          .select("id, lead:leads!inner(assigned_member_id)", { count: "exact", head: true })
+          .eq("tenant_id", tenantId!)
+          .eq("lead.assigned_member_id", memberId)
+          .gt("unread_count", 0);
+      } else {
+        convQuery = supabase
+          .from("conversations")
+          .select("id, lead:leads!inner(assigned_to)", { count: "exact", head: true })
+          .eq("tenant_id", tenantId!)
+          .eq("lead.assigned_to", userId!)
+          .gt("unread_count", 0);
+      }
 
       // Leads na fila (ativos)
       let filaQuery = supabase
@@ -47,7 +58,10 @@ export function useNavBadges() {
         .select("id", { count: "exact", head: true })
         .eq("tenant_id", tenantId!)
         .not("stage", "in", "(perdido,comprou,historico)");
-      if (!privileged) filaQuery = filaQuery.eq("assigned_member_id", memberId!);
+      if (!privileged) {
+        if (memberId) filaQuery = filaQuery.eq("assigned_member_id", memberId);
+        else filaQuery = filaQuery.eq("assigned_to", userId!);
+      }
 
       const [{ count: convCount }, { count: filaCount }] = await Promise.all([
         convQuery,

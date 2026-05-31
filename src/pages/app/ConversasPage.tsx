@@ -38,10 +38,11 @@ const tabs: { id: "all" | "hot" | "unread"; label: string }[] = [
 ];
 
 export default function ConversasPage() {
-  const { tenantId, isSuperadmin, isOwner } = useAuth();
+  const { tenantId, isSuperadmin, isOwner, user } = useAuth();
   const { member } = useActiveMember();
   const { can } = usePermissions();
   const canViewAll = isSuperadmin || isOwner || can("view_all_leads");
+  const userId = user?.id ?? null;
   const [params, setParams] = useSearchParams();
   const leadParam = params.get("lead");
   const tabParam = params.get("tab");
@@ -106,22 +107,26 @@ export default function ConversasPage() {
     const memberCanViewAll = /dono|owner|propriet|supervisor/.test(memberRole);
     const canSeeAll = member ? memberCanViewAll : canViewAll;
     const restricted = !canSeeAll;
-    if (restricted && !member?.id) { setAssignedLeads([]); return; }
+    if (restricted && !member?.id && !userId) { setAssignedLeads([]); return; }
     let cancelled = false;
     (async () => {
       let q = supabase
         .from("leads")
         .select("*")
         .eq("tenant_id", tenantId)
-        .not("assigned_member_id", "is", null)
         .order("created_at", { ascending: false, nullsFirst: false })
         .limit(500);
-      if (restricted && member?.id) q = q.eq("assigned_member_id", member.id);
+      if (restricted) {
+        if (member?.id) q = q.eq("assigned_member_id", member.id);
+        else if (userId) q = q.eq("assigned_to", userId);
+      } else {
+        q = q.not("assigned_member_id", "is", null);
+      }
       const { data } = await q;
       if (!cancelled) setAssignedLeads(data ?? []);
     })();
     return () => { cancelled = true; };
-  }, [tenantId, member?.id, member?.role_label, canViewAll, conversations]);
+  }, [tenantId, member?.id, member?.role_label, canViewAll, userId, conversations]);
 
   // Dado leadId da URL, encontra/garante uma conversa (busca direta + fallback de criação)
   const [fetchedActive, setFetchedActive] = useState<any | null>(null);
@@ -138,11 +143,13 @@ export default function ConversasPage() {
       if (restricted) {
         const { data: leadCheck } = await supabase
           .from("leads")
-          .select("assigned_member_id, tenant_id")
+          .select("assigned_member_id, assigned_to, tenant_id")
           .eq("id", leadParam)
           .maybeSingle();
         if (cancelled) return;
-        if (!leadCheck || leadCheck.tenant_id !== tenantId || leadCheck.assigned_member_id !== member?.id) {
+        const ownsByMember = member?.id && leadCheck?.assigned_member_id === member.id;
+        const ownsByUser = userId && leadCheck?.assigned_to === userId;
+        if (!leadCheck || leadCheck.tenant_id !== tenantId || (!ownsByMember && !ownsByUser)) {
           setFetchedActive(null);
           setParams({}, { replace: true });
           toast({ title: "Acesso negado", description: "Esta conversa pertence a outro consultor.", variant: "destructive" });
@@ -167,7 +174,7 @@ export default function ConversasPage() {
       if (!cancelled && !error && created) setFetchedActive(created);
     })();
     return () => { cancelled = true; };
-  }, [leadParam, tenantId, member?.id, member?.role_label, canViewAll, setParams]);
+  }, [leadParam, tenantId, member?.id, member?.role_label, canViewAll, userId, setParams]);
 
   const activeConvId = fetchedActive?.id ?? null;
 
@@ -205,8 +212,11 @@ export default function ConversasPage() {
         const memberCanViewAll = /dono|owner|propriet|supervisor/.test(memberRole);
         const shouldRestrict = member ? !memberCanViewAll : !canViewAll;
         if (shouldRestrict) {
-          const assignedId = lead?.assigned_member_id ?? null;
-          if (!member || !assignedId || assignedId !== member.id) return false;
+          const assignedMemberId = lead?.assigned_member_id ?? null;
+          const assignedUserId = lead?.assigned_to ?? null;
+          const ownsByMember = member?.id && assignedMemberId === member.id;
+          const ownsByUser = userId && assignedUserId === userId;
+          if (!ownsByMember && !ownsByUser) return false;
         }
         if (query) {
           const q = query.trim().toLowerCase();
@@ -223,7 +233,7 @@ export default function ConversasPage() {
         if (tab === "unread") return (c.unread_count ?? 0) > 0;
         return true;
       });
-  }, [conversations, assignedLeads, query, tab, canViewAll, member?.id, member?.role_label]);
+  }, [conversations, assignedLeads, query, tab, canViewAll, member?.id, member?.role_label, userId]);
 
   const active = conversations.find((c: any) => c.id === activeConvId) ?? fetchedActive;
 
