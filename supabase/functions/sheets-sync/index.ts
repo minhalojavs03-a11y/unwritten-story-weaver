@@ -182,7 +182,7 @@ async function sendWelcome(tenantId: string, lead: any) {
   }
 }
 
-async function syncConfig(cfg: any) {
+async function syncConfig(cfg: any, opts: { skipWelcome?: boolean } = {}) {
   const tabName = cfg.tab_name || "Sheet1";
   const range = `${tabName}!A1:ZZ10000`;
   const url = `${GATEWAY}/spreadsheets/${cfg.sheet_id}/values/${encodeURIComponent(range).replace(/%21/g, "!").replace(/%3A/g, ":")}`;
@@ -305,7 +305,7 @@ async function syncConfig(cfg: any) {
     });
 
     // Welcome message via WhatsApp — apenas para leads realmente novos
-    if (isNewLead) {
+    if (isNewLead && !opts.skipWelcome) {
       await sendWelcome(cfg.tenant_id, { ...lead, name, phone, interest });
     }
 
@@ -346,10 +346,12 @@ Deno.serve(async (req: Request) => {
   try {
     // Optional: sync a single config by id (from admin "Sincronizar agora")
     let onlyConfigId: string | null = null;
+    let skipWelcome = false;
     if (req.method === "POST") {
       try {
         const body = await req.json();
         onlyConfigId = body?.config_id || null;
+        skipWelcome = body?.skip_welcome === true;
       } catch (_) { /* empty body ok */ }
     }
 
@@ -362,7 +364,7 @@ Deno.serve(async (req: Request) => {
     const results = [];
     for (const cfg of configs) {
       try {
-        results.push(await syncConfig(cfg));
+        results.push(await syncConfig(cfg, { skipWelcome }));
       } catch (e: any) {
         console.error("sync failed", cfg.id, e?.message);
         await sb(`/sheet_sync_config?id=eq.${cfg.id}`, {
