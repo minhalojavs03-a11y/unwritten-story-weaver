@@ -125,7 +125,7 @@ export function AppLayout() {
               <button
                 type="button"
                 onClick={() => navigate("/crm")}
-                className={cn("flex flex-1 items-center", collapsed ? "h-12 w-12 justify-center" : "h-14 justify-start px-1")}
+                className={cn("flex flex-1 items-center", collapsed ? "h-12 w-12 justify-center" : "h-16 justify-start px-1")}
                 aria-label="Início"
               >
                 {collapsed ? (
