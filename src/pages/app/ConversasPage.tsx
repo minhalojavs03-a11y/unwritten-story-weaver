@@ -212,8 +212,11 @@ export default function ConversasPage() {
         const memberCanViewAll = /dono|owner|propriet|supervisor/.test(memberRole);
         const shouldRestrict = member ? !memberCanViewAll : !canViewAll;
         if (shouldRestrict) {
-          const assignedId = lead?.assigned_member_id ?? null;
-          if (!member || !assignedId || assignedId !== member.id) return false;
+          const assignedMemberId = lead?.assigned_member_id ?? null;
+          const assignedUserId = lead?.assigned_to ?? null;
+          const ownsByMember = member?.id && assignedMemberId === member.id;
+          const ownsByUser = userId && assignedUserId === userId;
+          if (!ownsByMember && !ownsByUser) return false;
         }
         if (query) {
           const q = query.trim().toLowerCase();
