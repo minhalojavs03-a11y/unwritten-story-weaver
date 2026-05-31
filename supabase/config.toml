@@ -1,1 +1,4 @@
 project_id = "qwoilgpbxxzjzpltosas"
+
+[functions.superadmin-impersonate]
+verify_jwt = false
