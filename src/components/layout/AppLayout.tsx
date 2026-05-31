@@ -114,6 +114,7 @@ export function AppLayout() {
   const sidebarWidth = collapsed ? "w-[72px]" : "w-[240px]";
 
   return (
+    <PageHeaderProvider>
     <div className={cn(
       "client-shell flex w-full max-w-full",
       lockViewport ? "h-dvh min-h-0 overflow-hidden" : "min-h-dvh",
