@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Home, MessageCircle, Kanban, Calendar, Users, UserPlus, Settings, LogOut, Eye, Shield, Smartphone, Menu, Sparkles, Inbox, User as UserIcon, Users2, MessageSquareText, ChevronLeft, ChevronRight, Video, History, Trophy, BarChart3, ChevronDown, Headphones, Briefcase, LineChart, Cog, Target, Plug, Repeat } from "lucide-react";
+import { Home, MessageCircle, Kanban, Calendar, Users, Settings, LogOut, Shield, Smartphone, Menu, Inbox, User as UserIcon, Users2, ChevronLeft, ChevronRight, Trophy, BarChart3, Target, Repeat, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -24,57 +24,14 @@ import { useNavBadges } from "@/hooks/useNavBadges";
 import { useEffect, useMemo, useState } from "react";
 
 import { TutorialVideoDialog } from "@/components/TutorialVideoDialog";
-import logoCatelan from "@/assets/logo-catelan.png";
-import logoCatelanDark from "@/assets/logo-catelan-dark.png";
-import logoFeraconDark from "@/assets/logo-feracon-dark.png";
 import logoCatelanWhite from "@/assets/logo-catelan-white.png";
+import logoFeraconDark from "@/assets/logo-feracon-dark.png";
 import logoFeraconMark from "@/assets/logo-feracon-mark.png";
 
 type NavItem = { to: string; label: string; icon: any };
-type NavGroup = { id: string; label: string; icon: any; items: NavItem[] };
 
-const homeItem: NavItem = { to: "/crm", label: "Início", icon: Home };
-
-// Atalhos do rail (sem submenu) — itens mais utilizados
-const quickLinks: NavItem[] = [
-  { to: "/leads/fila", label: "Fila", icon: Inbox },
-  { to: "/conversas", label: "Conversas", icon: MessageCircle },
-];
-
-const groupVendas: NavGroup = {
-  id: "vendas",
-  label: "Vendas",
-  icon: Kanban,
-  items: [
-    { to: "/pipeline", label: "Pipeline", icon: Kanban },
-    { to: "/agenda", label: "Agenda", icon: Calendar },
-  ],
-};
-const groupClientes: NavGroup = {
-  id: "clientes",
-  label: "Clientes",
-  icon: Briefcase,
-  items: [
-    { to: "/leads", label: "Lista de Leads", icon: Users },
-    { to: "/gravacoes", label: "Gravações", icon: Video },
-  ],
-};
-const groupPerformance: NavGroup = {
-  id: "performance",
-  label: "Performance",
-  icon: LineChart,
-  items: [
-    { to: "/ranking", label: "Ranking", icon: Trophy },
-    { to: "/coaching", label: "Coaching IA", icon: Target },
-    { to: "/relatorios", label: "Relatórios & BI", icon: BarChart3 },
-  ],
-};
-const changelogItem: NavItem = { to: "/changelog", label: "Histórico de updates", icon: History };
-
-
-
-// 4 itens essenciais do dia a dia do vendedor no rodapé mobile
-const mobileNav = [
+// 4 itens essenciais do dia a dia no rodapé mobile
+const mobileNav: NavItem[] = [
   { to: "/crm", label: "Início", icon: Home },
   { to: "/leads", label: "Leads", icon: Users },
   { to: "/leads/fila", label: "Fila", icon: Inbox },
@@ -99,93 +56,44 @@ export function AppLayout() {
   }, [collapsed]);
   const isSupervisor = can("configure_whatsapp") && !isOwner && !isSuperadmin;
 
-  // Grupo "Conteúdo & IA" (Mensagens prontas + Treinar IA – owner only para IA)
-  const conteudoItems: NavItem[] = useMemo(() => {
-    const items: NavItem[] = [
-      { to: "/mensagens-prontas", label: "Mensagens prontas", icon: MessageSquareText },
-    ];
-    if (isOwner) items.push({ to: "/treinar-ia", label: "Treinar IA", icon: Sparkles });
-    return items;
-  }, [isOwner]);
+  // Lista única por papel — só o que realmente importa no dia a dia.
+  // Itens menos usados ficam em /configuracoes (Mensagens prontas, Gravações,
+  // Treinar IA, Integrações, WhatsApp instâncias, Histórico de updates).
+  const navItems: NavItem[] = useMemo(() => {
+    const home: NavItem = { to: "/crm", label: "Início", icon: Home };
+    const fila: NavItem = { to: "/leads/fila", label: "Fila de leads", icon: Inbox };
+    const conversas: NavItem = { to: "/conversas", label: "Conversas", icon: MessageCircle };
+    const pipeline: NavItem = { to: "/pipeline", label: "Pipeline", icon: Kanban };
+    const leads: NavItem = { to: "/leads", label: isOwner || isSuperadmin || isSupervisor ? "Leads" : "Meus leads", icon: Users };
+    const agenda: NavItem = { to: "/agenda", label: "Agenda", icon: Calendar };
+    const ranking: NavItem = { to: "/ranking", label: "Ranking", icon: Trophy };
+    const relatorios: NavItem = { to: "/relatorios", label: "Relatórios", icon: BarChart3 };
+    const coaching: NavItem = { to: "/coaching", label: "Coaching IA", icon: Target };
+    const consultores: NavItem = { to: "/consultores", label: "Consultores", icon: Users2 };
+    const equipe: NavItem = { to: "/equipe", label: "Equipe", icon: Users2 };
+    const distribuicao: NavItem = { to: "/distribuicao", label: "Distribuição", icon: Share2 };
+    const meuWa: NavItem = { to: "/meu-whatsapp", label: "Meu WhatsApp", icon: Smartphone };
+    const config: NavItem = { to: "/configuracoes", label: "Configurações", icon: Settings };
 
-  const groupConteudo: NavGroup = {
-    id: "conteudo",
-    label: "Conteúdo & IA",
-    icon: Sparkles,
-    items: conteudoItems,
-  };
-
-  // Grupo Gestão dinâmico conforme papel
-  const gestaoItems: NavItem[] = useMemo(() => {
-    const items: NavItem[] = [];
-    if (isOwner) {
-      items.push({ to: "/consultores", label: "Consultores", icon: Users2 });
-      items.push({ to: "/distribuicao", label: "Distribuição de Leads", icon: Inbox });
-      items.push({ to: "/equipe", label: "Equipe", icon: Users2 });
-      items.push({ to: "/whatsapp", label: "WhatsApp", icon: Smartphone });
-      items.push({ to: "/integracoes", label: "Integrações", icon: Plug });
-      items.push({ to: "/configuracoes", label: "Configurações", icon: Settings });
-    } else if (can("view_team_metrics")) {
-      items.push({ to: "/consultores", label: "Consultores", icon: Users2 });
-      items.push({ to: "/distribuicao", label: "Distribuição de Leads", icon: Inbox });
-      if (isSupervisor) items.push({ to: "/whatsapp", label: "WhatsApp", icon: Smartphone });
-    } else if (can("view_all_leads") && !isSupervisor && !isSuperadmin) {
-      items.push({ to: "/meu-whatsapp", label: "Meu WhatsApp", icon: Smartphone });
+    if (isOwner || isSuperadmin) {
+      return [home, fila, conversas, pipeline, leads, agenda, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
     }
-    return items;
-  }, [isOwner, isSupervisor, isSuperadmin, can]);
+    if (isSupervisor) {
+      return [home, fila, conversas, pipeline, leads, agenda, ranking, relatorios, consultores, config];
+    }
+    // Consultor
+    return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, config];
+  }, [isOwner, isSuperadmin, isSupervisor]);
 
-  const groupGestao: NavGroup | null = gestaoItems.length
-    ? { id: "gestao", label: "Gestão", icon: Cog, items: gestaoItems }
-    : null;
-
-  const groups: NavGroup[] = useMemo(() => {
-    const isPrioritized = isOwner || isSuperadmin || isSupervisor;
-    const g: NavGroup[] = isPrioritized
-      ? [groupPerformance, groupVendas, groupClientes, groupConteudo]
-      : [groupVendas, groupClientes, groupConteudo, groupPerformance];
-    if (groupGestao) g.push(groupGestao);
-    return g;
-  }, [groupConteudo, groupGestao, groupPerformance, groupVendas, groupClientes, isOwner, isSuperadmin, isSupervisor]);
-
-
-
-  // Flat list para mobile sheet + bottom nav badges
-  const flatNav: NavItem[] = useMemo(
-    () => [homeItem, ...groups.flatMap((g) => g.items), changelogItem],
-    [groups],
-  );
-
-  // Trilho ativo (qual categoria está visível no painel direito).
-  // Auto-sincroniza com a rota; usuário pode trocar clicando no rail.
-  const routeRailId = useMemo(() => {
-    const found = groups.find((g) =>
-      g.items.some((it) => it.to === "/leads" ? location.pathname === "/leads" : (location.pathname === it.to || location.pathname.startsWith(it.to + "/"))),
-    );
-    return found?.id ?? null;
-  }, [location.pathname, groups]);
-
-  const [activeRail, setActiveRail] = useState<string | null>(null);
-  useEffect(() => { setActiveRail(routeRailId); }, [routeRailId]);
-
-  // Painel pode ser escondido (deixa só o rail estreito visível) — não persiste entre sessões
-  const [panelHidden, setPanelHidden] = useState<boolean>(false);
   const [impersonateOpen, setImpersonateOpen] = useState(false);
-
-  const activeGroup = groups.find((g) => g.id === activeRail) ?? null;
-
 
   const isConversasMobile = location.pathname === "/conversas" || location.pathname.startsWith("/conversas/");
   // Páginas tipo chat precisam ocupar a viewport inteira (sem scroll do navegador).
-  // Demais páginas usam o scroll natural do navegador.
   const lockViewport = isConversasMobile;
-
 
   const { items: notifItems } = useNotifications();
   const liveBadges = useNavBadges();
   const navBadges = useMemo(() => {
-    // Prioriza contagens reais (mensagens não lidas + leads ativos na fila).
-    // Fallback para notificações não lidas caso a contagem ainda não tenha carregado.
     const conversasNotif = notifItems.filter(
       (i) => !i.read && (i.type === "new_message" || i.type === "lead_assigned" || i.type === "lead_status")
     ).length;
@@ -196,146 +104,89 @@ export function AppLayout() {
     } as Record<string, number>;
   }, [notifItems, liveBadges.conversas, liveBadges.fila]);
 
-
   async function handleLogout() {
     await supabase.auth.signOut();
     navigate("/login", { replace: true });
   }
+
+  const sidebarWidth = collapsed ? "w-[72px]" : "w-[240px]";
 
   return (
     <div className={cn(
       "client-shell flex w-full max-w-full",
       lockViewport ? "h-dvh min-h-0 overflow-hidden" : "min-h-dvh",
     )}>
-      {/* Desktop sidebar — Rail (categorias) + Painel (itens da categoria ativa) */}
-      <aside className="sticky top-0 hidden h-dvh shrink-0 self-start md:flex">
+      {/* Desktop sidebar — lista única */}
+      <aside className={cn("sticky top-0 hidden h-dvh shrink-0 self-start md:flex", sidebarWidth, "transition-all")}>
         <TooltipProvider delayDuration={100}>
-          {/* RAIL estreito */}
-          <div className="client-sidebar flex w-[88px] flex-col items-center border-r border-white/5 py-3">
-
+          <div className="client-sidebar relative flex w-full flex-col border-r border-white/5 py-3">
             <button
               type="button"
               onClick={() => navigate("/crm")}
-              className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl"
+              className={cn("mb-3 flex items-center", collapsed ? "mx-auto h-12 w-12 justify-center" : "mx-3 h-12 gap-2 px-1")}
               aria-label="Início"
             >
               <img src={logoFeraconMark} alt="Feracon" className="h-10 w-10 object-contain" />
+              {!collapsed && <img src={logoCatelanWhite} alt="Consórcio Feracon" className="h-7 w-auto object-contain opacity-90" />}
             </button>
 
-            <div className="flex flex-1 flex-col items-stretch gap-1 px-2">
-              {quickLinks.map((item) => (
-                <RailLink
+            <nav className={cn("flex-1 space-y-1 overflow-y-auto", collapsed ? "px-2" : "px-2")}>
+              {navItems.map((item) => (
+                <SidebarNavLink
                   key={item.to}
                   item={item}
+                  collapsed={collapsed}
                   location={location}
-                  badge={navBadges[item.to] ?? 0}
+                  navBadges={navBadges}
                 />
               ))}
-              <div className="my-1 h-px bg-white/5" />
-              {groups.map((group) => {
-                const hasActiveRoute = group.items.some((it) =>
-                  it.to === "/leads" ? location.pathname === "/leads" : (location.pathname === it.to || location.pathname.startsWith(it.to + "/")),
-                );
-                const badgeTotal = group.items.reduce((sum, it) => sum + (navBadges[it.to] ?? 0), 0);
-                return (
-                  <RailItem
-                    key={group.id}
-                    id={group.id}
-                    label={group.label}
-                    Icon={group.icon}
-                    active={activeRail === group.id}
-                    routeActive={hasActiveRoute}
-                    badge={badgeTotal}
-                    onClick={() => { setActiveRail(group.id); setPanelHidden(false); }}
-                  />
-                );
-              })}
-            </div>
+            </nav>
 
-
-            {/* Rodapé do rail: notificações já estão no header; admin + sair */}
-            <div className="mt-2 flex flex-col items-center gap-2 pb-1">
+            <div className="mt-2 flex flex-col items-stretch gap-1 border-t border-white/5 px-2 pt-2">
               {isSuperadmin && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <NavLink to="/admin" className="flex h-10 w-10 items-center justify-center rounded-xl text-white/70 hover:bg-white/10 hover:text-white">
-                      <Shield className="h-5 w-5" />
-                    </NavLink>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">Painel admin</TooltipContent>
-                </Tooltip>
+                <SidebarNavLink
+                  item={{ to: "/admin", label: "Painel admin", icon: Shield }}
+                  collapsed={collapsed}
+                  location={location}
+                  navBadges={navBadges}
+                />
               )}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     onClick={handleLogout}
                     aria-label="Sair"
-                    className="flex h-10 w-10 items-center justify-center rounded-xl text-white/70 hover:bg-white/10 hover:text-white"
+                    className={cn(
+                      "flex items-center rounded-xl text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white",
+                      collapsed ? "h-11 w-11 justify-center mx-auto" : "gap-3 px-3 py-2.5",
+                    )}
                   >
-                    <LogOut className="h-5 w-5" />
+                    <LogOut className={collapsed ? "h-[22px] w-[22px]" : "h-4 w-4"} />
+                    {!collapsed && <span>Sair</span>}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="right">Sair</TooltipContent>
+                {collapsed && <TooltipContent side="right">Sair</TooltipContent>}
               </Tooltip>
             </div>
-          </div>
 
-          {/* PAINEL com os itens da categoria ativa */}
-          {!panelHidden && activeGroup && (
-            <div className="flex w-[244px] flex-col border-r border-white/5 bg-[#0f0f18]">
-              <div className="flex items-center justify-between px-4 py-4">
-                <div className="flex min-w-0 items-center gap-2 text-white">
-                  {activeGroup ? (
-                    <>
-                      <activeGroup.icon className="h-4 w-4 opacity-80" />
-                      <span className="truncate text-[15px] font-semibold">{activeGroup.label}</span>
-                    </>
-                  ) : null}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPanelHidden(true)}
-                  aria-label="Esconder painel"
-                  title="Esconder painel"
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white/55 hover:bg-white/10 hover:text-white"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-              </div>
-
-              <nav className="flex-1 space-y-1 overflow-y-auto px-2 pb-3">
-                {activeGroup?.items.map((item) => (
-                  <PanelNavLink key={item.to} item={item} location={location} navBadges={navBadges} />
-                ))}
-              </nav>
-
-              <div className="border-t border-white/5 px-2 py-2">
-                <PanelNavLink item={changelogItem} location={location} navBadges={navBadges} subtle />
-              </div>
-            </div>
-          )}
-
-          {panelHidden && (
+            {/* Toggle colapsar */}
             <button
               type="button"
-              onClick={() => setPanelHidden(false)}
-              aria-label="Mostrar painel"
-              title="Mostrar painel"
-              className="absolute left-[88px] top-4 z-10 flex h-7 w-7 items-center justify-center rounded-r-md border border-l-0 border-white/10 bg-[#0f0f18] text-white/70 hover:text-white"
+              onClick={() => setCollapsed((v) => !v)}
+              aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+              className="absolute -right-3 top-6 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-[#0f0f18] text-white/70 hover:text-white md:flex"
             >
-              <ChevronRight className="h-4 w-4" />
+              {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
             </button>
-          )}
+          </div>
         </TooltipProvider>
       </aside>
-
 
       {/* Main */}
       <main className={cn(
         "flex min-w-0 flex-1 flex-col pb-16 md:pb-0 bg-[#d11e26] md:bg-transparent",
         lockViewport && "min-h-0 overflow-hidden",
       )}>
-
         <ImpersonationBanner />
         <TopAlertBanner />
         <div aria-hidden className={cn("h-4 bg-[#d11e26]", isConversasMobile ? "hidden" : "md:hidden")} />
@@ -344,58 +195,37 @@ export function AppLayout() {
           isConversasMobile && "hidden md:flex",
         )}>
           <div className="flex items-center gap-2 md:hidden">
-          <Sheet>
-            <SheetTrigger aria-label="Abrir menu" className="-ml-1 rounded-lg p-2 text-muted-foreground hover:bg-muted">
-              <Menu className="h-5 w-5" />
-            </SheetTrigger>
-            <SheetContent side="left" className="client-sidebar flex w-72 flex-col border-white/5 p-0 text-[hsl(210_40%_96%)]">
-              <SheetHeader className="flex h-20 shrink-0 flex-row items-center space-y-0 border-b border-white/5 px-4 text-left">
-              <SheetTitle className="sr-only">Consórcio Feracon</SheetTitle>
-                <img src={logoCatelanWhite} alt="Consórcio Feracon" className="max-h-14 w-auto cursor-pointer object-contain" onClick={() => navigate("/crm")} />
-              </SheetHeader>
-              <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain p-3">
-                <MobileNavRow item={homeItem} location={location} navBadges={navBadges} />
-                {quickLinks.map((item) => (
-                  <MobileNavRow key={item.to} item={item} location={location} navBadges={navBadges} />
-                ))}
-
-                {groups.map((group) => {
-                  const GroupIcon = group.icon;
-                  return (
-                    <div key={group.id} className="pt-3 first:pt-0">
-                      <div className="flex items-center gap-2 px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-white/45">
-                        <GroupIcon className="h-3.5 w-3.5 opacity-70" />
-                        <span>{group.label}</span>
-                      </div>
-                      <div className="space-y-1">
-                        {group.items.map((item) => (
-                          <MobileNavRow key={item.to} item={item} location={location} navBadges={navBadges} />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-                <div className="pt-3">
-                  <MobileNavRow item={changelogItem} location={location} navBadges={navBadges} subtle />
+            <Sheet>
+              <SheetTrigger aria-label="Abrir menu" className="-ml-1 rounded-lg p-2 text-muted-foreground hover:bg-muted">
+                <Menu className="h-5 w-5" />
+              </SheetTrigger>
+              <SheetContent side="left" className="client-sidebar flex w-72 flex-col border-white/5 p-0 text-[hsl(210_40%_96%)]">
+                <SheetHeader className="flex h-20 shrink-0 flex-row items-center space-y-0 border-b border-white/5 px-4 text-left">
+                  <SheetTitle className="sr-only">Consórcio Feracon</SheetTitle>
+                  <img src={logoCatelanWhite} alt="Consórcio Feracon" className="max-h-14 w-auto cursor-pointer object-contain" onClick={() => navigate("/crm")} />
+                </SheetHeader>
+                <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain p-3">
+                  {navItems.map((item) => (
+                    <MobileNavRow key={item.to} item={item} location={location} navBadges={navBadges} />
+                  ))}
+                </nav>
+                <div className="shrink-0 border-t border-white/5 p-3">
+                  {isSuperadmin && (
+                    <SheetClose asChild>
+                      <NavLink to="/admin" className="mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white">
+                        <Shield className="h-4 w-4" /> Painel admin
+                      </NavLink>
+                    </SheetClose>
+                  )}
+                  <button
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium client-nav-idle"
+                  >
+                    <LogOut className="h-4 w-4" /> Sair
+                  </button>
                 </div>
-              </nav>
-              <div className="shrink-0 border-t border-white/5 p-3">
-                {isSuperadmin && (
-                  <SheetClose asChild>
-                    <NavLink to="/admin" className="mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white">
-                      <Shield className="h-4 w-4" /> Painel admin
-                    </NavLink>
-                  </SheetClose>
-                )}
-                <button
-                  onClick={handleLogout}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium client-nav-idle"
-                >
-                  <LogOut className="h-4 w-4" /> Sair
-                </button>
-              </div>
-            </SheetContent>
-          </Sheet>
+              </SheetContent>
+            </Sheet>
             <img src={logoFeraconDark} alt="Consórcio Feracon" className="h-9 w-auto cursor-pointer object-contain" onClick={() => navigate("/crm")} />
           </div>
           <div className="flex shrink-0 items-center gap-1">
@@ -456,7 +286,6 @@ export function AppLayout() {
         )}>
           <Outlet />
         </div>
-
       </main>
 
       {/* Mobile bottom nav */}
@@ -496,13 +325,11 @@ function SidebarNavLink({
   collapsed,
   location,
   navBadges,
-  subtle = false,
 }: {
   item: NavItem;
   collapsed: boolean;
   location: ReturnType<typeof useLocation>;
   navBadges: Record<string, number>;
-  subtle?: boolean;
 }) {
   const active = item.to === "/leads"
     ? location.pathname === "/leads"
@@ -516,12 +343,10 @@ function SidebarNavLink({
         "group relative flex items-center rounded-xl text-sm font-medium transition-all",
         active ? "client-nav-active" : "client-nav-idle",
         collapsed ? "h-11 w-11 justify-center mx-auto" : "gap-3 px-3 py-2.5",
-        subtle && !active && "text-white/55 hover:text-white",
-        subtle && !collapsed && "text-xs",
       )}
     >
       <span className="relative inline-flex">
-        <Icon className={cn(collapsed ? "h-[22px] w-[22px]" : subtle ? "h-3.5 w-3.5" : "h-4 w-4")} />
+        <Icon className={cn(collapsed ? "h-[22px] w-[22px]" : "h-4 w-4")} />
         {badge > 0 && (
           <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[hsl(var(--notification-new-lead))] px-1 text-[10px] font-bold leading-none text-white ring-2 ring-[hsl(var(--sidebar-background,222_47%_11%))]">
             {badge > 9 ? "9+" : badge}
@@ -549,12 +374,10 @@ function MobileNavRow({
   item,
   location,
   navBadges,
-  subtle = false,
 }: {
   item: NavItem;
   location: ReturnType<typeof useLocation>;
   navBadges: Record<string, number>;
-  subtle?: boolean;
 }) {
   const active = item.to === "/leads"
     ? location.pathname === "/leads"
@@ -568,11 +391,10 @@ function MobileNavRow({
         className={cn(
           "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
           active ? "client-nav-active" : "client-nav-idle",
-          subtle && !active && "text-xs text-white/55",
         )}
       >
         <span className="relative inline-flex">
-          <Icon className={cn(subtle ? "h-3.5 w-3.5" : "h-4 w-4")} />
+          <Icon className="h-4 w-4" />
           {badge > 0 && (
             <span className="absolute -right-1.5 -top-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-[hsl(var(--notification-new-lead))] px-1 text-[9px] font-bold leading-none text-white">
               {badge > 9 ? "9+" : badge}
@@ -589,128 +411,3 @@ function MobileNavRow({
     </SheetClose>
   );
 }
-
-function RailItem({
-  id,
-  label,
-  Icon,
-  active,
-  routeActive = false,
-  badge = 0,
-  onClick,
-}: {
-  id: string;
-  label: string;
-  Icon: any;
-  active: boolean;
-  routeActive?: boolean;
-  badge?: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      data-rail-id={id}
-      className={cn(
-        "group relative flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2.5 text-[11px] font-medium leading-tight transition-colors",
-        active
-          ? "bg-gradient-to-b from-[hsl(var(--primary)/0.22)] to-[hsl(var(--primary)/0.08)] text-white"
-          : "text-white/70 hover:bg-white/5 hover:text-white",
-      )}
-    >
-      <span className="relative inline-flex">
-        <Icon className={cn("h-5 w-5", active && "text-[hsl(var(--primary))]")} />
-        {badge > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[hsl(var(--notification-new-lead))] px-1 text-[10px] font-bold leading-none text-white ring-2 ring-[#0b0b14]">
-            {badge > 9 ? "9+" : badge}
-          </span>
-        )}
-      </span>
-      <span className="line-clamp-1 text-center">{label}</span>
-      {routeActive && !active && (
-        <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[hsl(var(--primary))]" />
-      )}
-      {active && (
-        <span className="absolute left-0 top-1/2 h-7 w-[3px] -translate-y-1/2 rounded-r-full bg-[hsl(var(--primary))]" />
-      )}
-    </button>
-  );
-}
-
-function RailLink({
-  item,
-  location,
-  badge = 0,
-}: {
-  item: NavItem;
-  location: ReturnType<typeof useLocation>;
-  badge?: number;
-}) {
-  const Icon = item.icon;
-  const active = location.pathname === item.to || location.pathname.startsWith(item.to + "/");
-  return (
-    <NavLink
-      to={item.to}
-      className={cn(
-        "group relative flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2.5 text-[11px] font-medium leading-tight transition-colors",
-        active
-          ? "bg-gradient-to-b from-[hsl(var(--primary)/0.22)] to-[hsl(var(--primary)/0.08)] text-white"
-          : "text-white/70 hover:bg-white/5 hover:text-white",
-      )}
-    >
-      <span className="relative inline-flex">
-        <Icon className={cn("h-5 w-5", active && "text-[hsl(var(--primary))]")} />
-        {badge > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[hsl(var(--notification-new-lead))] px-1 text-[10px] font-bold leading-none text-white ring-2 ring-[#0b0b14]">
-            {badge > 9 ? "9+" : badge}
-          </span>
-        )}
-      </span>
-      <span className="line-clamp-1 text-center">{item.label}</span>
-      {active && (
-        <span className="absolute left-0 top-1/2 h-7 w-[3px] -translate-y-1/2 rounded-r-full bg-[hsl(var(--primary))]" />
-      )}
-    </NavLink>
-  );
-}
-
-function PanelNavLink({
-
-  item,
-  location,
-  navBadges,
-  subtle = false,
-}: {
-  item: NavItem;
-  location: ReturnType<typeof useLocation>;
-  navBadges: Record<string, number>;
-  subtle?: boolean;
-}) {
-  const active = item.to === "/leads"
-    ? location.pathname === "/leads"
-    : (location.pathname === item.to || location.pathname.startsWith(item.to + "/"));
-  const Icon = item.icon;
-  const badge = navBadges[item.to] ?? 0;
-  return (
-    <NavLink
-      to={item.to}
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-        active
-          ? "bg-[hsl(var(--primary)/0.18)] text-white shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.35)]"
-          : "text-white/75 hover:bg-white/5 hover:text-white",
-        subtle && !active && "text-xs text-white/55",
-      )}
-    >
-      <Icon className={cn(subtle ? "h-3.5 w-3.5" : "h-[18px] w-[18px]", active && "text-[hsl(var(--primary))]")} />
-      <span className="flex-1 truncate">{item.label}</span>
-      {badge > 0 && (
-        <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[hsl(var(--notification-new-lead))] px-1.5 text-[10px] font-bold leading-none text-white">
-          {badge > 99 ? "99+" : badge}
-        </span>
-      )}
-    </NavLink>
-  );
-}
-
