@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import logoFeraconMark from "@/assets/logo-feracon-mark.png";
-import logoFeraconDark from "@/assets/logo-feracon-dark.png";
+import logoFeraconLight from "@/assets/logo-feracon-light.png";
 
 const nav = [
   { to: "/admin/dashboard", label: "Visão Geral", icon: LayoutDashboard },
@@ -127,7 +127,7 @@ export function AdminLayout() {
                 </div>
               </SheetContent>
             </Sheet>
-            <img src={logoFeraconDark} alt="Consórcio Feracon" className="h-7 w-auto object-contain" />
+            <img src={logoFeraconLight} alt="Consórcio Feracon" className="h-7 w-auto object-contain" />
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <NavLink
