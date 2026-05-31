@@ -201,7 +201,7 @@ export function AppLayout() {
         <TopAlertBanner />
         <div aria-hidden className={cn("h-4 bg-[#d11e26]", isConversasMobile ? "hidden" : "md:hidden")} />
         <header className={cn(
-          "client-header sticky top-0 z-40 mx-3 -mt-3 flex h-14 items-center justify-between rounded-t-[28px] border border-black/5 !bg-white px-4 shadow-[0_-6px_20px_-12px_rgba(0,0,0,0.18)] [backdrop-filter:none] md:mx-0 md:mt-0 md:h-12 md:justify-end md:rounded-none md:border-0 md:!bg-transparent md:px-4 md:shadow-none",
+          "client-header sticky top-0 z-40 mx-3 -mt-3 flex h-14 items-center justify-between rounded-t-[28px] border border-black/5 !bg-white px-4 shadow-[0_-6px_20px_-12px_rgba(0,0,0,0.18)] [backdrop-filter:none] md:mx-0 md:mt-0 md:h-12 md:justify-between md:rounded-none md:border-0 md:!bg-transparent md:px-4 md:shadow-none",
           isConversasMobile && "hidden md:flex",
         )}>
           <div className="flex items-center gap-2 md:hidden">
