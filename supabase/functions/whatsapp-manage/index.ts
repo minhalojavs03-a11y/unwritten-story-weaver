@@ -910,35 +910,42 @@ Deno.serve(async (req: Request) => {
       `${SUPABASE_URL}/functions/v1/whatsapp-webhook?secret=${secret}`;
 
     const requestedInstanceId: string | null = body?.instance_id ?? null;
+    const callerRole = (membership?.role ?? (isSuper ? "superadmin" : null)) as string | null;
+    const callerCanManageAllInstances = isSuper || roleCanManageWhatsapp(callerRole);
+    const callerName = safeDisplayName(membership?.display_name ?? profile?.display_name ?? profile?.full_name ?? profile?.email ?? userData.user.email, "Meu WhatsApp");
 
     // Helper: load a specific instance OR the most recent one for this tenant
     async function loadInstance(): Promise<any> {
       if (requestedInstanceId) {
-        const { data } = await admin
+        const query = admin
           .from("whatsapp_instances")
           .select("*")
           .eq("tenant_id", tenantId)
-          .eq("id", requestedInstanceId)
-          .maybeSingle();
+          .eq("id", requestedInstanceId);
+        if (!callerCanManageAllInstances) query.eq("seller_user_id", userId);
+        const { data } = await query.maybeSingle();
         return data;
       }
-      const { data } = await admin
+      const query = admin
         .from("whatsapp_instances")
         .select("*")
         .eq("tenant_id", tenantId)
         .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
+      if (!callerCanManageAllInstances) query.eq("seller_user_id", userId);
+      const { data } = await query.maybeSingle();
       return data;
     }
 
     // ─── Multi-instance actions (don't need a single "current" instance) ───
     if (action === "list") {
-      const { data } = await admin
+      const query = admin
         .from("whatsapp_instances")
         .select("*")
         .eq("tenant_id", tenantId)
         .order("created_at", { ascending: true });
+      if (!callerCanManageAllInstances) query.eq("seller_user_id", userId);
+      const { data } = await query;
       const list = data ?? [];
       return json({
         instances: list.map(sanitize),
