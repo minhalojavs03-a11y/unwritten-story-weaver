@@ -813,6 +813,15 @@ async function syncProviderStatus(admin: any, instance: any): Promise<{ instance
   }
 }
 
+function roleCanManageWhatsapp(role?: string | null): boolean {
+  return role === "owner" || role === "supervisor";
+}
+
+function safeDisplayName(value: unknown, fallback: string): string {
+  const raw = (value ?? "").toString().trim();
+  return (raw || fallback).slice(0, 60);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
