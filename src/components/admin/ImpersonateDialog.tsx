@@ -29,6 +29,21 @@ export function ImpersonateDialog({ open, onOpenChange }: Props) {
       if (error) throw error;
       const { previous_tenant_id } = data as { previous_tenant_id: string | null };
 
+      // Limpa qualquer membro interno previamente selecionado (do tenant anterior)
+      // para não vazar escopo nem esconder conversas do tenant impersonado.
+      try {
+        const keys: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith("feracon.activeMember")) keys.push(k);
+        }
+        keys.forEach((k) => localStorage.removeItem(k));
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const k = sessionStorage.key(i);
+          if (k && k.startsWith("feracon.activeMember")) sessionStorage.removeItem(k);
+        }
+      } catch { /* ignore */ }
+
       localStorage.setItem(
         "impersonation_context",
         JSON.stringify({
