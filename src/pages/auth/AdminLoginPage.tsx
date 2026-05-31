@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import adminImage from "@/assets/feracon-admin-login.jpg";
+import adminImage from "@/assets/feracon-login.png";
 import logoFeraconLight from "@/assets/logo-feracon-light.png";
 
 export default function AdminLoginPage() {
