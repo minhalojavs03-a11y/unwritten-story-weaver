@@ -813,6 +813,15 @@ async function syncProviderStatus(admin: any, instance: any): Promise<{ instance
   }
 }
 
+function roleCanManageWhatsapp(role?: string | null): boolean {
+  return role === "owner" || role === "supervisor";
+}
+
+function safeDisplayName(value: unknown, fallback: string): string {
+  const raw = (value ?? "").toString().trim();
+  return (raw || fallback).slice(0, 60);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -830,14 +839,33 @@ Deno.serve(async (req: Request) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    // Resolve tenant — owner/manager of a tenant; superadmin can pass tenant_id
-    let { data: profile } = await admin.from("profiles").select("tenant_id").eq("id", userId).maybeSingle();
+    // Resolve tenant — prefer tenant_memberships because invited users may not have profiles.tenant_id updated.
+    let { data: profile } = await admin.from("profiles").select("tenant_id, display_name, full_name, email").eq("id", userId).maybeSingle();
     let { data: roles } = await admin.from("user_roles").select("role,tenant_id").eq("user_id", userId);
     const isSuper = (roles ?? []).some((r: any) => r.role === "superadmin");
 
     const body = await req.json().catch(() => ({}));
     const { action } = body ?? {};
-    let tenantId: string | null = body?.tenant_id ?? profile?.tenant_id ?? null;
+    const requestedTenantId: string | null = body?.tenant_id ?? null;
+    let { data: membership } = await admin
+      .from("tenant_memberships")
+      .select("tenant_id, role, display_name")
+      .eq("user_id", userId)
+      .eq("tenant_id", requestedTenantId || profile?.tenant_id || "00000000-0000-0000-0000-000000000000")
+      .maybeSingle();
+
+    if (!membership) {
+      const { data: firstMembership } = await admin
+        .from("tenant_memberships")
+        .select("tenant_id, role, display_name")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      membership = firstMembership;
+    }
+
+    let tenantId: string | null = requestedTenantId ?? membership?.tenant_id ?? profile?.tenant_id ?? null;
 
     // Auto-recovery: usuário autenticado sem tenant (cadastro órfão) → cria loja padrão
     if (!tenantId && !isSuper) {
@@ -858,13 +886,20 @@ Deno.serve(async (req: Request) => {
       await admin.from("profiles").upsert({ id: userId, tenant_id: tenantId, email, full_name: fullName });
       await admin.from("user_roles").insert({ user_id: userId, role: "owner", tenant_id: tenantId });
       await admin.from("ai_config").insert({ tenant_id: tenantId }).then(() => {}, () => {});
-      profile = { tenant_id: tenantId } as any;
+      profile = { tenant_id: tenantId, display_name: fullName, full_name: fullName, email } as any;
+      membership = { tenant_id: tenantId, role: "owner", display_name: fullName } as any;
       console.log("auto-recovery: created tenant for orphan user", userId, tenantId);
     }
 
     if (!tenantId) return json({ error: "tenant não encontrado" }, 400);
-    if (!isSuper && profile?.tenant_id !== tenantId) {
+    const belongsToTenant = membership?.tenant_id === tenantId || profile?.tenant_id === tenantId;
+    if (!isSuper && !belongsToTenant) {
       return json({ error: "forbidden" }, 403);
+    }
+
+    if (!isSuper && membership?.tenant_id === tenantId && profile?.tenant_id !== tenantId) {
+      await admin.from("profiles").update({ tenant_id: tenantId }).eq("id", userId);
+      profile = { ...(profile ?? {}), tenant_id: tenantId } as any;
     }
 
     // Load tenant for naming
@@ -875,35 +910,44 @@ Deno.serve(async (req: Request) => {
       `${SUPABASE_URL}/functions/v1/whatsapp-webhook?secret=${secret}`;
 
     const requestedInstanceId: string | null = body?.instance_id ?? null;
+    const appRoleForTenant = (roles ?? []).find((r: any) => !r.tenant_id || r.tenant_id === tenantId)?.role ?? null;
+    const callerRole = (membership?.role ?? appRoleForTenant ?? (isSuper ? "superadmin" : null)) as string | null;
+    const callerCanManageAllInstances = isSuper || roleCanManageWhatsapp(callerRole);
+    const callerName = safeDisplayName(membership?.display_name ?? profile?.display_name ?? profile?.full_name ?? profile?.email ?? userData.user.email, "Meu WhatsApp");
 
     // Helper: load a specific instance OR the most recent one for this tenant
     async function loadInstance(): Promise<any> {
       if (requestedInstanceId) {
-        const { data } = await admin
+        const query = admin
           .from("whatsapp_instances")
           .select("*")
           .eq("tenant_id", tenantId)
-          .eq("id", requestedInstanceId)
-          .maybeSingle();
+          .eq("id", requestedInstanceId);
+        if (!callerCanManageAllInstances) query.eq("seller_user_id", userId);
+        const { data } = await query.maybeSingle();
         return data;
       }
-      const { data } = await admin
+      const query = admin
         .from("whatsapp_instances")
         .select("*")
         .eq("tenant_id", tenantId)
         .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
+      if (!callerCanManageAllInstances) query.eq("seller_user_id", userId);
+      const { data } = await query.maybeSingle();
       return data;
     }
 
     // ─── Multi-instance actions (don't need a single "current" instance) ───
     if (action === "list") {
-      const { data } = await admin
+      const mineOnly = body?.mine_only === true;
+      const query = admin
         .from("whatsapp_instances")
         .select("*")
         .eq("tenant_id", tenantId)
         .order("created_at", { ascending: true });
+      if (mineOnly || !callerCanManageAllInstances) query.eq("seller_user_id", userId);
+      const { data } = await query;
       const list = data ?? [];
       return json({
         instances: list.map(sanitize),
@@ -914,10 +958,15 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "create") {
-      const sellerUserId: string | null = body?.seller_user_id ?? null;
+      let sellerUserId: string | null = body?.seller_user_id ?? null;
       const sellerNameRaw: string = (body?.seller_name ?? "").toString().trim();
       const sellerPhoneRaw: string = (body?.seller_phone ?? "").toString().trim();
       const sellerPhone = sellerPhoneRaw ? sellerPhoneRaw.replace(/[^0-9]/g, "") : "";
+
+      if (!callerCanManageAllInstances) sellerUserId = userId;
+      if (sellerUserId && sellerUserId !== userId && !callerCanManageAllInstances) {
+        return json({ error: "Sem permissão para criar número para outro usuário." }, 403);
+      }
 
       // Idempotência: se este consultor já tem instância no tenant, devolve a existente
       if (sellerUserId) {
@@ -930,9 +979,9 @@ Deno.serve(async (req: Request) => {
         if (existing) return json({ instance: sanitize(existing), is_paid: false, reused: true });
       }
 
-      const rawName = ((body?.name ?? sellerNameRaw) ?? "").toString().trim();
+      const rawName = ((body?.name ?? sellerNameRaw ?? callerName) ?? "").toString().trim();
       if (!rawName || rawName.length < 2) return json({ error: "Nome do número é obrigatório (mín. 2 caracteres)." }, 400);
-      const displayName = rawName.slice(0, 60);
+      let displayName = rawName.slice(0, 60);
       // Avoid duplicate names within the tenant
       const { data: dup } = await admin
         .from("whatsapp_instances")
@@ -940,7 +989,7 @@ Deno.serve(async (req: Request) => {
         .eq("tenant_id", tenantId)
         .ilike("instance_name", displayName)
         .maybeSingle();
-      if (dup) return json({ error: "Já existe um número com esse nome." }, 409);
+      if (dup) displayName = `${displayName.slice(0, 49)} ${crypto.randomUUID().slice(0, 6)}`;
 
       // Limite gratuito: até 3 instâncias por loja. A partir da 4ª exige confirmação explícita.
       // Consultor (seller_user_id presente) é sempre tratado como gratuito.
