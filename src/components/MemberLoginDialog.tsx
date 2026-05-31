@@ -34,8 +34,8 @@ export function MemberLoginDialog() {
     navigate("/login", { replace: true });
   }
 
-  // Não exibir até estar logado, e não exigir para superadmin
-  const open = !!session && !loading && !isSuperadmin && !member;
+  // Etapa de identificação interna removida — acesso direto após login
+  const open = false;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
