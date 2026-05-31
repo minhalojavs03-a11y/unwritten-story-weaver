@@ -839,14 +839,33 @@ Deno.serve(async (req: Request) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    // Resolve tenant — owner/manager of a tenant; superadmin can pass tenant_id
-    let { data: profile } = await admin.from("profiles").select("tenant_id").eq("id", userId).maybeSingle();
+    // Resolve tenant — prefer tenant_memberships because invited users may not have profiles.tenant_id updated.
+    let { data: profile } = await admin.from("profiles").select("tenant_id, display_name, full_name, email").eq("id", userId).maybeSingle();
     let { data: roles } = await admin.from("user_roles").select("role,tenant_id").eq("user_id", userId);
     const isSuper = (roles ?? []).some((r: any) => r.role === "superadmin");
 
     const body = await req.json().catch(() => ({}));
     const { action } = body ?? {};
-    let tenantId: string | null = body?.tenant_id ?? profile?.tenant_id ?? null;
+    const requestedTenantId: string | null = body?.tenant_id ?? null;
+    let { data: membership } = await admin
+      .from("tenant_memberships")
+      .select("tenant_id, role, display_name")
+      .eq("user_id", userId)
+      .eq("tenant_id", requestedTenantId || profile?.tenant_id || "00000000-0000-0000-0000-000000000000")
+      .maybeSingle();
+
+    if (!membership) {
+      const { data: firstMembership } = await admin
+        .from("tenant_memberships")
+        .select("tenant_id, role, display_name")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      membership = firstMembership;
+    }
+
+    let tenantId: string | null = requestedTenantId ?? membership?.tenant_id ?? profile?.tenant_id ?? null;
 
     // Auto-recovery: usuário autenticado sem tenant (cadastro órfão) → cria loja padrão
     if (!tenantId && !isSuper) {
@@ -867,13 +886,20 @@ Deno.serve(async (req: Request) => {
       await admin.from("profiles").upsert({ id: userId, tenant_id: tenantId, email, full_name: fullName });
       await admin.from("user_roles").insert({ user_id: userId, role: "owner", tenant_id: tenantId });
       await admin.from("ai_config").insert({ tenant_id: tenantId }).then(() => {}, () => {});
-      profile = { tenant_id: tenantId } as any;
+      profile = { tenant_id: tenantId, display_name: fullName, full_name: fullName, email } as any;
+      membership = { tenant_id: tenantId, role: "owner", display_name: fullName } as any;
       console.log("auto-recovery: created tenant for orphan user", userId, tenantId);
     }
 
     if (!tenantId) return json({ error: "tenant não encontrado" }, 400);
-    if (!isSuper && profile?.tenant_id !== tenantId) {
+    const belongsToTenant = membership?.tenant_id === tenantId || profile?.tenant_id === tenantId;
+    if (!isSuper && !belongsToTenant) {
       return json({ error: "forbidden" }, 403);
+    }
+
+    if (!isSuper && membership?.tenant_id === tenantId && profile?.tenant_id !== tenantId) {
+      await admin.from("profiles").update({ tenant_id: tenantId }).eq("id", userId);
+      profile = { ...(profile ?? {}), tenant_id: tenantId } as any;
     }
 
     // Load tenant for naming
