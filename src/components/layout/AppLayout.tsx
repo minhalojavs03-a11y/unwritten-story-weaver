@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Home, MessageCircle, Kanban, Calendar, Users, UserPlus, Settings, LogOut, Eye, Shield, Smartphone, Menu, Sparkles, Inbox, User as UserIcon, Users2, MessageSquareText, ChevronLeft, ChevronRight, Video, History, Trophy, BarChart3, ChevronDown, Headphones, Briefcase, LineChart, Cog, Target, Plug } from "lucide-react";
+import { Home, MessageCircle, Kanban, Calendar, Users, UserPlus, Settings, LogOut, Eye, Shield, Smartphone, Menu, Sparkles, Inbox, User as UserIcon, Users2, MessageSquareText, ChevronLeft, ChevronRight, Video, History, Trophy, BarChart3, ChevronDown, Headphones, Briefcase, LineChart, Cog, Target, Plug, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +17,7 @@ import { MemberLoginDialog } from "@/components/MemberLoginDialog";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { TopAlertBanner } from "@/components/layout/TopAlertBanner";
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
+import { ImpersonateDialog } from "@/components/admin/ImpersonateDialog";
 import { NotificationsBell } from "@/components/layout/NotificationsBell";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useNavBadges } from "@/hooks/useNavBadges";
@@ -425,6 +426,11 @@ export function AppLayout() {
                 {isOwner && (
                   <DropdownMenuItem onClick={() => navigate("/configuracoes")}>
                     <Settings className="mr-2 h-4 w-4" /> Configurações
+                  </DropdownMenuItem>
+                )}
+                {isSuperadmin && (
+                  <DropdownMenuItem onClick={() => setImpersonateOpen(true)}>
+                    <Repeat className="mr-2 h-4 w-4" /> Trocar de conta
                   </DropdownMenuItem>
                 )}
                 {member && (
