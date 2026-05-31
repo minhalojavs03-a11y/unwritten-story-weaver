@@ -376,7 +376,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   const send = useSendMessage();
   const assume = useAssumeLead();
   const release = useReleaseLead();
-  const { roles, session } = useAuth();
+  const { roles, session, isSuperadmin } = useAuth();
   const { member } = useActiveMember();
   const { data: members = [] } = useTenantMembers();
   const { data: allTemplates = [] } = useTemplates();
