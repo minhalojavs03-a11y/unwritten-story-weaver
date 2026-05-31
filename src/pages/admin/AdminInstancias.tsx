@@ -117,7 +117,8 @@ export default function AdminInstancias() {
               <Button onClick={createInstance} disabled={busy || !tenantId || !instanceToken || !serverUrl} className="w-full">{busy ? "Conectando…" : "Conectar"}</Button>
             </div>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       } />
       <div className="grid gap-4 p-4 md:grid-cols-2 md:p-8 lg:grid-cols-3">
         {instances.length === 0 && (
