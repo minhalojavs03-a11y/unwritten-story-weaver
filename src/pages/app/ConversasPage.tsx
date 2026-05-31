@@ -78,15 +78,26 @@ export default function ConversasPage() {
         .select("id", { count: "exact", head: true })
         .eq("tenant_id", tenantId);
       if (cancelled || (conversations.length > 0 && (messageCount ?? 0) > 0)) return;
+      // Só importa histórico de instâncias que ainda não passaram pelo sync inicial
+      // e que NÃO foram marcadas como "auto_history_import_disabled" (ex.: número
+      // de teste já limpo manualmente). Sem essa trava o /conversas reimportava
+      // os contatos toda vez que o tenant aparecia vazio.
       const { data: connectedInstances } = await supabase
         .from("whatsapp_instances")
-        .select("id")
+        .select("id, metadata")
         .eq("tenant_id", tenantId)
         .or("is_connected.eq.true,status.eq.connected")
         .limit(3);
       if (cancelled || !connectedInstances?.length) return;
+      const importable = (connectedInstances as Array<{ id: string; metadata: Record<string, unknown> | null }>).filter((inst) => {
+        const meta = (inst.metadata ?? {}) as Record<string, unknown>;
+        if (meta.auto_history_import_disabled === true) return false;
+        if (meta.history_sync_completed_at) return false;
+        return true;
+      });
+      if (cancelled || importable.length === 0) return;
       toast({ title: "Importando conversas do WhatsApp", description: "Número conectado encontrado. As conversas vão aparecer aqui." });
-      await Promise.allSettled(connectedInstances.map((i: any) => supabase.functions.invoke("whatsapp-manage", {
+      await Promise.allSettled(importable.map((i) => supabase.functions.invoke("whatsapp-manage", {
         body: { action: "sync-history", instance_id: i.id, maxChats: 80, msgsPerChat: 20 },
       })));
       if (cancelled) return;
@@ -96,6 +107,7 @@ export default function ConversasPage() {
     })();
     return () => { cancelled = true; };
   }, [tenantId, isLoading, conversations.length, queryClient]);
+
 
   // Leads atribuídos sem linha em "conversations" ainda.
   // Consultor restrito: apenas próprios leads. Dono/supervisor/superadmin: todos do tenant
