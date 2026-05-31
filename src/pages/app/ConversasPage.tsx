@@ -233,7 +233,7 @@ export default function ConversasPage() {
         if (tab === "unread") return (c.unread_count ?? 0) > 0;
         return true;
       });
-  }, [conversations, assignedLeads, query, tab, canViewAll, member?.id, member?.role_label]);
+  }, [conversations, assignedLeads, query, tab, canViewAll, member?.id, member?.role_label, userId]);
 
   const active = conversations.find((c: any) => c.id === activeConvId) ?? fetchedActive;
 
