@@ -42,18 +42,50 @@ Deno.serve(async (req) => {
     const tenantId = body?.tenant_id as string | undefined;
     if (!tenantId) return json({ error: "tenant_id required" }, 400);
 
-    // find owner of tenant
-    const { data: membership, error: mErr } = await admin
+    // find best member to impersonate: prefer owner, fall back to supervisor or any member.
+    const { data: memberships, error: mErr } = await admin
       .from("tenant_memberships")
-      .select("user_id")
+      .select("user_id, role, created_at")
       .eq("tenant_id", tenantId)
-      .eq("role", "owner")
-      .maybeSingle();
-    if (mErr || !membership) return json({ error: "owner not found" }, 404);
+      .order("created_at", { ascending: true });
+    if (mErr) return json({ error: mErr.message }, 500);
+
+    const rolePriority: Record<string, number> = { owner: 0, supervisor: 1, consultant: 2, attendant: 3 };
+    const sorted = (memberships ?? []).slice().sort(
+      (a, b) => (rolePriority[a.role] ?? 99) - (rolePriority[b.role] ?? 99),
+    );
+    let membership = sorted[0] ?? null;
+
+    // Self-heal: tenant without any membership but with a profile pointing to it.
+    if (!membership) {
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("id, display_name, email")
+        .eq("tenant_id", tenantId)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (profile?.id) {
+        const { error: insertErr } = await admin.from("tenant_memberships").insert({
+          tenant_id: tenantId,
+          user_id: profile.id,
+          role: "owner",
+          display_name: profile.display_name ?? (profile.email ?? "").split("@")[0] ?? "Dono",
+        });
+        if (!insertErr) membership = { user_id: profile.id, role: "owner", created_at: new Date().toISOString() } as any;
+      }
+    }
+
+    if (!membership) {
+      return json({ error: "Esta conta ainda não tem nenhum usuário vinculado. Cadastre um dono antes de acessar." }, 404);
+    }
 
     const { data: targetUser, error: tErr } = await admin.auth.admin.getUserById(membership.user_id);
-    if (tErr || !targetUser?.user?.email) return json({ error: "owner email not found" }, 404);
+    if (tErr || !targetUser?.user?.email) return json({ error: "target user email not found" }, 404);
     const email = targetUser.user.email;
+
+    // Make sure the user's profile points to this tenant so the app loads with the right context.
+    await admin.from("profiles").update({ tenant_id: tenantId }).eq("id", membership.user_id);
 
     // Generate magic link → returns hashed_token usable with verifyOtp
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
