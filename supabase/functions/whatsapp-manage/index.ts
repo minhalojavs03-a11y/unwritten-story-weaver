@@ -910,7 +910,8 @@ Deno.serve(async (req: Request) => {
       `${SUPABASE_URL}/functions/v1/whatsapp-webhook?secret=${secret}`;
 
     const requestedInstanceId: string | null = body?.instance_id ?? null;
-    const callerRole = (membership?.role ?? (isSuper ? "superadmin" : null)) as string | null;
+    const appRoleForTenant = (roles ?? []).find((r: any) => !r.tenant_id || r.tenant_id === tenantId)?.role ?? null;
+    const callerRole = (membership?.role ?? appRoleForTenant ?? (isSuper ? "superadmin" : null)) as string | null;
     const callerCanManageAllInstances = isSuper || roleCanManageWhatsapp(callerRole);
     const callerName = safeDisplayName(membership?.display_name ?? profile?.display_name ?? profile?.full_name ?? profile?.email ?? userData.user.email, "Meu WhatsApp");
 
