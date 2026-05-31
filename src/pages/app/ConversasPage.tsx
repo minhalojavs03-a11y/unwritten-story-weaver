@@ -593,6 +593,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
         headers: { Authorization: `Bearer ${accessToken}` },
         body: {
           action: "send-audio",
+          tenant_id: lead.tenant_id,
           phone: lead.phone,
           audio_url: audioUrl,
           ptt: true,
@@ -675,6 +676,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
         headers: { Authorization: `Bearer ${accessToken}` },
         body: {
           action: "send-media",
+          tenant_id: lead.tenant_id,
           phone: lead.phone,
           media_url: mediaUrl,
           media_type: mediaType,
