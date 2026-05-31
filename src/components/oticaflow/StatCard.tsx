@@ -16,7 +16,7 @@ interface Props {
 export function StatCard({ icon: Icon, label, value, trend, iconColor, className, variant = "light", to }: Props) {
   const isDark = variant === "dark";
   const defaultIcon = isDark
-    ? "bg-[hsl(217_91%_60%/0.15)] text-[hsl(217_91%_70%)]"
+    ? "bg-[hsl(var(--primary)/0.15)] text-[hsl(357_85%_68%)]"
     : "bg-primary-light text-primary";
   const Wrapper: any = to ? Link : "div";
   const wrapperProps = to ? { to } : {};
