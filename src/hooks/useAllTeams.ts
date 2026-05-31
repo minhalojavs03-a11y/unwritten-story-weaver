@@ -7,6 +7,7 @@ export type AppRoleAll = "superadmin" | "owner" | "supervisor" | "consultant" | 
 export interface TenantTeamSummary {
   tenant: Tables<"tenants">;
   members: (Tables<"profiles"> & { roles: AppRoleAll[]; primary_role: AppRoleAll })[];
+  owner_profile: Tables<"profiles"> | null;
   member_count: number;
   owners: number;
   supervisors: number;
