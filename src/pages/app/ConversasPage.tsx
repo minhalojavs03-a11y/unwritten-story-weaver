@@ -143,11 +143,13 @@ export default function ConversasPage() {
       if (restricted) {
         const { data: leadCheck } = await supabase
           .from("leads")
-          .select("assigned_member_id, tenant_id")
+          .select("assigned_member_id, assigned_to, tenant_id")
           .eq("id", leadParam)
           .maybeSingle();
         if (cancelled) return;
-        if (!leadCheck || leadCheck.tenant_id !== tenantId || leadCheck.assigned_member_id !== member?.id) {
+        const ownsByMember = member?.id && leadCheck?.assigned_member_id === member.id;
+        const ownsByUser = userId && leadCheck?.assigned_to === userId;
+        if (!leadCheck || leadCheck.tenant_id !== tenantId || (!ownsByMember && !ownsByUser)) {
           setFetchedActive(null);
           setParams({}, { replace: true });
           toast({ title: "Acesso negado", description: "Esta conversa pertence a outro consultor.", variant: "destructive" });
