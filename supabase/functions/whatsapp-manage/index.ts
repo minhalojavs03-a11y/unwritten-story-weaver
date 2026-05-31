@@ -956,10 +956,15 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "create") {
-      const sellerUserId: string | null = body?.seller_user_id ?? null;
+      let sellerUserId: string | null = body?.seller_user_id ?? null;
       const sellerNameRaw: string = (body?.seller_name ?? "").toString().trim();
       const sellerPhoneRaw: string = (body?.seller_phone ?? "").toString().trim();
       const sellerPhone = sellerPhoneRaw ? sellerPhoneRaw.replace(/[^0-9]/g, "") : "";
+
+      if (!callerCanManageAllInstances) sellerUserId = userId;
+      if (sellerUserId && sellerUserId !== userId && !callerCanManageAllInstances) {
+        return json({ error: "Sem permissão para criar número para outro usuário." }, 403);
+      }
 
       // Idempotência: se este consultor já tem instância no tenant, devolve a existente
       if (sellerUserId) {
@@ -972,9 +977,9 @@ Deno.serve(async (req: Request) => {
         if (existing) return json({ instance: sanitize(existing), is_paid: false, reused: true });
       }
 
-      const rawName = ((body?.name ?? sellerNameRaw) ?? "").toString().trim();
+      const rawName = ((body?.name ?? sellerNameRaw ?? callerName) ?? "").toString().trim();
       if (!rawName || rawName.length < 2) return json({ error: "Nome do número é obrigatório (mín. 2 caracteres)." }, 400);
-      const displayName = rawName.slice(0, 60);
+      let displayName = rawName.slice(0, 60);
       // Avoid duplicate names within the tenant
       const { data: dup } = await admin
         .from("whatsapp_instances")
@@ -982,7 +987,7 @@ Deno.serve(async (req: Request) => {
         .eq("tenant_id", tenantId)
         .ilike("instance_name", displayName)
         .maybeSingle();
-      if (dup) return json({ error: "Já existe um número com esse nome." }, 409);
+      if (dup) displayName = `${displayName.slice(0, 49)} ${crypto.randomUUID().slice(0, 6)}`;
 
       // Limite gratuito: até 3 instâncias por loja. A partir da 4ª exige confirmação explícita.
       // Consultor (seller_user_id presente) é sempre tratado como gratuito.
