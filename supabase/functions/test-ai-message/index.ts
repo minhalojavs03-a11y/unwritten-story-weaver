@@ -9,7 +9,13 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
+const AI_URL = GEMINI_API_KEY
+  ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+  : "https://ai.gateway.lovable.dev/v1/chat/completions";
+const AI_KEY = GEMINI_API_KEY || LOVABLE_API_KEY;
+const AI_MODEL = GEMINI_API_KEY ? "gemini-2.5-flash" : "google/gemini-2.5-flash";
 
 // === MODO ESTABILIDADE: delay aleatório antes de cada envio (remover quando voltar ao normal).
 async function randomSendDelay(): Promise<void> {
@@ -84,14 +90,14 @@ Gere uma mensagem CURTA (2-3 linhas, em português brasileiro) de boas-vindas pa
 informando que é uma mensagem automática de teste do sistema de pré-atendimento com IA.
 Não faça perguntas. Apenas saudação simpática + confirmação que o canal está funcionando.`;
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResp = await fetch(AI_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${AI_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: AI_MODEL,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: "Gere a mensagem de teste agora." },
@@ -103,7 +109,7 @@ Não faça perguntas. Apenas saudação simpática + confirmação que o canal e
       const errText = await aiResp.text();
       if (aiResp.status === 429) return json({ error: "Limite de requisições da IA atingido." }, 429);
       if (aiResp.status === 402) return json({ error: "Créditos da IA esgotados." }, 402);
-      console.error("AI gateway error", aiResp.status, errText);
+      console.error("AI error", aiResp.status, errText);
       return json({ error: "Falha ao gerar mensagem com IA" }, 500);
     }
     const aiJson = await aiResp.json();
