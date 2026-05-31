@@ -17,6 +17,12 @@ const AI_URL = GEMINI_API_KEY
 const AI_KEY = GEMINI_API_KEY || LOVABLE_API_KEY;
 const AI_MODEL = GEMINI_API_KEY ? "gemini-2.5-flash" : "google/gemini-2.5-flash";
 
+function aiHeaders() {
+  return GEMINI_API_KEY
+    ? { Authorization: `Bearer ${GEMINI_API_KEY}`, "Content-Type": "application/json" }
+    : { "Lovable-API-Key": LOVABLE_API_KEY, "Content-Type": "application/json" };
+}
+
 // === MODO ESTABILIDADE: delay aleatório antes de cada envio (remover quando voltar ao normal).
 async function randomSendDelay(): Promise<void> {
   let ms = 5000 + Math.floor(Math.random() * 55000);
@@ -92,10 +98,7 @@ Não faça perguntas. Apenas saudação simpática + confirmação que o canal e
 
     const aiResp = await fetch(AI_URL, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${AI_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: aiHeaders(),
       body: JSON.stringify({
         model: AI_MODEL,
         messages: [

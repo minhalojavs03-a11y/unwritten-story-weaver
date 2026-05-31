@@ -494,7 +494,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   }
 
   async function startRecording() {
-    if (!member) {
+    if (!member && !isSuperadmin) {
       toast({ title: "Selecione sua identidade interna para enviar áudio", variant: "destructive" });
       return;
     }
@@ -554,6 +554,9 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
       if (!assignedNow && member?.id) {
         await supabase.rpc("assume_lead", { _lead_id: lead.id, _member_id: member.id });
       }
+      if (!assignedNow && !member?.id && !canOverride) {
+        throw new Error("Selecione sua identidade interna para enviar áudio.");
+      }
 
       // Upload no bucket público
       const ext = (blob.type.includes("ogg") ? "ogg" : blob.type.includes("mp4") ? "m4a" : "webm");
@@ -590,6 +593,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
         headers: { Authorization: `Bearer ${accessToken}` },
         body: {
           action: "send-audio",
+          tenant_id: lead.tenant_id,
           phone: lead.phone,
           audio_url: audioUrl,
           ptt: true,
@@ -625,6 +629,9 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
       }
       if (!assignedNow && member?.id) {
         await supabase.rpc("assume_lead", { _lead_id: lead.id, _member_id: member.id });
+      }
+      if (!assignedNow && !member?.id && !canOverride) {
+        throw new Error("Selecione sua identidade interna para enviar mídia.");
       }
 
       // Detecta tipo
@@ -669,6 +676,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
         headers: { Authorization: `Bearer ${accessToken}` },
         body: {
           action: "send-media",
+          tenant_id: lead.tenant_id,
           phone: lead.phone,
           media_url: mediaUrl,
           media_type: mediaType,
@@ -699,8 +707,17 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   async function suggest() {
     setAiBusy(true);
     try {
+      const conversationId = conv.id?.startsWith?.("virtual:") ? null : conv.id;
+      if (!conversationId) {
+        toast({ title: "IA indisponível", description: "Envie uma mensagem primeiro para criar o histórico desta conversa.", variant: "destructive" });
+        return;
+      }
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error("Sessão expirada. Saia e entre novamente para usar a IA.");
       const { data, error } = await supabase.functions.invoke("suggest-reply", {
-        body: { conversation_id: conv.id },
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: { conversation_id: conversationId },
       });
       if (error) throw new Error((data as any)?.error ?? error.message ?? "Falha na IA");
       if ((data as any)?.suggested_reply) setDraft((data as any).suggested_reply);

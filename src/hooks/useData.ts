@@ -272,7 +272,7 @@ export function useMessages(
 
 
 export function useSendMessage() {
-  const { tenantId, user, roles } = useAuth();
+  const { tenantId, user, roles, isSuperadmin } = useAuth();
   const { member } = useActiveMember();
   const qc = useQueryClient();
   return useMutation({
@@ -287,14 +287,14 @@ export function useSendMessage() {
       if (!lead?.phone) throw new Error("Lead sem telefone");
 
       // Trava: só o vendedor responsável (ou owner/supervisor/superadmin) pode enviar
-      const canOverride = (roles ?? []).some((r) => ["superadmin", "owner", "supervisor"].includes(r as string));
-      if (!member?.id) throw new Error("Selecione sua identidade interna para enviar mensagens.");
-      if (lead.assigned_member_id && lead.assigned_member_id !== member.id && !canOverride) {
+      const canOverride = isSuperadmin || (roles ?? []).some((r) => ["superadmin", "owner", "supervisor"].includes(r as string));
+      if (!member?.id && !canOverride) throw new Error("Selecione sua identidade interna para enviar mensagens.");
+      if (lead.assigned_member_id && lead.assigned_member_id !== member?.id && !canOverride) {
         throw new Error("Este lead já está sendo atendido por outro vendedor.");
       }
 
       // Se ainda não tem responsável, assume automaticamente para o vendedor ativo
-      if (!lead.assigned_member_id) {
+      if (!lead.assigned_member_id && member?.id) {
         const { error: assumeErr } = await supabase.rpc("assume_lead", {
           _lead_id: leadId,
           _member_id: member.id,
@@ -386,6 +386,7 @@ export function useSendMessage() {
       try {
         await callWhatsAppManage({
           action: "send-text",
+          tenant_id: tenantId,
           instance_id: chosenInstanceId,
           phone: lead.phone,
           text: outgoingText,
