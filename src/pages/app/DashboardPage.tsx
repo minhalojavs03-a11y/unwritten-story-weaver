@@ -93,11 +93,13 @@ export default function DashboardPage() {
   return (
     <>
       <div className="px-8 pt-1 pb-2 md:px-8 md:pt-2 md:pb-3">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600 ring-1 ring-emerald-500/20">
-          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-          Painel ao vivo
-        </span>
-        <h1 className="mt-2 font-display text-2xl font-bold tracking-tight md:text-3xl">{saudacao}{firstName ? `, ${firstName}` : ""}, vamos vender hoje.</h1>
+        <h1 className="flex items-center gap-3 font-display text-2xl font-bold tracking-tight md:text-3xl">
+          {saudacao}{firstName ? `, ${firstName}` : ""}, vamos vender hoje.
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600 ring-1 ring-emerald-500/20">
+            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+            Painel ao vivo
+          </span>
+        </h1>
         <p className="mt-0.5 text-xs text-muted-foreground md:text-sm">{dataCap}</p>
       </div>
       <div className="space-y-4 px-4 pb-6 md:space-y-5 md:px-8 md:pb-8">
