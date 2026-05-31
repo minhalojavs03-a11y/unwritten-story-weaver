@@ -699,28 +699,17 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   async function suggest() {
     setAiBusy(true);
     try {
-      if (!session?.access_token) {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session?.access_token) throw new Error("Sessão expirada. Entre novamente para usar a IA.");
-      }
-
-      const response = await fetch("/api/suggest-reply", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token ?? (await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-        body: JSON.stringify({ conversation_id: conv.id }),
+      const { data, error } = await supabase.functions.invoke("suggest-reply", {
+        body: { conversation_id: conv.id },
       });
-
-      const data = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(data?.error ?? `Falha na IA (${response.status})`);
-      if (data?.suggested_reply) setDraft(data.suggested_reply);
-      else toast({ title: data?.error ?? "IA não retornou sugestão", variant: "destructive" });
+      if (error) throw new Error((data as any)?.error ?? error.message ?? "Falha na IA");
+      if ((data as any)?.suggested_reply) setDraft((data as any).suggested_reply);
+      else toast({ title: (data as any)?.error ?? "IA não retornou sugestão", variant: "destructive" });
     } catch (e: any) {
       toast({ title: "Erro IA", description: e.message, variant: "destructive" });
     } finally { setAiBusy(false); }
   }
+
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
