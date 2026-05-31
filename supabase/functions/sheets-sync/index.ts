@@ -346,10 +346,12 @@ Deno.serve(async (req: Request) => {
   try {
     // Optional: sync a single config by id (from admin "Sincronizar agora")
     let onlyConfigId: string | null = null;
+    let skipWelcome = false;
     if (req.method === "POST") {
       try {
         const body = await req.json();
         onlyConfigId = body?.config_id || null;
+        skipWelcome = body?.skip_welcome === true;
       } catch (_) { /* empty body ok */ }
     }
 
@@ -362,7 +364,7 @@ Deno.serve(async (req: Request) => {
     const results = [];
     for (const cfg of configs) {
       try {
-        results.push(await syncConfig(cfg));
+        results.push(await syncConfig(cfg, { skipWelcome }));
       } catch (e: any) {
         console.error("sync failed", cfg.id, e?.message);
         await sb(`/sheet_sync_config?id=eq.${cfg.id}`, {
