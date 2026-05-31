@@ -199,23 +199,37 @@ async function createProviderInstance(tenant: any, slugSuffix: string, displayNa
     return { ok: false, status: 500, body: { error: "WHATSAPI_API_TOKEN/WHATSAPI_CREATE_URL não configurados" } };
   }
 
-  // UAZAPI expects POST {base}/instance/init with admintoken header.
-  // Accept either a base URL ("https://ipazua.uazapi.com") or a full endpoint.
-  const base = rawUrl.replace(/\/$/, "").replace(/\/instance\/(init|create).*$/, "");
-  const createUrl = `${base}/instance/init`;
-
   const fullSlug = `${tenant.slug}-${slugSuffix}`;
-  const createResp = await fetch(createUrl, {
-    method: "POST",
-    headers: {
+
+  // Detect endpoint flavor:
+  //  - new: Supabase edge "create-instance-url" — body { token, name, deviceName }
+  //  - legacy: UAZAPI "/instance/init" — header admintoken + body { name, systemName }
+  const isCreateUrlEndpoint = /\/create-instance-url(\/?$|\?)/.test(rawUrl) || rawUrl.endsWith("/create-instance-url");
+
+  let createUrl: string;
+  let headers: Record<string, string>;
+  let body: Record<string, unknown>;
+
+  if (isCreateUrlEndpoint) {
+    createUrl = rawUrl;
+    headers = { "Content-Type": "application/json" };
+    body = { token: WHATSAPI_API_TOKEN, name: fullSlug, deviceName: displayName };
+  } else {
+    // UAZAPI base URL or full endpoint
+    const base = rawUrl.replace(/\/$/, "").replace(/\/instance\/(init|create).*$/, "");
+    createUrl = `${base}/instance/init`;
+    headers = {
       "Content-Type": "application/json",
       admintoken: WHATSAPI_API_TOKEN,
       Authorization: `Bearer ${WHATSAPI_API_TOKEN}`,
-    },
-    body: JSON.stringify({
-      name: fullSlug,
-      systemName: displayName,
-    }),
+    };
+    body = { name: fullSlug, systemName: displayName };
+  }
+
+  const createResp = await fetch(createUrl, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
   });
   const { text, data } = await parseProviderResponse(createResp);
   console.log("provider create response:", createResp.status, JSON.stringify(data).slice(0, 800));
@@ -229,14 +243,11 @@ async function createProviderInstance(tenant: any, slugSuffix: string, displayNa
   const details = { ...getProviderDetails(data, tenant) };
   if (!details.server_url || !details.instance_token) {
     console.error("missing server_url/token from provider", { server_url: details.server_url, has_token: !!details.instance_token });
-    // Rollback the orphaned provider instance so it doesn't keep accumulating.
     await deleteProviderInstance(details.server_url, details.instance_token, details.instance_name ?? fullSlug);
     return { ok: false, status: 502, body: { error: "Provedor não retornou server_url/token", details: data } };
   }
-  // Force display name on saved row, keep provider's technical name for reference
   details.provider_instance_name = details.instance_name;
   details.instance_name = displayName;
-  // Keep the technical name for rollback usage
   (details as any)._provider_technical_name = details.provider_instance_name ?? fullSlug;
 
   return { ok: true, details };
