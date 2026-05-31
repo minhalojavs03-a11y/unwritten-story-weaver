@@ -182,7 +182,7 @@ async function sendWelcome(tenantId: string, lead: any) {
   }
 }
 
-async function syncConfig(cfg: any) {
+async function syncConfig(cfg: any, opts: { skipWelcome?: boolean } = {}) {
   const tabName = cfg.tab_name || "Sheet1";
   const range = `${tabName}!A1:ZZ10000`;
   const url = `${GATEWAY}/spreadsheets/${cfg.sheet_id}/values/${encodeURIComponent(range).replace(/%21/g, "!").replace(/%3A/g, ":")}`;
