@@ -1,0 +1,1 @@
+UPDATE public.sheet_sync_config SET last_row_synced = 1 WHERE id = 'fca94aa7-9250-45fc-943d-36deef9a8960';
