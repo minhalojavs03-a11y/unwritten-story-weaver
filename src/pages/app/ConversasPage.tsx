@@ -174,7 +174,7 @@ export default function ConversasPage() {
       if (!cancelled && !error && created) setFetchedActive(created);
     })();
     return () => { cancelled = true; };
-  }, [leadParam, tenantId, member?.id, member?.role_label, canViewAll, setParams]);
+  }, [leadParam, tenantId, member?.id, member?.role_label, canViewAll, userId, setParams]);
 
   const activeConvId = fetchedActive?.id ?? null;
 
