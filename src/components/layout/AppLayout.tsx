@@ -24,6 +24,7 @@ import { useNavBadges } from "@/hooks/useNavBadges";
 import { useEffect, useMemo, useState } from "react";
 
 import { TutorialVideoDialog } from "@/components/TutorialVideoDialog";
+import { PageHeaderProvider, usePageHeader } from "@/contexts/PageHeaderContext";
 import logoCatelanWhite from "@/assets/logo-catelan-white.png";
 import logoFeraconDark from "@/assets/logo-feracon-dark.png";
 import logoFeraconMark from "@/assets/logo-feracon-mark.png";
