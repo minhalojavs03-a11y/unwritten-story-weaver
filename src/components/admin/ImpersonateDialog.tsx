@@ -23,47 +23,25 @@ export function ImpersonateDialog({ open, onOpenChange }: Props) {
   async function impersonate(tenantId: string, tenantName: string) {
     setBusyId(tenantId);
     try {
-      // Save current superadmin session so we can come back
-      const { data: sess } = await supabase.auth.getSession();
-      const current = sess?.session;
-      if (current?.refresh_token) {
-        localStorage.setItem(
-          "superadmin_return_session",
-          JSON.stringify({
-            access_token: current.access_token,
-            refresh_token: current.refresh_token,
-            email: current.user?.email ?? null,
-          }),
-        );
-      }
-
       const { data, error } = await supabase.functions.invoke("superadmin-impersonate", {
         body: { tenant_id: tenantId },
       });
       if (error) throw error;
-      const { token_hash, email } = data as { token_hash: string; email: string };
-      if (!token_hash) throw new Error("Token não recebido");
-
-      // Sign out current session before swapping
-      await supabase.auth.signOut();
-
-      const { error: vErr } = await supabase.auth.verifyOtp({
-        type: "magiclink",
-        token_hash,
-      });
-      if (vErr) throw vErr;
+      const { previous_tenant_id } = data as { previous_tenant_id: string | null };
 
       localStorage.setItem(
         "impersonation_context",
-        JSON.stringify({ tenant_id: tenantId, tenant_name: tenantName, email }),
+        JSON.stringify({
+          tenant_id: tenantId,
+          tenant_name: tenantName,
+          previous_tenant_id,
+        }),
       );
       toast({ title: `Entrando como ${tenantName}` });
       onOpenChange(false);
       navigate("/dashboard", { replace: true });
-      // hard reload to refresh all auth-dependent queries
       setTimeout(() => window.location.reload(), 100);
     } catch (e: unknown) {
-      localStorage.removeItem("superadmin_return_session");
       toast({
         title: "Erro ao trocar de conta",
         description: e instanceof Error ? e.message : "Tente novamente",

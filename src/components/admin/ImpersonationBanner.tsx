@@ -4,7 +4,7 @@ import { ShieldAlert, LogOut, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-type Ctx = { tenant_id: string; tenant_name: string; email: string };
+type Ctx = { tenant_id: string; tenant_name: string; previous_tenant_id: string | null };
 
 export function ImpersonationBanner() {
   const [ctx, setCtx] = useState<Ctx | null>(null);
@@ -26,29 +26,23 @@ export function ImpersonationBanner() {
   async function exitImpersonation() {
     setBusy(true);
     try {
-      const raw = localStorage.getItem("superadmin_return_session");
-      if (!raw) throw new Error("Sessão do superadmin não encontrada");
-      const saved = JSON.parse(raw) as { access_token: string; refresh_token: string };
-      await supabase.auth.signOut();
-      const { error } = await supabase.auth.setSession({
-        access_token: saved.access_token,
-        refresh_token: saved.refresh_token,
-      });
+      const { data: u } = await supabase.auth.getUser();
+      if (!u?.user) throw new Error("Sessão expirada");
+      const { error } = await supabase
+        .from("profiles")
+        .update({ tenant_id: ctx!.previous_tenant_id, updated_at: new Date().toISOString() })
+        .eq("id", u.user.id);
       if (error) throw error;
       localStorage.removeItem("impersonation_context");
-      localStorage.removeItem("superadmin_return_session");
       toast({ title: "Voltou para Superadmin" });
       navigate("/admin/dashboard", { replace: true });
       setTimeout(() => window.location.reload(), 100);
     } catch (e: unknown) {
       toast({
         title: "Erro ao sair da conta",
-        description: e instanceof Error ? e.message : "Faça login novamente",
+        description: e instanceof Error ? e.message : "Tente novamente",
         variant: "destructive",
       });
-      localStorage.removeItem("impersonation_context");
-      localStorage.removeItem("superadmin_return_session");
-      navigate("/admin/login", { replace: true });
     } finally {
       setBusy(false);
     }
@@ -60,7 +54,6 @@ export function ImpersonationBanner() {
         <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600" />
         <span className="truncate">
           <strong>Modo suporte</strong> · Visualizando como <strong>{ctx.tenant_name}</strong>
-          <span className="ml-1 hidden text-amber-800/70 sm:inline">({ctx.email})</span>
         </span>
       </div>
       <button
