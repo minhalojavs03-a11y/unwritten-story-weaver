@@ -110,7 +110,15 @@ export default function ClientLoginPage() {
           <div className="mb-8 flex flex-col items-start">
             <img src={logoFeracon} alt="Consórcio Feracon" className="mb-5 h-20 w-auto object-contain" />
             <p className="mt-1.5 text-sm text-slate-500">
-              {session ? "Você já está conectado" : mode === "signin" ? "Entre na sua conta de cliente" : "Crie sua conta de cliente"}
+              {session
+                ? "Você já está conectado"
+                : fromPath?.startsWith("/join/")
+                  ? mode === "signin"
+                    ? "Entre para aceitar o convite da equipe"
+                    : "Crie sua conta para aceitar o convite"
+                  : mode === "signin"
+                    ? "Entre na sua conta"
+                    : "Crie sua conta"}
             </p>
           </div>
 
@@ -139,7 +147,29 @@ export default function ClientLoginPage() {
             </div>
           ) : (
             <>
+              <div className="mb-5 grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
+                <button
+                  type="button"
+                  onClick={() => setMode("signin")}
+                  className={`h-9 rounded-md text-sm font-semibold transition ${mode === "signin" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                  Entrar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode("signup")}
+                  className={`h-9 rounded-md text-sm font-semibold transition ${mode === "signup" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                  Criar conta
+                </button>
+              </div>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {mode === "signup" && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="client-name" className="text-slate-700">Nome completo</Label>
+                    <Input id="client-name" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Seu nome" required className="h-11 border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus-visible:ring-[hsl(0_84%_50%)]" />
+                  </div>
+                )}
                 <div className="space-y-1.5">
                   <Label htmlFor="client-email" className="text-slate-700">Email</Label>
                   <Input id="client-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@feracon.com" required className="h-11 border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus-visible:ring-[hsl(0_84%_50%)]" />
@@ -149,9 +179,24 @@ export default function ClientLoginPage() {
                   <Input id="client-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required className="h-11 border-slate-200 bg-slate-50 text-slate-900 focus-visible:ring-[hsl(0_84%_50%)]" />
                 </div>
                 <Button type="submit" className="h-11 w-full bg-[hsl(0_84%_50%)] text-white shadow-md transition hover:bg-[hsl(0_84%_44%)]" disabled={loading}>
-                  {loading ? "Aguarde…" : "Entrar"}
+                  {loading ? "Aguarde…" : mode === "signin" ? "Entrar" : "Criar conta"}
                 </Button>
               </form>
+              <p className="mt-4 text-center text-xs text-slate-500">
+                {mode === "signin" ? (
+                  <>Ainda não tem conta?{" "}
+                    <button type="button" onClick={() => setMode("signup")} className="font-semibold text-[hsl(0_84%_50%)] hover:underline">
+                      Criar conta
+                    </button>
+                  </>
+                ) : (
+                  <>Já tem conta?{" "}
+                    <button type="button" onClick={() => setMode("signin")} className="font-semibold text-[hsl(0_84%_50%)] hover:underline">
+                      Entrar
+                    </button>
+                  </>
+                )}
+              </p>
             </>
           )}
 
