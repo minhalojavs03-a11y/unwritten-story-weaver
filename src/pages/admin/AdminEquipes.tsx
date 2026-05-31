@@ -106,11 +106,16 @@ function TenantRow({ team, expanded, onToggle }: { team: TenantTeamSummary; expa
           <Building2 className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-foreground">
-            {team.tenant.name}
+          <p className="flex items-center gap-2 truncate font-semibold text-foreground">
+            <span className="truncate">{team.tenant.name}</span>
+            {team.members.some((m) => m.roles.includes("superadmin")) && (
+              <span className="inline-flex shrink-0 items-center rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                Superadmin
+              </span>
+            )}
             {team.owner_profile && (team.owner_profile.display_name || team.owner_profile.full_name) &&
               (team.owner_profile.display_name || team.owner_profile.full_name) !== team.tenant.name && (
-                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                <span className="truncate text-xs font-normal text-muted-foreground">
                   · {team.owner_profile.display_name || team.owner_profile.full_name}
                 </span>
               )}
