@@ -147,37 +147,35 @@
   /* Admin (superadmin) refined theme */
   .admin-shell {
     background:
-      radial-gradient(1200px 600px at 0% 0%, hsl(357 75% 45% / 0.08), transparent 60%),
-      radial-gradient(900px 500px at 100% 100%, hsl(357 75% 47% / 0.08), transparent 60%),
-      hsl(224 64% 6%);
-    color: hsl(210 40% 96%);
+      radial-gradient(1200px 600px at 0% 0%, hsl(357 75% 45% / 0.06), transparent 60%),
+      radial-gradient(900px 500px at 100% 100%, hsl(0 0% 20% / 0.4), transparent 60%),
+      hsl(0 0% 6%);
+    color: hsl(0 0% 96%);
 
-    /* Re-map design tokens so utility classes (bg-card, bg-background, bg-muted,
-       border, text-foreground, text-muted-foreground, inputs…) render dark
-       across every admin page. Tokens must be in oklch. */
-    --background: oklch(0.18 0.04 265);
-    --foreground: oklch(0.97 0.01 250);
-    --surface: oklch(0.22 0.04 265);
-    --card: oklch(0.22 0.04 265);
-    --card-foreground: oklch(0.97 0.01 250);
-    --popover: oklch(0.22 0.04 265);
-    --popover-foreground: oklch(0.97 0.01 250);
-    --secondary: oklch(0.27 0.04 265);
-    --secondary-foreground: oklch(0.97 0.01 250);
-    --muted: oklch(0.25 0.04 265);
-    --muted-foreground: oklch(0.75 0.02 255);
-    --accent: oklch(0.35 0.12 260);
-    --accent-foreground: oklch(0.98 0.01 250);
+    /* Neutral grayscale token remap for the superadmin shell */
+    --background: oklch(0.16 0 0);
+    --foreground: oklch(0.97 0 0);
+    --surface: oklch(0.20 0 0);
+    --card: oklch(0.18 0 0);
+    --card-foreground: oklch(0.97 0 0);
+    --popover: oklch(0.18 0 0);
+    --popover-foreground: oklch(0.97 0 0);
+    --secondary: oklch(0.24 0 0);
+    --secondary-foreground: oklch(0.97 0 0);
+    --muted: oklch(0.22 0 0);
+    --muted-foreground: oklch(0.72 0 0);
+    --accent: oklch(0.28 0 0);
+    --accent-foreground: oklch(0.98 0 0);
     --border: oklch(0 0 0 / 0%);
-    --input: oklch(0.30 0.04 265);
-    --ring: oklch(0.65 0.18 255);
+    --input: oklch(0.26 0 0);
+    --ring: oklch(0.65 0.18 25);
   }
-  /* Refined gradient on cards/popovers/tables — no white borderlines */
+  /* Tone-on-tone gray cards */
   .admin-shell [data-slot="card"],
   .admin-shell .bg-card {
-    background-image: linear-gradient(145deg, hsl(224 50% 16% / 0.95), hsl(224 60% 10% / 0.95));
+    background-image: linear-gradient(145deg, hsl(0 0% 14% / 0.95), hsl(0 0% 9% / 0.95));
     border-color: transparent !important;
-    box-shadow: 0 10px 30px -15px hsl(224 76% 4% / 0.6), inset 0 1px 0 hsl(357 75% 50% / 0.06);
+    box-shadow: 0 10px 30px -15px hsl(0 0% 0% / 0.7), inset 0 1px 0 hsl(0 0% 100% / 0.04);
   }
   .admin-shell table th,
   .admin-shell table td,
@@ -190,36 +188,36 @@
     border-color: transparent !important;
   }
   .admin-sidebar {
-    background: linear-gradient(180deg, hsl(0 0% 13%), hsl(0 0% 9%));
+    background: linear-gradient(180deg, hsl(0 0% 11%), hsl(0 0% 6%));
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border-right: 1px solid hsl(0 0% 100% / 0.06);
+    border-right: 1px solid hsl(0 0% 100% / 0.05);
   }
   .admin-header {
-    background: linear-gradient(180deg, hsl(0 0% 13% / 0.85), hsl(0 0% 11% / 0.7));
+    background: linear-gradient(180deg, hsl(0 0% 11% / 0.85), hsl(0 0% 8% / 0.7));
     backdrop-filter: blur(16px) saturate(160%);
     -webkit-backdrop-filter: blur(16px) saturate(160%);
-    border-bottom: 1px solid hsl(0 0% 100% / 0.06);
+    border-bottom: 1px solid hsl(0 0% 100% / 0.05);
   }
   .admin-nav-active {
-    background: linear-gradient(135deg, hsl(357 75% 50% / 0.18), hsl(357 75% 47% / 0.12));
+    background: linear-gradient(135deg, hsl(357 75% 50% / 0.18), hsl(357 75% 47% / 0.10));
     color: hsl(0 0% 100%);
-    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.08), 0 8px 24px -10px hsl(357 75% 50% / 0.5);
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.06), 0 8px 24px -10px hsl(357 75% 50% / 0.45);
   }
   .admin-card {
-    background: linear-gradient(180deg, hsl(224 64% 12% / 0.7), hsl(224 64% 9% / 0.7));
-    border: 1px solid hsl(0 0% 100% / 0.06);
-    box-shadow: 0 20px 40px -20px hsl(0 0% 0% / 0.5), inset 0 1px 0 hsl(0 0% 100% / 0.04);
+    background: linear-gradient(180deg, hsl(0 0% 12% / 0.85), hsl(0 0% 8% / 0.85));
+    border: 1px solid hsl(0 0% 100% / 0.05);
+    box-shadow: 0 20px 40px -20px hsl(0 0% 0% / 0.6), inset 0 1px 0 hsl(0 0% 100% / 0.04);
   }
   .admin-stat {
-    background: linear-gradient(180deg, hsl(224 64% 14% / 0.7), hsl(224 64% 10% / 0.7));
-    border: 1px solid hsl(0 0% 100% / 0.06);
-    box-shadow: 0 20px 40px -25px hsl(0 0% 0% / 0.6), inset 0 1px 0 hsl(0 0% 100% / 0.05);
+    background: linear-gradient(180deg, hsl(0 0% 14% / 0.85), hsl(0 0% 9% / 0.85));
+    border: 1px solid hsl(0 0% 100% / 0.05);
+    box-shadow: 0 20px 40px -25px hsl(0 0% 0% / 0.7), inset 0 1px 0 hsl(0 0% 100% / 0.04);
     transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
   }
   .admin-stat:hover {
     transform: translateY(-2px);
-    border-color: hsl(357 75% 50% / 0.25);
+    border-color: hsl(357 75% 50% / 0.30);
     box-shadow: 0 25px 50px -20px hsl(357 75% 50% / 0.25), inset 0 1px 0 hsl(0 0% 100% / 0.06);
   }
 
