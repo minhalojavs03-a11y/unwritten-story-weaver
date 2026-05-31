@@ -277,7 +277,20 @@ async function ensureProviderInstance(admin: any, tenantId: string, tenant: any,
     : admin.from("whatsapp_instances").insert(payload);
   const { data: saved, error } = await query.select("*").single();
   if (error) {
-    // DB save failed → rollback the orphaned provider instance.
+    // Corrida: índice único (tenant_id, seller_user_id) já tinha sido preenchido
+    // por outra requisição. Devolvemos a instância existente e fazemos rollback
+    // da que acabamos de criar no provedor para não deixar órfã na uazapi.
+    const isUnique = (error as any)?.code === "23505" || /duplicate key|unique/i.test(error.message ?? "");
+    if (isUnique && sellerInfo?.seller_user_id) {
+      await deleteProviderInstance(created.details.server_url, created.details.instance_token, (created.details as any)._provider_technical_name);
+      const { data: existing } = await admin
+        .from("whatsapp_instances")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .eq("seller_user_id", sellerInfo.seller_user_id)
+        .maybeSingle();
+      if (existing) return { ok: true, instance: existing, reused: true };
+    }
     await deleteProviderInstance(created.details.server_url, created.details.instance_token, (created.details as any)._provider_technical_name);
     return { ok: false, status: 500, body: { error: error.message } };
   }
