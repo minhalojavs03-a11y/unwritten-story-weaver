@@ -141,10 +141,11 @@ export default function FilaLeadsPage() {
       const digits = q.replace(/\D/g, "");
       let query = supabase
         .from("leads")
-        .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id")
-        .eq("tenant_id", tenantId)
+        .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id,tenant_id")
         .in("source", ["meta_ads", "importacao_planilha"])
         .limit(50);
+      // Superadmin pesquisa em todos os tenants.
+      if (!isSuperadmin) query = query.eq("tenant_id", tenantId);
       if (!canSendToOthers) query = query.eq("assigned_member_id", activeMember!.id);
       const orParts = [
         `name.ilike.%${q}%`,
@@ -158,7 +159,7 @@ export default function FilaLeadsPage() {
       setSearching(false);
     }, 300);
     return () => clearTimeout(handle);
-  }, [search, tenantId, canSendToOthers, activeMember?.id]);
+  }, [search, tenantId, isSuperadmin, canSendToOthers, activeMember?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -231,7 +232,7 @@ export default function FilaLeadsPage() {
 
 
   async function load() {
-    if (!tenantId) return;
+    if (!tenantId && !isSuperadmin) return;
     if (!canSendToOthers && !activeMember?.id) {
       setLeads([]);
       setAssigneeNames({});
@@ -242,12 +243,13 @@ export default function FilaLeadsPage() {
     }
     let query = supabase
       .from("leads")
-      .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id")
-      .eq("tenant_id", tenantId)
+      .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id,tenant_id")
       .not("stage", "in", "(perdido,comprou,historico)")
       .in("source", ["meta_ads", "importacao_planilha"]);
+    // Superadmin vê leads importados de todos os tenants.
+    if (!isSuperadmin) query = query.eq("tenant_id", tenantId!);
     if (!canSendToOthers) query = query.eq("assigned_member_id", activeMember!.id);
-    const { data, error } = await query.order("created_at", { ascending: false }).limit(100);
+    const { data, error } = await query.order("created_at", { ascending: false }).limit(200);
     if (error) toast.error(error.message);
     const rows = (data as any) || [];
     setLeads(rows);
@@ -279,13 +281,14 @@ export default function FilaLeadsPage() {
     const leadIds = rows.map((r: Lead) => r.id);
     const notifMap: Record<string, string[]> = {};
     if (leadIds.length) {
-      const { data: notifs } = await supabase
+      let nq = supabase
         .from("lead_notifications")
         .select("lead_id, recipient_member_id")
-        .eq("tenant_id", tenantId)
         .eq("type", "consultant_tier_match")
         .in("lead_id", leadIds)
         .not("recipient_member_id", "is", null);
+      if (!isSuperadmin && tenantId) nq = nq.eq("tenant_id", tenantId);
+      const { data: notifs } = await nq;
       const notifMemberIds = Array.from(
         new Set((notifs || []).map((n: any) => n.recipient_member_id).filter(Boolean)),
       ) as string[];
@@ -312,12 +315,13 @@ export default function FilaLeadsPage() {
 
     // Carrega pedidos de transferência em aberto para os leads visíveis
     if (leadIds.length) {
-      const { data: reqs } = await supabase
+      let trq = supabase
         .from("lead_transfer_requests")
         .select("id, lead_id, requester_member_id, owner_member_id, status, message, created_at")
-        .eq("tenant_id", tenantId)
         .eq("status", "pending")
         .in("lead_id", leadIds);
+      if (!isSuperadmin && tenantId) trq = trq.eq("tenant_id", tenantId);
+      const { data: reqs } = await trq;
       const list = (reqs ?? []) as TransferRequest[];
       setTransferRequests(list);
       const reqMemberIds = Array.from(
