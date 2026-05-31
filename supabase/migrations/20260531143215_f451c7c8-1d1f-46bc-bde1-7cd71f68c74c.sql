@@ -1,0 +1,1 @@
+UPDATE public.tenants SET name = 'Antonio Gross Carvalho Junior', updated_at = now() WHERE id = 'ec34dc71-e7a2-4864-abb2-1503520fa5bf';
