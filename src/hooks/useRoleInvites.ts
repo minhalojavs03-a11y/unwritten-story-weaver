@@ -29,7 +29,8 @@ export const ROLE_LABELS: Record<TenantRole, string> = {
 };
 
 export function buildRoleInviteLink(token: string) {
-  return `${window.location.origin}/join/${token}`;
+  const base = import.meta.env.VITE_APP_DOMAIN || window.location.origin;
+  return `${base}/join/${token}`;
 }
 
 export function useRoleInvites() {
