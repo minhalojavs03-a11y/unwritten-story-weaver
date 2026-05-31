@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AdminHeader } from "./AdminHeader";
+import { TestAiMessageButton } from "@/components/layout/TestAiMessageButton";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -91,8 +92,10 @@ export default function AdminInstancias() {
   return (
     <>
       <AdminHeader title="Instâncias WhatsApp" subtitle="Status de conexão por loja" actions={
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button>+ Nova instância</Button></DialogTrigger>
+        <div className="flex items-center gap-2">
+          <TestAiMessageButton />
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild><Button>+ Nova instância</Button></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Nova instância</DialogTitle></DialogHeader>
             <div className="space-y-3">
@@ -114,7 +117,8 @@ export default function AdminInstancias() {
               <Button onClick={createInstance} disabled={busy || !tenantId || !instanceToken || !serverUrl} className="w-full">{busy ? "Conectando…" : "Conectar"}</Button>
             </div>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       } />
       <div className="grid gap-4 p-4 md:grid-cols-2 md:p-8 lg:grid-cols-3">
         {instances.length === 0 && (
