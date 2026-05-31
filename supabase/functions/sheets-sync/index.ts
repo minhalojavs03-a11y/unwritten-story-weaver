@@ -305,7 +305,7 @@ async function syncConfig(cfg: any, opts: { skipWelcome?: boolean } = {}) {
     });
 
     // Welcome message via WhatsApp — apenas para leads realmente novos
-    if (isNewLead) {
+    if (isNewLead && !opts.skipWelcome) {
       await sendWelcome(cfg.tenant_id, { ...lead, name, phone, interest });
     }
 
