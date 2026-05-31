@@ -386,6 +386,7 @@ export function useSendMessage() {
       try {
         await callWhatsAppManage({
           action: "send-text",
+          tenant_id: tenantId,
           instance_id: chosenInstanceId,
           phone: lead.phone,
           text: outgoingText,
