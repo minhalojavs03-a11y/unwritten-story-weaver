@@ -106,7 +106,15 @@ function TenantRow({ team, expanded, onToggle }: { team: TenantTeamSummary; expa
           <Building2 className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-foreground">{team.tenant.name}</p>
+          <p className="truncate font-semibold text-foreground">
+            {team.tenant.name}
+            {team.owner_profile && (team.owner_profile.display_name || team.owner_profile.full_name) &&
+              (team.owner_profile.display_name || team.owner_profile.full_name) !== team.tenant.name && (
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  · {team.owner_profile.display_name || team.owner_profile.full_name}
+                </span>
+              )}
+          </p>
           <p className="text-xs text-muted-foreground">Plano {team.tenant.plan}</p>
         </div>
         <div className="hidden items-center gap-3 text-xs text-muted-foreground sm:flex">

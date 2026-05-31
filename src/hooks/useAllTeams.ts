@@ -7,6 +7,7 @@ export type AppRoleAll = "superadmin" | "owner" | "supervisor" | "consultant" | 
 export interface TenantTeamSummary {
   tenant: Tables<"tenants">;
   members: (Tables<"profiles"> & { roles: AppRoleAll[]; primary_role: AppRoleAll })[];
+  owner_profile: Tables<"profiles"> | null;
   member_count: number;
   owners: number;
   supervisors: number;
@@ -55,9 +56,14 @@ export function useAllTeams() {
           const roles = rolesByUser.get(p.id) ?? [];
           return { ...(p as Tables<"profiles">), roles, primary_role: pickPrimary(roles) };
         });
+        const ownerMember = members.find((m) => m.primary_role === "owner") ?? null;
+        const ownerByCreator = tenant.created_by
+          ? (profilesRes.data ?? []).find((p) => p.id === tenant.created_by) ?? null
+          : null;
         return {
           tenant: tenant as Tables<"tenants">,
           members,
+          owner_profile: (ownerMember ?? ownerByCreator) as Tables<"profiles"> | null,
           member_count: members.length,
           owners: members.filter((m) => m.primary_role === "owner").length,
           supervisors: members.filter((m) => m.primary_role === "supervisor").length,
