@@ -107,22 +107,26 @@ export default function ConversasPage() {
     const memberCanViewAll = /dono|owner|propriet|supervisor/.test(memberRole);
     const canSeeAll = member ? memberCanViewAll : canViewAll;
     const restricted = !canSeeAll;
-    if (restricted && !member?.id) { setAssignedLeads([]); return; }
+    if (restricted && !member?.id && !userId) { setAssignedLeads([]); return; }
     let cancelled = false;
     (async () => {
       let q = supabase
         .from("leads")
         .select("*")
         .eq("tenant_id", tenantId)
-        .not("assigned_member_id", "is", null)
         .order("created_at", { ascending: false, nullsFirst: false })
         .limit(500);
-      if (restricted && member?.id) q = q.eq("assigned_member_id", member.id);
+      if (restricted) {
+        if (member?.id) q = q.eq("assigned_member_id", member.id);
+        else if (userId) q = q.eq("assigned_to", userId);
+      } else {
+        q = q.not("assigned_member_id", "is", null);
+      }
       const { data } = await q;
       if (!cancelled) setAssignedLeads(data ?? []);
     })();
     return () => { cancelled = true; };
-  }, [tenantId, member?.id, member?.role_label, canViewAll, conversations]);
+  }, [tenantId, member?.id, member?.role_label, canViewAll, userId, conversations]);
 
   // Dado leadId da URL, encontra/garante uma conversa (busca direta + fallback de criação)
   const [fetchedActive, setFetchedActive] = useState<any | null>(null);
