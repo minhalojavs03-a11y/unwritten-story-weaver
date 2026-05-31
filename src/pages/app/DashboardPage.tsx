@@ -28,9 +28,17 @@ export default function DashboardPage() {
   const { data: m } = useDashboardMetrics(scopeMemberId);
   const { data: allLeads = [] } = useLeads();
   const leads = scopeMemberId ? allLeads.filter((l) => l.assigned_member_id === scopeMemberId) : allLeads;
-  const firstName = (member?.display_name ?? profile?.display_name ?? profile?.full_name ?? "")
-    .trim()
-    .split(/\s+/)[0] ?? "";
+  // Em modo suporte (superadmin trocou de tenant), saúda o nome do cliente
+  let impersonationName: string | null = null;
+  try {
+    const raw = typeof window !== "undefined" ? localStorage.getItem("impersonation_context") : null;
+    if (raw) impersonationName = (JSON.parse(raw)?.tenant_name as string | undefined) ?? null;
+  } catch { /* ignore */ }
+  const firstName = impersonationName
+    ? impersonationName.trim().split(/\s+/)[0]
+    : ((member?.display_name ?? profile?.display_name ?? profile?.full_name ?? "")
+        .trim()
+        .split(/\s+/)[0] ?? "");
   const today = new Date(); today.setHours(0,0,0,0);
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
   const { data: todayAppts = [] } = useAppointments(today, tomorrow);
