@@ -34,6 +34,21 @@ export function ImpersonationBanner() {
         .eq("id", u.user.id);
       if (error) throw error;
       localStorage.removeItem("impersonation_context");
+      // Limpa membro interno selecionado durante o modo suporte
+      try {
+        const lsKeys: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith("feracon.activeMember")) lsKeys.push(k);
+        }
+        lsKeys.forEach((k) => localStorage.removeItem(k));
+        const ssKeys: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const k = sessionStorage.key(i);
+          if (k && k.startsWith("feracon.activeMember")) ssKeys.push(k);
+        }
+        ssKeys.forEach((k) => sessionStorage.removeItem(k));
+      } catch { /* ignore */ }
       toast({ title: "Voltou para Superadmin" });
       navigate("/admin/dashboard", { replace: true });
       setTimeout(() => window.location.reload(), 100);
