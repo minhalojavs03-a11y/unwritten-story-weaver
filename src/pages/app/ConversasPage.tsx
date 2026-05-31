@@ -38,10 +38,11 @@ const tabs: { id: "all" | "hot" | "unread"; label: string }[] = [
 ];
 
 export default function ConversasPage() {
-  const { tenantId, isSuperadmin, isOwner } = useAuth();
+  const { tenantId, isSuperadmin, isOwner, user } = useAuth();
   const { member } = useActiveMember();
   const { can } = usePermissions();
   const canViewAll = isSuperadmin || isOwner || can("view_all_leads");
+  const userId = user?.id ?? null;
   const [params, setParams] = useSearchParams();
   const leadParam = params.get("lead");
   const tabParam = params.get("tab");
