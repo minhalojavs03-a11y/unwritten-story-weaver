@@ -62,7 +62,7 @@ function qrSrc(qr: string | null): string | null {
 }
 
 export default function MeuWhatsAppPage() {
-  const { user, tenantId } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [instance, setInstance] = useState<Instance | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -73,7 +73,7 @@ export default function MeuWhatsAppPage() {
   const myDisplayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Meu WhatsApp";
 
   const load = useCallback(async () => {
-    if (!tenantId || !user?.id) return;
+    if (!user?.id) return;
     setLoading(true);
     try {
       const r = await call("list", { mine_only: true });
@@ -94,7 +94,7 @@ export default function MeuWhatsAppPage() {
     } finally {
       setLoading(false);
     }
-  }, [tenantId, user?.id, myDisplayName]);
+  }, [user?.id, myDisplayName]);
 
   useEffect(() => { load(); }, [load]);
 
