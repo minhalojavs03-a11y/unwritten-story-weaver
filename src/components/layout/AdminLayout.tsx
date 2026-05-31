@@ -38,9 +38,7 @@ export function AdminLayout() {
     <div className="admin-shell flex min-h-screen w-full max-w-full overflow-x-hidden text-white">
       <aside className="admin-sidebar hidden w-64 shrink-0 flex-col md:flex">
         <div className="flex h-16 items-center gap-3 border-b border-white/5 px-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-white/14 to-white/6 text-white shadow-[inset_0_1px_0_hsl(0_0%_100%/0.12)]">
-            <Eye className="h-4 w-4" />
-          </div>
+          <img src={logoFeraconMark} alt="Feracon" className="h-9 w-9 object-contain" />
           <div>
             <div className="font-display text-base font-bold leading-tight text-white">Consórcio Feracon</div>
             <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/50">Superadmin</div>
@@ -91,9 +89,7 @@ export function AdminLayout() {
               </SheetTrigger>
               <SheetContent side="left" className="admin-sidebar w-72 border-white/5 p-0 text-white">
                 <SheetHeader className="flex h-16 flex-row items-center gap-3 space-y-0 border-b border-white/5 px-5 text-left">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-white/14 to-white/6 text-white shadow-[inset_0_1px_0_hsl(0_0%_100%/0.12)]">
-                    <Eye className="h-4 w-4" />
-                  </div>
+                  <img src={logoFeraconMark} alt="Feracon" className="h-9 w-9 object-contain" />
                   <div>
                     <SheetTitle className="font-display text-base font-bold leading-tight text-white">Consórcio Feracon</SheetTitle>
                     <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/50">Superadmin</div>
@@ -131,7 +127,7 @@ export function AdminLayout() {
                 </div>
               </SheetContent>
             </Sheet>
-            <span className="font-display text-base font-bold text-white">Consórcio Feracon</span>
+            <img src={logoFeraconDark} alt="Consórcio Feracon" className="h-7 w-auto object-contain" />
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <NavLink
