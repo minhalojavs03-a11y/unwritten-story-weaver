@@ -121,7 +121,7 @@ export function AppLayout() {
       <aside className={cn("sticky top-0 hidden h-dvh shrink-0 self-start md:flex", sidebarWidth, "transition-all")}>
         <TooltipProvider delayDuration={100}>
           <div className="client-sidebar relative flex w-full flex-col border-r border-white/5 py-3">
-            <div className={cn("mb-3 flex items-center", collapsed ? "mx-auto h-12 w-12" : "mx-3 h-14")}>
+            <div className={cn("mb-3 flex items-center", collapsed ? "mx-auto h-12 w-12" : "mx-3 h-16")}>
               <button
                 type="button"
                 onClick={() => navigate("/crm")}
