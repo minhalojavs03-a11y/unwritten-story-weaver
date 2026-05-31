@@ -92,8 +92,10 @@ export default function AdminInstancias() {
   return (
     <>
       <AdminHeader title="Instâncias WhatsApp" subtitle="Status de conexão por loja" actions={
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button>+ Nova instância</Button></DialogTrigger>
+        <div className="flex items-center gap-2">
+          <TestAiMessageButton />
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild><Button>+ Nova instância</Button></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Nova instância</DialogTitle></DialogHeader>
             <div className="space-y-3">
