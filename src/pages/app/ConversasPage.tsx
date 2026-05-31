@@ -1079,7 +1079,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={mediaBusy || !member}
+              disabled={mediaBusy || (!member && !isSuperadmin)}
               title="Anexar imagem, vídeo ou documento"
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#54656f] shadow-sm transition-colors hover:bg-[#f5f6f6] disabled:opacity-60"
             >
@@ -1110,9 +1110,9 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
                   if (expanded !== null) { e.preventDefault(); setDraft(expanded + " "); }
                 }
               }}
-              placeholder={!member ? "Selecione sua identidade interna para enviar" : "Digite uma mensagem"}
+              placeholder={(!member && !isSuperadmin) ? "Selecione sua identidade interna para enviar" : "Digite uma mensagem"}
               rows={1}
-              disabled={!member}
+              disabled={!member && !isSuperadmin}
               className="wa-input flex max-h-32 min-h-[42px] min-w-0 flex-1 resize-none px-3 py-2 text-[15px] placeholder:text-[#667781] focus:outline-none disabled:opacity-60 md:px-4"
             />
             {draft.trim() ? (
@@ -1120,7 +1120,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
                 size="icon"
                 aria-label="Enviar"
                 onClick={handleSend}
-                disabled={send.isPending || !member}
+                disabled={send.isPending || (!member && !isSuperadmin)}
                 className="wa-send h-10 w-10 shrink-0 rounded-full p-0 disabled:opacity-60"
 
               >
@@ -1131,7 +1131,8 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
                 size="icon"
                 aria-label="Gravar áudio"
                 onClick={startRecording}
-                disabled={audioBusy || !member}
+                disabled={audioBusy || (!member && !isSuperadmin)}
+
                 title="Gravar mensagem de voz"
                 className="wa-send h-10 w-10 shrink-0 rounded-full p-0 disabled:opacity-60"
               >
