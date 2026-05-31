@@ -186,15 +186,6 @@ export function AppLayout() {
               </Tooltip>
             </div>
 
-            {/* Toggle colapsar */}
-            <button
-              type="button"
-              onClick={() => setCollapsed((v) => !v)}
-              aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
-              className="absolute -right-3 top-6 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-[#0f0f18] text-white/70 hover:text-white md:flex"
-            >
-              {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
-            </button>
           </div>
         </TooltipProvider>
       </aside>
