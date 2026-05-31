@@ -7,8 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePermissions } from "@/hooks/usePermissions";
-import { Navigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -65,8 +63,6 @@ function qrSrc(qr: string | null): string | null {
 
 export default function MeuWhatsAppPage() {
   const { user, tenantId } = useAuth();
-  const { can } = usePermissions();
-  const allowed = can("view_all_leads"); // superadmin, owner, supervisor
   const [loading, setLoading] = useState(true);
   const [instance, setInstance] = useState<Instance | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -77,18 +73,28 @@ export default function MeuWhatsAppPage() {
   const myDisplayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Meu WhatsApp";
 
   const load = useCallback(async () => {
-    if (!tenantId) return;
+    if (!tenantId || !user?.id) return;
+    setLoading(true);
     try {
-      const r = await call("list");
+      const r = await call("list", { mine_only: true });
       const list: Instance[] = r?.instances ?? [];
-      const shared = list.find((i) => i.is_connected || i.status === "connected") ?? list[0] ?? null;
-      setInstance(shared);
+      let mine = list.find((i) => i.is_connected || i.status === "connected") ?? list[0] ?? null;
+      if (!mine) {
+        const created = await call("create", {
+          name: myDisplayName,
+          seller_user_id: user.id,
+          seller_name: myDisplayName,
+          confirm_extra: true,
+        });
+        mine = created?.instance ?? null;
+      }
+      setInstance(mine);
     } catch (e: any) {
       toast({ title: "Erro ao carregar", description: e?.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [tenantId]);
+  }, [tenantId, user?.id, myDisplayName]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -118,8 +124,6 @@ export default function MeuWhatsAppPage() {
       setCreating(false);
     }
   };
-
-  if (!allowed) return <Navigate to="/crm" replace />;
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
