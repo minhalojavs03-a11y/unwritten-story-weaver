@@ -100,7 +100,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="pl-[68px] pr-4 pt-1 pb-2 md:pl-8 md:pr-8 md:pt-2 md:pb-3">
+      <div className="pl-7 pr-4 pt-1 pb-2 md:pl-8 md:pr-8 md:pt-2 md:pb-3">
         <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600 ring-1 ring-emerald-500/20">
           <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
           Painel ao vivo
