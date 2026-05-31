@@ -186,6 +186,7 @@ export function AdminLayout() {
           );
         })}
       </nav>
+      <ImpersonateDialog open={impersonateOpen} onOpenChange={setImpersonateOpen} />
     </div>
   );
 }
