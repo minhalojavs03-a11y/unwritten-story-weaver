@@ -239,8 +239,8 @@ export default function ConversasPage() {
     <div className="flex h-full min-h-0 w-full max-w-full flex-1 overflow-hidden bg-[#f0f2f5]">
       {/* Sidebar de conversas — estilo WhatsApp */}
       <div className={cn("wa-list flex w-full min-w-0 flex-col md:w-[420px] md:shrink-0", active && "hidden md:flex")}>
-        <div className="wa-header flex h-[60px] items-center pl-8 pr-4 md:pl-4">
-          <h1 className="font-display text-xl font-bold tracking-tight text-[#111b21] md:text-base md:font-semibold">Conversas</h1>
+        <div className="wa-header flex h-[60px] items-center pl-8 pr-4 md:hidden">
+          <h1 className="font-display text-xl font-bold tracking-tight text-[#111b21]">Conversas</h1>
         </div>
 
 
