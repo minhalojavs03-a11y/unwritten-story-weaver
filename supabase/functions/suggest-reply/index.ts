@@ -20,6 +20,12 @@ const AI_URL = GEMINI_API_KEY
 const AI_KEY = GEMINI_API_KEY || LOVABLE_API_KEY;
 const AI_MODEL = GEMINI_API_KEY ? "gemini-2.5-flash" : "google/gemini-2.5-flash";
 
+function aiHeaders() {
+  return GEMINI_API_KEY
+    ? { Authorization: `Bearer ${GEMINI_API_KEY}`, "Content-Type": "application/json" }
+    : { "Lovable-API-Key": LOVABLE_API_KEY, "Content-Type": "application/json" };
+}
+
 const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
 function json(body: unknown, status = 200) {
@@ -96,7 +102,7 @@ Deno.serve(async (req: Request) => {
     ]);
 
     const history = (msgs ?? []).slice().reverse();
-    if (!history.length) return json({ error: "sem histórico para sugerir" }, 400);
+    if (!AI_KEY) return json({ error: "Nenhuma chave de IA configurada." }, 500);
 
     const systemPrompt = await buildSystemPrompt(admin, tenantId, tenant?.name, aiCfg);
     const leadName = conv.lead?.name ?? "cliente";
@@ -107,12 +113,17 @@ Deno.serve(async (req: Request) => {
         role: m.direction === "inbound" ? "user" : "assistant",
         content: m.body ?? m.content ?? "",
       })).filter((m) => m.content),
-      { role: "user", content: "[Gere agora APENAS o texto da próxima mensagem que o vendedor deve enviar ao cliente, seguindo as regras.]" },
+      {
+        role: "user",
+        content: history.length
+          ? "[Gere agora APENAS o texto da próxima mensagem que o vendedor deve enviar ao cliente, seguindo as regras.]"
+          : `[Não há histórico de mensagens. Gere APENAS uma primeira mensagem curta de abordagem para ${leadName}, sem afirmar atendimento anterior e sem inventar ofertas.]`,
+      },
     ];
 
     const r = await fetch(AI_URL, {
       method: "POST",
-      headers: { Authorization: `Bearer ${AI_KEY}`, "Content-Type": "application/json" },
+      headers: aiHeaders(),
       body: JSON.stringify({ model: AI_MODEL, messages: chatMessages }),
     });
 
