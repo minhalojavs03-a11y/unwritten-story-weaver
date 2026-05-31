@@ -281,13 +281,14 @@ export default function FilaLeadsPage() {
     const leadIds = rows.map((r: Lead) => r.id);
     const notifMap: Record<string, string[]> = {};
     if (leadIds.length) {
-      const { data: notifs } = await supabase
+      let nq = supabase
         .from("lead_notifications")
         .select("lead_id, recipient_member_id")
-        .eq("tenant_id", tenantId)
         .eq("type", "consultant_tier_match")
         .in("lead_id", leadIds)
         .not("recipient_member_id", "is", null);
+      if (!isSuperadmin && tenantId) nq = nq.eq("tenant_id", tenantId);
+      const { data: notifs } = await nq;
       const notifMemberIds = Array.from(
         new Set((notifs || []).map((n: any) => n.recipient_member_id).filter(Boolean)),
       ) as string[];
