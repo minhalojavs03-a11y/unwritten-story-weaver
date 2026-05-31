@@ -239,7 +239,7 @@ export default function ConversasPage() {
     <div className="flex h-full min-h-0 w-full max-w-full flex-1 overflow-hidden bg-[#f0f2f5]">
       {/* Sidebar de conversas — estilo WhatsApp */}
       <div className={cn("wa-list flex w-full min-w-0 flex-col md:w-[420px] md:shrink-0", active && "hidden md:flex")}>
-        <div className="wa-list-search px-3 py-2 pt-3">
+        <div className="wa-list-search px-3 pt-0 pb-2">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#54656f]" />
             <input
