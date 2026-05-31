@@ -17,24 +17,31 @@ Deno.serve(async (req) => {
     const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) return json({ error: "missing auth" }, 401);
-
-    const userClient = createClient(SUPABASE_URL, ANON, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData?.user) return json({ error: "invalid auth" }, 401);
-    const adminUserId = userData.user.id;
+    if (!authHeader.startsWith("Bearer ")) {
+      console.log("[impersonate] missing auth header");
+      return json({ error: "missing auth" }, 401);
+    }
 
     const admin = createClient(SUPABASE_URL, SERVICE);
+    const token = authHeader.slice("Bearer ".length);
+    const { data: userData, error: userErr } = await admin.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      console.log("[impersonate] invalid auth:", userErr?.message);
+      return json({ error: `invalid auth: ${userErr?.message ?? "no user"}` }, 401);
+    }
+    const adminUserId = userData.user.id;
 
-    const { data: roleRow } = await admin
+    const { data: roleRow, error: roleErr } = await admin
       .from("user_roles")
       .select("role")
       .eq("user_id", adminUserId)
       .eq("role", "superadmin")
       .maybeSingle();
-    if (!roleRow) return json({ error: "not superadmin" }, 403);
+    if (roleErr) console.log("[impersonate] role query err:", roleErr.message);
+    if (!roleRow) {
+      console.log("[impersonate] not superadmin user=", adminUserId);
+      return json({ error: "not superadmin" }, 403);
+    }
 
     const body = await req.json().catch(() => ({}));
     const tenantId = body?.tenant_id as string | undefined;
