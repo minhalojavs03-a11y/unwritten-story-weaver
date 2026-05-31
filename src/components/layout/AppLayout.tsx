@@ -238,6 +238,7 @@ export function AppLayout() {
             </Sheet>
             <img src={logoFeraconDark} alt="Consórcio Feracon" className="h-9 w-auto cursor-pointer object-contain" onClick={() => navigate("/crm")} />
           </div>
+          <TopbarTitle />
           <div className="flex shrink-0 items-center gap-1">
             <NotificationsBell />
             <DropdownMenu>
