@@ -80,20 +80,26 @@ Deno.serve(async (req) => {
       return json({ error: "Esta conta ainda não tem nenhum usuário vinculado. Cadastre um dono antes de acessar." }, 404);
     }
 
+    console.log("[impersonate] tenant", tenantId, "membership", membership);
     const { data: targetUser, error: tErr } = await admin.auth.admin.getUserById(membership.user_id);
-    if (tErr || !targetUser?.user?.email) return json({ error: "target user email not found" }, 404);
+    if (tErr) console.log("[impersonate] getUserById error", tErr);
+    if (tErr || !targetUser?.user?.email) {
+      return json({ error: `target user email not found: ${tErr?.message ?? "no email"}` }, 404);
+    }
     const email = targetUser.user.email;
 
     // Make sure the user's profile points to this tenant so the app loads with the right context.
-    await admin.from("profiles").update({ tenant_id: tenantId }).eq("id", membership.user_id);
+    const { error: profUpdErr } = await admin.from("profiles").update({ tenant_id: tenantId }).eq("id", membership.user_id);
+    if (profUpdErr) console.log("[impersonate] profile update err", profUpdErr);
 
     // Generate magic link → returns hashed_token usable with verifyOtp
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: "magiclink",
       email,
     });
+    if (linkErr) console.log("[impersonate] generateLink error", linkErr);
     if (linkErr || !linkData?.properties?.hashed_token) {
-      return json({ error: linkErr?.message ?? "failed to generate link" }, 500);
+      return json({ error: `magic link failed: ${linkErr?.message ?? "no token"}` }, 500);
     }
 
     // log
