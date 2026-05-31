@@ -16,6 +16,7 @@ import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 import { MemberLoginDialog } from "@/components/MemberLoginDialog";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { TopAlertBanner } from "@/components/layout/TopAlertBanner";
+import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { NotificationsBell } from "@/components/layout/NotificationsBell";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useNavBadges } from "@/hooks/useNavBadges";
@@ -333,6 +334,7 @@ export function AppLayout() {
         lockViewport && "min-h-0 overflow-hidden",
       )}>
 
+        <ImpersonationBanner />
         <TopAlertBanner />
         <div aria-hidden className={cn("h-4 bg-[#d11e26]", isConversasMobile ? "hidden" : "md:hidden")} />
         <header className={cn(

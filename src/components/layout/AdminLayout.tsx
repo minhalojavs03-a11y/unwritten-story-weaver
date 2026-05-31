@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Building2, Smartphone, Sparkles, FileText, Workflow, Megaphone, CreditCard, LogOut, UserCircle2, Menu, Plug, Users2 } from "lucide-react";
+import { LayoutDashboard, Building2, Smartphone, Sparkles, FileText, Workflow, Megaphone, CreditCard, LogOut, UserCircle2, Menu, Plug, Users2, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import { ImpersonateDialog } from "@/components/admin/ImpersonateDialog";
 import logoFeraconMark from "@/assets/logo-feracon-mark.png";
 import logoFeraconLight from "@/assets/logo-feracon-light.png";
 
@@ -30,6 +32,7 @@ const mobileNav = [
 export function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [impersonateOpen, setImpersonateOpen] = useState(false);
   async function handleLogout() {
     await supabase.auth.signOut();
     navigate("/admin/login", { replace: true });
@@ -66,6 +69,12 @@ export function AdminLayout() {
           })}
         </nav>
         <div className="border-t border-white/5 p-3">
+          <button
+            onClick={() => setImpersonateOpen(true)}
+            className="mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/70 transition hover:bg-white/5 hover:text-white"
+          >
+            <Repeat className="h-4 w-4" /> Entrar como cliente
+          </button>
           <NavLink
             to="/dashboard"
             className="mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/70 transition hover:bg-white/5 hover:text-white"
@@ -117,6 +126,11 @@ export function AdminLayout() {
                 </nav>
                 <div className="border-t border-white/5 p-3">
                   <SheetClose asChild>
+                    <button onClick={() => setImpersonateOpen(true)} className="mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/70 transition hover:bg-white/5 hover:text-white">
+                      <Repeat className="h-4 w-4" /> Entrar como cliente
+                    </button>
+                  </SheetClose>
+                  <SheetClose asChild>
                     <NavLink to="/dashboard" className="mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/70 transition hover:bg-white/5 hover:text-white">
                       <UserCircle2 className="h-4 w-4" /> Ver painel cliente
                     </NavLink>
@@ -130,6 +144,12 @@ export function AdminLayout() {
             <img src={logoFeraconLight} alt="Consórcio Feracon" className="h-7 w-auto object-contain" />
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={() => setImpersonateOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] font-semibold text-white/90 backdrop-blur transition hover:bg-white/10 hover:text-white md:px-3.5 md:text-xs"
+            >
+              <Repeat className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Trocar de conta</span><span className="sm:hidden">Trocar</span>
+            </button>
             <NavLink
               to="/dashboard"
               className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] font-semibold text-white/90 backdrop-blur transition hover:bg-white/10 hover:text-white md:px-3.5 md:text-xs"
@@ -166,6 +186,7 @@ export function AdminLayout() {
           );
         })}
       </nav>
+      <ImpersonateDialog open={impersonateOpen} onOpenChange={setImpersonateOpen} />
     </div>
   );
 }
