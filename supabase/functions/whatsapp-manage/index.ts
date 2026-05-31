@@ -903,7 +903,23 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "create") {
-      const rawName = (body?.name ?? "").toString().trim();
+      const sellerUserId: string | null = body?.seller_user_id ?? null;
+      const sellerNameRaw: string = (body?.seller_name ?? "").toString().trim();
+      const sellerPhoneRaw: string = (body?.seller_phone ?? "").toString().trim();
+      const sellerPhone = sellerPhoneRaw ? sellerPhoneRaw.replace(/[^0-9]/g, "") : "";
+
+      // Idempotência: se este consultor já tem instância no tenant, devolve a existente
+      if (sellerUserId) {
+        const { data: existing } = await admin
+          .from("whatsapp_instances")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .eq("seller_user_id", sellerUserId)
+          .maybeSingle();
+        if (existing) return json({ instance: sanitize(existing), is_paid: false, reused: true });
+      }
+
+      const rawName = ((body?.name ?? sellerNameRaw) ?? "").toString().trim();
       if (!rawName || rawName.length < 2) return json({ error: "Nome do número é obrigatório (mín. 2 caracteres)." }, 400);
       const displayName = rawName.slice(0, 60);
       // Avoid duplicate names within the tenant
@@ -916,12 +932,13 @@ Deno.serve(async (req: Request) => {
       if (dup) return json({ error: "Já existe um número com esse nome." }, 409);
 
       // Limite gratuito: até 3 instâncias por loja. A partir da 4ª exige confirmação explícita.
+      // Consultor (seller_user_id presente) é sempre tratado como gratuito.
       const { count: existingCount } = await admin
         .from("whatsapp_instances")
         .select("id", { count: "exact", head: true })
         .eq("tenant_id", tenantId);
       const FREE_LIMIT = 3;
-      const willBePaid = (existingCount ?? 0) >= FREE_LIMIT;
+      const willBePaid = !sellerUserId && (existingCount ?? 0) >= FREE_LIMIT;
       if (willBePaid && body?.confirm_extra !== true) {
         return json({
           error: "extra_confirmation_required",
@@ -931,24 +948,25 @@ Deno.serve(async (req: Request) => {
         }, 402);
       }
 
-      const sellerUserId: string | null = body?.seller_user_id ?? null;
-      const sellerNameRaw: string = (body?.seller_name ?? "").toString().trim();
-      const sellerPhoneRaw: string = (body?.seller_phone ?? "").toString().trim();
-      const sellerPhone = sellerPhoneRaw ? sellerPhoneRaw.replace(/[^0-9]/g, "") : "";
-
-      // Resolve seller from profile if user id given and name/phone empty
+      // Resolve seller via tenant_memberships (profiles.tenant_id pode estar vazio em novos usuários)
       let resolvedSellerName: string | null = sellerNameRaw || null;
       let resolvedSellerPhone: string | null = sellerPhone || null;
       if (sellerUserId) {
-        const { data: prof } = await admin
-          .from("profiles")
-          .select("full_name, email, tenant_id")
-          .eq("id", sellerUserId)
+        const { data: membership } = await admin
+          .from("tenant_memberships")
+          .select("tenant_id, display_name")
+          .eq("user_id", sellerUserId)
+          .eq("tenant_id", tenantId)
           .maybeSingle();
-        if (!prof || prof.tenant_id !== tenantId) {
-          return json({ error: "Vendedor inválido." }, 400);
+        if (!membership) return json({ error: "Vendedor não pertence a esta loja." }, 400);
+        if (!resolvedSellerName) {
+          const { data: prof } = await admin
+            .from("profiles")
+            .select("full_name, display_name, email")
+            .eq("id", sellerUserId)
+            .maybeSingle();
+          resolvedSellerName = membership.display_name ?? prof?.display_name ?? prof?.full_name ?? prof?.email ?? null;
         }
-        if (!resolvedSellerName) resolvedSellerName = prof.full_name ?? prof.email ?? null;
       }
 
       const ensured = await ensureProviderInstance(admin, tenantId, tenant, null, webhookUrl, displayName, {
