@@ -376,7 +376,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   const send = useSendMessage();
   const assume = useAssumeLead();
   const release = useReleaseLead();
-  const { roles, session, isSuperadmin } = useAuth();
+  const { roles, session, isSuperadmin, user } = useAuth();
   const { member } = useActiveMember();
   const { data: members = [] } = useTenantMembers();
   const { data: allTemplates = [] } = useTemplates();
@@ -415,10 +415,11 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   }, [conv?.id, messages.length]);
 
   const assignedId = (lead as any)?.assigned_member_id as string | null;
+  const assignedUserId = (lead as any)?.assigned_to as string | null;
   const assignedMember = assignedId ? members.find((m) => m.id === assignedId) : null;
-  const isMine = !!assignedId && assignedId === member?.id;
-  const canOverride = (roles ?? []).some((r) => ["superadmin", "owner", "supervisor"].includes(r as string));
-  const isLocked = !!assignedId && !isMine && !canOverride;
+  const isMine = (!!assignedId && assignedId === member?.id) || (!!assignedUserId && assignedUserId === user?.id);
+  const canOverride = isSuperadmin || (roles ?? []).some((r) => ["superadmin", "owner", "supervisor"].includes(r as string));
+  const isLocked = (!!assignedId || !!assignedUserId) && !isMine && !canOverride;
   // Regra: lead livre, qualquer um pode pegar. Lead já atribuído a outro consultor
   // só pode ser assumido diretamente por owner/supervisor/superadmin. Demais devem
   // pedir transferência ao responsável atual (evita roubo silencioso de atendimento).
@@ -548,13 +549,15 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
     try {
       // Trava: precisa ser o responsável (ou ter override)
       const assignedNow = (lead as any)?.assigned_member_id as string | null;
-      if (assignedNow && assignedNow !== member?.id && !canOverride) {
+      const assignedUserNow = (lead as any)?.assigned_to as string | null;
+      const assignedToMe = (!!assignedNow && assignedNow === member?.id) || (!!assignedUserNow && assignedUserNow === user?.id);
+      if ((assignedNow || assignedUserNow) && !assignedToMe && !canOverride) {
         throw new Error("Este lead já está sendo atendido por outro vendedor.");
       }
-      if (!assignedNow && member?.id) {
+      if (!assignedNow && !assignedUserNow && member?.id) {
         await supabase.rpc("assume_lead", { _lead_id: lead.id, _member_id: member.id });
       }
-      if (!assignedNow && !member?.id && !canOverride) {
+      if (!assignedNow && !assignedUserNow && !member?.id && !canOverride) {
         throw new Error("Selecione sua identidade interna para enviar áudio.");
       }
 
@@ -624,13 +627,15 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
     let pendingMessageId: string | null = null;
     try {
       const assignedNow = (lead as any)?.assigned_member_id as string | null;
-      if (assignedNow && assignedNow !== member?.id && !canOverride) {
+      const assignedUserNow = (lead as any)?.assigned_to as string | null;
+      const assignedToMe = (!!assignedNow && assignedNow === member?.id) || (!!assignedUserNow && assignedUserNow === user?.id);
+      if ((assignedNow || assignedUserNow) && !assignedToMe && !canOverride) {
         throw new Error("Este lead já está sendo atendido por outro vendedor.");
       }
-      if (!assignedNow && member?.id) {
+      if (!assignedNow && !assignedUserNow && member?.id) {
         await supabase.rpc("assume_lead", { _lead_id: lead.id, _member_id: member.id });
       }
-      if (!assignedNow && !member?.id && !canOverride) {
+      if (!assignedNow && !assignedUserNow && !member?.id && !canOverride) {
         throw new Error("Selecione sua identidade interna para enviar mídia.");
       }
 
