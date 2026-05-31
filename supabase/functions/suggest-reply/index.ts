@@ -6,7 +6,13 @@ const responseHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
+const AI_URL = GEMINI_API_KEY
+  ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+  : "https://ai.gateway.lovable.dev/v1/chat/completions";
+const AI_KEY = GEMINI_API_KEY || LOVABLE_API_KEY;
+const AI_MODEL = GEMINI_API_KEY ? "gemini-2.5-flash" : "google/gemini-2.5-flash";
 
 const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
