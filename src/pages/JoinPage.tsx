@@ -50,15 +50,42 @@ export default function JoinPage() {
       return;
     }
     setAccepting(true);
-    const { error } = await supabase.rpc("accept_role_invite" as never, { _token: token } as never);
-    setAccepting(false);
+    const { data: accepted, error } = await supabase.rpc("accept_role_invite" as never, { _token: token } as never);
     if (error) {
+      setAccepting(false);
       toast.error(error.message);
       setError(error.message);
       return;
     }
+    const row = Array.isArray(accepted) ? accepted[0] as { role?: string } : (accepted as { role?: string } | null);
+    const acceptedRole = row?.role ?? info?.role;
+
+    // Provisiona instância WhatsApp automaticamente para consultor
+    if (acceptedRole === "consultant") {
+      try {
+        const sellerName = (info?.role_label || user.email?.split("@")[0] || "Consultor").slice(0, 60);
+        const { error: provErr } = await supabase.functions.invoke("whatsapp-manage", {
+          body: {
+            action: "create",
+            name: `WhatsApp ${sellerName}`,
+            seller_user_id: user.id,
+            seller_name: sellerName,
+          },
+        });
+        if (provErr) {
+          console.warn("auto-provision instance failed", provErr);
+          toast.message("Sua instância de WhatsApp será criada quando você abrir Meu WhatsApp.");
+        } else {
+          toast.success("Sua instância de WhatsApp foi criada — escaneie o QR em Meu WhatsApp.");
+        }
+      } catch (e) {
+        console.warn("auto-provision instance threw", e);
+      }
+    }
+
+    setAccepting(false);
     toast.success("Bem-vindo à equipe!");
-    navigate("/crm", { replace: true });
+    navigate(acceptedRole === "consultant" ? "/meu-whatsapp" : "/crm", { replace: true });
   }
 
   return (
