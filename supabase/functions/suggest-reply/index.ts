@@ -104,10 +104,10 @@ Deno.serve(async (req: Request) => {
       { role: "user", content: "[Gere agora APENAS o texto da próxima mensagem que o vendedor deve enviar ao cliente, seguindo as regras.]" },
     ];
 
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const r = await fetch(AI_URL, {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "google/gemini-2.5-flash", messages: chatMessages }),
+      headers: { Authorization: `Bearer ${AI_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: AI_MODEL, messages: chatMessages }),
     });
 
     if (!r.ok) {
