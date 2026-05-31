@@ -294,6 +294,9 @@ export function useSendMessage() {
         (!!assignedMemberId && assignedMemberId === member?.id) ||
         (!!assignedUserId && assignedUserId === user?.id);
       if (!user?.id) throw new Error("Sessão expirada. Saia e entre novamente para enviar mensagens.");
+      if (!member?.id && !canOverride && !isAssignedToCurrentUser) {
+        throw new Error("Selecione sua identidade interna para enviar mensagens.");
+      }
       if ((assignedMemberId || assignedUserId) && !isAssignedToCurrentUser && !canOverride) {
         throw new Error("Este lead já está sendo atendido por outro vendedor.");
       }
