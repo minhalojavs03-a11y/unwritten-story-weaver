@@ -131,7 +131,7 @@ export function AppLayout() {
                 {collapsed ? (
                   <img src={logoFeraconMark} alt="Feracon" className="h-10 w-10 object-contain" />
                 ) : (
-                  <img src={logoFeracon} alt="Consórcio Feracon" className="h-12 w-auto object-contain" />
+                  <img src={logoFeracon} alt="Consórcio Feracon" className="h-16 w-auto object-contain" />
                 )}
               </button>
               <button
@@ -140,7 +140,7 @@ export function AppLayout() {
                 aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
                 className={cn(
                   "flex shrink-0 items-center justify-center text-white/50 transition-colors hover:text-white",
-                  collapsed ? "h-12 w-12" : "h-14 w-8",
+                  collapsed ? "h-12 w-12" : "h-16 w-8",
                 )}
               >
                 {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
