@@ -315,12 +315,13 @@ export default function FilaLeadsPage() {
 
     // Carrega pedidos de transferência em aberto para os leads visíveis
     if (leadIds.length) {
-      const { data: reqs } = await supabase
+      let trq = supabase
         .from("lead_transfer_requests")
         .select("id, lead_id, requester_member_id, owner_member_id, status, message, created_at")
-        .eq("tenant_id", tenantId)
         .eq("status", "pending")
         .in("lead_id", leadIds);
+      if (!isSuperadmin && tenantId) trq = trq.eq("tenant_id", tenantId);
+      const { data: reqs } = await trq;
       const list = (reqs ?? []) as TransferRequest[];
       setTransferRequests(list);
       const reqMemberIds = Array.from(
