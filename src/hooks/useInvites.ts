@@ -83,5 +83,6 @@ export function useResendInvite() {
 }
 
 export function buildInviteLink(token: string) {
-  return `${window.location.origin}/login?invite=${token}`;
+  const base = import.meta.env.VITE_APP_DOMAIN || window.location.origin;
+  return `${base}/login?invite=${token}`;
 }
