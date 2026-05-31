@@ -423,3 +423,21 @@ function MobileNavRow({
     </SheetClose>
   );
 }
+
+function TopbarTitle() {
+  const ctx = usePageHeader();
+  const header = ctx?.header;
+  if (!header) return <div className="hidden md:block flex-1" />;
+  return (
+    <div className="hidden md:flex min-w-0 flex-1 items-baseline gap-3 px-2">
+      <h1 className="font-display text-xl lg:text-2xl font-bold tracking-tight truncate text-foreground">
+        {header.title}
+      </h1>
+      {header.subtitle && (
+        <p className="hidden lg:block min-w-0 truncate text-xs text-muted-foreground">
+          {header.subtitle}
+        </p>
+      )}
+    </div>
+  );
+}
