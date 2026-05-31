@@ -281,20 +281,28 @@ export function useSendMessage() {
       // Busca telefone do lead + instância fixada (se houver) + responsável atual
       const { data: lead } = await supabase
         .from("leads")
-        .select("phone, whatsapp_instance_id, assigned_member_id")
+        .select("phone, whatsapp_instance_id, assigned_member_id, assigned_to")
         .eq("id", leadId)
         .maybeSingle();
       if (!lead?.phone) throw new Error("Lead sem telefone");
 
       // Trava: só o vendedor responsável (ou owner/supervisor/superadmin) pode enviar
       const canOverride = isSuperadmin || (roles ?? []).some((r) => ["superadmin", "owner", "supervisor"].includes(r as string));
-      if (!member?.id && !canOverride) throw new Error("Selecione sua identidade interna para enviar mensagens.");
-      if (lead.assigned_member_id && lead.assigned_member_id !== member?.id && !canOverride) {
+      const assignedMemberId = lead.assigned_member_id ?? null;
+      const assignedUserId = (lead as { assigned_to?: string | null }).assigned_to ?? null;
+      const isAssignedToCurrentUser =
+        (!!assignedMemberId && assignedMemberId === member?.id) ||
+        (!!assignedUserId && assignedUserId === user?.id);
+      if (!user?.id) throw new Error("Sessão expirada. Saia e entre novamente para enviar mensagens.");
+      if (!member?.id && !canOverride && !isAssignedToCurrentUser) {
+        throw new Error("Selecione sua identidade interna para enviar mensagens.");
+      }
+      if ((assignedMemberId || assignedUserId) && !isAssignedToCurrentUser && !canOverride) {
         throw new Error("Este lead já está sendo atendido por outro vendedor.");
       }
 
       // Se ainda não tem responsável, assume automaticamente para o vendedor ativo
-      if (!lead.assigned_member_id && member?.id) {
+      if (!assignedMemberId && !assignedUserId && member?.id) {
         const { error: assumeErr } = await supabase.rpc("assume_lead", {
           _lead_id: leadId,
           _member_id: member.id,
@@ -340,10 +348,36 @@ export function useSendMessage() {
         await supabase.from("leads").update({ whatsapp_instance_id: chosenInstanceId }).eq("id", leadId);
       }
 
+      let targetConversationId = conversationId;
+      if (!targetConversationId || targetConversationId.startsWith("virtual:")) {
+        const { data: existingConv } = await supabase
+          .from("conversations")
+          .select("id")
+          .eq("tenant_id", tenantId)
+          .eq("lead_id", leadId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (existingConv?.id) {
+          targetConversationId = existingConv.id;
+        } else {
+          const { data: createdConv, error: convErr } = await supabase
+            .from("conversations")
+            .insert({ tenant_id: tenantId, lead_id: leadId, whatsapp_instance_id: chosenInstanceId })
+            .select("id")
+            .single();
+          if (convErr || !createdConv?.id) throw new Error(convErr?.message || "Não foi possível criar a conversa.");
+          targetConversationId = createdConv.id;
+        }
+      }
+
       // Prefixa nome do vendedor (identidade interna ativa) na mensagem enviada ao lead.
       // Busca o display_name atualizado direto do tenant_members para evitar
       // usar um valor antigo cacheado em localStorage (ex.: typo corrigido depois).
-      let sellerName = member?.display_name?.trim();
+      let sellerName = member?.display_name?.trim()
+        || (user?.user_metadata?.display_name as string | undefined)?.trim()
+        || (user?.user_metadata?.full_name as string | undefined)?.trim()
+        || (user?.user_metadata?.name as string | undefined)?.trim();
       if (member?.id) {
         const { data: freshMember } = await supabase
           .from("tenant_members")
@@ -358,7 +392,7 @@ export function useSendMessage() {
       // Insere mensagem como 'pending' antes de enviar
       const { data: inserted, error: insErr } = await supabase.from("messages").insert({
         tenant_id: tenantId,
-        conversation_id: conversationId,
+        conversation_id: targetConversationId,
         lead_id: leadId,
         whatsapp_instance_id: chosenInstanceId,
         direction: "outbound",
@@ -419,7 +453,7 @@ export function useSendMessage() {
         last_message_at: new Date().toISOString(),
         whatsapp_instance_id: chosenInstanceId,
         unread_count: 0,
-      }).eq("id", conversationId);
+      }).eq("id", targetConversationId);
       await supabase.from("leads").update({ last_message_at: new Date().toISOString(), last_interaction_at: new Date().toISOString() }).eq("id", leadId);
     },
     onSuccess: (_d, vars) => {
