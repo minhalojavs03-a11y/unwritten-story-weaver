@@ -2129,6 +2129,10 @@ export type Database = {
           tenant_id: string
         }[]
       }
+      admin_create_tenant: {
+        Args: { _name: string; _plan?: string; _slug?: string }
+        Returns: string
+      }
       assume_lead: { Args: { _lead_id: string }; Returns: undefined }
       check_username_available: {
         Args: { _username: string }
