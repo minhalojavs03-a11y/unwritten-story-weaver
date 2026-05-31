@@ -121,17 +121,17 @@ export function AppLayout() {
       <aside className={cn("sticky top-0 hidden h-dvh shrink-0 self-start md:flex", sidebarWidth, "transition-all")}>
         <TooltipProvider delayDuration={100}>
           <div className="client-sidebar relative flex w-full flex-col border-r border-white/5 py-3">
-            <div className={cn("mb-3 flex items-center", collapsed ? "mx-auto h-12 w-12" : "mx-3 h-14")}>
+            <div className={cn("mb-3 flex items-center", collapsed ? "mx-auto h-12 w-12" : "mx-3 h-16")}>
               <button
                 type="button"
                 onClick={() => navigate("/crm")}
-                className={cn("flex flex-1 items-center", collapsed ? "h-12 w-12 justify-center" : "h-14 justify-start px-1")}
+                className={cn("flex flex-1 items-center", collapsed ? "h-12 w-12 justify-center" : "h-16 justify-start px-1")}
                 aria-label="Início"
               >
                 {collapsed ? (
                   <img src={logoFeraconMark} alt="Feracon" className="h-10 w-10 object-contain" />
                 ) : (
-                  <img src={logoFeracon} alt="Consórcio Feracon" className="h-12 w-auto object-contain" />
+                  <img src={logoFeracon} alt="Consórcio Feracon" className="h-16 w-auto object-contain" />
                 )}
               </button>
               <button
@@ -140,7 +140,7 @@ export function AppLayout() {
                 aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
                 className={cn(
                   "flex shrink-0 items-center justify-center text-white/50 transition-colors hover:text-white",
-                  collapsed ? "h-12 w-12" : "h-14 w-8",
+                  collapsed ? "h-12 w-12" : "h-16 w-8",
                 )}
               >
                 {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
