@@ -27,6 +27,7 @@ import { TutorialVideoDialog } from "@/components/TutorialVideoDialog";
 import logoCatelanWhite from "@/assets/logo-catelan-white.png";
 import logoFeraconDark from "@/assets/logo-feracon-dark.png";
 import logoFeraconMark from "@/assets/logo-feracon-mark.png";
+import logoFeracon from "@/assets/logo-feracon.png";
 
 type NavItem = { to: string; label: string; icon: any };
 
@@ -123,11 +124,14 @@ export function AppLayout() {
             <button
               type="button"
               onClick={() => navigate("/crm")}
-              className={cn("mb-3 flex items-center", collapsed ? "mx-auto h-12 w-12 justify-center" : "mx-3 h-12 gap-2 px-1")}
+              className={cn("mb-3 flex items-center", collapsed ? "mx-auto h-12 w-12 justify-center" : "mx-3 h-14 justify-start px-1")}
               aria-label="Início"
             >
-              <img src={logoFeraconMark} alt="Feracon" className="h-10 w-10 object-contain" />
-              {!collapsed && <img src={logoCatelanWhite} alt="Consórcio Feracon" className="h-7 w-auto object-contain opacity-90" />}
+              {collapsed ? (
+                <img src={logoFeraconMark} alt="Feracon" className="h-10 w-10 object-contain" />
+              ) : (
+                <img src={logoFeracon} alt="Consórcio Feracon" className="h-12 w-auto object-contain" />
+              )}
             </button>
 
             <nav className={cn("flex-1 space-y-1 overflow-y-auto", collapsed ? "px-2" : "px-2")}>
