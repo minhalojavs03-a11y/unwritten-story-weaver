@@ -76,25 +76,21 @@ export default function MeuWhatsAppPage() {
     if (!user?.id) return;
     setLoading(true);
     try {
+      // IMPORTANTE: nunca criar instância automaticamente aqui.
+      // A criação é sempre via clique explícito em "Conectar meu WhatsApp"
+      // (handleCreate), o que evita corridas que duplicavam a instância no
+      // provedor (uazapi) quando a página abria em 2 abas ou React StrictMode
+      // executava o efeito duas vezes.
       const r = await call("list", { mine_only: true });
       const list: Instance[] = r?.instances ?? [];
-      let mine = list.find((i) => i.is_connected || i.status === "connected") ?? list[0] ?? null;
-      if (!mine) {
-        const created = await call("create", {
-          name: myDisplayName,
-          seller_user_id: user.id,
-          seller_name: myDisplayName,
-          confirm_extra: true,
-        });
-        mine = created?.instance ?? null;
-      }
+      const mine = list.find((i) => i.is_connected || i.status === "connected") ?? list[0] ?? null;
       setInstance(mine);
     } catch (e: any) {
       toast({ title: "Erro ao carregar", description: e?.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [user?.id, myDisplayName]);
+  }, [user?.id]);
 
   useEffect(() => { load(); }, [load]);
 
