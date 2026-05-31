@@ -11,15 +11,16 @@ import { usePermissions } from "@/hooks/usePermissions";
  * - fila: total de leads na fila (ativos) no escopo do usuário
  */
 export function useNavBadges() {
-  const { tenantId } = useAuth();
+  const { tenantId, user } = useAuth();
   const { member } = useActiveMember();
   const { can } = usePermissions();
   const privileged = can("assume_any_lead");
   const memberId = member?.id ?? null;
+  const userId = user?.id ?? null;
   const queryClient = useQueryClient();
 
-  const enabled = !!tenantId && (privileged || !!memberId);
-  const queryKey = ["nav-badges", tenantId, privileged ? "all" : memberId];
+  const enabled = !!tenantId && (privileged || !!memberId || !!userId);
+  const queryKey = ["nav-badges", tenantId, privileged ? "all" : (memberId ?? `u:${userId}`)];
 
   const { data } = useQuery({
     enabled,
