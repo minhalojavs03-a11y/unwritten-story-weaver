@@ -939,12 +939,13 @@ Deno.serve(async (req: Request) => {
 
     // ─── Multi-instance actions (don't need a single "current" instance) ───
     if (action === "list") {
+      const mineOnly = body?.mine_only === true;
       const query = admin
         .from("whatsapp_instances")
         .select("*")
         .eq("tenant_id", tenantId)
         .order("created_at", { ascending: true });
-      if (!callerCanManageAllInstances) query.eq("seller_user_id", userId);
+      if (mineOnly || !callerCanManageAllInstances) query.eq("seller_user_id", userId);
       const { data } = await query;
       const list = data ?? [];
       return json({
