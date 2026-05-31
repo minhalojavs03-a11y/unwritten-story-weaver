@@ -99,32 +99,37 @@ async function callWhatsAppManage(body: Record<string, unknown>, accessToken: st
 
 // ============= LEADS =============
 export function useLeads() {
-  const { tenantId } = useAuth();
+  const { tenantId, isSuperadmin } = useAuth();
   const qc = useQueryClient();
   const q = useQuery({
-    queryKey: ["leads", tenantId],
-    enabled: !!tenantId,
+    queryKey: ["leads", isSuperadmin ? "__all__" : tenantId],
+    enabled: !!tenantId || isSuperadmin,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("leads")
-        .select("*")
-        .eq("tenant_id", tenantId!)
-        .order("created_at", { ascending: false });
+      let query = supabase.from("leads").select("*").order("created_at", { ascending: false }).limit(2000);
+      // Superadmin enxerga leads de TODOS os tenants (visão centralizada).
+      if (!isSuperadmin) query = query.eq("tenant_id", tenantId!);
+      const { data, error } = await query;
       if (error) throw error;
       return (data ?? []) as Tables<"leads">[];
     },
   });
 
   useEffect(() => {
-    if (!tenantId) return;
+    if (!tenantId && !isSuperadmin) return;
     const ch = supabase
-      .channel(realtimeChannelName("leads-changes", tenantId))
-      .on("postgres_changes", { event: "*", schema: "public", table: "leads", filter: `tenant_id=eq.${tenantId}` }, () => {
-        qc.invalidateQueries({ queryKey: ["leads"] });
-      })
+      .channel(realtimeChannelName("leads-changes", tenantId ?? "all"))
+      .on(
+        "postgres_changes",
+        isSuperadmin
+          ? { event: "*", schema: "public", table: "leads" }
+          : { event: "*", schema: "public", table: "leads", filter: `tenant_id=eq.${tenantId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ["leads"] });
+        },
+      )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [tenantId, qc]);
+  }, [tenantId, isSuperadmin, qc]);
 
   return q;
 }
