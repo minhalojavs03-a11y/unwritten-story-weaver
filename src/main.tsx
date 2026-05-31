@@ -23,17 +23,6 @@ import "./index.css";
 
 createRoot(document.getElementById("root")!).render(<App />);
 
-// Registra service worker mínimo para permitir o prompt de instalação
-// em Chrome / MIUI / Mi Browser (Xiaomi). Evita registrar dentro do
-// preview do Lovable para não atrapalhar o editor.
-const isInIframe = (() => {
-  try { return window.self !== window.top; } catch { return true; }
-})();
-const host = window.location.hostname;
-const isPreviewHost =
-  host.includes("id-preview--") ||
-  host.includes("lovableproject.com") ||
-  host.endsWith("lovable.dev");
 
 // Não registramos mais nenhum service worker. O arquivo /sw.js é um
 // kill-switch que apenas limpa caches e se desregistra para corrigir
