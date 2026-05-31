@@ -24,6 +24,7 @@ import { useNavBadges } from "@/hooks/useNavBadges";
 import { useEffect, useMemo, useState } from "react";
 
 import { TutorialVideoDialog } from "@/components/TutorialVideoDialog";
+import { PageHeaderProvider, usePageHeader } from "@/contexts/PageHeaderContext";
 import logoCatelanWhite from "@/assets/logo-catelan-white.png";
 import logoFeraconDark from "@/assets/logo-feracon-dark.png";
 import logoFeraconMark from "@/assets/logo-feracon-mark.png";
@@ -113,6 +114,7 @@ export function AppLayout() {
   const sidebarWidth = collapsed ? "w-[72px]" : "w-[240px]";
 
   return (
+    <PageHeaderProvider>
     <div className={cn(
       "client-shell flex w-full max-w-full",
       lockViewport ? "h-dvh min-h-0 overflow-hidden" : "min-h-dvh",
@@ -199,7 +201,7 @@ export function AppLayout() {
         <TopAlertBanner />
         <div aria-hidden className={cn("h-4 bg-[#d11e26]", isConversasMobile ? "hidden" : "md:hidden")} />
         <header className={cn(
-          "client-header sticky top-0 z-40 mx-3 -mt-3 flex h-14 items-center justify-between rounded-t-[28px] border border-black/5 !bg-white px-4 shadow-[0_-6px_20px_-12px_rgba(0,0,0,0.18)] [backdrop-filter:none] md:mx-0 md:mt-0 md:h-12 md:justify-end md:rounded-none md:border-0 md:!bg-transparent md:px-4 md:shadow-none",
+          "client-header sticky top-0 z-40 mx-3 -mt-3 flex h-14 items-center justify-between rounded-t-[28px] border border-black/5 !bg-white px-4 shadow-[0_-6px_20px_-12px_rgba(0,0,0,0.18)] [backdrop-filter:none] md:mx-0 md:mt-0 md:h-12 md:justify-between md:rounded-none md:border-0 md:!bg-transparent md:px-4 md:shadow-none",
           isConversasMobile && "hidden md:flex",
         )}>
           <div className="flex items-center gap-2 md:hidden">
@@ -236,6 +238,7 @@ export function AppLayout() {
             </Sheet>
             <img src={logoFeraconDark} alt="Consórcio Feracon" className="h-9 w-auto cursor-pointer object-contain" onClick={() => navigate("/crm")} />
           </div>
+          <TopbarTitle />
           <div className="flex shrink-0 items-center gap-1">
             <NotificationsBell />
             <DropdownMenu>
@@ -325,6 +328,7 @@ export function AppLayout() {
         })}
       </nav>
     </div>
+    </PageHeaderProvider>
   );
 }
 
@@ -417,5 +421,23 @@ function MobileNavRow({
         )}
       </NavLink>
     </SheetClose>
+  );
+}
+
+function TopbarTitle() {
+  const ctx = usePageHeader();
+  const header = ctx?.header;
+  if (!header) return <div className="hidden md:block flex-1" />;
+  return (
+    <div className="hidden md:flex min-w-0 flex-1 items-baseline gap-3 px-2">
+      <h1 className="font-display text-xl lg:text-2xl font-bold tracking-tight truncate text-foreground">
+        {header.title}
+      </h1>
+      {header.subtitle && (
+        <p className="hidden lg:block min-w-0 truncate text-xs text-muted-foreground">
+          {header.subtitle}
+        </p>
+      )}
+    </div>
   );
 }
