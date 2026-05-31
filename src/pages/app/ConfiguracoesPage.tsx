@@ -120,8 +120,36 @@ export default function ConfiguracoesPage() {
           </div>
         </section>
 
+        <section className="rounded-xl border bg-card p-4 md:p-6">
+          <h2 className="mb-3 font-display text-base font-semibold md:mb-4 md:text-lg">Mais</h2>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <ShortcutLink to="/mensagens-prontas" icon={MessageSquareText} title="Mensagens prontas" desc="Templates de WhatsApp" />
+            <ShortcutLink to="/gravacoes" icon={Video} title="Gravações" desc="Vídeos de simulações" />
+            {isOwner && <ShortcutLink to="/treinar-ia" icon={Sparkles} title="Treinar IA" desc="Base de conhecimento" />}
+            {isOwner && <ShortcutLink to="/integracoes" icon={Plug} title="Integrações" desc="Google, Sheets, Meta" />}
+            <ShortcutLink to="/changelog" icon={History} title="Histórico de updates" desc="Novidades do CRM" />
+          </div>
+        </section>
+
         {isOwner && <Button onClick={saveAll} disabled={updateAi.isPending}>Salvar alterações</Button>}
       </div>
     </>
+  );
+}
+
+function ShortcutLink({ to, icon: Icon, title, desc }: { to: string; icon: any; title: string; desc: string }) {
+  return (
+    <Link to={to} className="flex items-center justify-between gap-2 rounded-lg border bg-muted/30 p-3 transition-colors hover:bg-muted/50">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium">{title}</div>
+          <div className="truncate text-xs text-muted-foreground">{desc}</div>
+        </div>
+      </div>
+      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+    </Link>
   );
 }
