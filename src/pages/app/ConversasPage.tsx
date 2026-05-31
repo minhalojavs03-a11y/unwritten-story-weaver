@@ -376,7 +376,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   const send = useSendMessage();
   const assume = useAssumeLead();
   const release = useReleaseLead();
-  const { roles, session } = useAuth();
+  const { roles, session, isSuperadmin } = useAuth();
   const { member } = useActiveMember();
   const { data: members = [] } = useTenantMembers();
   const { data: allTemplates = [] } = useTemplates();
@@ -699,28 +699,17 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   async function suggest() {
     setAiBusy(true);
     try {
-      if (!session?.access_token) {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session?.access_token) throw new Error("Sessão expirada. Entre novamente para usar a IA.");
-      }
-
-      const response = await fetch("/api/suggest-reply", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token ?? (await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-        body: JSON.stringify({ conversation_id: conv.id }),
+      const { data, error } = await supabase.functions.invoke("suggest-reply", {
+        body: { conversation_id: conv.id },
       });
-
-      const data = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(data?.error ?? `Falha na IA (${response.status})`);
-      if (data?.suggested_reply) setDraft(data.suggested_reply);
-      else toast({ title: data?.error ?? "IA não retornou sugestão", variant: "destructive" });
+      if (error) throw new Error((data as any)?.error ?? error.message ?? "Falha na IA");
+      if ((data as any)?.suggested_reply) setDraft((data as any).suggested_reply);
+      else toast({ title: (data as any)?.error ?? "IA não retornou sugestão", variant: "destructive" });
     } catch (e: any) {
       toast({ title: "Erro IA", description: e.message, variant: "destructive" });
     } finally { setAiBusy(false); }
   }
+
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -1090,7 +1079,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={mediaBusy || !member}
+              disabled={mediaBusy || (!member && !isSuperadmin)}
               title="Anexar imagem, vídeo ou documento"
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#54656f] shadow-sm transition-colors hover:bg-[#f5f6f6] disabled:opacity-60"
             >
@@ -1121,9 +1110,9 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
                   if (expanded !== null) { e.preventDefault(); setDraft(expanded + " "); }
                 }
               }}
-              placeholder={!member ? "Selecione sua identidade interna para enviar" : "Digite uma mensagem"}
+              placeholder={(!member && !isSuperadmin) ? "Selecione sua identidade interna para enviar" : "Digite uma mensagem"}
               rows={1}
-              disabled={!member}
+              disabled={!member && !isSuperadmin}
               className="wa-input flex max-h-32 min-h-[42px] min-w-0 flex-1 resize-none px-3 py-2 text-[15px] placeholder:text-[#667781] focus:outline-none disabled:opacity-60 md:px-4"
             />
             {draft.trim() ? (
@@ -1131,7 +1120,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
                 size="icon"
                 aria-label="Enviar"
                 onClick={handleSend}
-                disabled={send.isPending || !member}
+                disabled={send.isPending || (!member && !isSuperadmin)}
                 className="wa-send h-10 w-10 shrink-0 rounded-full p-0 disabled:opacity-60"
 
               >
@@ -1142,7 +1131,8 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
                 size="icon"
                 aria-label="Gravar áudio"
                 onClick={startRecording}
-                disabled={audioBusy || !member}
+                disabled={audioBusy || (!member && !isSuperadmin)}
+
                 title="Gravar mensagem de voz"
                 className="wa-send h-10 w-10 shrink-0 rounded-full p-0 disabled:opacity-60"
               >
