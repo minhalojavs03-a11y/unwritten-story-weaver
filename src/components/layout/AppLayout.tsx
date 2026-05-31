@@ -27,7 +27,7 @@ import { TutorialVideoDialog } from "@/components/TutorialVideoDialog";
 import logoCatelanWhite from "@/assets/logo-catelan-white.png";
 import logoFeraconDark from "@/assets/logo-feracon-dark.png";
 import logoFeraconMark from "@/assets/logo-feracon-mark.png";
-import logoFeracon from "@/assets/logo-feracon.png";
+import logoFeracon from "@/assets/logo-feracon-white.png";
 
 type NavItem = { to: string; label: string; icon: any };
 
