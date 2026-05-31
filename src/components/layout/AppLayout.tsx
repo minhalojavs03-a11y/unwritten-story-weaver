@@ -170,6 +170,7 @@ export function AppLayout() {
 
   // Painel pode ser escondido (deixa só o rail estreito visível) — não persiste entre sessões
   const [panelHidden, setPanelHidden] = useState<boolean>(false);
+  const [impersonateOpen, setImpersonateOpen] = useState(false);
 
   const activeGroup = groups.find((g) => g.id === activeRail) ?? null;
 
@@ -447,6 +448,7 @@ export function AppLayout() {
           </div>
         </header>
         <MemberLoginDialog />
+        <ImpersonateDialog open={impersonateOpen} onOpenChange={setImpersonateOpen} />
         <TutorialVideoDialog />
         <div className={cn(
           "flex min-w-0 max-w-full flex-1 flex-col bg-background md:bg-transparent",
