@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import adminImage from "@/assets/optica-admin-login.jpg";
+import logoFeraconLight from "@/assets/logo-feracon-light.png";
 
 export default function AdminLoginPage() {
   const location = useLocation();
@@ -52,7 +53,8 @@ export default function AdminLoginPage() {
 
         <div className="relative z-10 w-full max-w-sm">
           <div className="mb-8 flex flex-col items-start">
-            <div className="auth-icon-glow-amber mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[hsl(217_91%_60%)] to-[hsl(217_91%_45%)] text-white">
+            <img src={logoFeraconLight} alt="Consórcio Feracon" className="mb-5 h-12 w-auto object-contain" />
+            <div className="auth-icon-glow-amber mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(357_80%_38%)] text-white">
               <ShieldCheck className="h-7 w-7" />
             </div>
             <h1 className="font-display text-3xl font-bold tracking-tight text-white">Superadmin</h1>
