@@ -141,10 +141,11 @@ export default function FilaLeadsPage() {
       const digits = q.replace(/\D/g, "");
       let query = supabase
         .from("leads")
-        .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id")
-        .eq("tenant_id", tenantId)
+        .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id,tenant_id")
         .in("source", ["meta_ads", "importacao_planilha"])
         .limit(50);
+      // Superadmin pesquisa em todos os tenants.
+      if (!isSuperadmin) query = query.eq("tenant_id", tenantId);
       if (!canSendToOthers) query = query.eq("assigned_member_id", activeMember!.id);
       const orParts = [
         `name.ilike.%${q}%`,
@@ -158,7 +159,7 @@ export default function FilaLeadsPage() {
       setSearching(false);
     }, 300);
     return () => clearTimeout(handle);
-  }, [search, tenantId, canSendToOthers, activeMember?.id]);
+  }, [search, tenantId, isSuperadmin, canSendToOthers, activeMember?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
