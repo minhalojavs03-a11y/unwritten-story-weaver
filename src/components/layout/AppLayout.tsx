@@ -121,18 +121,31 @@ export function AppLayout() {
       <aside className={cn("sticky top-0 hidden h-dvh shrink-0 self-start md:flex", sidebarWidth, "transition-all")}>
         <TooltipProvider delayDuration={100}>
           <div className="client-sidebar relative flex w-full flex-col border-r border-white/5 py-3">
-            <button
-              type="button"
-              onClick={() => navigate("/crm")}
-              className={cn("mb-3 flex items-center", collapsed ? "mx-auto h-12 w-12 justify-center" : "mx-3 h-14 justify-start px-1")}
-              aria-label="Início"
-            >
-              {collapsed ? (
-                <img src={logoFeraconMark} alt="Feracon" className="h-10 w-10 object-contain" />
-              ) : (
-                <img src={logoFeracon} alt="Consórcio Feracon" className="h-12 w-auto object-contain" />
-              )}
-            </button>
+            <div className={cn("mb-3 flex items-center", collapsed ? "mx-auto h-12 w-12" : "mx-3 h-14")}>
+              <button
+                type="button"
+                onClick={() => navigate("/crm")}
+                className={cn("flex flex-1 items-center", collapsed ? "h-12 w-12 justify-center" : "h-14 justify-start px-1")}
+                aria-label="Início"
+              >
+                {collapsed ? (
+                  <img src={logoFeraconMark} alt="Feracon" className="h-10 w-10 object-contain" />
+                ) : (
+                  <img src={logoFeracon} alt="Consórcio Feracon" className="h-12 w-auto object-contain" />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCollapsed((v) => !v)}
+                aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+                className={cn(
+                  "flex shrink-0 items-center justify-center text-white/50 transition-colors hover:text-white",
+                  collapsed ? "h-12 w-12" : "h-14 w-8",
+                )}
+              >
+                {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+              </button>
+            </div>
 
             <nav className={cn("flex-1 space-y-1 overflow-y-auto", collapsed ? "px-2" : "px-2")}>
               {navItems.map((item) => (
@@ -173,15 +186,6 @@ export function AppLayout() {
               </Tooltip>
             </div>
 
-            {/* Toggle colapsar */}
-            <button
-              type="button"
-              onClick={() => setCollapsed((v) => !v)}
-              aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
-              className="absolute -right-3 top-6 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-[#0f0f18] text-white/70 hover:text-white md:flex"
-            >
-              {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
-            </button>
           </div>
         </TooltipProvider>
       </aside>
