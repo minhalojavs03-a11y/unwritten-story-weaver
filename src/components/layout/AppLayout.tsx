@@ -121,17 +121,17 @@ export function AppLayout() {
       <aside className={cn("sticky top-0 hidden h-dvh shrink-0 self-start md:flex", sidebarWidth, "transition-all")}>
         <TooltipProvider delayDuration={100}>
           <div className="client-sidebar relative flex w-full flex-col border-r border-white/5 py-3">
-            <div className={cn("-mt-2 mb-1 flex items-center", collapsed ? "mx-auto h-12 w-12" : "mx-3 h-[77px]")}>
+            <div className={cn("-mt-2 mb-1 flex items-center", collapsed ? "mx-auto h-9 w-9" : "mx-3 h-[58px]")}>
               <button
                 type="button"
                 onClick={() => navigate("/crm")}
-                className={cn("flex flex-1 items-center", collapsed ? "h-12 w-12 justify-center" : "h-[77px] justify-start px-1")}
+                className={cn("flex flex-1 items-center", collapsed ? "h-9 w-9 justify-center" : "h-[58px] justify-start px-1")}
                 aria-label="Início"
               >
                 {collapsed ? (
-                  <img src={logoFeraconMark} alt="Feracon" className="h-12 w-12 object-contain" />
+                  <img src={logoFeraconMark} alt="Feracon" className="h-9 w-9 object-contain" />
                 ) : (
-                  <img src={logoFeracon} alt="Consórcio Feracon" className="h-[77px] w-auto object-contain" />
+                  <img src={logoFeracon} alt="Consórcio Feracon" className="h-[58px] w-auto object-contain" />
                 )}
               </button>
               <button
@@ -140,7 +140,7 @@ export function AppLayout() {
                 aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
                 className={cn(
                   "flex shrink-0 items-center justify-center text-white/50 transition-colors hover:text-white",
-                  collapsed ? "h-12 w-12" : "h-[77px] w-8",
+                  collapsed ? "h-9 w-9" : "h-[58px] w-8",
                 )}
               >
                 {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
