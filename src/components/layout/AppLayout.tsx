@@ -77,10 +77,10 @@ export function AppLayout() {
     const config: NavItem = { to: "/configuracoes", label: "Configurações", icon: Settings };
 
     if (isOwner || isSuperadmin) {
-      return [home, fila, conversas, pipeline, leads, agenda, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
+      return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
     }
     if (isSupervisor) {
-      return [home, fila, conversas, pipeline, leads, agenda, ranking, relatorios, consultores, config];
+      return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, consultores, config];
     }
     // Consultor
     return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, config];
