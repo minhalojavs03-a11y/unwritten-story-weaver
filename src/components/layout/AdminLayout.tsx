@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Building2, Smartphone, Sparkles, FileText, Workflow, Megaphone, CreditCard, LogOut, UserCircle2, Menu, Plug, Users2 } from "lucide-react";
+import { LayoutDashboard, Building2, Smartphone, Sparkles, FileText, Workflow, Megaphone, CreditCard, LogOut, UserCircle2, Menu, Plug, Users2, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import { ImpersonateDialog } from "@/components/admin/ImpersonateDialog";
 import logoFeraconMark from "@/assets/logo-feracon-mark.png";
 import logoFeraconLight from "@/assets/logo-feracon-light.png";
 
@@ -30,6 +32,7 @@ const mobileNav = [
 export function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [impersonateOpen, setImpersonateOpen] = useState(false);
   async function handleLogout() {
     await supabase.auth.signOut();
     navigate("/admin/login", { replace: true });
