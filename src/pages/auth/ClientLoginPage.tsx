@@ -99,7 +99,7 @@ export default function ClientLoginPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
         <div className="absolute bottom-6 left-6 right-6 lg:bottom-12 lg:left-12 lg:right-12">
           <span className="inline-block rounded-full bg-[hsl(0_84%_50%)] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-md">CRM Feracon</span>
-          <h2 className="mt-3 font-display text-2xl font-bold leading-tight text-white drop-shadow-lg lg:text-4xl">O CRM Equipe Feracon</h2>
+          <h2 className="mt-3 font-display text-2xl font-bold leading-tight text-white drop-shadow-lg lg:text-4xl">O CRM Exclusivo da Equipe Feracon!</h2>
           <p className="mt-2 max-w-md text-sm text-white/90 lg:text-base">Leads, atendimento e vendas conectados em um só lugar.</p>
         </div>
       </aside>
