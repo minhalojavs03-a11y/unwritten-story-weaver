@@ -1,8 +1,10 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Building2, Smartphone, Sparkles, FileText, Workflow, Megaphone, CreditCard, LogOut, Eye, UserCircle2, Menu, Plug, Users2 } from "lucide-react";
+import { LayoutDashboard, Building2, Smartphone, Sparkles, FileText, Workflow, Megaphone, CreditCard, LogOut, UserCircle2, Menu, Plug, Users2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import logoFeraconMark from "@/assets/logo-feracon-mark.png";
+import logoFeraconDark from "@/assets/logo-feracon-dark.png";
 
 const nav = [
   { to: "/admin/dashboard", label: "Visão Geral", icon: LayoutDashboard },
