@@ -18,6 +18,12 @@ Sua tarefa: ler a mensagem do cliente e:
 Responda SEMPRE em JSON válido com esta estrutura exata:
 {"temperature": "hot|warm|cold", "reasoning": "...", "suggested_reply": "..."}`;
 
+function aiHeaders(geminiApiKey: string, lovableApiKey: string) {
+  return geminiApiKey
+    ? { Authorization: `Bearer ${geminiApiKey}`, "Content-Type": "application/json" }
+    : { "Lovable-API-Key": lovableApiKey, "Content-Type": "application/json" };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -39,10 +45,7 @@ Deno.serve(async (req: Request) => {
 
     const r = await fetch(url, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${GEMINI_API_KEY || LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: aiHeaders(GEMINI_API_KEY, LOVABLE_API_KEY),
       body: JSON.stringify({
         model,
         messages: [
