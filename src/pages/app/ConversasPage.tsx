@@ -67,6 +67,13 @@ export default function ConversasPage() {
   }, [params]);
   const [query, setQuery] = useState("");
   const { data: conversations = [], isLoading } = useConversations();
+  const { data: allMembers = [] } = useTenantMembers();
+  const activeConsultorLabel = useMemo(() => {
+    if (!consultorParam) return null;
+    if (consultorParam === "all") return null;
+    if (consultorParam === "unassigned") return "Sem consultor";
+    return allMembers.find((m: any) => m.id === consultorParam)?.display_name ?? "Consultor";
+  }, [consultorParam, allMembers]);
   const queryClient = useQueryClient();
   const autoImportAttemptedRef = useRef(false);
 
