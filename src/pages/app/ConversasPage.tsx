@@ -443,6 +443,26 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   // pedir transferência ao responsável atual (evita roubo silencioso de atendimento).
   const canAssume = !!member && !isMine && (!assignedId || canOverride);
 
+  // Quando o consultor já conectou o WhatsApp dele no CRM, bloqueamos o envio
+  // pelo chat — daí ele responde direto pelo app do WhatsApp.
+  const [convInstance, setConvInstance] = useState<{ seller_user_id: string | null; is_connected: boolean } | null>(null);
+  useEffect(() => {
+    const instanceId = (conv as any)?.whatsapp_instance_id as string | null | undefined;
+    if (!instanceId) { setConvInstance(null); return; }
+    let cancelled = false;
+    supabase
+      .from("whatsapp_instances")
+      .select("seller_user_id,is_connected")
+      .eq("id", instanceId)
+      .maybeSingle()
+      .then(({ data }) => { if (!cancelled) setConvInstance((data as any) ?? null); });
+    return () => { cancelled = true; };
+  }, [(conv as any)?.whatsapp_instance_id]);
+  const consultantConnected = !!convInstance?.is_connected
+    && !!convInstance?.seller_user_id
+    && convInstance.seller_user_id === user?.id;
+
+
 
   async function callManage(action: string, payload: Record<string, any> = {}) {
     const { error } = await supabase.functions.invoke("whatsapp-manage", {
