@@ -13,6 +13,7 @@ import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useMyProfile } from "@/hooks/useProfile";
 import { useTenantMembers } from "@/hooks/useData";
 import { useTeam } from "@/hooks/useTeam";
+import { useConversationConsultants } from "@/hooks/useConversationConsultants";
 import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 import { MemberLoginDialog } from "@/components/MemberLoginDialog";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
