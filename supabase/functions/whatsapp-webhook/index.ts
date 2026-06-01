@@ -998,21 +998,23 @@ Deno.serve(async (req: Request) => {
       return ok({ silenced: true });
     }
 
-    // Pausa a IA apenas quando o consultor humano JÁ enviou ao menos uma
-    // mensagem nesta conversa (sent_by != null). Apenas estar atribuído
-    // (assigned_member_id) NÃO pausa, pois o pré-atendimento precisa continuar
-    // aquecendo o lead até o consultor entrar de fato.
+    // Pausa a IA assim que o consultor digitar QUALQUER mensagem na conversa,
+    // seja pelo CRM (sent_by != null) ou pelo próprio celular do vendedor
+    // (mensagem fromMe que cai como outbound sem metadata.ai). Mensagens
+    // marcadas como metadata.ai = true (respostas da própria IA / handoff
+    // automatizado) NÃO pausam.
     {
-      const { data: humanMsg } = await admin
+      const { data: humanMsgs } = await admin
         .from("messages")
-        .select("id")
+        .select("id, sent_by, metadata")
         .eq("conversation_id", conv!.id)
         .eq("direction", "outbound")
-        .not("sent_by", "is", null)
-        .limit(1)
-        .maybeSingle();
-      if (humanMsg) {
-        console.log("AI paused: human consultant already replied in this conversation");
+        .limit(50);
+      const humanTyped = (humanMsgs ?? []).some((m: { sent_by: string | null; metadata: { ai?: boolean } | null }) =>
+        m.sent_by !== null || !(m.metadata && m.metadata.ai === true)
+      );
+      if (humanTyped) {
+        console.log("AI paused: consultant already typed in this conversation");
         return ok({ assumed_by_human: true });
       }
     }
@@ -1036,6 +1038,7 @@ Deno.serve(async (req: Request) => {
         tenant_id: instance.tenant_id, conversation_id: conv!.id, lead_id: lead!.id,
         whatsapp_instance_id: instance.id,
         direction: "outbound", body: reply, external_id: providerId,
+        metadata: { ai: true },
       });
       await notifyAllSellersHandoff(admin, instance, lead, text);
       return ok({ handoff: true });
@@ -1084,6 +1087,7 @@ Deno.serve(async (req: Request) => {
       tenant_id: instance.tenant_id, conversation_id: conv!.id, lead_id: lead!.id,
       whatsapp_instance_id: instance.id,
       direction: "outbound", body: reply, external_id: providerId,
+      metadata: { ai: true },
     });
 
 
