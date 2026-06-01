@@ -43,12 +43,37 @@ const mobileNav: NavItem[] = [
 export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isSuperadmin, isOwner } = useEffectiveRole();
+  const { isSuperadmin: realIsSuperadmin, isOwner: realIsOwner } = useEffectiveRole();
   const { data: profile } = useMyProfile();
   const { member, clearMember } = useActiveMember();
   const { data: members = [] } = useTenantMembers();
   useUpdateLastSeen();
   const { can } = usePermissions();
+
+  // Modo suporte: superadmin visualizando como outro tenant.
+  // Enquanto impersonando, esconde menus/atalhos admin e mostra o nome do tenant
+  // no cabeçalho, para refletir fielmente a experiência do consultor/dono daquele cliente.
+  const [impersonating, setImpersonating] = useState<{ tenant_name: string } | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.localStorage.getItem("impersonation_context");
+      return raw ? (JSON.parse(raw) as { tenant_name: string }) : null;
+    } catch { return null; }
+  });
+  useEffect(() => {
+    const read = () => {
+      try {
+        const raw = window.localStorage.getItem("impersonation_context");
+        setImpersonating(raw ? (JSON.parse(raw) as { tenant_name: string }) : null);
+      } catch { setImpersonating(null); }
+    };
+    window.addEventListener("storage", read);
+    return () => window.removeEventListener("storage", read);
+  }, []);
+
+  const isSuperadmin = realIsSuperadmin && !impersonating;
+  const isOwner = realIsOwner && !impersonating;
+
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("sidebar_collapsed") === "1";
@@ -56,7 +81,7 @@ export function AppLayout() {
   useEffect(() => {
     try { window.localStorage.setItem("sidebar_collapsed", collapsed ? "1" : "0"); } catch {}
   }, [collapsed]);
-  const isSupervisor = can("configure_whatsapp") && !isOwner && !isSuperadmin;
+  const isSupervisor = can("configure_whatsapp") && !isOwner && !isSuperadmin && !impersonating;
 
   // Lista única por papel — só o que realmente importa no dia a dia.
   // Itens menos usados ficam em /configuracoes (Mensagens prontas, Gravações,
@@ -77,6 +102,10 @@ export function AppLayout() {
     const meuWa: NavItem = { to: "/meu-whatsapp", label: "Meu WhatsApp", icon: Smartphone };
     const config: NavItem = { to: "/configuracoes", label: "Configurações", icon: Settings };
 
+    if (impersonating) {
+      // Em modo suporte, navega como o dono do tenant visualizado, mas sem itens admin globais.
+      return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
+    }
     if (isOwner || isSuperadmin) {
       return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
     }
@@ -85,9 +114,11 @@ export function AppLayout() {
     }
     // Consultor
     return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, config];
-  }, [isOwner, isSuperadmin, isSupervisor]);
+  }, [isOwner, isSuperadmin, isSupervisor, impersonating]);
 
   const [impersonateOpen, setImpersonateOpen] = useState(false);
+
+
 
   const isConversasMobile = location.pathname === "/conversas" || location.pathname.startsWith("/conversas/");
   // Páginas tipo chat precisam ocupar a viewport inteira (sem scroll do navegador).
@@ -247,23 +278,29 @@ export function AppLayout() {
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-2 rounded-full p-0.5 outline-none ring-offset-2 transition-shadow hover:ring-2 hover:ring-primary/30 focus-visible:ring-2 focus-visible:ring-primary">
                 <UserAvatar
-                  userId={member?.id ?? profile?.id}
-                  name={member?.display_name ?? profile?.full_name ?? profile?.email ?? "?"}
-                  avatarUrl={member ? (members.find((mm) => mm.id === member.id)?.avatar_url ?? null) : profile?.avatar_url}
-                  avatarColor={member?.avatar_color ?? profile?.avatar_color}
+                  userId={impersonating ? undefined : (member?.id ?? profile?.id)}
+                  name={impersonating ? impersonating.tenant_name : (member?.display_name ?? profile?.full_name ?? profile?.email ?? "?")}
+                  avatarUrl={impersonating ? null : (member ? (members.find((mm) => mm.id === member.id)?.avatar_url ?? null) : profile?.avatar_url)}
+                  avatarColor={impersonating ? undefined : (member?.avatar_color ?? profile?.avatar_color)}
                   size={32}
                 />
                 <div className="hidden flex-col items-start leading-tight md:flex">
                   <span className="text-sm font-medium text-foreground">
-                    {member?.display_name ?? profile?.display_name ?? profile?.full_name?.split(" ")[0] ?? "Perfil"}
+                    {impersonating
+                      ? impersonating.tenant_name
+                      : (member?.display_name ?? profile?.display_name ?? profile?.full_name?.split(" ")[0] ?? "Perfil")}
                   </span>
-                  {member && (
+                  {!impersonating && member && (
                     <span className="text-[10px] text-muted-foreground">
                       @{member.username}{member.role_label ? ` · ${member.role_label}` : ""}
                     </span>
                   )}
+                  {impersonating && (
+                    <span className="text-[10px] text-amber-600">Modo suporte</span>
+                  )}
                 </div>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuItem onClick={() => navigate("/perfil")}>
                   <UserIcon className="mr-2 h-4 w-4" /> Meu perfil
