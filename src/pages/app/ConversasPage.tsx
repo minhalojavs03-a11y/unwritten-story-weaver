@@ -260,6 +260,13 @@ export default function ConversasPage() {
           const ownsByUser = userId && assignedUserId === userId;
           if (!ownsByMember && !ownsByUser) return false;
         }
+        if (consultorParam && consultorParam !== "all") {
+          if (consultorParam === "unassigned") {
+            if (lead?.assigned_member_id || lead?.assigned_to) return false;
+          } else if ((lead?.assigned_member_id ?? null) !== consultorParam) {
+            return false;
+          }
+        }
         if (query) {
           const q = query.trim().toLowerCase();
           const qDigits = q.replace(/\D/g, "");
@@ -275,7 +282,7 @@ export default function ConversasPage() {
         if (tab === "unread") return (c.unread_count ?? 0) > 0;
         return true;
       });
-  }, [conversations, assignedLeads, query, tab, canViewAll, member?.id, member?.role_label, userId]);
+  }, [conversations, assignedLeads, query, tab, canViewAll, member?.id, member?.role_label, userId, consultorParam]);
 
   const active = conversations.find((c: any) => c.id === activeConvId) ?? fetchedActive;
 
