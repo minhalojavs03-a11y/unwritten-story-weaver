@@ -65,37 +65,27 @@ export default function MeuWhatsAppPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [instance, setInstance] = useState<Instance | null>(null);
-  const [supportList, setSupportList] = useState<Instance[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [confirmExtra, setConfirmExtra] = useState(false);
   const [phone, setPhone] = useState("");
 
-  // Em modo suporte (superadmin impersonando outro tenant) listamos todas as
-  // instâncias do tenant em modo somente-leitura — o superadmin não pode
-  // escanear o QR pelo consultor, mas precisa enxergar o status para dar suporte.
+  // Em modo suporte (superadmin impersonando outro tenant) NÃO mostramos
+  // instâncias de outros consultores — esta página é pessoal do consultor.
+  // Para gerenciar todas as instâncias do tenant, o superadmin usa /admin/instancias.
   const impersonating = typeof window !== "undefined" && !!window.localStorage.getItem("impersonation_context");
 
   const myDisplayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Meu WhatsApp";
 
   const load = useCallback(async () => {
     if (!user?.id) return;
+    if (impersonating) { setLoading(false); setInstance(null); return; }
     setLoading(true);
     try {
-      // IMPORTANTE: nunca criar instância automaticamente aqui.
-      // A criação é sempre via clique explícito em "Conectar meu WhatsApp"
-      // (handleCreate), o que evita corridas que duplicavam a instância no
-      // provedor (uazapi) quando a página abria em 2 abas ou React StrictMode
-      // executava o efeito duas vezes.
-      const r = await call("list", { mine_only: !impersonating });
+      const r = await call("list", { mine_only: true });
       const list: Instance[] = r?.instances ?? [];
-      if (impersonating) {
-        setSupportList(list);
-        setInstance(null);
-      } else {
-        const mine = list.find((i) => i.is_connected || i.status === "connected") ?? list[0] ?? null;
-        setInstance(mine);
-      }
+      const mine = list.find((i) => i.is_connected || i.status === "connected") ?? list[0] ?? null;
+      setInstance(mine);
     } catch (e: any) {
       toast({ title: "Erro ao carregar", description: e?.message, variant: "destructive" });
     } finally {
@@ -140,7 +130,14 @@ export default function MeuWhatsAppPage() {
       {loading ? (
         <Centered><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></Centered>
       ) : impersonating ? (
-        <SupportList items={supportList} />
+        <div className="rounded-2xl border border-amber-300/40 bg-amber-50 p-8 text-center dark:border-amber-900/40 dark:bg-amber-900/10">
+          <Smartphone className="mx-auto h-10 w-10 text-amber-600" />
+          <h2 className="mt-3 font-display text-lg font-bold">Modo suporte</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Esta página é o WhatsApp pessoal do consultor. Só o próprio consultor pode conectar/escanear o QR.
+            Para gerenciar instâncias do tenant, use <strong>Admin → Instâncias</strong>.
+          </p>
+        </div>
       ) : !instance ? (
         <EmptyState onCreate={() => setShowCreate(true)} />
       ) : (
@@ -198,57 +195,6 @@ export default function MeuWhatsAppPage() {
 function Centered({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-center rounded-2xl border bg-card p-12">{children}</div>
-  );
-}
-
-function SupportList({ items }: { items: Instance[] }) {
-  return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-amber-300/40 bg-amber-50 p-4 text-sm dark:border-amber-900/40 dark:bg-amber-900/10">
-        <div className="flex items-start gap-2">
-          <Smartphone className="mt-0.5 h-4 w-4 text-amber-600" />
-          <p className="text-amber-900 dark:text-amber-200">
-            <strong>Modo suporte:</strong> visualização somente leitura das instâncias deste tenant.
-            Apenas o próprio consultor pode escanear o QR no celular dele.
-          </p>
-        </div>
-      </div>
-
-      {items.length === 0 ? (
-        <div className="rounded-2xl border bg-card p-10 text-center">
-          <Smartphone className="mx-auto h-10 w-10 text-muted-foreground" />
-          <p className="mt-3 text-sm text-muted-foreground">Nenhuma instância de WhatsApp neste tenant.</p>
-        </div>
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2">
-          {items.map((i) => {
-            const connected = i.is_connected || i.status === "connected";
-            return (
-              <div key={i.id} className="rounded-2xl border bg-card p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-display text-base font-bold">{i.instance_name}</p>
-                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                      {i.seller_name ?? "Sem vendedor vinculado"}
-                      {i.phone_number ? ` · ${i.phone_number}` : ""}
-                    </p>
-                  </div>
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                      connected
-                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {connected ? "Conectado" : i.status ?? "Desconectado"}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
   );
 }
 
