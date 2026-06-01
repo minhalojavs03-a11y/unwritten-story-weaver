@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Home, MessageCircle, Kanban, Calendar, Users, Settings, LogOut, Shield, Smartphone, Menu, Inbox, User as UserIcon, Users2, ChevronLeft, ChevronRight, Trophy, BarChart3, Target, Repeat, Share2 } from "lucide-react";
+import { Home, MessageCircle, Kanban, Calendar, Users, Settings, LogOut, Shield, Smartphone, Menu, Inbox, User as UserIcon, Users2, ChevronLeft, ChevronRight, Trophy, BarChart3, Target, Repeat, Share2, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
