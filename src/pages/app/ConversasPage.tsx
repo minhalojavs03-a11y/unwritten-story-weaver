@@ -45,6 +45,7 @@ export default function ConversasPage() {
   const userId = user?.id ?? null;
   const [params, setParams] = useSearchParams();
   const leadParam = params.get("lead");
+  const convParam = params.get("conv");
   const tabParam = params.get("tab");
   const initialTab: (typeof tabs)[number]["id"] =
     tabParam === "hot" || tabParam === "unread" || tabParam === "all" ? tabParam : "all";
