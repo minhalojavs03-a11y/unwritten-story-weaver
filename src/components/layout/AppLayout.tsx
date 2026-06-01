@@ -607,12 +607,12 @@ function ConversasNavWithSubmenu({
                 >
                   <UserAvatar
                     userId={m.id}
-                    name={m.display_name}
+                    name={m.display_name || m.full_name || "?"}
                     avatarUrl={m.avatar_url}
                     avatarColor={m.avatar_color}
                     size={24}
                   />
-                  <span className="min-w-0 flex-1 truncate">{m.display_name}</span>
+                  <span className="min-w-0 flex-1 truncate">{m.display_name || m.full_name || "Sem nome"}</span>
                   {m.role_label && (
                     <span className="shrink-0 text-[10px] text-white/40">{m.role_label}</span>
                   )}
