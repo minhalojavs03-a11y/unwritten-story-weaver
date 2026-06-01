@@ -103,8 +103,8 @@ export function AppLayout() {
     const config: NavItem = { to: "/configuracoes", label: "Configurações", icon: Settings };
 
     if (impersonating) {
-      // Em modo suporte, navega como o dono do tenant visualizado, mas sem itens admin globais.
-      return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
+      // Em modo suporte, sempre mostra o menu de consultor (visão do vendedor do tenant).
+      return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, config];
     }
     if (isOwner || isSuperadmin) {
       return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
@@ -115,6 +115,7 @@ export function AppLayout() {
     // Consultor
     return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, config];
   }, [isOwner, isSuperadmin, isSupervisor, impersonating]);
+
 
   const [impersonateOpen, setImpersonateOpen] = useState(false);
 
