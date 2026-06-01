@@ -16,11 +16,13 @@ export default function EquipePage() {
   const { data: team = [], isLoading } = useTeam();
   const { data: invites = [] } = useInvites();
   const { can } = usePermissions();
-  const canManage = can("manage_team");
+  const isImpersonating = typeof window !== "undefined" && !!localStorage.getItem("impersonation_context");
+  const canManage = can("manage_team") && !isImpersonating;
   const [search, setSearch] = useState("");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editMember, setEditMember] = useState<TeamMember | null>(null);
   const [editMode, setEditMode] = useState<"role" | "goal" | null>(null);
+
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
