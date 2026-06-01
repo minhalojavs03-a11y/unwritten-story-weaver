@@ -16,6 +16,7 @@ import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 import { MemberLoginDialog } from "@/components/MemberLoginDialog";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { TopAlertBanner } from "@/components/layout/TopAlertBanner";
+import { WhatsAppDisconnectBanner } from "@/components/layout/WhatsAppDisconnectBanner";
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { ImpersonateDialog } from "@/components/admin/ImpersonateDialog";
 import { NotificationsBell } from "@/components/layout/NotificationsBell";
