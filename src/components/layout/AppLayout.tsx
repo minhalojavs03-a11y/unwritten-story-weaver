@@ -481,16 +481,20 @@ function ConversasNavWithSubmenu({
   collapsed,
   location,
   navBadges,
-  members,
   navigate,
 }: {
   item: NavItem;
   collapsed: boolean;
   location: ReturnType<typeof useLocation>;
   navBadges: Record<string, number>;
-  members: Array<{ id: string; display_name: string; avatar_url: string | null; avatar_color: string | null; role_label: string | null }>;
   navigate: ReturnType<typeof useNavigate>;
 }) {
+  const { data: team = [] } = useTeam();
+  // Filtra apenas integrantes que recebem leads (consultores/atendentes/supervisor),
+  // ordena alfabeticamente. Inclui owner também por consistência caso ele atenda.
+  const members = team
+    .filter((m) => m.primary_role !== "superadmin")
+    .sort((a, b) => (a.display_name || a.full_name || "").localeCompare(b.display_name || b.full_name || ""));
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<number | null>(null);
   const openMenu = () => {
