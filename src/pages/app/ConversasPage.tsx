@@ -458,9 +458,8 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
       .then(({ data }) => { if (!cancelled) setConvInstance((data as any) ?? null); });
     return () => { cancelled = true; };
   }, [(conv as any)?.whatsapp_instance_id]);
-  const consultantConnected = !!convInstance?.is_connected
-    && !!convInstance?.seller_user_id
-    && convInstance.seller_user_id === user?.id;
+  const consultantConnected = !!convInstance?.is_connected;
+
 
 
 
