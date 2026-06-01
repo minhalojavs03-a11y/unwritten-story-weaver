@@ -16,6 +16,7 @@ import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 import { MemberLoginDialog } from "@/components/MemberLoginDialog";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { TopAlertBanner } from "@/components/layout/TopAlertBanner";
+import { WhatsAppDisconnectBanner } from "@/components/layout/WhatsAppDisconnectBanner";
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { ImpersonateDialog } from "@/components/admin/ImpersonateDialog";
 import { NotificationsBell } from "@/components/layout/NotificationsBell";
@@ -196,6 +197,7 @@ export function AppLayout() {
         lockViewport && "min-h-0 overflow-hidden",
       )}>
         <ImpersonationBanner />
+        <WhatsAppDisconnectBanner />
         <TopAlertBanner />
         <div aria-hidden className={cn("h-4 bg-[#d11e26]", isConversasMobile ? "hidden" : "md:hidden")} />
         <header className={cn(
