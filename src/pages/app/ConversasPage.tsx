@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { useConversations, useMessages, useSendMessage, useAssumeLead, useReleaseLead, useTenantMembers } from "@/hooks/useData";
+import { useTeam } from "@/hooks/useTeam";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
