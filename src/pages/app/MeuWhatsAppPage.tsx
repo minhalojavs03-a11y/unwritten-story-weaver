@@ -70,28 +70,48 @@ export default function MeuWhatsAppPage() {
   const [confirmExtra, setConfirmExtra] = useState(false);
   const [phone, setPhone] = useState("");
 
-  // Em modo suporte (superadmin impersonando outro tenant) NÃO mostramos
-  // instâncias de outros consultores — esta página é pessoal do consultor.
-  // Para gerenciar todas as instâncias do tenant, o superadmin usa /admin/instancias.
-  const impersonating = typeof window !== "undefined" && !!window.localStorage.getItem("impersonation_context");
+  // Em modo suporte: identificamos o consultor impersonado e mostramos
+  // SOMENTE a instância dele (mesma visão que ele teria ao logar).
+  const impersonationCtx = (() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.localStorage.getItem("impersonation_context");
+      return raw ? (JSON.parse(raw) as { tenant_id: string; tenant_name: string }) : null;
+    } catch { return null; }
+  })();
+  const impersonating = !!impersonationCtx;
 
   const myDisplayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Meu WhatsApp";
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    if (impersonating) { setLoading(false); setInstance(null); return; }
     setLoading(true);
     try {
-      const r = await call("list", { mine_only: true });
+      let targetSellerId: string | null = null;
+      if (impersonating && impersonationCtx) {
+        // Descobre o user_id do consultor impersonado pelo nome do tenant.
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("tenant_id", impersonationCtx.tenant_id)
+          .eq("full_name", impersonationCtx.tenant_name)
+          .maybeSingle();
+        targetSellerId = prof?.id ?? null;
+      }
+
+      const r = await call("list", { mine_only: !impersonating });
       const list: Instance[] = r?.instances ?? [];
-      const mine = list.find((i) => i.is_connected || i.status === "connected") ?? list[0] ?? null;
+      const scoped = impersonating
+        ? list.filter((i) => i.seller_user_id === targetSellerId)
+        : list;
+      const mine = scoped.find((i) => i.is_connected || i.status === "connected") ?? scoped[0] ?? null;
       setInstance(mine);
     } catch (e: any) {
       toast({ title: "Erro ao carregar", description: e?.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [user?.id, impersonating]);
+  }, [user?.id, impersonating, impersonationCtx?.tenant_id, impersonationCtx?.tenant_name]);
 
   useEffect(() => { load(); }, [load]);
 
