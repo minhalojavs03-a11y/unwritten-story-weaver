@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useMyProfile } from "@/hooks/useProfile";
 import { useTenantMembers } from "@/hooks/useData";
+import { useTeam } from "@/hooks/useTeam";
 import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 import { MemberLoginDialog } from "@/components/MemberLoginDialog";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
@@ -189,7 +190,6 @@ export function AppLayout() {
                     collapsed={collapsed}
                     location={location}
                     navBadges={navBadges}
-                    members={members}
                     navigate={navigate}
                   />
                 ) : (
@@ -481,16 +481,20 @@ function ConversasNavWithSubmenu({
   collapsed,
   location,
   navBadges,
-  members,
   navigate,
 }: {
   item: NavItem;
   collapsed: boolean;
   location: ReturnType<typeof useLocation>;
   navBadges: Record<string, number>;
-  members: Array<{ id: string; display_name: string; avatar_url: string | null; avatar_color: string | null; role_label: string | null }>;
   navigate: ReturnType<typeof useNavigate>;
 }) {
+  const { data: team = [] } = useTeam();
+  // Filtra apenas integrantes que recebem leads (consultores/atendentes/supervisor),
+  // ordena alfabeticamente. Inclui owner também por consistência caso ele atenda.
+  const members = team
+    .filter((m) => m.primary_role !== "superadmin")
+    .sort((a, b) => (a.display_name || a.full_name || "").localeCompare(b.display_name || b.full_name || ""));
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<number | null>(null);
   const openMenu = () => {
@@ -603,12 +607,12 @@ function ConversasNavWithSubmenu({
                 >
                   <UserAvatar
                     userId={m.id}
-                    name={m.display_name}
+                    name={m.display_name || m.full_name || "?"}
                     avatarUrl={m.avatar_url}
                     avatarColor={m.avatar_color}
                     size={24}
                   />
-                  <span className="min-w-0 flex-1 truncate">{m.display_name}</span>
+                  <span className="min-w-0 flex-1 truncate">{m.display_name || m.full_name || "Sem nome"}</span>
                   {m.role_label && (
                     <span className="shrink-0 text-[10px] text-white/40">{m.role_label}</span>
                   )}
