@@ -13,6 +13,7 @@ import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useMyProfile } from "@/hooks/useProfile";
 import { useTenantMembers } from "@/hooks/useData";
 import { useTeam } from "@/hooks/useTeam";
+import { useConversationConsultants } from "@/hooks/useConversationConsultants";
 import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 import { MemberLoginDialog } from "@/components/MemberLoginDialog";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
@@ -489,12 +490,7 @@ function ConversasNavWithSubmenu({
   navBadges: Record<string, number>;
   navigate: ReturnType<typeof useNavigate>;
 }) {
-  const { data: team = [] } = useTeam();
-  // Filtra apenas integrantes que recebem leads (consultores/atendentes/supervisor),
-  // ordena alfabeticamente. Inclui owner também por consistência caso ele atenda.
-  const members = team
-    .filter((m) => m.primary_role !== "superadmin")
-    .sort((a, b) => (a.display_name || a.full_name || "").localeCompare(b.display_name || b.full_name || ""));
+  const { data: members = [] } = useConversationConsultants();
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<number | null>(null);
   const openMenu = () => {

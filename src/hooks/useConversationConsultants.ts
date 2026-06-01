@@ -1,0 +1,110 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+
+export type ConsultantOption = {
+  id: string; // id usado no filtro de conversas (user_id ou tenant_member.id)
+  display_name: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  avatar_color: string | null;
+  role: string;
+  role_label: string | null;
+};
+
+/**
+ * Lista todos os atendentes/consultores/supervisores do tenant que aparecem
+ * no dropdown de "Conversas por consultor". Combina três fontes:
+ *  - tenant_memberships (consultores logados via e-mail)
+ *  - profiles vinculados ao tenant (fallback)
+ *  - tenant_members (sub-contas / PIN)
+ * Exclui owner do dono e superadmin (eles são quem visualiza).
+ */
+export function useConversationConsultants() {
+  const { tenantId } = useAuth();
+  return useQuery({
+    queryKey: ["conversation-consultants", tenantId],
+    enabled: !!tenantId,
+    queryFn: async (): Promise<ConsultantOption[]> => {
+      const [membershipsRes, profilesRes, membersRes] = await Promise.all([
+        supabase
+          .from("tenant_memberships")
+          .select("user_id, role, display_name")
+          .eq("tenant_id", tenantId!),
+        supabase
+          .from("profiles")
+          .select("id, full_name, display_name, avatar_url, avatar_color, role_label, tenant_id")
+          .eq("tenant_id", tenantId!),
+        supabase
+          .from("tenant_members")
+          .select("id, full_name, display_name, avatar_url, avatar_color, role_label")
+          .eq("tenant_id", tenantId!)
+          .eq("is_active", true),
+      ]);
+      if (membershipsRes.error) throw membershipsRes.error;
+      if (profilesRes.error) throw profilesRes.error;
+      if (membersRes.error) throw membersRes.error;
+
+      const profilesById = new Map<string, any>();
+      for (const p of profilesRes.data ?? []) profilesById.set(p.id, p);
+
+      const seen = new Set<string>();
+      const list: ConsultantOption[] = [];
+
+      // 1) memberships (fonte oficial de roles por tenant)
+      for (const m of membershipsRes.data ?? []) {
+        const role = String(m.role || "").toLowerCase();
+        if (role === "owner" || role === "superadmin") continue;
+        if (seen.has(m.user_id)) continue;
+        const p = profilesById.get(m.user_id);
+        seen.add(m.user_id);
+        list.push({
+          id: m.user_id,
+          display_name: m.display_name || p?.display_name || p?.full_name || p?.email || "Consultor",
+          full_name: p?.full_name ?? null,
+          avatar_url: p?.avatar_url ?? null,
+          avatar_color: p?.avatar_color ?? null,
+          role,
+          role_label: p?.role_label ?? null,
+        });
+      }
+
+      // 2) profiles do tenant que não estão nas memberships (fallback)
+      for (const p of profilesRes.data ?? []) {
+        if (seen.has(p.id)) continue;
+        const label = (p.role_label || "").toLowerCase();
+        if (label.includes("dono") || label.includes("owner") || label.includes("propriet")) continue;
+        seen.add(p.id);
+        list.push({
+          id: p.id,
+          display_name: p.display_name || p.full_name || "Consultor",
+          full_name: p.full_name ?? null,
+          avatar_url: p.avatar_url ?? null,
+          avatar_color: p.avatar_color ?? null,
+          role: "consultant",
+          role_label: p.role_label ?? null,
+        });
+      }
+
+      // 3) tenant_members (sub-contas/PIN)
+      for (const tm of membersRes.data ?? []) {
+        if (seen.has(tm.id)) continue;
+        const label = (tm.role_label || "").toLowerCase();
+        if (label.includes("dono") || label.includes("owner") || label.includes("propriet")) continue;
+        seen.add(tm.id);
+        list.push({
+          id: tm.id,
+          display_name: tm.display_name || tm.full_name || "Consultor",
+          full_name: tm.full_name ?? null,
+          avatar_url: tm.avatar_url ?? null,
+          avatar_color: tm.avatar_color ?? null,
+          role: "consultant",
+          role_label: tm.role_label ?? null,
+        });
+      }
+
+      list.sort((a, b) => a.display_name.localeCompare(b.display_name));
+      return list;
+    },
+  });
+}
