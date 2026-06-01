@@ -198,57 +198,6 @@ function Centered({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SupportList({ items }: { items: Instance[] }) {
-  return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-amber-300/40 bg-amber-50 p-4 text-sm dark:border-amber-900/40 dark:bg-amber-900/10">
-        <div className="flex items-start gap-2">
-          <Smartphone className="mt-0.5 h-4 w-4 text-amber-600" />
-          <p className="text-amber-900 dark:text-amber-200">
-            <strong>Modo suporte:</strong> visualização somente leitura das instâncias deste tenant.
-            Apenas o próprio consultor pode escanear o QR no celular dele.
-          </p>
-        </div>
-      </div>
-
-      {items.length === 0 ? (
-        <div className="rounded-2xl border bg-card p-10 text-center">
-          <Smartphone className="mx-auto h-10 w-10 text-muted-foreground" />
-          <p className="mt-3 text-sm text-muted-foreground">Nenhuma instância de WhatsApp neste tenant.</p>
-        </div>
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2">
-          {items.map((i) => {
-            const connected = i.is_connected || i.status === "connected";
-            return (
-              <div key={i.id} className="rounded-2xl border bg-card p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-display text-base font-bold">{i.instance_name}</p>
-                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                      {i.seller_name ?? "Sem vendedor vinculado"}
-                      {i.phone_number ? ` · ${i.phone_number}` : ""}
-                    </p>
-                  </div>
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                      connected
-                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {connected ? "Conectado" : i.status ?? "Desconectado"}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function EmptyState({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="rounded-2xl border bg-card p-10 text-center">
