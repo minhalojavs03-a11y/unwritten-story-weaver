@@ -22,7 +22,7 @@ import { ImpersonateDialog } from "@/components/admin/ImpersonateDialog";
 import { NotificationsBell } from "@/components/layout/NotificationsBell";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useNavBadges } from "@/hooks/useNavBadges";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { TutorialVideoDialog } from "@/components/TutorialVideoDialog";
 import logoCatelanWhite from "@/assets/logo-catelan-white.png";
