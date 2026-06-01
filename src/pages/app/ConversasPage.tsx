@@ -47,6 +47,7 @@ export default function ConversasPage() {
   const leadParam = params.get("lead");
   const convParam = params.get("conv");
   const tabParam = params.get("tab");
+  const consultorParam = params.get("consultor");
   const initialTab: (typeof tabs)[number]["id"] =
     tabParam === "hot" || tabParam === "unread" || tabParam === "all" ? tabParam : "all";
   const [tab, setTabState] = useState<(typeof tabs)[number]["id"]>(initialTab);
