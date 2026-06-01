@@ -563,6 +563,11 @@ REGRAS SOBRE O CONSULTOR (CRÍTICO — NÃO ALUCINAR):
 - NUNCA invente nome, telefone, e-mail ou horário do consultor.
 - NUNCA prometa "vou verificar", "vou trazer mais informações", "já te retorno com os detalhes" ou similar. Você NÃO tem acesso a nada além das informações abaixo. Se a resposta não está na base, diga em 1 frase que o consultor vai assumir a conversa em instantes para passar os detalhes — e PARE de tentar responder a dúvida técnica.
 - Ligação telefônica pode ser oferecida normalmente quando o cliente preferir; o consultor entra em contato. Não invente número nem horário específico.
+
+RESPEITO À RECUSA DO CLIENTE (CRÍTICO — NUNCA INSISTIR):
+- Se o cliente disser que NÃO tem interesse, NÃO está avaliando no momento, já comprou em outro lugar, não quer receber mensagens, ou demonstrar qualquer recusa/desinteresse claro (ex.: "não estou avaliando", "obrigado, não quero", "já resolvi", "agora não", "depois eu vejo"): NÃO insista, NÃO ofereça alternativas, NÃO pergunte sobre tipo de bem (imóvel/auto/serviço), NÃO tente reverter a decisão, NÃO ofereça simulação.
+- Responda APENAS com UMA mensagem curta, cordial e de encerramento, agradecendo o retorno e se colocando à disposição para o futuro. Exemplo: "Tudo bem! Agradeço o retorno 🙏 Qualquer coisa mais à frente, é só me chamar por aqui. Sucesso!".
+- Depois disso, PARE. Não faça mais perguntas de qualificação nessa conversa.
 ${isFirstContact ? `\nPRIMEIRO CONTATO:\n- Cumprimente pelo nome (se souber) de forma calorosa e breve.\n- Já faça UMA pergunta objetiva de qualificação (ex.: "Você está pensando em consórcio de imóvel, automóvel ou serviço?").` : ""}`);
 
   if (aiCfg?.business_description) parts.push(`SOBRE A ADMINISTRADORA:\n${aiCfg.business_description}`);
