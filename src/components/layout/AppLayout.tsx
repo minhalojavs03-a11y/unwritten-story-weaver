@@ -278,23 +278,29 @@ export function AppLayout() {
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-2 rounded-full p-0.5 outline-none ring-offset-2 transition-shadow hover:ring-2 hover:ring-primary/30 focus-visible:ring-2 focus-visible:ring-primary">
                 <UserAvatar
-                  userId={member?.id ?? profile?.id}
-                  name={member?.display_name ?? profile?.full_name ?? profile?.email ?? "?"}
-                  avatarUrl={member ? (members.find((mm) => mm.id === member.id)?.avatar_url ?? null) : profile?.avatar_url}
-                  avatarColor={member?.avatar_color ?? profile?.avatar_color}
+                  userId={impersonating ? undefined : (member?.id ?? profile?.id)}
+                  name={impersonating ? impersonating.tenant_name : (member?.display_name ?? profile?.full_name ?? profile?.email ?? "?")}
+                  avatarUrl={impersonating ? null : (member ? (members.find((mm) => mm.id === member.id)?.avatar_url ?? null) : profile?.avatar_url)}
+                  avatarColor={impersonating ? undefined : (member?.avatar_color ?? profile?.avatar_color)}
                   size={32}
                 />
                 <div className="hidden flex-col items-start leading-tight md:flex">
                   <span className="text-sm font-medium text-foreground">
-                    {member?.display_name ?? profile?.display_name ?? profile?.full_name?.split(" ")[0] ?? "Perfil"}
+                    {impersonating
+                      ? impersonating.tenant_name
+                      : (member?.display_name ?? profile?.display_name ?? profile?.full_name?.split(" ")[0] ?? "Perfil")}
                   </span>
-                  {member && (
+                  {!impersonating && member && (
                     <span className="text-[10px] text-muted-foreground">
                       @{member.username}{member.role_label ? ` · ${member.role_label}` : ""}
                     </span>
                   )}
+                  {impersonating && (
+                    <span className="text-[10px] text-amber-600">Modo suporte</span>
+                  )}
                 </div>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuItem onClick={() => navigate("/perfil")}>
                   <UserIcon className="mr-2 h-4 w-4" /> Meu perfil
