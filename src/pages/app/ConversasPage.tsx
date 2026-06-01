@@ -272,7 +272,10 @@ export default function ConversasPage() {
         if (consultorParam && consultorParam !== "all") {
           if (consultorParam === "unassigned") {
             if (lead?.assigned_member_id || lead?.assigned_to) return false;
-          } else if ((lead?.assigned_member_id ?? null) !== consultorParam) {
+          } else if (
+            (lead?.assigned_member_id ?? null) !== consultorParam &&
+            (lead?.assigned_to ?? null) !== consultorParam
+          ) {
             return false;
           }
         }
