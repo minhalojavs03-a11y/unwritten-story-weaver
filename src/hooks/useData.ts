@@ -513,7 +513,7 @@ export function useTenantMembers() {
     queryKey: ["tenant_members_public", tenantId],
     enabled: !!tenantId,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("list_tenant_members_public");
+      const { data, error } = await supabase.rpc("list_tenant_members_public", { _tenant_id: tenantId! });
       if (error) throw error;
       type Row = { id: string; username: string; display_name: string; role_label: string | null; avatar_color: string | null; avatar_url: string | null; bio: string | null; phone: string | null; last_seen_at: string | null; receives_leads: boolean | null };
       const rows = (data ?? []) as Row[];
