@@ -327,6 +327,23 @@ export default function ConversasPage() {
               {t.label}
             </button>
           ))}
+          {activeConsultorLabel && (
+            <button
+              type="button"
+              onClick={() => {
+                setParams((prev) => {
+                  const next = new URLSearchParams(prev);
+                  next.delete("consultor");
+                  return next;
+                }, { replace: true });
+              }}
+              className="ml-1 inline-flex shrink-0 items-center gap-1 rounded-full bg-[#dbeafe] px-3 py-1 text-xs font-medium text-[#1d4ed8] hover:bg-[#bfdbfe]"
+              title="Remover filtro de consultor"
+            >
+              👤 {activeConsultorLabel}
+              <X className="h-3 w-3" />
+            </button>
+          )}
         </div>
 
         <ul className="flex-1 overflow-y-auto">
