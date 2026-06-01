@@ -70,10 +70,15 @@ export default function MeuWhatsAppPage() {
   const [confirmExtra, setConfirmExtra] = useState(false);
   const [phone, setPhone] = useState("");
 
+  // Em modo suporte (superadmin impersonando outro tenant) não faz sentido
+  // mostrar o WhatsApp do próprio superadmin nesta página — ela é "do consultor".
+  const impersonating = typeof window !== "undefined" && !!window.localStorage.getItem("impersonation_context");
+
   const myDisplayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Meu WhatsApp";
 
   const load = useCallback(async () => {
     if (!user?.id) return;
+    if (impersonating) { setLoading(false); setInstance(null); return; }
     setLoading(true);
     try {
       // IMPORTANTE: nunca criar instância automaticamente aqui.
@@ -90,9 +95,10 @@ export default function MeuWhatsAppPage() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, impersonating]);
 
   useEffect(() => { load(); }, [load]);
+
 
   const handleCreate = async () => {
     setCreating(true);
@@ -127,11 +133,20 @@ export default function MeuWhatsAppPage() {
 
       {loading ? (
         <Centered><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></Centered>
+      ) : impersonating ? (
+        <div className="rounded-2xl border border-amber-300/40 bg-amber-50 p-8 text-center dark:border-amber-900/40 dark:bg-amber-900/10">
+          <Smartphone className="mx-auto h-10 w-10 text-amber-600" />
+          <h2 className="mt-3 font-display text-lg font-bold">Modo suporte</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Esta página é o WhatsApp pessoal do consultor. Só o próprio consultor pode conectar/escanear o QR.
+          </p>
+        </div>
       ) : !instance ? (
         <EmptyState onCreate={() => setShowCreate(true)} />
       ) : (
         <MyInstance instance={instance} onChanged={load} />
       )}
+
 
       <Dialog open={showCreate} onOpenChange={(o) => { setShowCreate(o); if (!o) setConfirmExtra(false); }}>
         <DialogContent
