@@ -70,10 +70,15 @@ export default function MeuWhatsAppPage() {
   const [confirmExtra, setConfirmExtra] = useState(false);
   const [phone, setPhone] = useState("");
 
+  // Em modo suporte (superadmin impersonando outro tenant) não faz sentido
+  // mostrar o WhatsApp do próprio superadmin nesta página — ela é "do consultor".
+  const impersonating = typeof window !== "undefined" && !!window.localStorage.getItem("impersonation_context");
+
   const myDisplayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Meu WhatsApp";
 
   const load = useCallback(async () => {
     if (!user?.id) return;
+    if (impersonating) { setLoading(false); setInstance(null); return; }
     setLoading(true);
     try {
       // IMPORTANTE: nunca criar instância automaticamente aqui.
@@ -90,9 +95,10 @@ export default function MeuWhatsAppPage() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, impersonating]);
 
   useEffect(() => { load(); }, [load]);
+
 
   const handleCreate = async () => {
     setCreating(true);
