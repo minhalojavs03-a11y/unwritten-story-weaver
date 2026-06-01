@@ -1063,6 +1063,21 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
     if (aiCfg && aiCfg.enabled === false) return ok({ ai_disabled: true });
 
+    // IA só atua em PRÉ-ATENDIMENTO de leads vindos de ANÚNCIO (Meta Ads, Google Ads,
+    // Facebook, Instagram, TikTok) ou importados via planilha de anúncios. Leads que
+    // chegaram por outras origens (ex.: cliente mandando mensagem orgânica direto no
+    // WhatsApp) NÃO devem receber resposta automática da IA — o consultor assume.
+    const leadSrc = String(lead?.source ?? "").toLowerCase();
+    const isAdLead =
+      lead?.imported_from_sheet === true ||
+      /ads|anuncio|anúncio|facebook|instagram|meta|tiktok|google[_\s-]?ads/i.test(leadSrc) ||
+      isTestLead;
+    if (!isAdLead) {
+      console.log("AI skipped: lead não é de anúncio (source:", lead?.source, ")");
+      return ok({ ai_skipped: "not_ad_lead", source: lead?.source ?? null });
+    }
+
+
     const { data: tenant } = await admin.from("tenants").select("name").eq("id", instance.tenant_id).maybeSingle();
     const fullPrompt = await buildKnowledgePrompt(admin, instance.tenant_id, tenant?.name, aiCfg, isNewLead);
 
