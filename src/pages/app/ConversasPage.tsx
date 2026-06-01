@@ -443,6 +443,26 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   // pedir transferência ao responsável atual (evita roubo silencioso de atendimento).
   const canAssume = !!member && !isMine && (!assignedId || canOverride);
 
+  // Quando o consultor já conectou o WhatsApp dele no CRM, bloqueamos o envio
+  // pelo chat — daí ele responde direto pelo app do WhatsApp.
+  const [convInstance, setConvInstance] = useState<{ seller_user_id: string | null; is_connected: boolean } | null>(null);
+  useEffect(() => {
+    const instanceId = (conv as any)?.whatsapp_instance_id as string | null | undefined;
+    if (!instanceId) { setConvInstance(null); return; }
+    let cancelled = false;
+    supabase
+      .from("whatsapp_instances")
+      .select("seller_user_id,is_connected")
+      .eq("id", instanceId)
+      .maybeSingle()
+      .then(({ data }) => { if (!cancelled) setConvInstance((data as any) ?? null); });
+    return () => { cancelled = true; };
+  }, [(conv as any)?.whatsapp_instance_id]);
+  const consultantConnected = !!convInstance?.is_connected
+    && !!convInstance?.seller_user_id
+    && convInstance.seller_user_id === user?.id;
+
+
 
   async function callManage(action: string, payload: Record<string, any> = {}) {
     const { error } = await supabase.functions.invoke("whatsapp-manage", {
@@ -1076,6 +1096,15 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
                 Assumir atendimento
               </Button>
             )}
+          </div>
+        ) : consultantConnected ? (
+          <div className="rounded-2xl border border-emerald-300/50 bg-emerald-50 p-5 text-center text-sm text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-900/10 dark:text-emerald-200">
+            <p className="font-medium">
+              Que ótimo! Agora que seu dispositivo foi conectado com sucesso, você pode responder direto pelo seu WhatsApp.
+            </p>
+            <p className="mt-1 text-xs opacity-80">
+              O envio pelo chat foi desativado — as conversas continuam sincronizadas aqui para histórico.
+            </p>
           </div>
         ) : isRecording ? (
           <div className="flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-sm">
