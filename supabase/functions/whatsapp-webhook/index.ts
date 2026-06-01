@@ -1038,6 +1038,7 @@ Deno.serve(async (req: Request) => {
         tenant_id: instance.tenant_id, conversation_id: conv!.id, lead_id: lead!.id,
         whatsapp_instance_id: instance.id,
         direction: "outbound", body: reply, external_id: providerId,
+        metadata: { ai: true },
       });
       await notifyAllSellersHandoff(admin, instance, lead, text);
       return ok({ handoff: true });
