@@ -65,37 +65,27 @@ export default function MeuWhatsAppPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [instance, setInstance] = useState<Instance | null>(null);
-  const [supportList, setSupportList] = useState<Instance[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [confirmExtra, setConfirmExtra] = useState(false);
   const [phone, setPhone] = useState("");
 
-  // Em modo suporte (superadmin impersonando outro tenant) listamos todas as
-  // instâncias do tenant em modo somente-leitura — o superadmin não pode
-  // escanear o QR pelo consultor, mas precisa enxergar o status para dar suporte.
+  // Em modo suporte (superadmin impersonando outro tenant) NÃO mostramos
+  // instâncias de outros consultores — esta página é pessoal do consultor.
+  // Para gerenciar todas as instâncias do tenant, o superadmin usa /admin/instancias.
   const impersonating = typeof window !== "undefined" && !!window.localStorage.getItem("impersonation_context");
 
   const myDisplayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Meu WhatsApp";
 
   const load = useCallback(async () => {
     if (!user?.id) return;
+    if (impersonating) { setLoading(false); setInstance(null); return; }
     setLoading(true);
     try {
-      // IMPORTANTE: nunca criar instância automaticamente aqui.
-      // A criação é sempre via clique explícito em "Conectar meu WhatsApp"
-      // (handleCreate), o que evita corridas que duplicavam a instância no
-      // provedor (uazapi) quando a página abria em 2 abas ou React StrictMode
-      // executava o efeito duas vezes.
-      const r = await call("list", { mine_only: !impersonating });
+      const r = await call("list", { mine_only: true });
       const list: Instance[] = r?.instances ?? [];
-      if (impersonating) {
-        setSupportList(list);
-        setInstance(null);
-      } else {
-        const mine = list.find((i) => i.is_connected || i.status === "connected") ?? list[0] ?? null;
-        setInstance(mine);
-      }
+      const mine = list.find((i) => i.is_connected || i.status === "connected") ?? list[0] ?? null;
+      setInstance(mine);
     } catch (e: any) {
       toast({ title: "Erro ao carregar", description: e?.message, variant: "destructive" });
     } finally {
