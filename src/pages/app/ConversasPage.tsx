@@ -47,6 +47,7 @@ export default function ConversasPage() {
   const leadParam = params.get("lead");
   const convParam = params.get("conv");
   const tabParam = params.get("tab");
+  const consultorParam = params.get("consultor");
   const initialTab: (typeof tabs)[number]["id"] =
     tabParam === "hot" || tabParam === "unread" || tabParam === "all" ? tabParam : "all";
   const [tab, setTabState] = useState<(typeof tabs)[number]["id"]>(initialTab);
@@ -66,6 +67,13 @@ export default function ConversasPage() {
   }, [params]);
   const [query, setQuery] = useState("");
   const { data: conversations = [], isLoading } = useConversations();
+  const { data: allMembers = [] } = useTenantMembers();
+  const activeConsultorLabel = useMemo(() => {
+    if (!consultorParam) return null;
+    if (consultorParam === "all") return null;
+    if (consultorParam === "unassigned") return "Sem consultor";
+    return allMembers.find((m: any) => m.id === consultorParam)?.display_name ?? "Consultor";
+  }, [consultorParam, allMembers]);
   const queryClient = useQueryClient();
   const autoImportAttemptedRef = useRef(false);
 
@@ -259,6 +267,13 @@ export default function ConversasPage() {
           const ownsByUser = userId && assignedUserId === userId;
           if (!ownsByMember && !ownsByUser) return false;
         }
+        if (consultorParam && consultorParam !== "all") {
+          if (consultorParam === "unassigned") {
+            if (lead?.assigned_member_id || lead?.assigned_to) return false;
+          } else if ((lead?.assigned_member_id ?? null) !== consultorParam) {
+            return false;
+          }
+        }
         if (query) {
           const q = query.trim().toLowerCase();
           const qDigits = q.replace(/\D/g, "");
@@ -274,7 +289,7 @@ export default function ConversasPage() {
         if (tab === "unread") return (c.unread_count ?? 0) > 0;
         return true;
       });
-  }, [conversations, assignedLeads, query, tab, canViewAll, member?.id, member?.role_label, userId]);
+  }, [conversations, assignedLeads, query, tab, canViewAll, member?.id, member?.role_label, userId, consultorParam]);
 
   const active = conversations.find((c: any) => c.id === activeConvId) ?? fetchedActive;
 
@@ -312,6 +327,23 @@ export default function ConversasPage() {
               {t.label}
             </button>
           ))}
+          {activeConsultorLabel && (
+            <button
+              type="button"
+              onClick={() => {
+                setParams((prev) => {
+                  const next = new URLSearchParams(prev);
+                  next.delete("consultor");
+                  return next;
+                }, { replace: true });
+              }}
+              className="ml-1 inline-flex shrink-0 items-center gap-1 rounded-full bg-[#dbeafe] px-3 py-1 text-xs font-medium text-[#1d4ed8] hover:bg-[#bfdbfe]"
+              title="Remover filtro de consultor"
+            >
+              👤 {activeConsultorLabel}
+              <X className="h-3 w-3" />
+            </button>
+          )}
         </div>
 
         <ul className="flex-1 overflow-y-auto">
