@@ -130,7 +130,14 @@ export default function MeuWhatsAppPage() {
       {loading ? (
         <Centered><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></Centered>
       ) : impersonating ? (
-        <SupportList items={supportList} />
+        <div className="rounded-2xl border border-amber-300/40 bg-amber-50 p-8 text-center dark:border-amber-900/40 dark:bg-amber-900/10">
+          <Smartphone className="mx-auto h-10 w-10 text-amber-600" />
+          <h2 className="mt-3 font-display text-lg font-bold">Modo suporte</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Esta página é o WhatsApp pessoal do consultor. Só o próprio consultor pode conectar/escanear o QR.
+            Para gerenciar instâncias do tenant, use <strong>Admin → Instâncias</strong>.
+          </p>
+        </div>
       ) : !instance ? (
         <EmptyState onCreate={() => setShowCreate(true)} />
       ) : (
