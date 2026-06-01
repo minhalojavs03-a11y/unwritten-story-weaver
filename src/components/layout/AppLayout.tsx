@@ -190,7 +190,6 @@ export function AppLayout() {
                     collapsed={collapsed}
                     location={location}
                     navBadges={navBadges}
-                    members={members}
                     navigate={navigate}
                   />
                 ) : (
