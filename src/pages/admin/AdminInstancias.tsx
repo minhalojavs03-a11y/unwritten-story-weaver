@@ -4,11 +4,12 @@ import { TestAiMessageButton } from "@/components/layout/TestAiMessageButton";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Smartphone, AlertCircle, CheckCircle2, Copy } from "lucide-react";
+import { Smartphone, AlertCircle, CheckCircle2, Copy, Building2 } from "lucide-react";
 import { useAllInstances, useAllTenants } from "@/hooks/useData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { AssigneeBadge } from "@/components/profile/AssigneeBadge";
 
 export default function AdminInstancias() {
   const { data: instances = [] } = useAllInstances();
@@ -133,8 +134,20 @@ export default function AdminInstancias() {
                 <Smartphone className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="truncate font-semibold">{i.tenant?.name ?? "—"}</div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                {i.seller_user_id ? (
+                  <>
+                    <div className="min-w-0 truncate font-semibold">
+                      <AssigneeBadge userId={i.seller_user_id} size={24} />
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <Building2 className="h-3 w-3" />
+                      <span className="truncate">{i.tenant?.name ?? "—"}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="truncate font-semibold">{i.tenant?.name ?? "—"}</div>
+                )}
+                <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                   {i.is_connected || i.status === "connected" ? <CheckCircle2 className="h-3 w-3 text-success" /> : <AlertCircle className="h-3 w-3 text-warning" />}
                   <span className="capitalize">{i.is_connected || i.status === "connected" ? "connected" : i.status}</span>
                   {i.phone_number && <span>· {i.phone_number}</span>}
