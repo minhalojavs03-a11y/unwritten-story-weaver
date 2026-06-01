@@ -166,24 +166,28 @@ export function useCreateLead() {
 // ============= CONVERSATIONS + MESSAGES =============
 export function useConversations() {
   const { tenantId, isSuperadmin } = useAuth();
+  // Em modo suporte (impersonação), o superadmin deve enxergar apenas as
+  // conversas do tenant que está visualizando — não todas as conversas globais.
+  const impersonating = typeof window !== "undefined" && !!window.localStorage.getItem("impersonation_context");
+  const scopeAll = isSuperadmin && !impersonating;
   const qc = useQueryClient();
   const q = useQuery({
-    queryKey: ["conversations", isSuperadmin ? "__all__" : tenantId],
-    enabled: !!tenantId || isSuperadmin,
+    queryKey: ["conversations", scopeAll ? "__all__" : tenantId],
+    enabled: !!tenantId || scopeAll,
     queryFn: async () => {
       let query = supabase
         .from("conversations")
         .select("*, lead:leads(*)")
         .order("last_message_at", { ascending: false, nullsFirst: false })
         .limit(500);
-      if (!isSuperadmin) query = query.eq("tenant_id", tenantId!);
+      if (!scopeAll) query = query.eq("tenant_id", tenantId!);
       const { data, error } = await query;
       if (error) throw error;
       return data ?? [];
     },
   });
   useEffect(() => {
-    if (!tenantId && !isSuperadmin) return;
+    if (!tenantId && !scopeAll) return;
     const ch = supabase
       .channel(realtimeChannelName("conv-changes", tenantId ?? "all"))
       .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, () =>
@@ -191,9 +195,10 @@ export function useConversations() {
       )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [tenantId, isSuperadmin, qc]);
+  }, [tenantId, scopeAll, qc]);
   return q;
 }
+
 
 export function useMessages(
   conversationId: string | null,
