@@ -1082,6 +1082,9 @@ Deno.serve(async (req: Request) => {
       console.log("AI returned empty reply; skipping send to lead");
       return ok({ skipped: "empty_ai_reply" });
     }
+    // Delay humano: 1s de "lendo" + ~40ms por caractere digitando (entre 3s e 12s)
+    const typingMs = Math.min(12000, Math.max(3000, 1000 + reply.length * 40));
+    await new Promise((r) => setTimeout(r, typingMs));
     const providerId = await sendText(instance.server_url, instance.instance_token, phone, reply);
     await admin.from("messages").insert({
       tenant_id: instance.tenant_id, conversation_id: conv!.id, lead_id: lead!.id,
