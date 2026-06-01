@@ -43,12 +43,37 @@ const mobileNav: NavItem[] = [
 export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isSuperadmin, isOwner } = useEffectiveRole();
+  const { isSuperadmin: realIsSuperadmin, isOwner: realIsOwner } = useEffectiveRole();
   const { data: profile } = useMyProfile();
   const { member, clearMember } = useActiveMember();
   const { data: members = [] } = useTenantMembers();
   useUpdateLastSeen();
   const { can } = usePermissions();
+
+  // Modo suporte: superadmin visualizando como outro tenant.
+  // Enquanto impersonando, esconde menus/atalhos admin e mostra o nome do tenant
+  // no cabeçalho, para refletir fielmente a experiência do consultor/dono daquele cliente.
+  const [impersonating, setImpersonating] = useState<{ tenant_name: string } | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.localStorage.getItem("impersonation_context");
+      return raw ? (JSON.parse(raw) as { tenant_name: string }) : null;
+    } catch { return null; }
+  });
+  useEffect(() => {
+    const read = () => {
+      try {
+        const raw = window.localStorage.getItem("impersonation_context");
+        setImpersonating(raw ? (JSON.parse(raw) as { tenant_name: string }) : null);
+      } catch { setImpersonating(null); }
+    };
+    window.addEventListener("storage", read);
+    return () => window.removeEventListener("storage", read);
+  }, []);
+
+  const isSuperadmin = realIsSuperadmin && !impersonating;
+  const isOwner = realIsOwner && !impersonating;
+
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("sidebar_collapsed") === "1";
@@ -56,7 +81,7 @@ export function AppLayout() {
   useEffect(() => {
     try { window.localStorage.setItem("sidebar_collapsed", collapsed ? "1" : "0"); } catch {}
   }, [collapsed]);
-  const isSupervisor = can("configure_whatsapp") && !isOwner && !isSuperadmin;
+  const isSupervisor = can("configure_whatsapp") && !isOwner && !isSuperadmin && !impersonating;
 
   // Lista única por papel — só o que realmente importa no dia a dia.
   // Itens menos usados ficam em /configuracoes (Mensagens prontas, Gravações,
@@ -77,6 +102,10 @@ export function AppLayout() {
     const meuWa: NavItem = { to: "/meu-whatsapp", label: "Meu WhatsApp", icon: Smartphone };
     const config: NavItem = { to: "/configuracoes", label: "Configurações", icon: Settings };
 
+    if (impersonating) {
+      // Em modo suporte, navega como o dono do tenant visualizado, mas sem itens admin globais.
+      return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
+    }
     if (isOwner || isSuperadmin) {
       return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
     }
@@ -85,9 +114,11 @@ export function AppLayout() {
     }
     // Consultor
     return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, config];
-  }, [isOwner, isSuperadmin, isSupervisor]);
+  }, [isOwner, isSuperadmin, isSupervisor, impersonating]);
 
   const [impersonateOpen, setImpersonateOpen] = useState(false);
+
+
 
   const isConversasMobile = location.pathname === "/conversas" || location.pathname.startsWith("/conversas/");
   // Páginas tipo chat precisam ocupar a viewport inteira (sem scroll do navegador).
