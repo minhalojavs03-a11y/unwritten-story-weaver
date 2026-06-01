@@ -197,6 +197,7 @@ export function AppLayout() {
         lockViewport && "min-h-0 overflow-hidden",
       )}>
         <ImpersonationBanner />
+        <WhatsAppDisconnectBanner />
         <TopAlertBanner />
         <div aria-hidden className={cn("h-4 bg-[#d11e26]", isConversasMobile ? "hidden" : "md:hidden")} />
         <header className={cn(
