@@ -182,13 +182,25 @@ export function AppLayout() {
 
             <nav className={cn("flex-1 space-y-1 overflow-y-auto", collapsed ? "px-2" : "px-2")}>
               {navItems.map((item) => (
-                <SidebarNavLink
-                  key={item.to}
-                  item={item}
-                  collapsed={collapsed}
-                  location={location}
-                  navBadges={navBadges}
-                />
+                item.to === "/conversas" && (isOwner || isSuperadmin || isSupervisor) ? (
+                  <ConversasNavWithSubmenu
+                    key={item.to}
+                    item={item}
+                    collapsed={collapsed}
+                    location={location}
+                    navBadges={navBadges}
+                    members={members}
+                    navigate={navigate}
+                  />
+                ) : (
+                  <SidebarNavLink
+                    key={item.to}
+                    item={item}
+                    collapsed={collapsed}
+                    location={location}
+                    navBadges={navBadges}
+                  />
+                )
               ))}
             </nav>
 
