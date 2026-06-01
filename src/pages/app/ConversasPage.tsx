@@ -327,16 +327,19 @@ export default function ConversasPage() {
             return (
               <li key={c.id}>
                 <button
-                  onClick={() => { setParams({ lead: c.lead_id }); }}
+                  onClick={() => {
+                    if (c.lead_id) setParams({ lead: c.lead_id });
+                    else setParams({ conv: c.id });
+                  }}
                   className={cn(
                     "flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-[#f5f6f6]",
                     isActive && "wa-list-item-active"
                   )}
                 >
-                  <InitialsAvatar name={lead?.name ?? "?"} src={(lead as any)?.avatar_url} className="bg-[#dfe5e7] text-[#54656f]" />
+                  <InitialsAvatar name={lead?.name || lead?.phone || "?"} src={(lead as any)?.avatar_url} className="bg-[#dfe5e7] text-[#54656f]" />
                   <div className="min-w-0 flex-1 border-b border-[#e9edef] pb-3">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-[15px] font-medium text-[#111b21]">{lead?.name ?? lead?.phone}</span>
+                      <span className="truncate text-[15px] font-medium text-[#111b21]">{lead?.name || lead?.phone || "Sem identificação"}</span>
                       <span className={cn("shrink-0 text-[11px]", (c.unread_count ?? 0) > 0 ? "text-[#00a884] font-medium" : "text-[#667781]")}>
                         {c.last_message_at ? timeAgo(c.last_message_at) : ""}
                       </span>
