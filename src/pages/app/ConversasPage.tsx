@@ -145,12 +145,39 @@ export default function ConversasPage() {
   // Dado leadId da URL, encontra/garante uma conversa (busca direta + fallback de criação)
   const [fetchedActive, setFetchedActive] = useState<any | null>(null);
   useEffect(() => {
-    if (!leadParam) { setFetchedActive(null); return; }
+    if (!leadParam && !convParam) { setFetchedActive(null); return; }
     if (!tenantId) return;
     let cancelled = false;
     (async () => {
+      // Caminho 1: abrir por conversation id (conversa sem lead vinculado)
+      if (convParam && !leadParam) {
+        const { data: conv } = await supabase
+          .from("conversations")
+          .select("*, lead:leads(*)")
+          .eq("id", convParam)
+          .maybeSingle();
+        if (cancelled) return;
+        if (!conv) { setFetchedActive(null); return; }
+        // Trava de privacidade ainda se aplica se houver lead atribuído
+        const memberRole = (member?.role_label || "").toLowerCase();
+        const memberCanViewAll = /dono|owner|propriet|supervisor/.test(memberRole);
+        const restricted = member ? !memberCanViewAll : !canViewAll;
+        if (restricted) {
+          const l: any = (conv as any).lead;
+          const ownsByMember = member?.id && l?.assigned_member_id === member.id;
+          const ownsByUser = userId && l?.assigned_to === userId;
+          if (l && !ownsByMember && !ownsByUser) {
+            setFetchedActive(null);
+            setParams({}, { replace: true });
+            toast({ title: "Acesso negado", description: "Esta conversa pertence a outro consultor.", variant: "destructive" });
+            return;
+          }
+        }
+        setFetchedActive(conv);
+        return;
+      }
+
       // Trava de privacidade: consultor restrito só pode abrir leads atribuídos a ele.
-      // Owners / supervisores / superadmins seguem com acesso total.
       const memberRole = (member?.role_label || "").toLowerCase();
       const memberCanViewAll = /dono|owner|propriet|supervisor/.test(memberRole);
       const restricted = member ? !memberCanViewAll : !canViewAll;
@@ -158,7 +185,7 @@ export default function ConversasPage() {
         const { data: leadCheck } = await supabase
           .from("leads")
           .select("assigned_member_id, assigned_to, tenant_id")
-          .eq("id", leadParam)
+          .eq("id", leadParam!)
           .maybeSingle();
         if (cancelled) return;
         const ownsByMember = member?.id && leadCheck?.assigned_member_id === member.id;
@@ -174,7 +201,7 @@ export default function ConversasPage() {
       const { data: existing } = await supabase
         .from("conversations")
         .select("*, lead:leads(*)")
-        .eq("lead_id", leadParam)
+        .eq("lead_id", leadParam!)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -188,7 +215,7 @@ export default function ConversasPage() {
       if (!cancelled && !error && created) setFetchedActive(created);
     })();
     return () => { cancelled = true; };
-  }, [leadParam, tenantId, member?.id, member?.role_label, canViewAll, userId, setParams]);
+  }, [leadParam, convParam, tenantId, member?.id, member?.role_label, canViewAll, userId, setParams]);
 
   const activeConvId = fetchedActive?.id ?? null;
 
