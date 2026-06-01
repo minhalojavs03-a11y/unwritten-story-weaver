@@ -67,13 +67,14 @@ export default function ConversasPage() {
   }, [params]);
   const [query, setQuery] = useState("");
   const { data: conversations = [], isLoading } = useConversations();
-  const { data: allMembers = [] } = useTenantMembers();
+  const { data: team = [] } = useTeam();
   const activeConsultorLabel = useMemo(() => {
     if (!consultorParam) return null;
     if (consultorParam === "all") return null;
     if (consultorParam === "unassigned") return "Sem consultor";
-    return allMembers.find((m: any) => m.id === consultorParam)?.display_name ?? "Consultor";
-  }, [consultorParam, allMembers]);
+    const m = team.find((mm) => mm.id === consultorParam);
+    return m?.display_name || m?.full_name || "Consultor";
+  }, [consultorParam, team]);
   const queryClient = useQueryClient();
   const autoImportAttemptedRef = useRef(false);
 
