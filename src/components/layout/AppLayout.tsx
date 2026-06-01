@@ -475,3 +475,149 @@ function MobileNavRow({
     </SheetClose>
   );
 }
+
+function ConversasNavWithSubmenu({
+  item,
+  collapsed,
+  location,
+  navBadges,
+  members,
+  navigate,
+}: {
+  item: NavItem;
+  collapsed: boolean;
+  location: ReturnType<typeof useLocation>;
+  navBadges: Record<string, number>;
+  members: Array<{ id: string; display_name: string; avatar_url: string | null; avatar_color: string | null; role_label: string | null }>;
+  navigate: ReturnType<typeof useNavigate>;
+}) {
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef<number | null>(null);
+  const openMenu = () => {
+    if (closeTimer.current) { window.clearTimeout(closeTimer.current); closeTimer.current = null; }
+    setOpen(true);
+  };
+  const scheduleClose = () => {
+    if (closeTimer.current) window.clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(() => setOpen(false), 180);
+  };
+
+  const active = location.pathname === item.to || location.pathname.startsWith(item.to + "/");
+  const Icon = item.icon;
+  const badge = navBadges[item.to] ?? 0;
+  const params = new URLSearchParams(location.search);
+  const currentConsultor = params.get("consultor");
+  const isOnConversas = active;
+
+  const onPickConsultor = (id: string | null) => {
+    setOpen(false);
+    const next = new URLSearchParams();
+    if (id) next.set("consultor", id);
+    navigate(`/conversas${next.toString() ? `?${next}` : ""}`);
+  };
+
+  return (
+    <div
+      className="relative"
+      onMouseEnter={openMenu}
+      onMouseLeave={scheduleClose}
+    >
+      <NavLink
+        to={item.to}
+        className={cn(
+          "group relative flex items-center rounded-xl text-sm font-medium transition-all",
+          active ? "client-nav-active" : "client-nav-idle",
+          collapsed ? "h-11 w-11 justify-center mx-auto" : "gap-3 px-3 py-2.5",
+        )}
+        onClick={() => setOpen(false)}
+      >
+        <span className="relative inline-flex">
+          <Icon className={cn(collapsed ? "h-[22px] w-[22px]" : "h-4 w-4")} />
+          {badge > 0 && (
+            <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[hsl(var(--notification-new-lead))] px-1 text-[10px] font-bold leading-none text-white ring-2 ring-[hsl(var(--sidebar-background,222_47%_11%))]">
+              {badge > 9 ? "9+" : badge}
+            </span>
+          )}
+        </span>
+        {!collapsed && <span className="truncate">{item.label}</span>}
+        {!collapsed && (
+          <button
+            type="button"
+            aria-label="Ver por consultor"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((v) => !v); }}
+            className="ml-auto inline-flex h-6 w-6 items-center justify-center rounded-md text-white/60 hover:bg-white/10 hover:text-white"
+          >
+            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} />
+          </button>
+        )}
+        {!collapsed && badge > 0 && !open && (
+          <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[hsl(var(--notification-new-lead))] px-1.5 text-[10px] font-bold leading-none text-white">
+            {badge > 99 ? "99+" : badge}
+          </span>
+        )}
+      </NavLink>
+
+      {open && (
+        <div
+          onMouseEnter={openMenu}
+          onMouseLeave={scheduleClose}
+          className={cn(
+            "absolute z-50 w-64 rounded-xl border border-white/10 bg-[hsl(222_47%_13%)] p-1.5 shadow-xl",
+            collapsed ? "left-full top-0 ml-2" : "left-full top-0 ml-2",
+          )}
+        >
+          <div className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+            Conversas por consultor
+          </div>
+          <button
+            type="button"
+            onClick={() => onPickConsultor(null)}
+            className={cn(
+              "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition-colors",
+              isOnConversas && !currentConsultor
+                ? "bg-white/15 text-white"
+                : "text-white/80 hover:bg-white/10 hover:text-white",
+            )}
+          >
+            <Users2 className="h-4 w-4" />
+            <span>Todas as conversas</span>
+          </button>
+          <div className="my-1 h-px bg-white/5" />
+          <div className="max-h-80 overflow-y-auto">
+            {members.length === 0 && (
+              <div className="px-2 py-2 text-xs text-white/50">Nenhum consultor cadastrado.</div>
+            )}
+            {members.map((m) => {
+              const isActive = isOnConversas && currentConsultor === m.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => onPickConsultor(m.id)}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
+                    isActive
+                      ? "bg-white/15 text-white"
+                      : "text-white/80 hover:bg-white/10 hover:text-white",
+                  )}
+                >
+                  <UserAvatar
+                    userId={m.id}
+                    name={m.display_name}
+                    avatarUrl={m.avatar_url}
+                    avatarColor={m.avatar_color}
+                    size={24}
+                  />
+                  <span className="min-w-0 flex-1 truncate">{m.display_name}</span>
+                  {m.role_label && (
+                    <span className="shrink-0 text-[10px] text-white/40">{m.role_label}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
