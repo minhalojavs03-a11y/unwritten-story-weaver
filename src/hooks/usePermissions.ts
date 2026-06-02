@@ -2,32 +2,54 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import type { AppRole } from "@/components/ui/RoleBadge";
 
+/**
+ * Matriz de permissões oficial.
+ *
+ * Papéis:
+ * - superadmin (Arley): acesso global, vê e edita tudo de qualquer tenant.
+ * - owner / dono (Ediane no tenant dela): controle total do próprio tenant
+ *   — configurações, equipe, IA, integrações, financeiro, WhatsApp.
+ * - supervisor (Antonio no Feracon): vê conversas, leads e métricas de
+ *   toda a equipe e faz coaching, mas NÃO edita configurações sensíveis
+ *   (financeiro, IA, integrações, instâncias WhatsApp, gestão de equipe).
+ * - consultant / attendant: só os próprios leads e conversas.
+ */
 type Permission =
   | "view_all_leads"
   | "assume_any_lead"
   | "view_team_metrics"
   | "configure_sheets"
   | "manage_team"
+  | "view_whatsapp"
   | "configure_whatsapp"
+  | "configure_ai"
+  | "configure_integrations"
   | "view_financial"
   | "access_superadmin";
 
 const MATRIX: Record<Permission, AppRole[]> = {
-  view_all_leads:      ["superadmin", "owner", "supervisor"],
-  assume_any_lead:     ["superadmin", "owner", "supervisor"],
-  view_team_metrics:   ["superadmin", "owner", "supervisor"],
-  configure_sheets:    ["superadmin", "owner"],
-  manage_team:         ["superadmin", "owner"],
-  configure_whatsapp:  ["superadmin", "owner", "supervisor"],
-  view_financial:      ["superadmin", "owner"],
-  access_superadmin:   ["superadmin"],
+  // Leitura ampla — supervisor enxerga tudo da equipe
+  view_all_leads:        ["superadmin", "owner", "supervisor"],
+  assume_any_lead:       ["superadmin", "owner", "supervisor"],
+  view_team_metrics:     ["superadmin", "owner", "supervisor"],
+  view_whatsapp:         ["superadmin", "owner", "supervisor"],
+
+  // Edição sensível — somente dono/superadmin
+  configure_sheets:      ["superadmin", "owner"],
+  manage_team:           ["superadmin", "owner"],
+  configure_whatsapp:    ["superadmin", "owner"],
+  configure_ai:          ["superadmin", "owner"],
+  configure_integrations:["superadmin", "owner"],
+  view_financial:        ["superadmin", "owner"],
+
+  access_superadmin:     ["superadmin"],
 };
 
 function getMemberRole(member: ReturnType<typeof useActiveMember>["member"]): AppRole | null {
   if (!member) return null;
   const value = `${member.role_label ?? ""} ${member.username ?? ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   if (/(dono|owner|proprietario)/.test(value)) return "owner";
-  if (/supervisor/.test(value)) return "supervisor";
+  if (/(supervisor|gerente|gestor)/.test(value)) return "supervisor";
   if (/(consultor|vendedor|seller)/.test(value)) return "consultant";
   if (/(atendente|attendant|menor|aprendiz|estagiario|trainee)/.test(value)) return "attendant";
   return "consultant";
