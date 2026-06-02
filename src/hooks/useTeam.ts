@@ -102,43 +102,44 @@ export function useTeam() {
       const usedProfileIds = new Set<string>();
 
       // 1) Membros internos (tenant_members) — fonte de verdade da equipe
-      const fromMembers: TeamMember[] = (membersRes.data ?? []).map((m) => {
-        const linkedProfile = m.email ? profilesByEmail.get(m.email.toLowerCase()) : undefined;
-        if (linkedProfile) usedProfileIds.add(linkedProfile.id);
+      const fromMembers: TeamMember[] = (membersRes.data ?? [])
+        .map((m) => {
+          const linkedProfile = m.email ? profilesByEmail.get(m.email.toLowerCase()) : undefined;
+          if (linkedProfile) usedProfileIds.add(linkedProfile.id);
 
-        const userRoles = linkedProfile ? rolesByUser.get(linkedProfile.id) ?? [] : [];
-        const inferred = inferRoleFromLabel(m.role_label);
-        const roles: AppRoleAll[] = userRoles.length ? userRoles : [inferred];
+          const userRoles = linkedProfile ? rolesByUser.get(linkedProfile.id) ?? [] : [];
+          const inferred = inferRoleFromLabel(m.role_label);
+          const roles: AppRoleAll[] = userRoles.length ? userRoles : [inferred];
 
-        const leadsCount =
-          (leadsByMember.get(m.id) ?? 0) +
-          (linkedProfile ? leadsByUser.get(linkedProfile.id) ?? 0 : 0);
+          const leadsCount =
+            (leadsByMember.get(m.id) ?? 0) +
+            (linkedProfile ? leadsByUser.get(linkedProfile.id) ?? 0 : 0);
 
-        return {
-          id: m.id,
-          source: "tenant_member",
-          tenant_id: m.tenant_id,
-          email: m.email ?? linkedProfile?.email ?? null,
-          full_name: m.full_name ?? linkedProfile?.full_name ?? null,
-          display_name: m.display_name ?? linkedProfile?.display_name ?? null,
-          username: m.username ?? linkedProfile?.username ?? null,
-          role_label: m.role_label ?? linkedProfile?.role_label ?? null,
-          // IMPORTANTE: nunca herdar avatar do profile vinculado por e-mail
-          // (vários membros podem compartilhar e-mail e acabariam mostrando
-          // a foto/cor do dono). Cada membro só exibe sua própria identidade.
-          avatar_url: m.avatar_url ?? null,
-          avatar_color: m.avatar_color ?? "#1E40AF",
-          last_seen_at: m.last_seen_at ?? linkedProfile?.last_seen_at ?? null,
-          monthly_goal: m.monthly_goal ?? linkedProfile?.monthly_goal ?? 0,
-          roles,
-          primary_role: pickPrimary(roles),
-          leads_count: leadsCount,
-        };
-      });
+          return {
+            id: m.id,
+            source: "tenant_member" as const,
+            tenant_id: m.tenant_id,
+            email: m.email ?? linkedProfile?.email ?? null,
+            full_name: m.full_name ?? linkedProfile?.full_name ?? null,
+            display_name: m.display_name ?? linkedProfile?.display_name ?? null,
+            username: m.username ?? linkedProfile?.username ?? null,
+            role_label: m.role_label ?? linkedProfile?.role_label ?? null,
+            avatar_url: m.avatar_url ?? null,
+            avatar_color: m.avatar_color ?? "#1E40AF",
+            last_seen_at: m.last_seen_at ?? linkedProfile?.last_seen_at ?? null,
+            monthly_goal: m.monthly_goal ?? linkedProfile?.monthly_goal ?? 0,
+            roles,
+            primary_role: pickPrimary(roles),
+            leads_count: leadsCount,
+            _linkedProfileId: linkedProfile?.id ?? null,
+          };
+        })
+        .filter((m) => !(m._linkedProfileId && hiddenUserIds.has(m._linkedProfileId)) && !m.roles.includes("superadmin"))
+        .map(({ _linkedProfileId: _omit, ...rest }) => rest);
 
       // 2) Profiles que não têm tenant_member equivalente (ex: dono com login por email)
       const fromProfiles: TeamMember[] = (profilesRes.data ?? [])
-        .filter((p) => !usedProfileIds.has(p.id))
+        .filter((p) => !usedProfileIds.has(p.id) && !hiddenUserIds.has(p.id))
         .map((p) => {
           const userRoles = rolesByUser.get(p.id) ?? [];
           const inferred = inferRoleFromLabel(p.role_label);
