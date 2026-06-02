@@ -881,6 +881,8 @@ Deno.serve(async (req: Request) => {
         phone: canonical,
         source: isTestLead ? "Teste" : "WhatsApp",
         tags: isTestLead ? ["teste"] : [],
+        whatsapp_instance_id: instance.id,
+        ...leadOwnerPatchFromInstance(instance),
         last_message_at: new Date().toISOString(),
       }).select("*").single();
       if (createErr || !created) {
@@ -899,6 +901,8 @@ Deno.serve(async (req: Request) => {
       const nameLooksLikePhone = !currentName || /^[\d+\s().-]+$/.test(currentName);
       if (nameLooksLikePhone && pushName) patch.name = pushName;
       if (needsTestTag) patch.tags = [...existingTags, "teste"];
+      if (!lead.whatsapp_instance_id) patch.whatsapp_instance_id = instance.id;
+      Object.assign(patch, leadOwnerPatchFromInstance(instance, lead));
       const { data: upd } = await admin.from("leads").update(patch).eq("id", lead.id).select("*").single();
       if (upd) lead = upd;
     }
