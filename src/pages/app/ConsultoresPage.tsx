@@ -59,6 +59,10 @@ export default function ConsultoresPage() {
     () => consultants.filter((m) => isOnline(m.last_seen_at)).length,
     [consultants],
   );
+  const waOnlineCount = useMemo(
+    () => consultants.filter((m) => isWhatsAppOnline(waOnline, m.id)).length,
+    [consultants, waOnline],
+  );
   const offlineCount = consultants.length - onlineCount;
 
   const filtered = useMemo(() => {
