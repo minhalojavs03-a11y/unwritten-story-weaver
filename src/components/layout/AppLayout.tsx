@@ -82,7 +82,7 @@ export function AppLayout() {
   useEffect(() => {
     try { window.localStorage.setItem("sidebar_collapsed", collapsed ? "1" : "0"); } catch { return; }
   }, [collapsed]);
-  const isSupervisor = can("configure_whatsapp") && !isOwner && !isSuperadmin && !impersonating;
+  const isSupervisor = realIsSupervisor && !impersonating;
 
   // Lista única por papel — só o que realmente importa no dia a dia.
   // Itens menos usados ficam em /configuracoes (Mensagens prontas, Gravações,
