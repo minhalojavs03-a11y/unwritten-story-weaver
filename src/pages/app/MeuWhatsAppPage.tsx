@@ -119,12 +119,7 @@ export default function MeuWhatsAppPage() {
           });
           mine = c?.instance ?? null;
         } catch (e: any) {
-          if (e?.code === "extra_confirmation_required") {
-            setShowCreate(true);
-            setConfirmExtra(true);
-          } else {
-            toast({ title: "Erro ao preparar WhatsApp", description: e?.message, variant: "destructive" });
-          }
+          toast({ title: "Erro ao preparar WhatsApp", description: e?.message, variant: "destructive" });
         }
       }
 
