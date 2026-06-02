@@ -12,7 +12,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useMyProfile } from "@/hooks/useProfile";
 import { useTenantMembers } from "@/hooks/useData";
-import { useTeam } from "@/hooks/useTeam";
 import { useConversationConsultants } from "@/hooks/useConversationConsultants";
 import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 import { MemberLoginDialog } from "@/components/MemberLoginDialog";
@@ -529,7 +528,11 @@ function ConversasNavWithSubmenu({
           active ? "client-nav-active" : "client-nav-idle",
           collapsed ? "h-11 w-11 justify-center mx-auto" : "gap-3 px-3 py-2.5",
         )}
-        onClick={() => setOpen(false)}
+        onClick={(e) => {
+          e.preventDefault();
+          if (closeTimer.current) { window.clearTimeout(closeTimer.current); closeTimer.current = null; }
+          setOpen((v) => !v);
+        }}
       >
         <span className="relative inline-flex">
           <Icon className={cn(collapsed ? "h-[22px] w-[22px]" : "h-4 w-4")} />

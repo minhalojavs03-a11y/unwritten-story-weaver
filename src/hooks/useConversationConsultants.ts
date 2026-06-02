@@ -12,6 +12,21 @@ export type ConsultantOption = {
   role_label: string | null;
 };
 
+type ProfileOption = {
+  id: string;
+  full_name: string | null;
+  display_name: string | null;
+  email?: string | null;
+  avatar_url: string | null;
+  avatar_color: string | null;
+  role_label: string | null;
+};
+
+type TenantOption = { id: string; name: string | null };
+type ConversationTenantRow = { tenant_id: string | null };
+
+const emptyResult = <T,>() => Promise.resolve({ data: [] as T[], error: null });
+
 /**
  * Lista todos os atendentes/consultores/supervisores do tenant que aparecem
  * no dropdown de "Conversas por consultor". Combina três fontes:
@@ -21,12 +36,12 @@ export type ConsultantOption = {
  * Exclui owner do dono e superadmin (eles são quem visualiza).
  */
 export function useConversationConsultants() {
-  const { tenantId } = useAuth();
+  const { tenantId, isSuperadmin } = useAuth();
   return useQuery({
-    queryKey: ["conversation-consultants", tenantId],
+    queryKey: ["conversation-consultants", tenantId, isSuperadmin],
     enabled: !!tenantId,
     queryFn: async (): Promise<ConsultantOption[]> => {
-      const [membershipsRes, profilesRes, membersRes] = await Promise.all([
+      const [membershipsRes, profilesRes, membersRes, tenantsRes, conversationsRes] = await Promise.all([
         supabase
           .from("tenant_memberships")
           .select("user_id, role, display_name")
@@ -40,13 +55,21 @@ export function useConversationConsultants() {
           .select("id, full_name, display_name, avatar_url, avatar_color, role_label")
           .eq("tenant_id", tenantId!)
           .eq("is_active", true),
+        isSuperadmin
+          ? supabase.from("tenants").select("id, name").order("name")
+          : emptyResult<TenantOption>(),
+        isSuperadmin
+          ? supabase.from("conversations").select("tenant_id").not("tenant_id", "is", null).limit(2000)
+          : emptyResult<ConversationTenantRow>(),
       ]);
       if (membershipsRes.error) throw membershipsRes.error;
       if (profilesRes.error) throw profilesRes.error;
       if (membersRes.error) throw membersRes.error;
+      if (tenantsRes.error) throw tenantsRes.error;
+      if (conversationsRes.error) throw conversationsRes.error;
 
-      const profilesById = new Map<string, any>();
-      for (const p of profilesRes.data ?? []) profilesById.set(p.id, p);
+      const profilesById = new Map<string, ProfileOption>();
+      for (const p of (profilesRes.data ?? []) as ProfileOption[]) profilesById.set(p.id, p);
 
       const seen = new Set<string>();
       const list: ConsultantOption[] = [];
@@ -100,6 +123,30 @@ export function useConversationConsultants() {
           avatar_color: tm.avatar_color ?? null,
           role: "consultant",
           role_label: tm.role_label ?? null,
+        });
+      }
+
+      // 4) Superadmin: conversas antigas foram importadas em tenants separados
+      // com o nome do consultor. Expõe esses tenants como "consultores" no menu
+      // e o filtro compara pelo tenant_id da conversa.
+      const tenantIdsWithConversations = new Set<string>(
+        ((conversationsRes.data ?? []) as ConversationTenantRow[])
+          .map((c) => c.tenant_id)
+          .filter((id): id is string => Boolean(id)),
+      );
+      for (const t of tenantsRes.data ?? []) {
+        if (!tenantIdsWithConversations.has(t.id)) continue;
+        const optionId = `tenant:${t.id}`;
+        if (seen.has(optionId)) continue;
+        seen.add(optionId);
+        list.push({
+          id: optionId,
+          display_name: t.name || "Consultor",
+          full_name: null,
+          avatar_url: null,
+          avatar_color: null,
+          role: "tenant",
+          role_label: "Consultor",
         });
       }
 

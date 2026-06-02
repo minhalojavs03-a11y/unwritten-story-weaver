@@ -24,7 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { useConversations, useMessages, useSendMessage, useAssumeLead, useReleaseLead, useTenantMembers } from "@/hooks/useData";
-import { useTeam } from "@/hooks/useTeam";
+import { useConversationConsultants } from "@/hooks/useConversationConsultants";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -68,14 +68,14 @@ export default function ConversasPage() {
   }, [params]);
   const [query, setQuery] = useState("");
   const { data: conversations = [], isLoading } = useConversations();
-  const { data: team = [] } = useTeam();
+  const { data: conversationConsultants = [] } = useConversationConsultants();
   const activeConsultorLabel = useMemo(() => {
     if (!consultorParam) return null;
     if (consultorParam === "all") return null;
     if (consultorParam === "unassigned") return "Sem consultor";
-    const m = team.find((mm) => mm.id === consultorParam);
+    const m = conversationConsultants.find((mm) => mm.id === consultorParam);
     return m?.display_name || m?.full_name || "Consultor";
-  }, [consultorParam, team]);
+  }, [consultorParam, conversationConsultants]);
   const queryClient = useQueryClient();
   const autoImportAttemptedRef = useRef(false);
 
@@ -272,6 +272,9 @@ export default function ConversasPage() {
         if (consultorParam && consultorParam !== "all") {
           if (consultorParam === "unassigned") {
             if (lead?.assigned_member_id || lead?.assigned_to) return false;
+          } else if (consultorParam.startsWith("tenant:")) {
+            const tenantFilterId = consultorParam.slice("tenant:".length);
+            if ((c.tenant_id ?? lead?.tenant_id ?? null) !== tenantFilterId) return false;
           } else if (
             (lead?.assigned_member_id ?? null) !== consultorParam &&
             (lead?.assigned_to ?? null) !== consultorParam
