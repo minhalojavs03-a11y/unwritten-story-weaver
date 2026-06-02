@@ -492,6 +492,7 @@ function ConversasNavWithSubmenu({
   navigate: ReturnType<typeof useNavigate>;
 }) {
   const { data: members = [], isLoading: loadingMembers } = useConversationConsultants();
+  const { data: waOnline } = useWhatsAppOnline();
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<number | null>(null);
   const openMenu = () => {
