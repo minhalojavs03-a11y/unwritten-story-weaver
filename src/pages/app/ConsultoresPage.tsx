@@ -113,7 +113,7 @@ export default function ConsultoresPage() {
     <>
       <PageHeader
         title="Consultores"
-        subtitle={`${consultants.length} no total · ${onlineCount} online · ${offlineCount} offline`}
+        subtitle={`${consultants.length} no total · ${onlineCount} no sistema · ${waOnlineCount} no WhatsApp · ${offlineCount} offline`}
       />
       <div className="mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
