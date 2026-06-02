@@ -249,13 +249,17 @@ function MyInstance({ instance, onChanged }: { instance: Instance; onChanged: ()
   const [confirm, setConfirm] = useState<null | "disconnect" | "delete">(null);
   const [keepHistory, setKeepHistory] = useState(true);
   const justConnectedRef = useRef(local.is_connected);
+  const lastQrAtRef = useRef<number>(0);
 
   useEffect(() => { setLocal(instance); setQr(instance.qr_code); }, [instance]);
 
   const refreshQr = useCallback(async () => {
     try {
       const r = await call("qrcode", { instance_id: local.id });
-      if (typeof r?.qrcode === "string") setQr(r.qrcode);
+      if (typeof r?.qrcode === "string") {
+        setQr(r.qrcode);
+        lastQrAtRef.current = Date.now();
+      }
       if (r?.instance) setLocal(r.instance);
       if (r?.connected && !justConnectedRef.current) {
         justConnectedRef.current = true;
@@ -269,10 +273,17 @@ function MyInstance({ instance, onChanged }: { instance: Instance; onChanged: ()
     }
   }, [local.id, onChanged]);
 
-  // Initial QR + polling while disconnected
+  // Gera o QR inicial assim que abre a tela.
+  // Depois, apenas FAZ POLLING do status (não chama /instance/connect de novo,
+  // pois isso reseta o pareamento em andamento no provedor). O QR é renovado
+  // apenas se expirar (~50s) e ainda não houver conexão.
   useEffect(() => {
     if (local.is_connected) return;
-    refreshQr();
+    if (!qr) {
+      refreshQr();
+    } else {
+      lastQrAtRef.current = Date.now();
+    }
     const id = setInterval(async () => {
       try {
         const r = await call("status", { instance_id: local.id });
@@ -285,14 +296,18 @@ function MyInstance({ instance, onChanged }: { instance: Instance; onChanged: ()
             call("sync-history", { instance_id: local.id }).catch((e) => console.warn("auto sync-history failed", e));
             onChanged();
           }
-        } else {
-          // refresh QR every poll while still disconnected
-          refreshQr();
+          return;
+        }
+        // QR expira no provedor após ~60s. Só renova se passou de 50s sem conectar.
+        const age = Date.now() - lastQrAtRef.current;
+        if (age > 50000) {
+          await refreshQr();
         }
       } catch (e) { console.error(e); }
-    }, 15000);
+    }, 4000);
     return () => clearInterval(id);
-  }, [local.id, local.is_connected, refreshQr, onChanged]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [local.id, local.is_connected]);
 
   const runConfirm = async () => {
     if (!confirm) return;
