@@ -41,8 +41,11 @@ const emptyResult = <T,>() => Promise.resolve({ data: [] as T[], error: null });
  */
 export function useConversationConsultants() {
   const { tenantId, isSuperadmin } = useAuth();
+  const { isOwner } = useEffectiveRole();
+  // Supervisor = vê conversas mas não é dono/superadmin → restringe a consultores
+  const supervisorOnly = !isOwner && !isSuperadmin;
   return useQuery({
-    queryKey: ["conversation-consultants", tenantId, isSuperadmin],
+    queryKey: ["conversation-consultants", tenantId, isSuperadmin, supervisorOnly],
     enabled: !!tenantId,
     queryFn: async (): Promise<ConsultantOption[]> => {
       const [membershipsRes, profilesRes, membersRes, tenantsRes] = await Promise.all([
