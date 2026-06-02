@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 
 export type ConsultantOption = {
   id: string; // id usado no filtro de conversas (user_id ou tenant_member.id)
@@ -40,8 +41,11 @@ const emptyResult = <T,>() => Promise.resolve({ data: [] as T[], error: null });
  */
 export function useConversationConsultants() {
   const { tenantId, isSuperadmin } = useAuth();
+  const { isOwner } = useEffectiveRole();
+  // Supervisor = vê conversas mas não é dono/superadmin → restringe a consultores
+  const supervisorOnly = !isOwner && !isSuperadmin;
   return useQuery({
-    queryKey: ["conversation-consultants", tenantId, isSuperadmin],
+    queryKey: ["conversation-consultants", tenantId, isSuperadmin, supervisorOnly],
     enabled: !!tenantId,
     queryFn: async (): Promise<ConsultantOption[]> => {
       const [membershipsRes, profilesRes, membersRes, tenantsRes] = await Promise.all([
@@ -77,6 +81,7 @@ export function useConversationConsultants() {
       for (const m of membershipsRes.data ?? []) {
         const role = String(m.role || "").toLowerCase();
         if (role === "owner" || role === "superadmin") continue;
+        if (supervisorOnly && role !== "consultant" && role !== "attendant") continue;
         if (seen.has(m.user_id)) continue;
         const p = profilesById.get(m.user_id);
         seen.add(m.user_id);
@@ -98,6 +103,7 @@ export function useConversationConsultants() {
         if (seen.has(p.id)) continue;
         const label = (p.role_label || "").toLowerCase();
         if (label.includes("dono") || label.includes("owner") || label.includes("propriet")) continue;
+        if (supervisorOnly && (label.includes("supervisor") || label.includes("gerente") || label.includes("gestor"))) continue;
         seen.add(p.id);
         list.push({
           id: p.id,
@@ -117,6 +123,7 @@ export function useConversationConsultants() {
         if (seen.has(tm.id)) continue;
         const label = (tm.role_label || "").toLowerCase();
         if (label.includes("dono") || label.includes("owner") || label.includes("propriet")) continue;
+        if (supervisorOnly && (label.includes("supervisor") || label.includes("gerente") || label.includes("gestor"))) continue;
         seen.add(tm.id);
         list.push({
           id: tm.id,
