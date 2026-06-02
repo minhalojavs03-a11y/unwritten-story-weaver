@@ -242,7 +242,8 @@ function MyInstance({ instance, onChanged }: { instance: Instance; onChanged: ()
       if (r?.connected && !justConnectedRef.current) {
         justConnectedRef.current = true;
         setQr(null);
-        toast({ title: "✅ WhatsApp conectado!" });
+        toast({ title: "✅ WhatsApp conectado!", description: "Importando suas conversas…" });
+        call("sync-history", { instance_id: local.id }).catch((e) => console.warn("auto sync-history failed", e));
         onChanged();
       }
     } catch (e: any) {
@@ -262,7 +263,8 @@ function MyInstance({ instance, onChanged }: { instance: Instance; onChanged: ()
           if (!justConnectedRef.current) {
             justConnectedRef.current = true;
             setQr(null);
-            toast({ title: "✅ WhatsApp conectado!" });
+            toast({ title: "✅ WhatsApp conectado!", description: "Importando suas conversas…" });
+            call("sync-history", { instance_id: local.id }).catch((e) => console.warn("auto sync-history failed", e));
             onChanged();
           }
         } else {
