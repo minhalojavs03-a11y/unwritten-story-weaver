@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Home, MessageCircle, Kanban, Calendar, Users, Settings, LogOut, Shield, Smartphone, Menu, Inbox, User as UserIcon, Users2, ChevronLeft, ChevronRight, Trophy, BarChart3, Target, Repeat, Share2, ChevronDown } from "lucide-react";
+import { Home, MessageCircle, Kanban, Calendar, Users, Settings, LogOut, Shield, Smartphone, Menu, Inbox, User as UserIcon, Users2, ChevronLeft, ChevronRight, Trophy, BarChart3, Target, Repeat, Share2, ChevronDown, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -31,7 +31,7 @@ import logoFeraconDark from "@/assets/logo-feracon-dark.png";
 import logoFeraconMark from "@/assets/logo-feracon-mark.png";
 import logoFeracon from "@/assets/logo-feracon-white.png";
 
-type NavItem = { to: string; label: string; icon: any };
+type NavItem = { to: string; label: string; icon: LucideIcon };
 
 // 4 itens essenciais do dia a dia no rodapé mobile
 const mobileNav: NavItem[] = [
@@ -80,7 +80,7 @@ export function AppLayout() {
     return window.localStorage.getItem("sidebar_collapsed") === "1";
   });
   useEffect(() => {
-    try { window.localStorage.setItem("sidebar_collapsed", collapsed ? "1" : "0"); } catch {}
+    try { window.localStorage.setItem("sidebar_collapsed", collapsed ? "1" : "0"); } catch { return; }
   }, [collapsed]);
   const isSupervisor = can("configure_whatsapp") && !isOwner && !isSuperadmin && !impersonating;
 
