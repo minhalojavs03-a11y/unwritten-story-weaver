@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useLeads, useTenantMembers, useAssumeLead } from "@/hooks/useData";
+import { useLeads, useAssumeLead } from "@/hooks/useData";
+import { useConversationConsultants } from "@/hooks/useConversationConsultants";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PageHeader } from "./PageHeader";
@@ -34,7 +35,7 @@ function isConsultantLike(roleLabel?: string | null, username?: string | null) {
 
 export default function ConsultoresPage() {
   const { can } = usePermissions();
-  const { data: members = [], isLoading: loadingMembers } = useTenantMembers();
+  const { data: members = [], isLoading: loadingMembers } = useConversationConsultants();
   const { data: leads = [], isLoading: loadingLeads } = useLeads();
   const { data: coachingByMember = {} } = useCoachingByMember(30);
   const { member: activeMember } = useActiveMember();
@@ -47,7 +48,7 @@ export default function ConsultoresPage() {
   const canAssume = can("assume_any_lead");
 
   const consultants = useMemo(
-    () => members.filter((m) => isConsultantLike(m.role_label, m.username)),
+    () => members.filter((m) => m.role === "tenant" || isConsultantLike(m.role_label, m.username)),
     [members],
   );
 
@@ -64,7 +65,7 @@ export default function ConsultoresPage() {
       : consultants.filter((m) => (statusFilter === "online" ? isOnline(m.last_seen_at) : !isOnline(m.last_seen_at)));
     if (!q) return base;
     return base.filter((m) =>
-      normalize(`${m.display_name} ${m.username} ${m.role_label ?? ""}`).includes(q),
+      normalize(`${m.display_name} ${m.full_name ?? ""} ${m.username ?? ""} ${m.role_label ?? ""}`).includes(q),
     );
   }, [consultants, search, statusFilter]);
 
@@ -154,7 +155,8 @@ export default function ConsultoresPage() {
         ) : (
           <div className="space-y-2">
             {filtered.map((m) => {
-              const myLeads = leads.filter((l) => l.assigned_member_id === m.id);
+              const tenantId = m.id.startsWith("tenant:") ? m.id.slice("tenant:".length) : null;
+              const myLeads = leads.filter((l) => tenantId ? l.tenant_id === tenantId : (l.assigned_member_id === m.id || l.assigned_to === m.id));
               const active = myLeads.filter((l) => {
                 if (!l.last_interaction_at) return false;
                 const diff = Date.now() - new Date(l.last_interaction_at).getTime();
@@ -188,7 +190,7 @@ export default function ConsultoresPage() {
                         )}
                       </div>
                       <p className="truncate text-xs text-muted-foreground">
-                        @{m.username} · <span className={isOnline(m.last_seen_at) ? "text-emerald-600 font-medium" : ""}>{formatLastSeen(m.last_seen_at)}</span>
+                          {m.username ? `@${m.username}` : m.role_label ?? "Consultor"} · <span className={isOnline(m.last_seen_at) ? "text-emerald-600 font-medium" : ""}>{formatLastSeen(m.last_seen_at)}</span>
                       </p>
                     </div>
                     <div className="hidden items-center gap-4 text-xs text-muted-foreground sm:flex">
@@ -246,7 +248,7 @@ export default function ConsultoresPage() {
                                   {lead.stage && <span className="ml-2">· {lead.stage}</span>}
                                 </p>
                               </div>
-                              <Link to="/conversas">
+                              <Link to={tenantId ? `/conversas?consultor=${encodeURIComponent(m.id)}` : `/conversas?consultor=${m.id}`}>
                                 <Button size="sm" variant="ghost">
                                   <MessageCircle className="mr-1 h-4 w-4" /> Ver
                                 </Button>
