@@ -38,6 +38,7 @@ function isConsultantLike(roleLabel?: string | null, username?: string | null) {
 export default function ConsultoresPage() {
   const { can } = usePermissions();
   const { data: members = [], isLoading: loadingMembers } = useConversationConsultants();
+  const { data: waOnline } = useWhatsAppOnline();
   const { data: leads = [], isLoading: loadingLeads } = useLeads();
   const { data: coachingByMember = {} } = useCoachingByMember(30);
   const { member: activeMember } = useActiveMember();
