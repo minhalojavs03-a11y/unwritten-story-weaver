@@ -12,6 +12,21 @@ export type ConsultantOption = {
   role_label: string | null;
 };
 
+type ProfileOption = {
+  id: string;
+  full_name: string | null;
+  display_name: string | null;
+  email?: string | null;
+  avatar_url: string | null;
+  avatar_color: string | null;
+  role_label: string | null;
+};
+
+type TenantOption = { id: string; name: string | null };
+type ConversationTenantRow = { tenant_id: string | null };
+
+const emptyResult = <T,>() => Promise.resolve({ data: [] as T[], error: null });
+
 /**
  * Lista todos os atendentes/consultores/supervisores do tenant que aparecem
  * no dropdown de "Conversas por consultor". Combina três fontes:
@@ -42,10 +57,10 @@ export function useConversationConsultants() {
           .eq("is_active", true),
         isSuperadmin
           ? supabase.from("tenants").select("id, name").order("name")
-          : Promise.resolve({ data: [], error: null } as any),
+          : emptyResult<TenantOption>(),
         isSuperadmin
           ? supabase.from("conversations").select("tenant_id").not("tenant_id", "is", null).limit(2000)
-          : Promise.resolve({ data: [], error: null } as any),
+          : emptyResult<ConversationTenantRow>(),
       ]);
       if (membershipsRes.error) throw membershipsRes.error;
       if (profilesRes.error) throw profilesRes.error;
@@ -53,8 +68,8 @@ export function useConversationConsultants() {
       if (tenantsRes.error) throw tenantsRes.error;
       if (conversationsRes.error) throw conversationsRes.error;
 
-      const profilesById = new Map<string, any>();
-      for (const p of profilesRes.data ?? []) profilesById.set(p.id, p);
+      const profilesById = new Map<string, ProfileOption>();
+      for (const p of (profilesRes.data ?? []) as ProfileOption[]) profilesById.set(p.id, p);
 
       const seen = new Set<string>();
       const list: ConsultantOption[] = [];
@@ -114,7 +129,11 @@ export function useConversationConsultants() {
       // 4) Superadmin: conversas antigas foram importadas em tenants separados
       // com o nome do consultor. Expõe esses tenants como "consultores" no menu
       // e o filtro compara pelo tenant_id da conversa.
-      const tenantIdsWithConversations = new Set<string>((conversationsRes.data ?? []).map((c: any) => c.tenant_id).filter(Boolean));
+      const tenantIdsWithConversations = new Set<string>(
+        ((conversationsRes.data ?? []) as ConversationTenantRow[])
+          .map((c) => c.tenant_id)
+          .filter((id): id is string => Boolean(id)),
+      );
       for (const t of tenantsRes.data ?? []) {
         if (!tenantIdsWithConversations.has(t.id)) continue;
         const optionId = `tenant:${t.id}`;
