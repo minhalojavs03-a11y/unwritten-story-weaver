@@ -13,6 +13,8 @@ import { ChevronDown, ChevronRight, MessageCircle, Search, Send, UserCheck, Shie
 import { toast } from "sonner";
 import { useCoachingByMember } from "@/hooks/useCoachingInsights";
 import { OnlineStatusDot, isOnline, formatLastSeen } from "@/components/ui/OnlineStatusDot";
+import { PresenceBadges } from "@/components/ui/PresenceBadges";
+import { useWhatsAppOnline, isWhatsAppOnline } from "@/hooks/useWhatsAppOnline";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -36,6 +38,7 @@ function isConsultantLike(roleLabel?: string | null, username?: string | null) {
 export default function ConsultoresPage() {
   const { can } = usePermissions();
   const { data: members = [], isLoading: loadingMembers } = useConversationConsultants();
+  const { data: waOnline } = useWhatsAppOnline();
   const { data: leads = [], isLoading: loadingLeads } = useLeads();
   const { data: coachingByMember = {} } = useCoachingByMember(30);
   const { member: activeMember } = useActiveMember();
@@ -55,6 +58,10 @@ export default function ConsultoresPage() {
   const onlineCount = useMemo(
     () => consultants.filter((m) => isOnline(m.last_seen_at)).length,
     [consultants],
+  );
+  const waOnlineCount = useMemo(
+    () => consultants.filter((m) => isWhatsAppOnline(waOnline, m.id)).length,
+    [consultants, waOnline],
   );
   const offlineCount = consultants.length - onlineCount;
 
@@ -106,7 +113,7 @@ export default function ConsultoresPage() {
     <>
       <PageHeader
         title="Consultores"
-        subtitle={`${consultants.length} no total · ${onlineCount} online · ${offlineCount} offline`}
+        subtitle={`${consultants.length} no total · ${onlineCount} no sistema · ${waOnlineCount} no WhatsApp · ${offlineCount} offline`}
       />
       <div className="mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -190,8 +197,13 @@ export default function ConsultoresPage() {
                         )}
                       </div>
                       <p className="truncate text-xs text-muted-foreground">
-                          {m.username ? `@${m.username}` : m.role_label ?? "Consultor"} · <span className={isOnline(m.last_seen_at) ? "text-emerald-600 font-medium" : ""}>{formatLastSeen(m.last_seen_at)}</span>
+                          {m.username ? `@${m.username}` : m.role_label ?? "Consultor"} · {formatLastSeen(m.last_seen_at)}
                       </p>
+                      <PresenceBadges
+                        className="mt-1"
+                        lastSeenAt={m.last_seen_at}
+                        whatsappOnline={isWhatsAppOnline(waOnline, m.id)}
+                      />
                     </div>
                     <div className="hidden items-center gap-4 text-xs text-muted-foreground sm:flex">
                       <div className="text-right">

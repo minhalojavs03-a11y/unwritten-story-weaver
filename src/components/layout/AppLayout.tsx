@@ -13,6 +13,8 @@ import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useMyProfile } from "@/hooks/useProfile";
 import { useTenantMembers } from "@/hooks/useData";
 import { useConversationConsultants } from "@/hooks/useConversationConsultants";
+import { useWhatsAppOnline, isWhatsAppOnline } from "@/hooks/useWhatsAppOnline";
+import { isOnline } from "@/components/ui/OnlineStatusDot";
 import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 import { MemberLoginDialog } from "@/components/MemberLoginDialog";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
@@ -490,6 +492,7 @@ function ConversasNavWithSubmenu({
   navigate: ReturnType<typeof useNavigate>;
 }) {
   const { data: members = [], isLoading: loadingMembers } = useConversationConsultants();
+  const { data: waOnline } = useWhatsAppOnline();
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<number | null>(null);
   const openMenu = () => {
@@ -590,11 +593,14 @@ function ConversasNavWithSubmenu({
             )}
             {members.map((m) => {
               const isActive = isOnConversas && currentConsultor === m.id;
+              const sysOn = isOnline(m.last_seen_at);
+              const waOn = isWhatsAppOnline(waOnline, m.id);
               return (
                 <button
                   key={m.id}
                   type="button"
                   onClick={() => onPickConsultor(m.id)}
+                  title={`Sistema: ${sysOn ? "online" : "offline"} · WhatsApp: ${waOn ? "conectado" : "desconectado"}`}
                   className={cn(
                     "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
                     isActive
@@ -610,6 +616,16 @@ function ConversasNavWithSubmenu({
                     size={24}
                   />
                   <span className="min-w-0 flex-1 truncate">{m.display_name || m.full_name || "Sem nome"}</span>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <span
+                      title={`Sistema ${sysOn ? "online" : "offline"}`}
+                      className={cn("h-1.5 w-1.5 rounded-full", sysOn ? "bg-emerald-400" : "bg-white/20")}
+                    />
+                    <span
+                      title={`WhatsApp ${waOn ? "conectado" : "desconectado"}`}
+                      className={cn("h-1.5 w-1.5 rounded-full", waOn ? "bg-emerald-400 ring-1 ring-emerald-300/50" : "bg-white/20")}
+                    />
+                  </span>
                   {m.role_label && (
                     <span className="shrink-0 text-[10px] text-white/40">{m.role_label}</span>
                   )}
