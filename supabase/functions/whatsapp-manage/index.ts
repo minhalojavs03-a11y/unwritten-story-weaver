@@ -972,9 +972,7 @@ Deno.serve(async (req: Request) => {
       const list = data ?? [];
       return json({
         instances: list.map(sanitize),
-        free_limit: 3,
         used: list.length,
-        next_is_paid: list.length >= 3,
       });
     }
 
