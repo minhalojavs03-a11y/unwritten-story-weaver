@@ -123,6 +123,7 @@ export function useConversationConsultants() {
         if (seen.has(tm.id)) continue;
         const label = (tm.role_label || "").toLowerCase();
         if (label.includes("dono") || label.includes("owner") || label.includes("propriet")) continue;
+        if (supervisorOnly && (label.includes("supervisor") || label.includes("gerente") || label.includes("gestor"))) continue;
         seen.add(tm.id);
         list.push({
           id: tm.id,
