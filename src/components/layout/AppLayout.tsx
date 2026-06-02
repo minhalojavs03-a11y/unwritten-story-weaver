@@ -49,7 +49,7 @@ export function AppLayout() {
   const { member, clearMember } = useActiveMember();
   const { data: members = [] } = useTenantMembers();
   useUpdateLastSeen();
-  const { can } = usePermissions();
+  
 
   // Modo suporte: superadmin visualizando como outro tenant.
   // Enquanto impersonando, esconde menus/atalhos admin e mostra o nome do tenant
