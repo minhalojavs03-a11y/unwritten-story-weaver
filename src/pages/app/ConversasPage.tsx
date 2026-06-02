@@ -288,7 +288,8 @@ export default function ConversasPage() {
           const assignedUserId = lead?.assigned_to ?? null;
           const ownsByMember = member?.id && assignedMemberId === member.id;
           const ownsByUser = userId && assignedUserId === userId;
-          if (!ownsByMember && !ownsByUser) return false;
+          const ownsByInstance = myWhatsAppInstanceIds.includes(c.whatsapp_instance_id) || myWhatsAppInstanceIds.includes(lead?.whatsapp_instance_id);
+          if (!ownsByMember && !ownsByUser && !ownsByInstance) return false;
         }
         if (consultorParam && consultorParam !== "all") {
           if (consultorParam === "unassigned") {
@@ -318,7 +319,7 @@ export default function ConversasPage() {
         if (tab === "unread") return (c.unread_count ?? 0) > 0;
         return true;
       });
-  }, [conversations, assignedLeads, query, tab, canViewAll, member?.id, member?.role_label, userId, consultorParam]);
+  }, [conversations, assignedLeads, query, tab, canViewAll, member?.id, member?.role_label, userId, consultorParam, myWhatsAppInstanceKey]);
 
   const active = conversations.find((c: any) => c.id === activeConvId) ?? fetchedActive;
 
