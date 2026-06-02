@@ -570,8 +570,10 @@ function classifyByKeywords(text: string | null | undefined): { temperature: "ho
   return { temperature: "cold" };
 }
 
-function leadOwnerPatchFromInstance(instance: any): Record<string, any> {
-  return instance?.seller_user_id ? { assigned_to: instance.seller_user_id } : {};
+function leadOwnerPatchFromInstance(instance: any, lead?: any): Record<string, any> {
+  if (!instance?.seller_user_id) return {};
+  if (lead?.assigned_to || lead?.assigned_member_id) return {};
+  return { assigned_to: instance.seller_user_id, whatsapp_instance_id: instance.id };
 }
 
 async function syncHistory(admin: any, tenantId: string, instance: any, maxChats = 200, msgsPerChat = 30) {
@@ -648,7 +650,7 @@ async function syncHistory(admin: any, tenantId: string, instance: any, maxChats
       if (lead.phone !== canonical) patch.phone = canonical;
       if ((!lead.name || lead.name === lead.phone) && name && name !== phone) patch.name = name;
       if (!lead.whatsapp_instance_id) patch.whatsapp_instance_id = instance.id;
-      if (instance.seller_user_id && !lead.assigned_to && !lead.assigned_member_id) patch.assigned_to = instance.seller_user_id;
+      Object.assign(patch, leadOwnerPatchFromInstance(instance, lead));
       if (lastAt) patch.last_message_at = lastAt;
       // Only refresh classification if lead is still in initial state
       if ((lead.stage ?? "novo") === "novo" && cls.stage) patch.stage = cls.stage;
@@ -666,7 +668,7 @@ async function syncHistory(admin: any, tenantId: string, instance: any, maxChats
     if (!lead) continue;
 
     // upsert conversation
-    let { data: conv } = await admin.from("conversations").select("*").eq("lead_id", lead.id).maybeSingle();
+    let { data: conv } = await admin.from("conversations").select("*").eq("lead_id", lead.id).eq("whatsapp_instance_id", instance.id).maybeSingle();
     if (!conv) {
       const { data: createdConv, error: createConvError } = await admin.from("conversations").insert({
         tenant_id: tenantId, lead_id: lead.id, whatsapp_instance_id: instance.id,
