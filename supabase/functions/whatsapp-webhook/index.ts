@@ -651,7 +651,7 @@ Deno.serve(async (req: Request) => {
     if (isConnectionEvent && !instance.is_connected) {
       await admin
         .from("whatsapp_instances")
-        .update({ is_connected: true, status: "connected", connected_at: new Date().toISOString() })
+        .update({ is_connected: true, status: "connected", last_connection_at: new Date().toISOString() })
         .eq("id", instance.id);
       instance.is_connected = true;
       instance.status = "connected";
