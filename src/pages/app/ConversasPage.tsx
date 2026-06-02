@@ -44,6 +44,8 @@ export default function ConversasPage() {
   const { can } = usePermissions();
   const canViewAll = isSuperadmin || isOwner || can("view_all_leads");
   const userId = user?.id ?? null;
+  const [myWhatsAppInstanceIds, setMyWhatsAppInstanceIds] = useState<string[]>([]);
+  const myWhatsAppInstanceKey = myWhatsAppInstanceIds.join(",");
   const [params, setParams] = useSearchParams();
   const leadParam = params.get("lead");
   const convParam = params.get("conv");
@@ -69,6 +71,19 @@ export default function ConversasPage() {
   const [query, setQuery] = useState("");
   const { data: conversations = [], isLoading } = useConversations();
   const { data: conversationConsultants = [] } = useConversationConsultants();
+  useEffect(() => {
+    if (!tenantId || !userId) { setMyWhatsAppInstanceIds([]); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("whatsapp_instances")
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .eq("seller_user_id", userId);
+      if (!cancelled) setMyWhatsAppInstanceIds((data ?? []).map((i) => i.id));
+    })();
+    return () => { cancelled = true; };
+  }, [tenantId, userId]);
   const activeConsultorLabel = useMemo(() => {
     if (!consultorParam) return null;
     if (consultorParam === "all") return null;
@@ -141,16 +156,20 @@ export default function ConversasPage() {
       // Superadmin: leads de TODOS os tenants. Demais: apenas o tenant ativo.
       if (!isSuperadmin) q = q.eq("tenant_id", tenantId);
       if (restricted) {
-        if (member?.id) q = q.eq("assigned_member_id", member.id);
-        else if (userId) q = q.eq("assigned_to", userId);
+        const ownershipFilters: string[] = [];
+        if (member?.id) ownershipFilters.push(`assigned_member_id.eq.${member.id}`);
+        if (userId) ownershipFilters.push(`assigned_to.eq.${userId}`);
+        if (myWhatsAppInstanceIds.length) ownershipFilters.push(`whatsapp_instance_id.in.(${myWhatsAppInstanceIds.join(",")})`);
+        if (!ownershipFilters.length) { setAssignedLeads([]); return; }
+        q = q.or(ownershipFilters.join(","));
       } else {
-        q = q.not("assigned_member_id", "is", null);
+        q = q.or("assigned_member_id.not.is.null,assigned_to.not.is.null,whatsapp_instance_id.not.is.null");
       }
       const { data } = await q;
       if (!cancelled) setAssignedLeads(data ?? []);
     })();
     return () => { cancelled = true; };
-  }, [tenantId, member?.id, member?.role_label, canViewAll, userId, conversations]);
+  }, [tenantId, member?.id, member?.role_label, canViewAll, userId, conversations, isSuperadmin, myWhatsAppInstanceKey]);
 
   // Dado leadId da URL, encontra/garante uma conversa (busca direta + fallback de criação)
   const [fetchedActive, setFetchedActive] = useState<any | null>(null);
@@ -176,7 +195,8 @@ export default function ConversasPage() {
           const l: any = (conv as any).lead;
           const ownsByMember = member?.id && l?.assigned_member_id === member.id;
           const ownsByUser = userId && l?.assigned_to === userId;
-          if (l && !ownsByMember && !ownsByUser) {
+          const ownsByInstance = myWhatsAppInstanceIds.includes((conv as any).whatsapp_instance_id) || myWhatsAppInstanceIds.includes(l?.whatsapp_instance_id);
+          if (l && !ownsByMember && !ownsByUser && !ownsByInstance) {
             setFetchedActive(null);
             setParams({}, { replace: true });
             toast({ title: "Acesso negado", description: "Esta conversa pertence a outro consultor.", variant: "destructive" });
@@ -194,13 +214,24 @@ export default function ConversasPage() {
       if (restricted) {
         const { data: leadCheck } = await supabase
           .from("leads")
-          .select("assigned_member_id, assigned_to, tenant_id")
+          .select("assigned_member_id, assigned_to, tenant_id, whatsapp_instance_id")
           .eq("id", leadParam!)
           .maybeSingle();
         if (cancelled) return;
         const ownsByMember = member?.id && leadCheck?.assigned_member_id === member.id;
         const ownsByUser = userId && leadCheck?.assigned_to === userId;
-        if (!leadCheck || leadCheck.tenant_id !== tenantId || (!ownsByMember && !ownsByUser)) {
+        let ownsByInstance = !!leadCheck?.whatsapp_instance_id && myWhatsAppInstanceIds.includes(leadCheck.whatsapp_instance_id);
+        if (!ownsByInstance && leadCheck && myWhatsAppInstanceIds.length) {
+          const { data: ownedConv } = await supabase
+            .from("conversations")
+            .select("id")
+            .eq("lead_id", leadParam!)
+            .in("whatsapp_instance_id", myWhatsAppInstanceIds)
+            .limit(1)
+            .maybeSingle();
+          ownsByInstance = !!ownedConv;
+        }
+        if (!leadCheck || leadCheck.tenant_id !== tenantId || (!ownsByMember && !ownsByUser && !ownsByInstance)) {
           setFetchedActive(null);
           setParams({}, { replace: true });
           toast({ title: "Acesso negado", description: "Esta conversa pertence a outro consultor.", variant: "destructive" });
@@ -208,13 +239,14 @@ export default function ConversasPage() {
         }
       }
 
-      const { data: existing } = await supabase
+      let existingQuery = supabase
         .from("conversations")
         .select("*, lead:leads(*)")
         .eq("lead_id", leadParam!)
         .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
+      if (restricted && myWhatsAppInstanceIds.length) existingQuery = existingQuery.in("whatsapp_instance_id", myWhatsAppInstanceIds);
+      const { data: existing } = await existingQuery.maybeSingle();
       if (cancelled) return;
       if (existing) { setFetchedActive(existing); return; }
       const { data: created, error } = await supabase
@@ -225,19 +257,31 @@ export default function ConversasPage() {
       if (!cancelled && !error && created) setFetchedActive(created);
     })();
     return () => { cancelled = true; };
-  }, [leadParam, convParam, tenantId, member?.id, member?.role_label, canViewAll, userId, setParams]);
+  }, [leadParam, convParam, tenantId, member?.id, member?.role_label, canViewAll, userId, setParams, myWhatsAppInstanceKey]);
 
   const activeConvId = fetchedActive?.id ?? null;
 
   const filtered = useMemo(() => {
     // Dedupe por lead_id mantendo a conversa mais recente (defesa contra duplicatas legadas)
     const byLead = new Map<string, any>();
+    const memberRole = (member?.role_label || "").toLowerCase();
+    const memberCanViewAll = /dono|owner|propriet|supervisor/.test(memberRole);
+    const shouldRestrict = member ? !memberCanViewAll : !canViewAll;
+    const isOwnedByCurrent = (c: any) => {
+      const lead = c.lead;
+      return (!!member?.id && lead?.assigned_member_id === member.id)
+        || (!!userId && lead?.assigned_to === userId)
+        || myWhatsAppInstanceIds.includes(c.whatsapp_instance_id)
+        || myWhatsAppInstanceIds.includes(lead?.whatsapp_instance_id);
+    };
     for (const c of conversations as any[]) {
       const key = c.lead_id ?? c.id;
       const prev = byLead.get(key);
       const curTs = new Date(c.last_message_at ?? c.created_at ?? 0).getTime();
       const prevTs = prev ? new Date(prev.last_message_at ?? prev.created_at ?? 0).getTime() : -1;
-      if (!prev || curTs > prevTs) byLead.set(key, c);
+      const currentOwned = shouldRestrict ? isOwnedByCurrent(c) : true;
+      const prevOwned = prev ? (shouldRestrict ? isOwnedByCurrent(prev) : true) : false;
+      if (!prev || (currentOwned && !prevOwned) || (currentOwned === prevOwned && curTs > prevTs)) byLead.set(key, c);
     }
     // Inclui leads atribuídos sem conversa ainda (entradas sintéticas)
     const existingLeadIds = new Set(Array.from(byLead.values()).map((c: any) => c.lead_id).filter(Boolean));
@@ -259,15 +303,13 @@ export default function ConversasPage() {
       .sort((a, b) => new Date(b.last_message_at ?? b.created_at ?? 0).getTime() - new Date(a.last_message_at ?? a.created_at ?? 0).getTime())
       .filter((c: any) => {
         const lead = c.lead;
-        const memberRole = (member?.role_label || "").toLowerCase();
-        const memberCanViewAll = /dono|owner|propriet|supervisor/.test(memberRole);
-        const shouldRestrict = member ? !memberCanViewAll : !canViewAll;
         if (shouldRestrict) {
           const assignedMemberId = lead?.assigned_member_id ?? null;
           const assignedUserId = lead?.assigned_to ?? null;
           const ownsByMember = member?.id && assignedMemberId === member.id;
           const ownsByUser = userId && assignedUserId === userId;
-          if (!ownsByMember && !ownsByUser) return false;
+          const ownsByInstance = myWhatsAppInstanceIds.includes(c.whatsapp_instance_id) || myWhatsAppInstanceIds.includes(lead?.whatsapp_instance_id);
+          if (!ownsByMember && !ownsByUser && !ownsByInstance) return false;
         }
         if (consultorParam && consultorParam !== "all") {
           if (consultorParam === "unassigned") {
@@ -297,7 +339,7 @@ export default function ConversasPage() {
         if (tab === "unread") return (c.unread_count ?? 0) > 0;
         return true;
       });
-  }, [conversations, assignedLeads, query, tab, canViewAll, member?.id, member?.role_label, userId, consultorParam]);
+  }, [conversations, assignedLeads, query, tab, canViewAll, member?.id, member?.role_label, userId, consultorParam, myWhatsAppInstanceKey]);
 
   const active = conversations.find((c: any) => c.id === activeConvId) ?? fetchedActive;
 
