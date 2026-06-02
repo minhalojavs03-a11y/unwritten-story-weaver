@@ -545,36 +545,35 @@ async function notifyAllSellersHandoff(admin: any, instance: any, lead: any, las
 
 const WEEKDAYS = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 
-async function buildKnowledgePrompt(admin: any, tenantId: string, tenantName: string | undefined, aiCfg: any, isFirstContact: boolean): Promise<string> {
+async function buildKnowledgePrompt(admin: any, tenantId: string, tenantName: string | undefined, aiCfg: any, isFirstContact: boolean, aiTurnsSoFar = 0, isLastTurn = false): Promise<string> {
   const parts: string[] = [];
   const name = tenantName ?? "nossa administradora de consórcios";
-  parts.push(`Você é o assistente virtual de pré-atendimento da ${name} no WhatsApp. Sua função é qualificar o lead até que O CONSULTOR RESPONSÁVEL (humano, já designado para esse lead) assuma a conversa por aqui mesmo. Tom: ${aiCfg?.tone ?? "amigavel"}.
+  parts.push(`Você é o assistente virtual de PRÉ-ATENDIMENTO da ${name} no WhatsApp, especialista em CONSÓRCIO (imóvel, automóvel e serviços). Sua função é qualificar rapidamente o lead vindo de anúncio e ENCAMINHAR para O CONSULTOR humano responsável. Tom: ${aiCfg?.tone ?? "amigavel"}.
 
-MISSÃO:
-- Receber o lead imediatamente, sem deixá-lo esperando.
-- AQUECER o lead com perguntas curtas e objetivas para entender o que ele quer (tipo de bem: imóvel/auto/serviço, valor da carta desejada, prazo, urgência).
-- Manter a conversa fluindo até que o consultor responsável assuma.
-- Se o cliente pedir para falar com humano/atendente/consultor/vendedor, NÃO responder a dúvida — apenas confirmar que o consultor já foi avisado e vai dar sequência aqui no WhatsApp.
+MISSÃO (CURTA E DIRETA):
+- Receba o lead imediatamente.
+- Faça NO MÁXIMO 4 a 5 perguntas objetivas para qualificar, nesta ordem de prioridade: (1) tipo de bem (imóvel/auto/serviço), (2) valor da carta desejada, (3) prazo/parcela que cabe no orçamento, (4) urgência/quando pretende usar, (5) cidade/UF. Pule perguntas que o cliente já respondeu.
+- NÃO prolongue a conversa. Assim que tiver as informações básicas, ENCAMINHE ao consultor.
+- Se o cliente pedir humano, NÃO responda dúvidas — apenas confirme que o consultor vai assumir aqui no WhatsApp.
+
+LIMITE DE MENSAGENS (CRÍTICO):
+- Você já enviou ${aiTurnsSoFar} mensagem(ns) nesta conversa. Limite total: 5 mensagens da IA.
+- ${isLastTurn ? "ESTA É SUA ÚLTIMA MENSAGEM. NÃO faça nova pergunta. Agradeça pelas informações e diga em 1 frase que O CONSULTOR vai assumir agora aqui mesmo no WhatsApp para passar os detalhes e fazer a melhor simulação. PARE." : "Cada resposta deve avançar a qualificação — não repita perguntas já respondidas. Se já coletou 3+ informações básicas, ofereça naturalmente o encaminhamento ao consultor."}
 
 REGRAS DE ESTILO (OBRIGATÓRIAS):
-- SEJA OBJETIVO. Como uma pessoa real no WhatsApp.
-- Máximo 2 frases curtas por resposta (idealmente 1). Limite ~280 caracteres.
-- UMA pergunta por vez. Nunca empilhe perguntas.
+- SEJA DIRETO, como pessoa real no WhatsApp.
+- Máximo 2 frases curtas por resposta (idealmente 1). ~280 caracteres.
+- UMA pergunta por vez. Nunca empilhe.
 - Sem listas, sem markdown, sem títulos. Texto corrido. No máximo 1 emoji quando fizer sentido.
-- Se o cliente pedir algo simples (parcela, prazo, taxa, endereço), responda direto.
-- Use SOMENTE as informações abaixo. Se não souber, diga em 1 frase que vai verificar com o consultor. NUNCA invente valores, taxas ou regras de contemplação.
+- Use SOMENTE as informações abaixo. NUNCA invente valores, taxas, lances ou regras de contemplação.
 
-REGRAS SOBRE O CONSULTOR (CRÍTICO — NÃO ALUCINAR):
-- Sempre diga "o consultor" (artigo definido), nunca "um consultor". O lead já tem um consultor designado.
-- NUNCA invente nome, telefone, e-mail ou horário do consultor.
-- NUNCA prometa "vou verificar", "vou trazer mais informações", "já te retorno com os detalhes" ou similar. Você NÃO tem acesso a nada além das informações abaixo. Se a resposta não está na base, diga em 1 frase que o consultor vai assumir a conversa em instantes para passar os detalhes — e PARE de tentar responder a dúvida técnica.
-- Ligação telefônica pode ser oferecida normalmente quando o cliente preferir; o consultor entra em contato. Não invente número nem horário específico.
+REGRAS SOBRE O CONSULTOR (CRÍTICO):
+- Sempre "o consultor" (artigo definido). NUNCA invente nome, telefone, e-mail ou horário.
+- NUNCA prometa "vou verificar", "já te retorno". Se a resposta não está na base, diga em 1 frase que o consultor assume agora — e PARE.
 
-RESPEITO À RECUSA DO CLIENTE (CRÍTICO — NUNCA INSISTIR):
-- Se o cliente disser que NÃO tem interesse, NÃO está avaliando no momento, já comprou em outro lugar, não quer receber mensagens, ou demonstrar qualquer recusa/desinteresse claro (ex.: "não estou avaliando", "obrigado, não quero", "já resolvi", "agora não", "depois eu vejo"): NÃO insista, NÃO ofereça alternativas, NÃO pergunte sobre tipo de bem (imóvel/auto/serviço), NÃO tente reverter a decisão, NÃO ofereça simulação.
-- Responda APENAS com UMA mensagem curta, cordial e de encerramento, agradecendo o retorno e se colocando à disposição para o futuro. Exemplo: "Tudo bem! Agradeço o retorno 🙏 Qualquer coisa mais à frente, é só me chamar por aqui. Sucesso!".
-- Depois disso, PARE. Não faça mais perguntas de qualificação nessa conversa.
-${isFirstContact ? `\nPRIMEIRO CONTATO:\n- Cumprimente pelo nome (se souber) de forma calorosa e breve.\n- Já faça UMA pergunta objetiva de qualificação (ex.: "Você está pensando em consórcio de imóvel, automóvel ou serviço?").` : ""}`);
+RESPEITO À RECUSA (CRÍTICO — NUNCA INSISTIR):
+- Se o cliente recusar, disser que não tem interesse, já comprou, ou pedir para não receber: responda APENAS UMA mensagem cordial de encerramento e PARE. Não insista, não ofereça alternativas.
+${isFirstContact ? `\nPRIMEIRO CONTATO:\n- Cumprimente pelo nome (se souber), breve.\n- Já faça UMA pergunta de qualificação (ex.: "Você está pensando em consórcio de imóvel, automóvel ou serviço?").` : ""}`);
 
   if (aiCfg?.business_description) parts.push(`SOBRE A ADMINISTRADORA:\n${aiCfg.business_description}`);
   const contact: string[] = [];
@@ -1097,7 +1096,24 @@ Deno.serve(async (req: Request) => {
 
 
     const { data: tenant } = await admin.from("tenants").select("name").eq("id", instance.tenant_id).maybeSingle();
-    const fullPrompt = await buildKnowledgePrompt(admin, instance.tenant_id, tenant?.name, aiCfg, isNewLead);
+
+    // Conta quantas mensagens a IA já enviou nesta conversa. Limite: 5.
+    const { data: aiMsgs } = await admin
+      .from("messages")
+      .select("id, metadata")
+      .eq("conversation_id", conv!.id)
+      .eq("direction", "outbound")
+      .limit(100);
+    const aiTurnsSoFar = (aiMsgs ?? []).filter((m: any) => m?.metadata?.ai === true).length;
+    const MAX_AI_TURNS = 5;
+    if (aiTurnsSoFar >= MAX_AI_TURNS) {
+      console.log("AI limit reached (5 msgs); handing off to human");
+      await notifyAllSellersHandoff(admin, instance, lead, text);
+      return ok({ ai_limit_reached: true, turns: aiTurnsSoFar });
+    }
+    const isLastTurn = aiTurnsSoFar === MAX_AI_TURNS - 1;
+
+    const fullPrompt = await buildKnowledgePrompt(admin, instance.tenant_id, tenant?.name, aiCfg, isNewLead, aiTurnsSoFar, isLastTurn);
 
     // Build short history for context (last 10 messages, excluding current inbound)
     const { data: recentMsgs } = await admin
@@ -1130,6 +1146,11 @@ Deno.serve(async (req: Request) => {
       direction: "outbound", body: reply, external_id: providerId,
       metadata: { ai: true },
     });
+
+    // Se foi a última mensagem permitida da IA, notifica consultores para assumirem.
+    if (isLastTurn) {
+      try { await notifyAllSellersHandoff(admin, instance, lead, text); } catch (e) { console.error("handoff notify failed", e); }
+    }
 
 
     // Detecta agendamento confirmado e cria automaticamente na agenda
