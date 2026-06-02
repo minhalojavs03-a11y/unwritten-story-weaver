@@ -607,8 +607,9 @@ async function syncHistory(admin: any, tenantId: string, instance: any, maxChats
   let importedChats = 0, importedMsgs = 0, skipped = 0;
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   for (const c of chats.slice(0, maxChats)) {
-    // Pequena pausa para não martelar o provedor sem estourar o tempo da Edge Function.
-    await sleep(40 + Math.floor(Math.random() * 60));
+    // Delay entre chats para proteger o número de banimento do WhatsApp
+    // e não martelar o provedor. Randomizado para parecer tráfego humano.
+    await sleep(250 + Math.floor(Math.random() * 350));
     if (c?.wa_isGroup === true) { skipped++; continue; }
     const chatJid: string = c?.wa_chatid ?? c?.chatid ?? c?.jid ?? c?.remoteJid ?? "";
     // Prefer the explicit phone field from uazapi (real number), then fall back to JID
@@ -687,6 +688,8 @@ async function syncHistory(admin: any, tenantId: string, instance: any, maxChats
     importedChats++;
 
     // fetch messages — use the wa_chatid from uazapi
+    // Pequena pausa adicional antes de pedir mensagens (chamada cara no provedor).
+    await sleep(150 + Math.floor(Math.random() * 200));
     const msgs = await fetchMessages(instance, chatJid, msgsPerChat);
     if (!msgs.length) {
       // still update conversation preview even without messages
