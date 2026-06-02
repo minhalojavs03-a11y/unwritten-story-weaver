@@ -636,9 +636,33 @@ Deno.serve(async (req: Request) => {
     const evt = String(payload?.event ?? payload?.type ?? "").toLowerCase();
     console.log("webhook payload event=", evt);
 
-    // Bloqueia eventos de sincronização de histórico que o provedor dispara ao
-    // (re)conectar o número. O usuário só deve receber conversas antigas se
-    // clicar manualmente em "Importar conversas".
+    // Importação automática (oportunística) do histórico: se a instância já está
+    // conectada mas ainda não importamos as conversas antigas, dispara uma
+    // tentativa em background. A própria função admin-sync-history é throttled e
+    // idempotente (não roda novamente se já trouxe chats).
+    const instMeta = (instance.metadata ?? {}) as Record<string, any>;
+    const prevTotal = Number(instMeta?.history_sync_result?.total_chats ?? 0);
+    const alreadyCompleted = !!instMeta.history_sync_completed_at && prevTotal > 0;
+    const lastAttemptMs = instMeta.history_sync_started_at ? new Date(instMeta.history_sync_started_at).getTime() : 0;
+    const canRetry = Date.now() - lastAttemptMs > 30_000;
+    if (instance.is_connected && !alreadyCompleted && canRetry) {
+      // Fire-and-forget — não bloqueia o processamento do webhook.
+      fetch(`${SUPABASE_URL}/functions/v1/whatsapp-manage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${SERVICE_ROLE}` },
+        body: JSON.stringify({
+          action: "admin-sync-history",
+          tenant_id: instance.tenant_id,
+          instance_id: instance.id,
+          maxChats: 200,
+          msgsPerChat: 30,
+        }),
+      }).catch((e) => console.error("auto admin-sync-history failed", e));
+    }
+
+    // Bloqueia eventos puros de sincronização de histórico que o provedor dispara
+    // ao (re)conectar — não viram lead, mas o auto-sync acima já cuidou de
+    // importar o histórico completo via API.
     if (
       evt.includes("history") ||
       evt.includes("chats.set") ||
