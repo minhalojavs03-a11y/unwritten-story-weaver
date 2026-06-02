@@ -146,6 +146,7 @@ export function useConversationConsultants() {
       for (const m of membershipsRes.data ?? []) {
         const role = String(m.role || "").toLowerCase();
         if (role === "owner" || role === "superadmin") continue;
+        if (hiddenUserIds.has(m.user_id)) continue;
         if (supervisorOnly && role !== "consultant" && role !== "attendant") continue;
         if (seen.has(m.user_id)) continue;
         const p = profilesById.get(m.user_id);
@@ -165,6 +166,7 @@ export function useConversationConsultants() {
 
       for (const p of profilesRes.data ?? []) {
         if (seen.has(p.id)) continue;
+        if (hiddenUserIds.has(p.id)) continue;
         const label = (p.role_label || "").toLowerCase();
         if (label.includes("dono") || label.includes("owner") || label.includes("propriet")) continue;
         if (supervisorOnly && (label.includes("supervisor") || label.includes("gerente") || label.includes("gestor"))) continue;
