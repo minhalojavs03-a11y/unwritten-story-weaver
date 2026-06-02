@@ -636,6 +636,27 @@ Deno.serve(async (req: Request) => {
     const evt = String(payload?.event ?? payload?.type ?? "").toLowerCase();
     console.log("webhook payload event=", evt);
 
+    // Detecta eventos de conexão (qrcode pareado / sessão conectada) para já
+    // marcar a instância como conectada no banco e disparar a importação
+    // automática do histórico — sem depender do frontend abrir a página de
+    // polling. Vale para QUALQUER consultor que conectar o WhatsApp.
+    const connState = String(
+      payload?.state ?? payload?.data?.state ?? payload?.connection ?? payload?.data?.connection ?? ""
+    ).toLowerCase();
+    const isConnectionEvent =
+      evt.includes("connection") ||
+      evt === "qrcode.updated" || evt === "qr.updated" ||
+      evt === "ready" || evt === "logged_in" || evt === "open" ||
+      connState === "open" || connState === "connected" || connState === "ready";
+    if (isConnectionEvent && !instance.is_connected) {
+      await admin
+        .from("whatsapp_instances")
+        .update({ is_connected: true, status: "connected", last_connection_at: new Date().toISOString() })
+        .eq("id", instance.id);
+      instance.is_connected = true;
+      instance.status = "connected";
+    }
+
     // Importação automática (oportunística) do histórico: se a instância já está
     // conectada mas ainda não importamos as conversas antigas, dispara uma
     // tentativa em background. A própria função admin-sync-history é throttled e
@@ -659,6 +680,7 @@ Deno.serve(async (req: Request) => {
         }),
       }).catch((e) => console.error("auto admin-sync-history failed", e));
     }
+
 
     // Bloqueia eventos puros de sincronização de histórico que o provedor dispara
     // ao (re)conectar — não viram lead, mas o auto-sync acima já cuidou de
