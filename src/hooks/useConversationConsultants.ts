@@ -23,7 +23,6 @@ type ProfileOption = {
 };
 
 type TenantOption = { id: string; name: string | null };
-type ConversationTenantRow = { tenant_id: string | null };
 
 const emptyResult = <T,>() => Promise.resolve({ data: [] as T[], error: null });
 
@@ -41,7 +40,7 @@ export function useConversationConsultants() {
     queryKey: ["conversation-consultants", tenantId, isSuperadmin],
     enabled: !!tenantId,
     queryFn: async (): Promise<ConsultantOption[]> => {
-      const [membershipsRes, profilesRes, membersRes, tenantsRes, conversationsRes] = await Promise.all([
+      const [membershipsRes, profilesRes, membersRes, tenantsRes] = await Promise.all([
         supabase
           .from("tenant_memberships")
           .select("user_id, role, display_name")
@@ -58,15 +57,11 @@ export function useConversationConsultants() {
         isSuperadmin
           ? supabase.from("tenants").select("id, name").order("name")
           : emptyResult<TenantOption>(),
-        isSuperadmin
-          ? supabase.from("conversations").select("tenant_id").not("tenant_id", "is", null).limit(2000)
-          : emptyResult<ConversationTenantRow>(),
       ]);
       if (membershipsRes.error) throw membershipsRes.error;
       if (profilesRes.error) throw profilesRes.error;
       if (membersRes.error) throw membersRes.error;
       if (tenantsRes.error) throw tenantsRes.error;
-      if (conversationsRes.error) throw conversationsRes.error;
 
       const profilesById = new Map<string, ProfileOption>();
       for (const p of (profilesRes.data ?? []) as ProfileOption[]) profilesById.set(p.id, p);
@@ -126,16 +121,9 @@ export function useConversationConsultants() {
         });
       }
 
-      // 4) Superadmin: conversas antigas foram importadas em tenants separados
-      // com o nome do consultor. Expõe esses tenants como "consultores" no menu
-      // e o filtro compara pelo tenant_id da conversa.
-      const tenantIdsWithConversations = new Set<string>(
-        ((conversationsRes.data ?? []) as ConversationTenantRow[])
-          .map((c) => c.tenant_id)
-          .filter((id): id is string => Boolean(id)),
-      );
+      // 4) Superadmin: neste projeto cada consultor pode existir como um tenant
+      // separado. Mostra todos para permitir filtrar conversas mesmo sem histórico.
       for (const t of tenantsRes.data ?? []) {
-        if (!tenantIdsWithConversations.has(t.id)) continue;
         const optionId = `tenant:${t.id}`;
         if (seen.has(optionId)) continue;
         seen.add(optionId);
