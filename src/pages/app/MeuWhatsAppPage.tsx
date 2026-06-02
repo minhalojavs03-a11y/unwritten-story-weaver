@@ -344,6 +344,31 @@ function MyInstance({ instance, onChanged }: { instance: Instance; onChanged: ()
         </p>
       </div>
       <div className="rounded-2xl border bg-card p-6">
+        <h3 className="font-display text-base font-bold">Importar conversas</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Traga o histórico de conversas do seu WhatsApp para o sistema. Pode levar alguns segundos enquanto o WhatsApp termina de carregar a lista de conversas no celular pareado.
+        </p>
+        <div className="mt-4">
+          <Button
+            variant="outline"
+            disabled={busy === "sync"}
+            onClick={async () => {
+              setBusy("sync");
+              try {
+                const r = await call("sync-history", { instance_id: local.id });
+                toast({ title: "Importação concluída", description: r?.message ?? `Importadas ${r?.chats ?? 0} conversas e ${r?.messages ?? 0} mensagens.` });
+                onChanged();
+              } catch (e: any) {
+                toast({ title: "Erro ao importar", description: e?.message, variant: "destructive" });
+              } finally { setBusy(null); }
+            }}
+          >
+            {busy === "sync" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Importar conversas agora
+          </Button>
+        </div>
+      </div>
+      <div className="rounded-2xl border bg-card p-6">
         <h3 className="font-display text-base font-bold">Gerenciar conexão</h3>
         <p className="mt-1 text-sm text-muted-foreground">
           Você pode desconectar para parear outro celular ou remover totalmente o número.

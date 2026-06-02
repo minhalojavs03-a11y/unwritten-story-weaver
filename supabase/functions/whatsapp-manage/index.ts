@@ -756,7 +756,17 @@ async function syncHistory(admin: any, tenantId: string, instance: any, maxChats
 async function autoSyncHistoryOnce(admin: any, tenantId: string, instance: any, reason: string) {
   if (!instance?.id || !(instance.is_connected || instance.status === "connected")) return null;
   const metadata = (instance.metadata ?? {}) as Record<string, any>;
-  if (metadata.history_sync_started_at || metadata.history_sync_completed_at) return null;
+
+  // Se já completou com chats importados, não roda de novo.
+  const prevResult = metadata.history_sync_result as any;
+  const prevTotal = Number(prevResult?.total_chats ?? 0);
+  if (metadata.history_sync_completed_at && prevTotal > 0) return null;
+
+  // Anti-throttle: aguarda 30s entre tentativas. O provedor leva alguns segundos
+  // após o pareamento para finalizar o carregamento da lista de chats do WhatsApp,
+  // então a primeira tentativa frequentemente devolve 0 — precisamos poder retentar.
+  const startedAtMs = metadata.history_sync_started_at ? new Date(metadata.history_sync_started_at).getTime() : 0;
+  if (startedAtMs && (Date.now() - startedAtMs) < 30_000) return null;
 
   const startedAt = new Date().toISOString();
   await admin.from("whatsapp_instances").update({
@@ -764,11 +774,14 @@ async function autoSyncHistoryOnce(admin: any, tenantId: string, instance: any, 
   }).eq("id", instance.id);
 
   const result = await syncHistory(admin, tenantId, instance, 80, 20);
+  const gotChats = Number((result as any)?.total_chats ?? 0) > 0;
   await admin.from("whatsapp_instances").update({
     metadata: {
       ...metadata,
       history_sync_started_at: startedAt,
-      history_sync_completed_at: new Date().toISOString(),
+      // Só marca como concluído quando o provedor já devolveu a lista de chats.
+      // Caso contrário, deixa em aberto para o próximo status/qrcode tentar novamente.
+      ...(gotChats ? { history_sync_completed_at: new Date().toISOString() } : {}),
       history_sync_reason: reason,
       history_sync_result: result,
     },
