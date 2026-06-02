@@ -263,12 +263,22 @@ export default function ConversasPage() {
   const filtered = useMemo(() => {
     // Dedupe por lead_id mantendo a conversa mais recente (defesa contra duplicatas legadas)
     const byLead = new Map<string, any>();
+    const memberRole = (member?.role_label || "").toLowerCase();
+    const memberCanViewAll = /dono|owner|propriet|supervisor/.test(memberRole);
+    const shouldRestrict = member ? !memberCanViewAll : !canViewAll;
+    const isOwnedByCurrent = (c: any) => {
+      const lead = c.lead;
+      return (!!member?.id && lead?.assigned_member_id === member.id)
+        || (!!userId && lead?.assigned_to === userId)
+        || myWhatsAppInstanceIds.includes(c.whatsapp_instance_id)
+        || myWhatsAppInstanceIds.includes(lead?.whatsapp_instance_id);
+    };
     for (const c of conversations as any[]) {
       const key = c.lead_id ?? c.id;
       const prev = byLead.get(key);
       const curTs = new Date(c.last_message_at ?? c.created_at ?? 0).getTime();
       const prevTs = prev ? new Date(prev.last_message_at ?? prev.created_at ?? 0).getTime() : -1;
-      if (!prev || curTs > prevTs) byLead.set(key, c);
+      if (!prev || (shouldRestrict && isOwnedByCurrent(c) && !isOwnedByCurrent(prev)) || curTs > prevTs) byLead.set(key, c);
     }
     // Inclui leads atribuídos sem conversa ainda (entradas sintéticas)
     const existingLeadIds = new Set(Array.from(byLead.values()).map((c: any) => c.lead_id).filter(Boolean));
@@ -290,9 +300,6 @@ export default function ConversasPage() {
       .sort((a, b) => new Date(b.last_message_at ?? b.created_at ?? 0).getTime() - new Date(a.last_message_at ?? a.created_at ?? 0).getTime())
       .filter((c: any) => {
         const lead = c.lead;
-        const memberRole = (member?.role_label || "").toLowerCase();
-        const memberCanViewAll = /dono|owner|propriet|supervisor/.test(memberRole);
-        const shouldRestrict = member ? !memberCanViewAll : !canViewAll;
         if (shouldRestrict) {
           const assignedMemberId = lead?.assigned_member_id ?? null;
           const assignedUserId = lead?.assigned_to ?? null;
