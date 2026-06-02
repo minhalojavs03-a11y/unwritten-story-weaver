@@ -573,7 +573,7 @@ function classifyByKeywords(text: string | null | undefined): { temperature: "ho
 function leadOwnerPatchFromInstance(instance: any, lead?: any): Record<string, any> {
   if (!instance?.seller_user_id) return {};
   if (lead?.assigned_to || lead?.assigned_member_id) return {};
-  return { assigned_to: instance.seller_user_id, whatsapp_instance_id: instance.id };
+  return { assigned_to: instance.seller_user_id, ...(!lead?.whatsapp_instance_id ? { whatsapp_instance_id: instance.id } : {}) };
 }
 
 async function syncHistory(admin: any, tenantId: string, instance: any, maxChats = 200, msgsPerChat = 30) {
