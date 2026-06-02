@@ -13,6 +13,8 @@ import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useMyProfile } from "@/hooks/useProfile";
 import { useTenantMembers } from "@/hooks/useData";
 import { useConversationConsultants } from "@/hooks/useConversationConsultants";
+import { useWhatsAppOnline, isWhatsAppOnline } from "@/hooks/useWhatsAppOnline";
+import { isOnline } from "@/components/ui/OnlineStatusDot";
 import { useUpdateLastSeen } from "@/hooks/useUpdateLastSeen";
 import { MemberLoginDialog } from "@/components/MemberLoginDialog";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
