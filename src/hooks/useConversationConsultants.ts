@@ -6,8 +6,10 @@ export type ConsultantOption = {
   id: string; // id usado no filtro de conversas (user_id ou tenant_member.id)
   display_name: string;
   full_name: string | null;
+  username: string | null;
   avatar_url: string | null;
   avatar_color: string | null;
+  last_seen_at: string | null;
   role: string;
   role_label: string | null;
 };
@@ -16,10 +18,12 @@ type ProfileOption = {
   id: string;
   full_name: string | null;
   display_name: string | null;
+  username: string | null;
   email?: string | null;
   avatar_url: string | null;
   avatar_color: string | null;
   role_label: string | null;
+  last_seen_at: string | null;
 };
 
 type TenantOption = { id: string; name: string | null };
@@ -43,15 +47,15 @@ export function useConversationConsultants() {
       const [membershipsRes, profilesRes, membersRes, tenantsRes] = await Promise.all([
         supabase
           .from("tenant_memberships")
-          .select("user_id, role, display_name")
+          .select("user_id, role, display_name, avatar_color, last_seen_at")
           .eq("tenant_id", tenantId!),
         supabase
           .from("profiles")
-          .select("id, full_name, display_name, avatar_url, avatar_color, role_label, tenant_id")
+          .select("id, full_name, display_name, username, avatar_url, avatar_color, role_label, last_seen_at, tenant_id")
           .eq("tenant_id", tenantId!),
         supabase
           .from("tenant_members")
-          .select("id, full_name, display_name, avatar_url, avatar_color, role_label")
+          .select("id, full_name, display_name, username, avatar_url, avatar_color, role_label, last_seen_at")
           .eq("tenant_id", tenantId!)
           .eq("is_active", true),
         isSuperadmin
@@ -80,8 +84,10 @@ export function useConversationConsultants() {
           id: m.user_id,
           display_name: m.display_name || p?.display_name || p?.full_name || p?.email || "Consultor",
           full_name: p?.full_name ?? null,
+          username: p?.username ?? null,
           avatar_url: p?.avatar_url ?? null,
-          avatar_color: p?.avatar_color ?? null,
+          avatar_color: m.avatar_color ?? p?.avatar_color ?? null,
+          last_seen_at: m.last_seen_at ?? p?.last_seen_at ?? null,
           role,
           role_label: p?.role_label ?? null,
         });
