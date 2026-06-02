@@ -83,13 +83,14 @@ export default function MeuWhatsAppPage() {
 
   const myDisplayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Meu WhatsApp";
 
+  const autoCreatedRef = useRef(false);
+
   const load = useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
     try {
       let targetSellerId: string | null = null;
       if (impersonating && impersonationCtx) {
-        // Descobre o user_id do consultor impersonado pelo nome do tenant.
         const { data: prof } = await supabase
           .from("profiles")
           .select("id")
@@ -104,14 +105,36 @@ export default function MeuWhatsAppPage() {
       const scoped = impersonating
         ? list.filter((i) => i.seller_user_id === targetSellerId)
         : list;
-      const mine = scoped.find((i) => i.is_connected || i.status === "connected") ?? scoped[0] ?? null;
+      let mine = scoped.find((i) => i.is_connected || i.status === "connected") ?? scoped[0] ?? null;
+
+      // Auto-cria a instância do consultor para já mostrar o QR ao abrir a página.
+      // Não auto-cria em modo suporte (impersonação).
+      if (!mine && !impersonating && !autoCreatedRef.current) {
+        autoCreatedRef.current = true;
+        try {
+          const c = await call("create", {
+            name: myDisplayName,
+            seller_user_id: user.id,
+            seller_name: myDisplayName,
+          });
+          mine = c?.instance ?? null;
+        } catch (e: any) {
+          if (e?.code === "extra_confirmation_required") {
+            setShowCreate(true);
+            setConfirmExtra(true);
+          } else {
+            toast({ title: "Erro ao preparar WhatsApp", description: e?.message, variant: "destructive" });
+          }
+        }
+      }
+
       setInstance(mine);
     } catch (e: any) {
       toast({ title: "Erro ao carregar", description: e?.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [user?.id, impersonating, impersonationCtx?.tenant_id, impersonationCtx?.tenant_name]);
+  }, [user?.id, impersonating, impersonationCtx?.tenant_id, impersonationCtx?.tenant_name, myDisplayName]);
 
   useEffect(() => { load(); }, [load]);
 
