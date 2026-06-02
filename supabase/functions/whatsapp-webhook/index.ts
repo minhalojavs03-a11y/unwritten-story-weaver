@@ -161,6 +161,12 @@ export function canonicalPhone(phone: string): string {
   return `+${d}`;
 }
 
+function leadOwnerPatchFromInstance(instance: any, lead?: any): Record<string, any> {
+  if (!instance?.seller_user_id) return {};
+  if (lead?.assigned_to || lead?.assigned_member_id) return {};
+  return { assigned_to: instance.seller_user_id };
+}
+
 type ExtractedMedia = {
   url: string | null;
   base64: string | null;
@@ -740,6 +746,14 @@ Deno.serve(async (req: Request) => {
             .maybeSingle();
           if (leadMatch) {
             attachedLead = leadMatch;
+            const ownerPatch = leadOwnerPatchFromInstance(instance, leadMatch);
+            if (Object.keys(ownerPatch).length || !leadMatch.whatsapp_instance_id) {
+              const { data: updatedLead } = await admin.from("leads").update({
+                ...ownerPatch,
+                ...(!leadMatch.whatsapp_instance_id ? { whatsapp_instance_id: instance.id } : {}),
+              }).eq("id", leadMatch.id).select("*").single();
+              if (updatedLead) attachedLead = updatedLead;
+            }
             const { data: convMatch } = await admin
               .from("conversations")
               .select("*")
