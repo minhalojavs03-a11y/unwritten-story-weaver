@@ -44,7 +44,7 @@ const mobileNav: NavItem[] = [
 export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isSuperadmin: realIsSuperadmin, isOwner: realIsOwner } = useEffectiveRole();
+  const { isSuperadmin: realIsSuperadmin, isOwner: realIsOwner, isSupervisor: realIsSupervisor } = useEffectiveRole();
   const { data: profile } = useMyProfile();
   const { member, clearMember } = useActiveMember();
   const { data: members = [] } = useTenantMembers();
