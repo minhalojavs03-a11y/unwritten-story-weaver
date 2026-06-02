@@ -13,7 +13,7 @@ import { ChevronDown, ChevronRight, MessageCircle, Search, Send, UserCheck, Shie
 import { toast } from "sonner";
 import { useCoachingByMember } from "@/hooks/useCoachingInsights";
 import { OnlineStatusDot, isOnline, formatLastSeen } from "@/components/ui/OnlineStatusDot";
-import { PresenceBadges, presenceSummary } from "@/components/ui/PresenceBadges";
+import { PresenceBadges } from "@/components/ui/PresenceBadges";
 import { useWhatsAppOnline, isWhatsAppOnline } from "@/hooks/useWhatsAppOnline";
 import { cn } from "@/lib/utils";
 import {
