@@ -103,8 +103,10 @@ export function useConversationConsultants() {
           id: p.id,
           display_name: p.display_name || p.full_name || "Consultor",
           full_name: p.full_name ?? null,
+          username: p.username ?? null,
           avatar_url: p.avatar_url ?? null,
           avatar_color: p.avatar_color ?? null,
+          last_seen_at: p.last_seen_at ?? null,
           role: "consultant",
           role_label: p.role_label ?? null,
         });
@@ -120,8 +122,10 @@ export function useConversationConsultants() {
           id: tm.id,
           display_name: tm.display_name || tm.full_name || "Consultor",
           full_name: tm.full_name ?? null,
+          username: tm.username ?? null,
           avatar_url: tm.avatar_url ?? null,
           avatar_color: tm.avatar_color ?? null,
+          last_seen_at: tm.last_seen_at ?? null,
           role: "consultant",
           role_label: tm.role_label ?? null,
         });
@@ -137,8 +141,10 @@ export function useConversationConsultants() {
           id: optionId,
           display_name: t.name || "Consultor",
           full_name: null,
+          username: null,
           avatar_url: null,
           avatar_color: null,
+          last_seen_at: null,
           role: "tenant",
           role_label: "Consultor",
         });
