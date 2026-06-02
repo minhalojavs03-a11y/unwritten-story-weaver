@@ -688,6 +688,8 @@ async function syncHistory(admin: any, tenantId: string, instance: any, maxChats
     importedChats++;
 
     // fetch messages — use the wa_chatid from uazapi
+    // Pequena pausa adicional antes de pedir mensagens (chamada cara no provedor).
+    await sleep(150 + Math.floor(Math.random() * 200));
     const msgs = await fetchMessages(instance, chatJid, msgsPerChat);
     if (!msgs.length) {
       // still update conversation preview even without messages
