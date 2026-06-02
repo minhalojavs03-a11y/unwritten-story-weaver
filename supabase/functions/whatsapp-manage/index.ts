@@ -972,9 +972,7 @@ Deno.serve(async (req: Request) => {
       const list = data ?? [];
       return json({
         instances: list.map(sanitize),
-        free_limit: 3,
         used: list.length,
-        next_is_paid: list.length >= 3,
       });
     }
 
@@ -1012,22 +1010,9 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
       if (dup) displayName = `${displayName.slice(0, 49)} ${crypto.randomUUID().slice(0, 6)}`;
 
-      // Limite gratuito: até 3 instâncias por loja. A partir da 4ª exige confirmação explícita.
-      // Consultor (seller_user_id presente) é sempre tratado como gratuito.
-      const { count: existingCount } = await admin
-        .from("whatsapp_instances")
-        .select("id", { count: "exact", head: true })
-        .eq("tenant_id", tenantId);
-      const FREE_LIMIT = 3;
-      const willBePaid = !sellerUserId && (existingCount ?? 0) >= FREE_LIMIT;
-      if (willBePaid && body?.confirm_extra !== true) {
-        return json({
-          error: "extra_confirmation_required",
-          message: "Você já tem 3 números gratuitos. Adicionar mais terá custo adicional.",
-          free_limit: FREE_LIMIT,
-          used: existingCount ?? 0,
-        }, 402);
-      }
+      // Sem limite gratuito / cobrança: qualquer consultor pode conectar seu número.
+      const willBePaid = false;
+
 
       // Resolve seller via tenant_memberships (profiles.tenant_id pode estar vazio em novos usuários)
       let resolvedSellerName: string | null = sellerNameRaw || null;
