@@ -863,6 +863,48 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
 
+    // Service-role admin shortcut: usado por jobs internos para disparar reimportação
+    // de histórico sem precisar de sessão de usuário. Exige tenant_id + instance_id explícitos.
+    const bearerToken = authHeader.slice(7).trim();
+    if (bearerToken === SERVICE_ROLE) {
+      const adminBody = await req.json().catch(() => ({}));
+      if (adminBody?.action !== "admin-sync-history") {
+        return json({ error: "service-role só aceita admin-sync-history" }, 400);
+      }
+      const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE);
+      const adminTenantId = adminBody?.tenant_id as string | undefined;
+      const adminInstanceId = adminBody?.instance_id as string | undefined;
+      if (!adminTenantId || !adminInstanceId) {
+        return json({ error: "tenant_id e instance_id obrigatórios" }, 400);
+      }
+      const { data: inst } = await adminClient
+        .from("whatsapp_instances")
+        .select("*")
+        .eq("id", adminInstanceId)
+        .eq("tenant_id", adminTenantId)
+        .maybeSingle();
+      if (!inst) return json({ error: "instância não encontrada" }, 404);
+      if (!inst.is_connected) return json({ error: "instância não conectada" }, 400);
+      const r = await syncHistory(
+        adminClient,
+        adminTenantId,
+        inst,
+        Number(adminBody?.maxChats ?? 200),
+        Number(adminBody?.msgsPerChat ?? 30),
+      );
+      await adminClient.from("whatsapp_instances").update({
+        metadata: {
+          ...(inst.metadata ?? {}),
+          history_sync_started_at: new Date().toISOString(),
+          history_sync_completed_at: Number((r as any)?.total_chats ?? 0) > 0 ? new Date().toISOString() : null,
+          history_sync_reason: "admin-sync",
+          history_sync_result: r,
+        },
+      }).eq("id", inst.id);
+      return json({ ok: true, ...r });
+    }
+
+
     // Identify caller
     const userClient = createClient(SUPABASE_URL, ANON, {
       global: { headers: { Authorization: authHeader } },
