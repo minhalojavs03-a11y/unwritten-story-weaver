@@ -489,7 +489,7 @@ function ConversasNavWithSubmenu({
   navBadges: Record<string, number>;
   navigate: ReturnType<typeof useNavigate>;
 }) {
-  const { data: members = [] } = useConversationConsultants();
+  const { data: members = [], isLoading: loadingMembers } = useConversationConsultants();
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<number | null>(null);
   const openMenu = () => {
@@ -544,14 +544,9 @@ function ConversasNavWithSubmenu({
         </span>
         {!collapsed && <span className="truncate">{item.label}</span>}
         {!collapsed && (
-          <button
-            type="button"
-            aria-label="Ver por consultor"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((v) => !v); }}
-            className="ml-auto inline-flex h-6 w-6 items-center justify-center rounded-md text-white/60 hover:bg-white/10 hover:text-white"
-          >
+          <span className="ml-auto inline-flex h-6 w-6 items-center justify-center rounded-md text-white/60 group-hover:bg-white/10 group-hover:text-white">
             <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} />
-          </button>
+          </span>
         )}
         {!collapsed && badge > 0 && !open && (
           <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[hsl(var(--notification-new-lead))] px-1.5 text-[10px] font-bold leading-none text-white">
@@ -565,8 +560,8 @@ function ConversasNavWithSubmenu({
           onMouseEnter={openMenu}
           onMouseLeave={scheduleClose}
           className={cn(
-            "absolute z-50 w-64 rounded-xl border border-white/10 bg-[hsl(222_47%_13%)] p-1.5 shadow-xl",
-            collapsed ? "left-full top-0 ml-2" : "left-full top-0 ml-2",
+            "z-50 rounded-xl border border-white/10 bg-[hsl(222_47%_13%)] p-1.5 shadow-xl",
+            collapsed ? "absolute left-full top-0 ml-2 w-64" : "mt-1 w-full",
           )}
         >
           <div className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">
@@ -587,7 +582,10 @@ function ConversasNavWithSubmenu({
           </button>
           <div className="my-1 h-px bg-white/5" />
           <div className="max-h-80 overflow-y-auto">
-            {members.length === 0 && (
+            {loadingMembers && (
+              <div className="px-2 py-2 text-xs text-white/50">Carregando consultores…</div>
+            )}
+            {!loadingMembers && members.length === 0 && (
               <div className="px-2 py-2 text-xs text-white/50">Nenhum consultor cadastrado.</div>
             )}
             {members.map((m) => {
