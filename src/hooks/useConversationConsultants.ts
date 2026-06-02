@@ -81,6 +81,7 @@ export function useConversationConsultants() {
       for (const m of membershipsRes.data ?? []) {
         const role = String(m.role || "").toLowerCase();
         if (role === "owner" || role === "superadmin") continue;
+        if (supervisorOnly && role !== "consultant" && role !== "attendant") continue;
         if (seen.has(m.user_id)) continue;
         const p = profilesById.get(m.user_id);
         seen.add(m.user_id);
