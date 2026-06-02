@@ -193,8 +193,13 @@ export default function ConsultoresPage() {
                         )}
                       </div>
                       <p className="truncate text-xs text-muted-foreground">
-                          {m.username ? `@${m.username}` : m.role_label ?? "Consultor"} · <span className={isOnline(m.last_seen_at) ? "text-emerald-600 font-medium" : ""}>{formatLastSeen(m.last_seen_at)}</span>
+                          {m.username ? `@${m.username}` : m.role_label ?? "Consultor"} · {formatLastSeen(m.last_seen_at)}
                       </p>
+                      <PresenceBadges
+                        className="mt-1"
+                        lastSeenAt={m.last_seen_at}
+                        whatsappOnline={isWhatsAppOnline(waOnline, m.id)}
+                      />
                     </div>
                     <div className="hidden items-center gap-4 text-xs text-muted-foreground sm:flex">
                       <div className="text-right">
