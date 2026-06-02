@@ -278,7 +278,9 @@ export default function ConversasPage() {
       const prev = byLead.get(key);
       const curTs = new Date(c.last_message_at ?? c.created_at ?? 0).getTime();
       const prevTs = prev ? new Date(prev.last_message_at ?? prev.created_at ?? 0).getTime() : -1;
-      if (!prev || (shouldRestrict && isOwnedByCurrent(c) && !isOwnedByCurrent(prev)) || curTs > prevTs) byLead.set(key, c);
+      const currentOwned = shouldRestrict ? isOwnedByCurrent(c) : true;
+      const prevOwned = prev ? (shouldRestrict ? isOwnedByCurrent(prev) : true) : false;
+      if (!prev || (currentOwned && !prevOwned) || (currentOwned === prevOwned && curTs > prevTs)) byLead.set(key, c);
     }
     // Inclui leads atribuídos sem conversa ainda (entradas sintéticas)
     const existingLeadIds = new Set(Array.from(byLead.values()).map((c: any) => c.lead_id).filter(Boolean));
