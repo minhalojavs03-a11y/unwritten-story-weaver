@@ -45,12 +45,12 @@ function inferRoleFromLabel(label?: string | null): AppRoleAll {
 }
 
 export function useTeam() {
-  const { tenantId } = useAuth();
+  const { tenantId, isSuperadmin } = useAuth();
   return useQuery({
-    queryKey: ["team", tenantId],
+    queryKey: ["team", tenantId, isSuperadmin],
     enabled: !!tenantId,
     queryFn: async (): Promise<TeamMember[]> => {
-      const [membersRes, profilesRes, rolesRes, leadsRes] = await Promise.all([
+      const [membersRes, profilesRes, rolesRes, leadsRes, superRolesRes] = await Promise.all([
         supabase
           .from("tenant_members")
           .select("*")
@@ -62,11 +62,19 @@ export function useTeam() {
           .from("leads")
           .select("assigned_member_id, assigned_to")
           .eq("tenant_id", tenantId!),
+        isSuperadmin
+          ? Promise.resolve({ data: [] as { user_id: string }[], error: null })
+          : supabase.from("user_roles").select("user_id").eq("role", "superadmin"),
       ]);
       if (membersRes.error) throw membersRes.error;
       if (profilesRes.error) throw profilesRes.error;
       if (rolesRes.error) throw rolesRes.error;
       if (leadsRes.error) throw leadsRes.error;
+      if (superRolesRes.error) throw superRolesRes.error;
+
+      const hiddenUserIds = new Set<string>(
+        (superRolesRes.data ?? []).map((r) => r.user_id),
+      );
 
       const rolesByUser = new Map<string, AppRoleAll[]>();
       for (const row of rolesRes.data ?? []) {
