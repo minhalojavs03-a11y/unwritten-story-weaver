@@ -148,9 +148,10 @@ export function useConversationConsultants() {
         });
       }
 
-      // 4) Superadmin: neste projeto cada consultor pode existir como um tenant
-      // separado. Mostra todos para permitir filtrar conversas mesmo sem histórico.
+      // 4) Superadmin: tenants sem nenhum profile/membership cadastrado.
+      // Para os demais, as pessoas reais já foram adicionadas acima pelo nome.
       for (const t of tenantsRes.data ?? []) {
+        if (tenantsCovered.has(t.id)) continue;
         const optionId = `tenant:${t.id}`;
         if (seen.has(optionId)) continue;
         seen.add(optionId);
@@ -166,6 +167,7 @@ export function useConversationConsultants() {
           role_label: "Consultor",
         });
       }
+
 
       list.sort((a, b) => a.display_name.localeCompare(b.display_name));
       return list;
