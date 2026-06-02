@@ -13,11 +13,15 @@ export function useEffectiveRole() {
 
   const label = (member?.role_label ?? "").toLowerCase().trim();
   const memberIsOwner = !member || label === "dono" || label === "owner" || label === "proprietário" || label === "proprietario";
+  const memberIsSupervisor = label === "supervisor" || label === "gerente" || label === "gestor";
+  const effectiveIsOwner = isSuperadmin || (isOwner && memberIsOwner);
 
   return {
     isSuperadmin,
     // Superadmin sempre tem poderes de dono, independente do membro ativo
-    isOwner: isSuperadmin || (isOwner && memberIsOwner),
+    isOwner: effectiveIsOwner,
+    // Supervisor: membro com label supervisor/gerente/gestor e que não é dono/superadmin
+    isSupervisor: !effectiveIsOwner && memberIsSupervisor,
     activeMember: member,
   };
 }
