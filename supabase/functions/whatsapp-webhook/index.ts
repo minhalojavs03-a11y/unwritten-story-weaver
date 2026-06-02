@@ -1147,6 +1147,11 @@ Deno.serve(async (req: Request) => {
       metadata: { ai: true },
     });
 
+    // Se foi a última mensagem permitida da IA, notifica consultores para assumirem.
+    if (isLastTurn) {
+      try { await notifyAllSellersHandoff(admin, instance, lead, text); } catch (e) { console.error("handoff notify failed", e); }
+    }
+
 
     // Detecta agendamento confirmado e cria automaticamente na agenda
     try {
