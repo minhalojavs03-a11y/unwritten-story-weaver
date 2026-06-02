@@ -220,7 +220,17 @@ export default function ConversasPage() {
         if (cancelled) return;
         const ownsByMember = member?.id && leadCheck?.assigned_member_id === member.id;
         const ownsByUser = userId && leadCheck?.assigned_to === userId;
-        const ownsByInstance = !!leadCheck?.whatsapp_instance_id && myWhatsAppInstanceIds.includes(leadCheck.whatsapp_instance_id);
+        let ownsByInstance = !!leadCheck?.whatsapp_instance_id && myWhatsAppInstanceIds.includes(leadCheck.whatsapp_instance_id);
+        if (!ownsByInstance && leadCheck && myWhatsAppInstanceIds.length) {
+          const { data: ownedConv } = await supabase
+            .from("conversations")
+            .select("id")
+            .eq("lead_id", leadParam!)
+            .in("whatsapp_instance_id", myWhatsAppInstanceIds)
+            .limit(1)
+            .maybeSingle();
+          ownsByInstance = !!ownedConv;
+        }
         if (!leadCheck || leadCheck.tenant_id !== tenantId || (!ownsByMember && !ownsByUser && !ownsByInstance)) {
           setFetchedActive(null);
           setParams({}, { replace: true });
