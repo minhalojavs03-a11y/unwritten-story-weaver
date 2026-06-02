@@ -2218,6 +2218,12 @@ export type Database = {
           uses_count: number
         }[]
       }
+      get_superadmin_user_ids: {
+        Args: never
+        Returns: {
+          user_id: string
+        }[]
+      }
       get_tenant_role: {
         Args: { _tenant_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["tenant_role"]

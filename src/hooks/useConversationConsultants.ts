@@ -68,8 +68,8 @@ export function useConversationConsultants() {
           ? supabase.from("tenants").select("id, name").order("name")
           : emptyResult<TenantOption>(),
         isSuperadmin
-          ? emptyResult<{ user_id: string }>()
-          : supabase.from("user_roles").select("user_id").eq("role", "superadmin"),
+          ? Promise.resolve({ data: [] as { user_id: string }[], error: null })
+          : supabase.rpc("get_superadmin_user_ids"),
       ]);
       if (membershipsRes.error) throw membershipsRes.error;
       if (profilesRes.error) throw profilesRes.error;
