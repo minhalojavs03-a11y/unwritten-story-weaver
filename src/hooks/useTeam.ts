@@ -64,7 +64,7 @@ export function useTeam() {
           .eq("tenant_id", tenantId!),
         isSuperadmin
           ? Promise.resolve({ data: [] as { user_id: string }[], error: null })
-          : supabase.from("user_roles").select("user_id").eq("role", "superadmin"),
+          : supabase.rpc("get_superadmin_user_ids"),
       ]);
       if (membersRes.error) throw membersRes.error;
       if (profilesRes.error) throw profilesRes.error;
