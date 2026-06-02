@@ -48,20 +48,22 @@ export function useConversationConsultants() {
     queryKey: ["conversation-consultants", tenantId, isSuperadmin, supervisorOnly],
     enabled: !!tenantId,
     queryFn: async (): Promise<ConsultantOption[]> => {
+      // Superadmin enxerga todos os tenants → não filtra por tenant_id
+      const membershipsQ = supabase
+        .from("tenant_memberships")
+        .select("user_id, tenant_id, role, display_name, avatar_color, last_seen_at");
+      const profilesQ = supabase
+        .from("profiles")
+        .select("id, full_name, display_name, username, avatar_url, avatar_color, role_label, last_seen_at, tenant_id");
+      const membersQ = supabase
+        .from("tenant_members")
+        .select("id, tenant_id, full_name, display_name, username, avatar_url, avatar_color, role_label, last_seen_at")
+        .eq("is_active", true);
+
       const [membershipsRes, profilesRes, membersRes, tenantsRes] = await Promise.all([
-        supabase
-          .from("tenant_memberships")
-          .select("user_id, role, display_name, avatar_color, last_seen_at")
-          .eq("tenant_id", tenantId!),
-        supabase
-          .from("profiles")
-          .select("id, full_name, display_name, username, avatar_url, avatar_color, role_label, last_seen_at, tenant_id")
-          .eq("tenant_id", tenantId!),
-        supabase
-          .from("tenant_members")
-          .select("id, full_name, display_name, username, avatar_url, avatar_color, role_label, last_seen_at")
-          .eq("tenant_id", tenantId!)
-          .eq("is_active", true),
+        isSuperadmin ? membershipsQ : membershipsQ.eq("tenant_id", tenantId!),
+        isSuperadmin ? profilesQ : profilesQ.eq("tenant_id", tenantId!),
+        isSuperadmin ? membersQ : membersQ.eq("tenant_id", tenantId!),
         isSuperadmin
           ? supabase.from("tenants").select("id, name").order("name")
           : emptyResult<TenantOption>(),
@@ -73,6 +75,14 @@ export function useConversationConsultants() {
 
       const profilesById = new Map<string, ProfileOption>();
       for (const p of (profilesRes.data ?? []) as ProfileOption[]) profilesById.set(p.id, p);
+
+      // Mapa tenant_id → user_ids que já têm profile/membership (para evitar
+      // duplicar a opção "tenant:" quando já existe alguém real cadastrado).
+      const tenantsCovered = new Set<string>();
+      for (const p of profilesRes.data ?? []) if (p.tenant_id) tenantsCovered.add(p.tenant_id);
+      for (const m of membershipsRes.data ?? []) if ((m as { tenant_id?: string }).tenant_id) tenantsCovered.add((m as { tenant_id: string }).tenant_id);
+      for (const tm of membersRes.data ?? []) if ((tm as { tenant_id?: string }).tenant_id) tenantsCovered.add((tm as { tenant_id: string }).tenant_id);
+
 
       const seen = new Set<string>();
       const list: ConsultantOption[] = [];
