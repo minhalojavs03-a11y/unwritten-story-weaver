@@ -44,6 +44,8 @@ export default function ConversasPage() {
   const { can } = usePermissions();
   const canViewAll = isSuperadmin || isOwner || can("view_all_leads");
   const userId = user?.id ?? null;
+  const [myWhatsAppInstanceIds, setMyWhatsAppInstanceIds] = useState<string[]>([]);
+  const myWhatsAppInstanceKey = myWhatsAppInstanceIds.join(",");
   const [params, setParams] = useSearchParams();
   const leadParam = params.get("lead");
   const convParam = params.get("conv");
@@ -69,6 +71,19 @@ export default function ConversasPage() {
   const [query, setQuery] = useState("");
   const { data: conversations = [], isLoading } = useConversations();
   const { data: conversationConsultants = [] } = useConversationConsultants();
+  useEffect(() => {
+    if (!tenantId || !userId) { setMyWhatsAppInstanceIds([]); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("whatsapp_instances")
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .eq("seller_user_id", userId);
+      if (!cancelled) setMyWhatsAppInstanceIds((data ?? []).map((i) => i.id));
+    })();
+    return () => { cancelled = true; };
+  }, [tenantId, userId]);
   const activeConsultorLabel = useMemo(() => {
     if (!consultorParam) return null;
     if (consultorParam === "all") return null;
@@ -141,16 +156,20 @@ export default function ConversasPage() {
       // Superadmin: leads de TODOS os tenants. Demais: apenas o tenant ativo.
       if (!isSuperadmin) q = q.eq("tenant_id", tenantId);
       if (restricted) {
-        if (member?.id) q = q.eq("assigned_member_id", member.id);
-        else if (userId) q = q.eq("assigned_to", userId);
+        const ownershipFilters: string[] = [];
+        if (member?.id) ownershipFilters.push(`assigned_member_id.eq.${member.id}`);
+        if (userId) ownershipFilters.push(`assigned_to.eq.${userId}`);
+        if (myWhatsAppInstanceIds.length) ownershipFilters.push(`whatsapp_instance_id.in.(${myWhatsAppInstanceIds.join(",")})`);
+        if (!ownershipFilters.length) { setAssignedLeads([]); return; }
+        q = q.or(ownershipFilters.join(","));
       } else {
-        q = q.not("assigned_member_id", "is", null);
+        q = q.or("assigned_member_id.not.is.null,assigned_to.not.is.null,whatsapp_instance_id.not.is.null");
       }
       const { data } = await q;
       if (!cancelled) setAssignedLeads(data ?? []);
     })();
     return () => { cancelled = true; };
-  }, [tenantId, member?.id, member?.role_label, canViewAll, userId, conversations]);
+  }, [tenantId, member?.id, member?.role_label, canViewAll, userId, conversations, isSuperadmin, myWhatsAppInstanceKey]);
 
   // Dado leadId da URL, encontra/garante uma conversa (busca direta + fallback de criação)
   const [fetchedActive, setFetchedActive] = useState<any | null>(null);
