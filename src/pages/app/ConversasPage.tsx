@@ -239,13 +239,14 @@ export default function ConversasPage() {
         }
       }
 
-      const { data: existing } = await supabase
+      let existingQuery = supabase
         .from("conversations")
         .select("*, lead:leads(*)")
         .eq("lead_id", leadParam!)
         .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
+      if (restricted && myWhatsAppInstanceIds.length) existingQuery = existingQuery.in("whatsapp_instance_id", myWhatsAppInstanceIds);
+      const { data: existing } = await existingQuery.maybeSingle();
       if (cancelled) return;
       if (existing) { setFetchedActive(existing); return; }
       const { data: created, error } = await supabase
