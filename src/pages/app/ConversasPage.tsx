@@ -195,7 +195,8 @@ export default function ConversasPage() {
           const l: any = (conv as any).lead;
           const ownsByMember = member?.id && l?.assigned_member_id === member.id;
           const ownsByUser = userId && l?.assigned_to === userId;
-          if (l && !ownsByMember && !ownsByUser) {
+          const ownsByInstance = myWhatsAppInstanceIds.includes((conv as any).whatsapp_instance_id) || myWhatsAppInstanceIds.includes(l?.whatsapp_instance_id);
+          if (l && !ownsByMember && !ownsByUser && !ownsByInstance) {
             setFetchedActive(null);
             setParams({}, { replace: true });
             toast({ title: "Acesso negado", description: "Esta conversa pertence a outro consultor.", variant: "destructive" });
@@ -213,13 +214,14 @@ export default function ConversasPage() {
       if (restricted) {
         const { data: leadCheck } = await supabase
           .from("leads")
-          .select("assigned_member_id, assigned_to, tenant_id")
+          .select("assigned_member_id, assigned_to, tenant_id, whatsapp_instance_id")
           .eq("id", leadParam!)
           .maybeSingle();
         if (cancelled) return;
         const ownsByMember = member?.id && leadCheck?.assigned_member_id === member.id;
         const ownsByUser = userId && leadCheck?.assigned_to === userId;
-        if (!leadCheck || leadCheck.tenant_id !== tenantId || (!ownsByMember && !ownsByUser)) {
+        const ownsByInstance = !!leadCheck?.whatsapp_instance_id && myWhatsAppInstanceIds.includes(leadCheck.whatsapp_instance_id);
+        if (!leadCheck || leadCheck.tenant_id !== tenantId || (!ownsByMember && !ownsByUser && !ownsByInstance)) {
           setFetchedActive(null);
           setParams({}, { replace: true });
           toast({ title: "Acesso negado", description: "Esta conversa pertence a outro consultor.", variant: "destructive" });
@@ -244,7 +246,7 @@ export default function ConversasPage() {
       if (!cancelled && !error && created) setFetchedActive(created);
     })();
     return () => { cancelled = true; };
-  }, [leadParam, convParam, tenantId, member?.id, member?.role_label, canViewAll, userId, setParams]);
+  }, [leadParam, convParam, tenantId, member?.id, member?.role_label, canViewAll, userId, setParams, myWhatsAppInstanceKey]);
 
   const activeConvId = fetchedActive?.id ?? null;
 
