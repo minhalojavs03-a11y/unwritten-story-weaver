@@ -1096,7 +1096,24 @@ Deno.serve(async (req: Request) => {
 
 
     const { data: tenant } = await admin.from("tenants").select("name").eq("id", instance.tenant_id).maybeSingle();
-    const fullPrompt = await buildKnowledgePrompt(admin, instance.tenant_id, tenant?.name, aiCfg, isNewLead);
+
+    // Conta quantas mensagens a IA já enviou nesta conversa. Limite: 5.
+    const { data: aiMsgs } = await admin
+      .from("messages")
+      .select("id, metadata")
+      .eq("conversation_id", conv!.id)
+      .eq("direction", "outbound")
+      .limit(100);
+    const aiTurnsSoFar = (aiMsgs ?? []).filter((m: any) => m?.metadata?.ai === true).length;
+    const MAX_AI_TURNS = 5;
+    if (aiTurnsSoFar >= MAX_AI_TURNS) {
+      console.log("AI limit reached (5 msgs); handing off to human");
+      await notifyAllSellersHandoff(admin, instance, lead, text);
+      return ok({ ai_limit_reached: true, turns: aiTurnsSoFar });
+    }
+    const isLastTurn = aiTurnsSoFar === MAX_AI_TURNS - 1;
+
+    const fullPrompt = await buildKnowledgePrompt(admin, instance.tenant_id, tenant?.name, aiCfg, isNewLead, aiTurnsSoFar, isLastTurn);
 
     // Build short history for context (last 10 messages, excluding current inbound)
     const { data: recentMsgs } = await admin
