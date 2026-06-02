@@ -27,7 +27,7 @@ export function ProtectedRoute({ children, requireSuperadmin = false, requireOwn
     return <Navigate to="/admin/login" replace />;
   }
   if (requireOwner && !isOwner && !isSuperadmin) {
-    const supervisorOk = allowSupervisor && can("configure_whatsapp");
+    const supervisorOk = allowSupervisor && can("view_whatsapp");
     if (!supervisorOk) return <Navigate to="/crm" replace />;
   }
   return <>{children}</>;

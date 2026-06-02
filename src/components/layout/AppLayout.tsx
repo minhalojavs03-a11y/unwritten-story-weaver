@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
-import { usePermissions } from "@/hooks/usePermissions";
+
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -44,12 +44,12 @@ const mobileNav: NavItem[] = [
 export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isSuperadmin: realIsSuperadmin, isOwner: realIsOwner } = useEffectiveRole();
+  const { isSuperadmin: realIsSuperadmin, isOwner: realIsOwner, isSupervisor: realIsSupervisor } = useEffectiveRole();
   const { data: profile } = useMyProfile();
   const { member, clearMember } = useActiveMember();
   const { data: members = [] } = useTenantMembers();
   useUpdateLastSeen();
-  const { can } = usePermissions();
+  
 
   // Modo suporte: superadmin visualizando como outro tenant.
   // Enquanto impersonando, esconde menus/atalhos admin e mostra o nome do tenant
@@ -82,7 +82,7 @@ export function AppLayout() {
   useEffect(() => {
     try { window.localStorage.setItem("sidebar_collapsed", collapsed ? "1" : "0"); } catch { return; }
   }, [collapsed]);
-  const isSupervisor = can("configure_whatsapp") && !isOwner && !isSuperadmin && !impersonating;
+  const isSupervisor = realIsSupervisor && !impersonating;
 
   // Lista única por papel — só o que realmente importa no dia a dia.
   // Itens menos usados ficam em /configuracoes (Mensagens prontas, Gravações,
