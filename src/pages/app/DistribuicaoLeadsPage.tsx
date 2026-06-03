@@ -525,7 +525,7 @@ export default function DistribuicaoLeadsPage() {
                       variant="ghost"
                       size="sm"
                       className="ml-auto h-7 gap-1 px-2 text-xs"
-                      onClick={() => setExpanded((s) => ({ ...s, [r.id]: !s[r.id] }))}
+                      onClick={() => setExpanded((s) => ({ ...s, [k]: !s[k] }))}
                     >
                       <Bell className="h-3.5 w-3.5" />
                       Notificações
@@ -533,11 +533,12 @@ export default function DistribuicaoLeadsPage() {
                     </Button>
                   </div>
 
-                  {isOpen && (
+                  {isOpen && r.id && (
                     <div className="mt-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
                       <NotificationLog memberId={r.id} />
                     </div>
                   )}
+
                 </div>
               );
             })}
