@@ -224,6 +224,7 @@ export default function FilaLeadsPage() {
     return false;
   };
   const isLeadMine = (l: Lead) => {
+    if (canSeeAll) return true;
     if (l.assigned_member_id) return !!activeMember?.id && l.assigned_member_id === activeMember.id;
     if (l.assigned_to) return l.assigned_to === user?.id;
     return false;
