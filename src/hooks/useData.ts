@@ -526,10 +526,11 @@ export function useReleaseLead() {
   });
 }
 
-export function useTenantMembers() {
-  const { tenantId } = useAuth();
+export function useTenantMembers(overrideTenantId?: string | null) {
+  const { tenantId: authTenantId } = useAuth();
   const { isOwner, isSuperadmin } = useAuth();
   const { member } = useActiveMember();
+  const tenantId = overrideTenantId !== undefined ? overrideTenantId : authTenantId;
   return useQuery({
     queryKey: ["tenant_members_public", tenantId],
     enabled: !!tenantId,
@@ -538,8 +539,6 @@ export function useTenantMembers() {
       if (error) throw error;
       type Row = { id: string; username: string; display_name: string; role_label: string | null; avatar_color: string | null; avatar_url: string | null; bio: string | null; phone: string | null; last_seen_at: string | null; receives_leads: boolean | null };
       const rows = (data ?? []) as Row[];
-      // Privacidade: telefone e bio de outros consultores só aparecem para
-      // dono/supervisor/superadmin. Cada um continua vendo os próprios dados.
       const memberRole = (member?.role_label || "").toLowerCase();
       const memberPrivileged = /dono|owner|propriet|supervisor/.test(memberRole);
       const canSeeAll = isSuperadmin || (isOwner && memberPrivileged) || memberPrivileged;
