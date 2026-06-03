@@ -299,13 +299,19 @@ function extractMessage(payload: any): {
   let phone: string | null = remoteJid ? remoteJid.split("@")[0] : (m?.from ?? null);
   if (!phone && chat?.phone) phone = String(chat.phone).replace(/\D/g, "");
   if (phone) phone = phone.replace(/\D/g, "") || null;
-  const text =
+  const rawContent =
     m?.message?.conversation ??
     m?.message?.extendedTextMessage?.text ??
     m?.body ??
     m?.text ??
     m?.content ??
     null;
+  // Some providers (uazapi) stuff the media base64 into `content`. Never treat that as text.
+  const looksLikeBase64 = typeof rawContent === "string"
+    && rawContent.length > 200
+    && /^[A-Za-z0-9+/=\s]+$/.test(rawContent)
+    && !rawContent.includes(" ");
+  const text = looksLikeBase64 ? null : rawContent;
   const externalId =
     m?.messageid ??
     m?.messageId ??
