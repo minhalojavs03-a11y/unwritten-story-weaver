@@ -3,25 +3,42 @@ import { useActiveMember } from "@/contexts/ActiveMemberContext";
 
 /**
  * Permissão efetiva considerando o membro interno ativo.
- * Mesmo que o usuário Supabase seja owner, se ele entrou como
- * vendedor/consultor/supervisor/etc, ele NÃO deve ter acesso de dono.
- * Apenas "Dono" (ou nenhum membro selecionado) mantém poderes de owner.
+ *
+ * Regras:
+ * - Superadmin sempre tem poderes de dono (atravessa qualquer tenant).
+ * - Owner (auth) só mantém poderes de dono se o membro interno ativo for
+ *   "Dono" (ou se nenhum membro estiver selecionado). Ao entrar como
+ *   vendedor/consultor/supervisor/etc, NÃO deve ter acesso de dono.
+ * - Supervisor (auth role) é tratado como supervisor quando não há membro
+ *   ativo ou quando o membro ativo tem label compatível. Supervisor NÃO é
+ *   owner — vê tudo do tenant mas não edita configurações sensíveis.
  */
 export function useEffectiveRole() {
-  const { isOwner, isSuperadmin } = useAuth();
+  const { isOwner, isSuperadmin, roles } = useAuth();
   const { member } = useActiveMember();
 
   const label = (member?.role_label ?? "").toLowerCase().trim();
   const memberIsOwner = !member || label === "dono" || label === "owner" || label === "proprietário" || label === "proprietario";
   const memberIsSupervisor = label === "supervisor" || label === "gerente" || label === "gestor";
+  const memberIsConsultant = !!member && !memberIsOwner && !memberIsSupervisor;
+
+  const hasSupervisorRole = (roles ?? []).includes("supervisor" as never);
+
   const effectiveIsOwner = isSuperadmin || (isOwner && memberIsOwner);
+
+  // Supervisor é true quando:
+  //  - não é owner efetivo, E
+  //  - o membro ativo tem label de supervisão, OU
+  //  - não há membro ativo (ou membro é genérico) e o role de auth é supervisor.
+  const effectiveIsSupervisor = !effectiveIsOwner && (
+    memberIsSupervisor ||
+    (!memberIsConsultant && hasSupervisorRole)
+  );
 
   return {
     isSuperadmin,
-    // Superadmin sempre tem poderes de dono, independente do membro ativo
     isOwner: effectiveIsOwner,
-    // Supervisor: membro com label supervisor/gerente/gestor e que não é dono/superadmin
-    isSupervisor: !effectiveIsOwner && memberIsSupervisor,
+    isSupervisor: effectiveIsSupervisor,
     activeMember: member,
   };
 }
