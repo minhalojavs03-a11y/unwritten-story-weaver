@@ -11,9 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function ClientesPage() {
-  const { data: leads = [], isLoading } = useLeads();
+  const { can } = usePermissions();
+  const { data: leads = [], isLoading } = useLeads(can("view_all_leads") ? { kind: "all" } : undefined);
   const create = useCreateLead();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
