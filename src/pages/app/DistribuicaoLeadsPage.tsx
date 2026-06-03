@@ -124,11 +124,11 @@ export default function DistribuicaoLeadsPage() {
   const effectiveTenant = authTenantId;
 
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["lead-distribution-members", effectiveTenant],
-    enabled: !!effectiveTenant && canAccess,
+    queryKey: ["lead-distribution-members", isSuperadmin ? "ALL" : effectiveTenant],
+    enabled: canAccess && (isSuperadmin || !!effectiveTenant),
     queryFn: async (): Promise<Row[]> => {
       const { data, error } = await supabase.rpc("list_distribution_consultants" as any, {
-        _tenant_id: effectiveTenant!,
+        _tenant_id: isSuperadmin ? null : effectiveTenant!,
       });
       if (error) throw error;
       return ((data ?? []) as any[]).map((r) => ({
