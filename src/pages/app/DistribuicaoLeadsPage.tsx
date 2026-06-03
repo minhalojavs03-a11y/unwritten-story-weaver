@@ -272,6 +272,9 @@ export default function DistribuicaoLeadsPage() {
     );
     setLocal((s) => { const c = { ...s }; delete c[k]; return c; });
     qc.invalidateQueries({ queryKey: distQueryKey });
+  }
+
+
 
 
   if (!canAccess) {
