@@ -70,9 +70,9 @@ export default function ConversasPage() {
     setTabState((prev) => (prev === valid ? prev : valid));
   }, [params]);
   const [query, setQuery] = useState("");
-  // "Outros" são contatos importados que não casam com planilha/anúncio.
-  // Filtramos no nível da query (kind=lead|outros) para nunca poluírem KPIs.
-  const conversationsKind: "lead" | "outros" = tab === "outros" ? "outros" : "lead";
+  // Supervisor/owner precisam enxergar tudo: leads oficiais + histórico importado do WhatsApp.
+  // Consultor comum continua restrito ao escopo comercial padrão.
+  const conversationsKind: "lead" | "outros" | "all" = tab === "outros" ? "outros" : canViewAll ? "all" : "lead";
   const { data: conversations = [], isLoading } = useConversations({ kind: conversationsKind });
 
   const { data: conversationConsultants = [] } = useConversationConsultants();
@@ -156,9 +156,9 @@ export default function ConversasPage() {
       let q = supabase
         .from("leads")
         .select("*")
-        .eq("kind", conversationsKind)
         .order("created_at", { ascending: false, nullsFirst: false })
         .limit(500);
+      if (conversationsKind !== "all") q = q.eq("kind", conversationsKind);
 
       // Superadmin: leads de TODOS os tenants. Demais: apenas o tenant ativo.
       if (!isSuperadmin) q = q.eq("tenant_id", tenantId);

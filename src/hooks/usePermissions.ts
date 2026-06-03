@@ -60,7 +60,16 @@ export function usePermissions() {
   const { member } = useActiveMember();
   const { role: supportRole } = useSupportImpersonation();
   const memberRole = getMemberRole(member);
-  const effectiveRoles = supportRole ? [supportRole] : memberRole ? [memberRole] : (roles as AppRole[]);
+  const authRoles = roles as AppRole[];
+  const authIsSupervisor = authRoles.includes("supervisor");
+  const authIsSuperadmin = authRoles.includes("superadmin");
+  const effectiveRoles = supportRole
+    ? [supportRole]
+    : (authIsSuperadmin || authIsSupervisor)
+      ? authRoles
+      : memberRole
+        ? [memberRole]
+        : authRoles;
   const can = (p: Permission) => {
     const allowed = MATRIX[p] ?? [];
     return effectiveRoles.some((r) => allowed.includes(r));

@@ -131,8 +131,9 @@ function normalizePhone(raw: string): string {
 }
 
 export default function LeadsPage() {
-  const { data: allLeads = [], isLoading } = useLeads();
   const { can } = usePermissions();
+  const canViewAll = can("view_all_leads");
+  const { data: allLeads = [], isLoading } = useLeads(canViewAll ? { kind: "all" } : undefined);
   const { member } = useActiveMember();
   const { user } = useAuth();
   const memberId = member?.id ?? null;
@@ -152,7 +153,7 @@ export default function LeadsPage() {
     };
     // Owners/supervisores/superadmins veem todos os leads, mesmo quando estão
     // operando como um membro interno (ex.: Dono Feracon como "donoferacon").
-    if (can("view_all_leads")) return allLeads.filter(isRealLead);
+    if (canViewAll) return allLeads;
     if (memberId) {
       return allLeads.filter((l) => (l as any).assigned_member_id === memberId && isRealLead(l));
     }
@@ -188,7 +189,7 @@ export default function LeadsPage() {
   type SourceFilter = "all" | "ads" | "import" | "other";
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [search, setSearch] = useState("");
-  const canManage = can("view_all_leads");
+  const canManage = canViewAll;
 
   const classifySource = (src: string | null | undefined): "ads" | "import" | "other" => {
     const s = (src ?? "").toLowerCase();
