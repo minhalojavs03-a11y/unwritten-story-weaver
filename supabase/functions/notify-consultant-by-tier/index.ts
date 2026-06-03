@@ -37,6 +37,26 @@ function brl(n: number | null | undefined) {
   }
 }
 
+function buildLeadNotice(lead: any, creditValue: number | null): string {
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const dd = String(now.getDate()).padStart(2, "0");
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const yyyy = now.getFullYear();
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mi = String(now.getMinutes()).padStart(2, "0");
+  const category = lead.asset_type || lead.opportunity_type || lead.interest || "—";
+  return [
+    `🔔 *Novo lead atribuído a você!*`,
+    ``,
+    `👤 *Nome:* ${lead.name || "(sem nome)"}`,
+    `💰 *Carta contemplada:* ${brl(creditValue)}`,
+    `📋 *Categoria:* ${category}`,
+    `📅 *Recebido em:* ${dd}/${mm}/${yyyy} às ${hh}:${mi}`,
+    ``,
+    `Acesse o sistema para iniciar o atendimento.`,
+  ].join("\n");
+}
+
 function normalizePhone(p: string | null | undefined): string | null {
   if (!p) return null;
   const d = p.replace(/\D/g, "");
@@ -148,17 +168,7 @@ Deno.serve(async (req) => {
         .or("is_connected.eq.true,status.eq.connected")
         .order("created_at", { ascending: true }).limit(1).maybeSingle();
 
-      const text = [
-        `🟢 *Novo lead atribuído a você!*`, ``,
-        `*Nome:* ${lead.name || "(sem nome)"}`,
-        `*Valor da carta:* ${brl(_creditValue)}`,
-        lead.asset_type ? `*Bem:* ${lead.asset_type}` : null,
-        lead.interest ? `*Interesse:* ${lead.interest}` : null,
-        lead.source ? `*Origem:* ${lead.source}` : null, ``,
-        `🔒 Esse lead já está travado no seu nome — *ninguém mais consegue pegar*.`, ``,
-        `👉 Acesse o CRM para retomar o atendimento.`, ``,
-        `_Equipe FeraCon 🦁_`,
-      ].filter(Boolean).join("\n");
+      const text = buildLeadNotice(lead, _creditValue);
 
       let delivered = false;
       if (sender?.server_url && sender?.instance_token) {
@@ -195,30 +205,17 @@ Deno.serve(async (req) => {
 
 
 
-    const { data: tierRow } = await admin
-      .from("tenant_members")
-      .select("max_credit_value")
-      .eq("tenant_id", lead.tenant_id)
-      .eq("is_active", true)
-      .eq("receives_leads", true)
-      .not("max_credit_value", "is", null)
-      .gte("max_credit_value", creditValue)
-      .order("max_credit_value", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    if (!tierRow?.max_credit_value) {
-      return json({ ok: true, skipped: "no tier covers this value" });
-    }
-
+    // Busca todos os consultores que cobrem a faixa do lead.
+    // Regra: (min IS NULL OR creditValue >= min) AND (max IS NULL OR creditValue <= max).
     const { data: consultantsRaw } = await admin
       .from("tenant_members")
-      .select("id, display_name, phone, max_credit_value, role_label, daily_lead_limit")
+      .select("id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit")
       .eq("tenant_id", lead.tenant_id)
       .eq("is_active", true)
       .eq("receives_leads", true)
-      .eq("max_credit_value", tierRow.max_credit_value)
-      .not("phone", "is", null);
+      .not("phone", "is", null)
+      .or(`min_credit_value.is.null,min_credit_value.lte.${creditValue}`)
+      .or(`max_credit_value.is.null,max_credit_value.gte.${creditValue}`);
 
     // Somente Consultores recebem leads. Exclui Vendedor, Supervisor, Dono,
     // Menor Aprendiz e contas com "teste" no nome.
@@ -353,23 +350,7 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    const text = [
-      `🟢 *Novo lead atribuído a você!*`,
-      ``,
-      `*Nome:* ${lead.name || "(sem nome)"}`,
-      `*Valor da carta:* ${brl(creditValue)}`,
-      lead.asset_type ? `*Bem:* ${lead.asset_type}` : null,
-      lead.interest ? `*Interesse:* ${lead.interest}` : null,
-      lead.source ? `*Origem:* ${lead.source}` : null,
-      ``,
-      `🔒 Esse lead já está travado no seu nome — *ninguém mais consegue pegar*. Você não precisa correr.`,
-      ``,
-      `👉 Acesse o CRM para retomar o atendimento.`,
-      ``,
-      `🤖 A nossa IA vai iniciar o *pré-atendimento* automaticamente, aquecer o lead e levantar o interesse. Assim que ela concluir, ou se o lead ficar parado por muito tempo, você recebe um novo aviso pra entrar em ação.`,
-      ``,
-      `_Equipe FeraCon 🦁_`,
-    ].filter(Boolean).join("\n");
+    const text = buildLeadNotice(lead, creditValue);
 
     let delivered = false;
     if (sender?.server_url && sender?.instance_token) {
@@ -400,7 +381,7 @@ Deno.serve(async (req) => {
 
     return json({
       ok: true,
-      tier: tierRow.max_credit_value,
+      credit_value: creditValue,
       assigned_to: { id: chosen.id, name: chosen.display_name, delivered },
     });
   } catch (e) {

@@ -1756,6 +1756,7 @@ export type Database = {
           is_active: boolean
           last_seen_at: string | null
           max_credit_value: number | null
+          min_credit_value: number | null
           monthly_goal: number
           notification_email: boolean
           notification_whatsapp: boolean
@@ -1780,6 +1781,7 @@ export type Database = {
           is_active?: boolean
           last_seen_at?: string | null
           max_credit_value?: number | null
+          min_credit_value?: number | null
           monthly_goal?: number
           notification_email?: boolean
           notification_whatsapp?: boolean
@@ -1804,6 +1806,7 @@ export type Database = {
           is_active?: boolean
           last_seen_at?: string | null
           max_credit_value?: number | null
+          min_credit_value?: number | null
           monthly_goal?: number
           notification_email?: boolean
           notification_whatsapp?: boolean
@@ -2270,6 +2273,16 @@ export type Database = {
         Returns: undefined
       }
       touch_my_last_seen: { Args: never; Returns: undefined }
+      update_member_distribution: {
+        Args: {
+          _daily_lead_limit: number
+          _max_credit_value: number
+          _member_id: string
+          _min_credit_value: number
+          _receives_leads: boolean
+        }
+        Returns: undefined
+      }
       update_my_tenant_member: { Args: { _data: Json }; Returns: undefined }
       user_tenant_id: { Args: { _user_id: string }; Returns: string }
     }
