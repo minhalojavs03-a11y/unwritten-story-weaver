@@ -176,6 +176,8 @@ export default function MeuWhatsAppPage() {
 
       {loading ? (
         <Centered><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></Centered>
+      ) : limitExceeded && !instance ? (
+        <LimitExceededState />
       ) : !instance ? (
         <EmptyState onCreate={() => setShowCreate(true)} />
       ) : (
