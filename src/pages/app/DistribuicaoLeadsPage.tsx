@@ -423,9 +423,10 @@ export default function DistribuicaoLeadsPage() {
                             const [lo, hi] = vals;
                             setLocal((s) => ({
                               ...s,
-                              [r.id]: { ...s[r.id], min_credit_value: lo, max_credit_value: hi },
+                              [k]: { ...s[k], min_credit_value: lo, max_credit_value: hi },
                             }));
                           }}
+
                           onValueCommit={(vals) => {
                             const [lo, hi] = vals;
                             saveDistribution(
