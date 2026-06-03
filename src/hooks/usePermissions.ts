@@ -29,19 +29,18 @@ type Permission =
   | "access_superadmin";
 
 const MATRIX: Record<Permission, AppRole[]> = {
-  // Leitura ampla — supervisor enxerga tudo da equipe
+  // Supervisor agora tem as MESMAS permissões de dono dentro do tenant
   view_all_leads:        ["superadmin", "owner", "supervisor"],
   assume_any_lead:       ["superadmin", "owner", "supervisor"],
   view_team_metrics:     ["superadmin", "owner", "supervisor"],
   view_whatsapp:         ["superadmin", "owner", "supervisor"],
 
-  // Edição sensível — somente dono/superadmin
-  configure_sheets:      ["superadmin", "owner"],
-  manage_team:           ["superadmin", "owner"],
-  configure_whatsapp:    ["superadmin", "owner"],
-  configure_ai:          ["superadmin", "owner"],
-  configure_integrations:["superadmin", "owner"],
-  view_financial:        ["superadmin", "owner"],
+  configure_sheets:      ["superadmin", "owner", "supervisor"],
+  manage_team:           ["superadmin", "owner", "supervisor"],
+  configure_whatsapp:    ["superadmin", "owner", "supervisor"],
+  configure_ai:          ["superadmin", "owner", "supervisor"],
+  configure_integrations:["superadmin", "owner", "supervisor"],
+  view_financial:        ["superadmin", "owner", "supervisor"],
 
   access_superadmin:     ["superadmin"],
 };
