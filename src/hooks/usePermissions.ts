@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
+import { useSupportImpersonation } from "@/hooks/useSupportImpersonation";
 import type { AppRole } from "@/components/ui/RoleBadge";
 
 /**
@@ -58,8 +59,9 @@ function getMemberRole(member: ReturnType<typeof useActiveMember>["member"]): Ap
 export function usePermissions() {
   const { roles } = useAuth();
   const { member } = useActiveMember();
+  const { role: supportRole } = useSupportImpersonation();
   const memberRole = getMemberRole(member);
-  const effectiveRoles = memberRole ? [memberRole] : (roles as AppRole[]);
+  const effectiveRoles = supportRole ? [supportRole] : memberRole ? [memberRole] : (roles as AppRole[]);
   const can = (p: Permission) => {
     const allowed = MATRIX[p] ?? [];
     return effectiveRoles.some((r) => allowed.includes(r));
