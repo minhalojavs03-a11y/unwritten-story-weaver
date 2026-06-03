@@ -1347,6 +1347,20 @@ Deno.serve(async (req: Request) => {
     switch (action) {
       case "get-or-create": {
         if (!instance) {
+          // Anti-ansiedade: consultor não pode estourar instâncias órfãs
+          if (!callerCanManageAllInstances) {
+            const { count: attemptCount } = await admin
+              .from("whatsapp_instances")
+              .select("id", { count: "exact", head: true })
+              .eq("tenant_id", tenantId)
+              .eq("seller_user_id", userId);
+            if ((attemptCount ?? 0) >= 2) {
+              return json({
+                error: "Limite de tentativas excedido. Você já criou 2 instâncias de WhatsApp. Aguarde alguns minutos, escaneie o QR Code com calma e aguarde a conexão. Se ainda não conseguir, peça ajuda ao administrador.",
+                limit_exceeded: true,
+              }, 429);
+            }
+          }
           const ensured = await ensureProviderInstance(admin, tenantId, tenant, instance, webhookUrl, instance?.instance_name || "Principal");
           if (!ensured.ok) return json(ensured.body, ensured.status);
           instance = ensured.instance;
