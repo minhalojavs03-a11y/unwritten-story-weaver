@@ -98,19 +98,28 @@ async function callWhatsAppManage(body: Record<string, unknown>, accessToken: st
 }
 
 // ============= LEADS =============
-export function useLeads(opts?: { kind?: "lead" | "outros" | "all" }) {
-  const { tenantId, isSuperadmin } = useAuth();
+// opts.tenantId: undefined = padrão (auth tenant ou global p/ superadmin);
+//                null = forçar global (sem filtro); string = forçar aquele tenant.
+// opts.memberId: filtra por assigned_member_id (uso por owner/supervisor).
+export function useLeads(opts?: { kind?: "lead" | "outros" | "all"; tenantId?: string | null; memberId?: string | null }) {
+  const { tenantId: authTenantId, isSuperadmin } = useAuth();
   const qc = useQueryClient();
   const kind = opts?.kind ?? "lead";
+  const overrideTenant = opts && "tenantId" in opts ? opts.tenantId : undefined;
+  const effectiveTenant = overrideTenant === undefined
+    ? (isSuperadmin ? null : authTenantId)
+    : overrideTenant;
+  const globalScope = effectiveTenant === null;
+  const memberId = opts?.memberId ?? null;
+
   const q = useQuery({
-    queryKey: ["leads", isSuperadmin ? "__all__" : tenantId, kind],
-    enabled: !!tenantId || isSuperadmin,
+    queryKey: ["leads", globalScope ? "__all__" : effectiveTenant, kind, memberId ?? "all"],
+    enabled: globalScope || !!effectiveTenant,
     queryFn: async () => {
       let query = supabase.from("leads").select("*").order("created_at", { ascending: false }).limit(2000);
-      // Superadmin enxerga leads de TODOS os tenants (visão centralizada).
-      if (!isSuperadmin) query = query.eq("tenant_id", tenantId!);
-      // Métricas/listas operacionais ignoram contatos "outros" (não-leads).
+      if (!globalScope) query = query.eq("tenant_id", effectiveTenant!);
       if (kind !== "all") query = query.eq("kind", kind);
+      if (memberId) query = query.eq("assigned_member_id", memberId);
       const { data, error } = await query;
       if (error) throw error;
       return (data ?? []) as Tables<"leads">[];
@@ -118,21 +127,21 @@ export function useLeads(opts?: { kind?: "lead" | "outros" | "all" }) {
   });
 
   useEffect(() => {
-    if (!tenantId && !isSuperadmin) return;
+    if (!globalScope && !effectiveTenant) return;
     const ch = supabase
-      .channel(realtimeChannelName("leads-changes", tenantId ?? "all"))
+      .channel(realtimeChannelName("leads-changes", effectiveTenant ?? "all"))
       .on(
         "postgres_changes",
-        isSuperadmin
+        globalScope
           ? { event: "*", schema: "public", table: "leads" }
-          : { event: "*", schema: "public", table: "leads", filter: `tenant_id=eq.${tenantId}` },
+          : { event: "*", schema: "public", table: "leads", filter: `tenant_id=eq.${effectiveTenant}` },
         () => {
           qc.invalidateQueries({ queryKey: ["leads"] });
         },
       )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [tenantId, isSuperadmin, qc]);
+  }, [effectiveTenant, globalScope, qc]);
 
   return q;
 }
@@ -517,10 +526,11 @@ export function useReleaseLead() {
   });
 }
 
-export function useTenantMembers() {
-  const { tenantId } = useAuth();
+export function useTenantMembers(overrideTenantId?: string | null) {
+  const { tenantId: authTenantId } = useAuth();
   const { isOwner, isSuperadmin } = useAuth();
   const { member } = useActiveMember();
+  const tenantId = overrideTenantId !== undefined ? overrideTenantId : authTenantId;
   return useQuery({
     queryKey: ["tenant_members_public", tenantId],
     enabled: !!tenantId,
@@ -529,8 +539,6 @@ export function useTenantMembers() {
       if (error) throw error;
       type Row = { id: string; username: string; display_name: string; role_label: string | null; avatar_color: string | null; avatar_url: string | null; bio: string | null; phone: string | null; last_seen_at: string | null; receives_leads: boolean | null };
       const rows = (data ?? []) as Row[];
-      // Privacidade: telefone e bio de outros consultores só aparecem para
-      // dono/supervisor/superadmin. Cada um continua vendo os próprios dados.
       const memberRole = (member?.role_label || "").toLowerCase();
       const memberPrivileged = /dono|owner|propriet|supervisor/.test(memberRole);
       const canSeeAll = isSuperadmin || (isOwner && memberPrivileged) || memberPrivileged;
@@ -543,13 +551,22 @@ export function useTenantMembers() {
 
 
 // ============= APPOINTMENTS =============
-export function useAppointments(rangeStart?: Date, rangeEnd?: Date) {
-  const { tenantId } = useAuth();
+// scope opcional: tenantId=null força global (superadmin); memberId filtra por consultor.
+export function useAppointments(rangeStart?: Date, rangeEnd?: Date, scope?: { tenantId?: string | null; memberId?: string | null }) {
+  const { tenantId: authTenantId, isSuperadmin } = useAuth();
+  const overrideTenant = scope && "tenantId" in scope ? scope.tenantId : undefined;
+  const effectiveTenant = overrideTenant === undefined
+    ? (isSuperadmin ? null : authTenantId)
+    : overrideTenant;
+  const globalScope = effectiveTenant === null;
+  const memberId = scope?.memberId ?? null;
   return useQuery({
-    queryKey: ["appointments", tenantId, rangeStart?.toISOString(), rangeEnd?.toISOString()],
-    enabled: !!tenantId,
+    queryKey: ["appointments", globalScope ? "__all__" : effectiveTenant, memberId ?? "all", rangeStart?.toISOString(), rangeEnd?.toISOString()],
+    enabled: globalScope || !!effectiveTenant,
     queryFn: async () => {
       let q = supabase.from("appointments").select("*, lead:leads(name, phone)").order("scheduled_at", { ascending: true });
+      if (!globalScope) q = q.eq("tenant_id", effectiveTenant!);
+      if (memberId) q = q.eq("consultant_member_id", memberId);
       if (rangeStart) q = q.gte("scheduled_at", rangeStart.toISOString());
       if (rangeEnd) q = q.lte("scheduled_at", rangeEnd.toISOString());
       const { data, error } = await q;
@@ -756,31 +773,66 @@ export function useAllInstances() {
 }
 
 // ============= DASHBOARD METRICS =============
-export function useDashboardMetrics(memberId?: string | null) {
-  const { tenantId } = useAuth();
+// Backwards-compatible: aceita string|null (memberId) ou objeto { tenantId?, memberId? }.
+// tenantId=null força global (superadmin); undefined = padrão (auth tenant ou global p/ superadmin).
+export function useDashboardMetrics(
+  scopeOrMember?: string | null | { tenantId?: string | null; memberId?: string | null },
+) {
+  const { tenantId: authTenantId, isSuperadmin } = useAuth();
+  const scope = typeof scopeOrMember === "object" && scopeOrMember !== null
+    ? scopeOrMember
+    : { memberId: (scopeOrMember as string | null | undefined) ?? null };
+  const overrideTenant = "tenantId" in scope ? scope.tenantId : undefined;
+  const effectiveTenant = overrideTenant === undefined
+    ? (isSuperadmin ? null : authTenantId)
+    : overrideTenant;
+  const globalScope = effectiveTenant === null;
+  const memberId = scope.memberId ?? null;
   const scoped = !!memberId;
+
   return useQuery({
-    queryKey: ["dashboard_metrics", tenantId, memberId ?? "all"],
-    enabled: !!tenantId,
+    queryKey: ["dashboard_metrics", globalScope ? "__all__" : effectiveTenant, memberId ?? "all"],
+    enabled: globalScope || !!effectiveTenant,
     queryFn: async () => {
       const today = new Date(); today.setHours(0,0,0,0);
       const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
 
+      const applyTenant = <T extends { eq: (col: string, v: string) => T }>(q: T) =>
+        globalScope ? q : q.eq("tenant_id", effectiveTenant!);
+
       const leadsBase = () => {
-        let q = supabase.from("leads").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId!).eq("kind", "lead");
+        let q = supabase.from("leads").select("id", { count: "exact", head: true }).eq("kind", "lead");
+        q = applyTenant(q);
         if (scoped) q = q.eq("assigned_member_id", memberId!);
         return q;
       };
 
       const convBase = () => {
         if (scoped) {
-          return supabase
+          // Filtra por kind='lead' no inner join para nunca contar "outros".
+          let q = supabase
             .from("conversations")
-            .select("id, lead:leads!inner(assigned_member_id)", { count: "exact", head: true })
-            .eq("tenant_id", tenantId!)
-            .eq("lead.assigned_member_id", memberId!);
+            .select("id, lead:leads!inner(assigned_member_id, kind)", { count: "exact", head: true })
+            .eq("lead.assigned_member_id", memberId!)
+            .eq("lead.kind", "lead");
+          q = applyTenant(q);
+          return q;
         }
-        return supabase.from("conversations").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId!);
+        let q = supabase
+          .from("conversations")
+          .select("id, lead:leads!inner(kind)", { count: "exact", head: true })
+          .eq("lead.kind", "lead");
+        q = applyTenant(q);
+        return q;
+      };
+
+      const apptBase = () => {
+        let q = supabase.from("appointments").select("id", { count: "exact", head: true })
+          .gte("scheduled_at", today.toISOString())
+          .lt("scheduled_at", tomorrow.toISOString());
+        q = applyTenant(q);
+        if (scoped) q = q.eq("consultant_member_id", memberId!);
+        return q;
       };
 
       const [leadsToday, activeConv, appts, hot, awaiting] = await Promise.all([
@@ -788,9 +840,7 @@ export function useDashboardMetrics(memberId?: string | null) {
           ? leadsBase().gte("assigned_member_at", today.toISOString()).neq("stage", "historico")
           : leadsBase().gte("created_at", today.toISOString()).neq("stage", "historico"),
         convBase().eq("status", "open"),
-        scoped
-          ? supabase.from("appointments").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId!).eq("consultant_member_id", memberId!).gte("scheduled_at", today.toISOString()).lt("scheduled_at", tomorrow.toISOString())
-          : supabase.from("appointments").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId!).gte("scheduled_at", today.toISOString()).lt("scheduled_at", tomorrow.toISOString()),
+        apptBase(),
         leadsBase().eq("temperature", "hot").not("stage", "in", "(comprou,perdido,historico)"),
         convBase().gt("unread_count", 0),
       ]);

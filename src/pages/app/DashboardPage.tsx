@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Users, MessageCircle, Calendar, Flame, ArrowRight, AlertTriangle, Clock4, TrendingUp, Trophy, Gauge, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -15,19 +16,38 @@ import { useReportData } from "@/hooks/useReportData";
 import { HealthScore, InsightsPanel, PipelineIntel, WeeklyActivity, ResponseHeatmap } from "@/components/dashboard/ExecutiveWidgets";
 import { WeekComparison } from "@/components/dashboard/WeekComparison";
 import { CoachingPanel } from "@/components/dashboard/CoachingPanel";
+import { DashboardScopeFilter, type DashboardScope } from "@/components/dashboard/DashboardScopeFilter";
 
 export default function DashboardPage() {
   const { data: profile } = useMyProfile();
   const { member } = useActiveMember();
-  const { roles } = useAuth();
+  const { roles, isSuperadmin } = useAuth();
   const roleValue = `${member?.role_label ?? ""} ${member?.username ?? ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const privileged = member
     ? /(dono|owner|proprietario|supervisor)/.test(roleValue)
     : /(dono|owner|proprietario|supervisor)/.test(roleValue) || (roles ?? []).some((r: string) => ["owner", "supervisor", "superadmin"].includes(r));
-  const scopeMemberId = !privileged ? (member?.id ?? null) : null;
-  const { data: m } = useDashboardMetrics(scopeMemberId);
-  const { data: allLeads = [] } = useLeads();
-  const leads = scopeMemberId ? allLeads.filter((l) => l.assigned_member_id === scopeMemberId) : allLeads;
+  const consultantScopeMemberId = !privileged ? (member?.id ?? null) : null;
+
+  // Filtros do painel — apenas owner/supervisor/superadmin podem trocar.
+  // Superadmin vê seletor de tenant; owner/supervisor só de consultor (dentro do próprio tenant).
+  const [scope, setScope] = useState<DashboardScope>({ tenantId: null, memberId: null });
+  // Para consultor comum, o escopo é fixo nele mesmo.
+  const effectiveMemberId = consultantScopeMemberId ?? scope.memberId;
+  // tenantId: undefined = padrão (auth tenant ou global p/ superadmin); null = global; string = tenant
+  const effectiveTenantOverride: string | null | undefined = isSuperadmin
+    ? scope.tenantId // null = todos os tenants, string = tenant selecionado
+    : undefined;    // owner/supervisor/consultor: usa o auth tenant
+
+  const metricsScope = {
+    tenantId: effectiveTenantOverride,
+    memberId: effectiveMemberId,
+  };
+  const { data: m } = useDashboardMetrics(metricsScope);
+  const leadsOpts = effectiveTenantOverride !== undefined || effectiveMemberId
+    ? { tenantId: effectiveTenantOverride, memberId: effectiveMemberId }
+    : undefined;
+  const { data: allLeads = [] } = useLeads(leadsOpts);
+  const leads = allLeads;
   // Em modo suporte (superadmin trocou de tenant), saúda o nome do cliente
   let impersonationName: string | null = null;
   try {
@@ -41,12 +61,15 @@ export default function DashboardPage() {
         .split(/\s+/)[0] ?? "");
   const today = new Date(); today.setHours(0,0,0,0);
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
-  const { data: todayAppts = [] } = useAppointments(today, tomorrow);
+  const { data: todayAppts = [] } = useAppointments(today, tomorrow, {
+    tenantId: effectiveTenantOverride,
+    memberId: effectiveMemberId,
+  });
 
   const activeLeads = leads.filter((l) => !["comprou","perdido"].includes(l.stage ?? ""));
 
   // Executive analytics (only rendered for privileged users)
-  const execData = useReportData("30d", "all", scopeMemberId);
+  const execData = useReportData("30d", "all", effectiveMemberId, effectiveTenantOverride);
 
   // Speed-to-assume: tempo entre criação do lead e atribuição (em minutos)
   const assignedLeads = leads.filter((l) => l.assigned_member_id && l.assigned_member_at && l.created_at);
@@ -112,7 +135,13 @@ export default function DashboardPage() {
       </div>
       <div className="space-y-4 px-4 pb-6 md:space-y-5 md:px-8 md:pb-8">
 
-
+        {privileged && (
+          <DashboardScopeFilter
+            scope={scope}
+            onChange={setScope}
+            showTenantSelector={isSuperadmin}
+          />
+        )}
 
         <section className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
           <StatCard to="/clientes" icon={Users} label="Leads Hoje" value={m?.leadsToday ?? 0} iconColor="bg-emerald-500/10 text-emerald-600" />
@@ -130,7 +159,8 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <LeadsHourlyPanel days={30} />
+        <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
+
 
         {privileged && (
           <section className="space-y-4 md:space-y-5">
