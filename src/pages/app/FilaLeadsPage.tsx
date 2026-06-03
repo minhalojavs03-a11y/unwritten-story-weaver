@@ -225,8 +225,8 @@ export default function FilaLeadsPage() {
     return [...leads, ...extraLeads.filter((l) => !ids.has(l.id))];
   })();
   const myLeads = mergedLeads.filter(isLeadMine);
-  const availableLeads = canSendToOthers ? mergedLeads.filter((l) => !isLeadMine(l)) : [];
-  const sourceLeads = activeTab === "meus" ? myLeads : availableLeads;
+  const availableLeads: Lead[] = [];
+  const sourceLeads = myLeads;
   const filteredLeads = sourceLeads.filter(searchMatch);
 
 
