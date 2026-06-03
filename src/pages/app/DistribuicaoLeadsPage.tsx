@@ -123,8 +123,9 @@ export default function DistribuicaoLeadsPage() {
   const canAccess = isSuperadmin || isOwner;
   const effectiveTenant = authTenantId;
 
+  const distQueryKey = ["lead-distribution-members", isSuperadmin ? "ALL" : effectiveTenant] as const;
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["lead-distribution-members", isSuperadmin ? "ALL" : effectiveTenant],
+    queryKey: distQueryKey,
     enabled: canAccess && (isSuperadmin || !!effectiveTenant),
     queryFn: async (): Promise<Row[]> => {
       const { data, error } = await supabase.rpc("list_distribution_consultants" as any, {
