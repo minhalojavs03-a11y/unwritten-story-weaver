@@ -1,4 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -33,11 +35,20 @@ export function ProtectedRoute({
   if (requireSuperadmin && !isSuperadmin) {
     return <Navigate to="/admin/login" replace />;
   }
+  const denied =
+    (requireOwner && !isOwner && !isSuperadmin && !(allowSupervisor && can("view_whatsapp"))) ||
+    (denyConsultant && !isSuperadmin && !isOwner && !isSupervisor);
+
+  useEffect(() => {
+    if (denied && session) {
+      toast.error("Você não tem permissão para acessar esta página.");
+    }
+  }, [denied, session]);
+
   if (requireOwner && !isOwner && !isSuperadmin) {
     const supervisorOk = allowSupervisor && can("view_whatsapp");
     if (!supervisorOk) return <Navigate to="/crm" replace />;
   }
-  // Bloqueia consultor/atendente em rotas restritas a dono/supervisor/superadmin.
   if (denyConsultant && !isSuperadmin && !isOwner && !isSupervisor) {
     return <Navigate to="/crm" replace />;
   }
