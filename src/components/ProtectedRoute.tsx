@@ -9,11 +9,18 @@ interface Props {
   requireSuperadmin?: boolean;
   requireOwner?: boolean;
   allowSupervisor?: boolean;
+  denyConsultant?: boolean;
 }
 
-export function ProtectedRoute({ children, requireSuperadmin = false, requireOwner = false, allowSupervisor = false }: Props) {
+export function ProtectedRoute({
+  children,
+  requireSuperadmin = false,
+  requireOwner = false,
+  allowSupervisor = false,
+  denyConsultant = false,
+}: Props) {
   const { session, loading } = useAuth();
-  const { isSuperadmin, isOwner } = useEffectiveRole();
+  const { isSuperadmin, isOwner, isSupervisor } = useEffectiveRole();
   const { can } = usePermissions();
   const location = useLocation();
 
@@ -30,5 +37,10 @@ export function ProtectedRoute({ children, requireSuperadmin = false, requireOwn
     const supervisorOk = allowSupervisor && can("view_whatsapp");
     if (!supervisorOk) return <Navigate to="/crm" replace />;
   }
+  // Bloqueia consultor/atendente em rotas restritas a dono/supervisor/superadmin.
+  if (denyConsultant && !isSuperadmin && !isOwner && !isSupervisor) {
+    return <Navigate to="/crm" replace />;
+  }
   return <>{children}</>;
 }
+

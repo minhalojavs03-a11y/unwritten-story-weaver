@@ -115,8 +115,9 @@ export function AppLayout() {
     if (isSupervisor) {
       return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, consultores, config];
     }
-    // Consultor
-    return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, config];
+    // Consultor / atendente: menu enxuto, sem Configurações nem áreas de gestão.
+    return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking];
+
   }, [isOwner, isSuperadmin, isSupervisor, impersonating]);
 
 
