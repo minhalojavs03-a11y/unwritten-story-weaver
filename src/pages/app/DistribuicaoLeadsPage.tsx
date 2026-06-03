@@ -403,7 +403,35 @@ export default function DistribuicaoLeadsPage() {
                     </div>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-2 text-xs">
+                  {/* Canais de aviso */}
+                  <div className="mt-3 grid grid-cols-1 gap-2 border-t border-border pt-3 sm:grid-cols-2">
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/60 px-3 py-2">
+                      <div className="min-w-0">
+                        <Label className="text-xs font-medium text-foreground">🔔 Aviso no painel</Label>
+                        <p className="text-[11px] text-muted-foreground">Notificação em tempo real no app.</p>
+                      </div>
+                      <Switch
+                        checked={!!valueOf(r, "notify_inapp")}
+                        onCheckedChange={(v) => saveChannels(r, { notify_inapp: v }, "Aviso no painel")}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/60 px-3 py-2">
+                      <div className="min-w-0">
+                        <Label className="text-xs font-medium text-foreground">📱 Aviso no WhatsApp</Label>
+                        {r.phone ? (
+                          <p className="text-[11px] text-muted-foreground">Mensagem direta ao número cadastrado.</p>
+                        ) : (
+                          <p className="text-[11px] text-amber-600">Número WhatsApp não cadastrado. Cadastre no perfil do consultor.</p>
+                        )}
+                      </div>
+                      <Switch
+                        checked={!!valueOf(r, "notify_whatsapp") && !!r.phone}
+                        disabled={!r.phone}
+                        onCheckedChange={(v) => saveChannels(r, { notify_whatsapp: v }, "Aviso no WhatsApp")}
+                      />
+                    </div>
+                  </div>
+
                     <Badge variant={receives ? "default" : "secondary"} className="font-normal">
                       {receives ? "Ativo" : "Pausado"}
                     </Badge>
