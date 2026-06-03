@@ -338,7 +338,7 @@ export default function DistribuicaoLeadsPage() {
                         />
                       </div>
 
-                      <div className="md:col-span-3 space-y-2">
+                      <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <Label className="text-xs text-muted-foreground">Faixa de carta de crédito</Label>
                           <span className="text-xs font-medium text-foreground">
