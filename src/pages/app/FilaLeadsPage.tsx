@@ -100,6 +100,7 @@ export default function FilaLeadsPage() {
   const navigate = useNavigate();
   const { can } = usePermissions();
   const canSendToOthers = can("assume_any_lead");
+  const canSeeAll = can("view_all_leads");
   const { data: members = [] } = useTenantMembers();
   const consultants = members.filter((m) => isConsultantLike(m.role_label, m.username) && m.receives_leads !== false);
   const assumeMut = useAssumeLead();
@@ -135,7 +136,7 @@ export default function FilaLeadsPage() {
       setSearching(false);
       return;
     }
-    if (!activeMember?.id && !user?.id) return;
+    if (!canSeeAll && !activeMember?.id && !user?.id) return;
     setSearching(true);
     const handle = setTimeout(async () => {
       const digits = q.replace(/\D/g, "");
@@ -146,12 +147,14 @@ export default function FilaLeadsPage() {
         .not("stage", "in", "(perdido,comprou,historico)")
         .limit(50);
       if (!isSuperadmin) query = query.eq("tenant_id", tenantId);
-      if (activeMember?.id && user?.id) {
-        query = query.or(`assigned_member_id.eq.${activeMember.id},assigned_to.eq.${user.id}`);
-      } else if (activeMember?.id) {
-        query = query.eq("assigned_member_id", activeMember.id);
-      } else {
-        query = query.eq("assigned_to", user!.id);
+      if (!canSeeAll) {
+        if (activeMember?.id && user?.id) {
+          query = query.or(`assigned_member_id.eq.${activeMember.id},assigned_to.eq.${user.id}`);
+        } else if (activeMember?.id) {
+          query = query.eq("assigned_member_id", activeMember.id);
+        } else {
+          query = query.eq("assigned_to", user!.id);
+        }
       }
       const orParts = [
         `name.ilike.%${q}%`,
@@ -165,7 +168,7 @@ export default function FilaLeadsPage() {
       setSearching(false);
     }, 300);
     return () => clearTimeout(handle);
-  }, [search, tenantId, isSuperadmin, activeMember?.id, user?.id]);
+  }, [search, tenantId, isSuperadmin, activeMember?.id, user?.id, canSeeAll]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -221,6 +224,7 @@ export default function FilaLeadsPage() {
     return false;
   };
   const isLeadMine = (l: Lead) => {
+    if (canSeeAll) return true;
     if (l.assigned_member_id) return !!activeMember?.id && l.assigned_member_id === activeMember.id;
     if (l.assigned_to) return l.assigned_to === user?.id;
     return false;
@@ -239,7 +243,7 @@ export default function FilaLeadsPage() {
 
   async function load() {
     if (!tenantId && !isSuperadmin) return;
-    if (!activeMember?.id && !user?.id) {
+    if (!canSeeAll && !activeMember?.id && !user?.id) {
       setLeads([]);
       setAssigneeNames({});
       setNotifiedByLead({});
@@ -253,14 +257,16 @@ export default function FilaLeadsPage() {
       .not("stage", "in", "(perdido,comprou,historico)")
       .eq("kind", "lead");
     if (!isSuperadmin) query = query.eq("tenant_id", tenantId!);
-    // Mostra apenas leads atribuídos ao consultor atual. Suporta atribuição nova
-    // por membro interno e atribuições legadas/importadas por usuário Supabase.
-    if (activeMember?.id && user?.id) {
-      query = query.or(`assigned_member_id.eq.${activeMember.id},assigned_to.eq.${user.id}`);
-    } else if (activeMember?.id) {
-      query = query.eq("assigned_member_id", activeMember.id);
-    } else {
-      query = query.eq("assigned_to", user!.id);
+    // Supervisor/owner/superadmin (view_all_leads) veem toda a fila do tenant.
+    // Demais consultores só veem leads atribuídos a si.
+    if (!canSeeAll) {
+      if (activeMember?.id && user?.id) {
+        query = query.or(`assigned_member_id.eq.${activeMember.id},assigned_to.eq.${user.id}`);
+      } else if (activeMember?.id) {
+        query = query.eq("assigned_member_id", activeMember.id);
+      } else {
+        query = query.eq("assigned_to", user!.id);
+      }
     }
     const { data, error } = await query.order("created_at", { ascending: false }).limit(200);
     if (error) toast.error(error.message);
@@ -447,7 +453,7 @@ export default function FilaLeadsPage() {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [tenantId, canSendToOthers, activeMember?.id]);
+  }, [tenantId, canSendToOthers, activeMember?.id, canSeeAll]);
 
   async function syncNow() {
     setSyncing(true);
