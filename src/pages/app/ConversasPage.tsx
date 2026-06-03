@@ -32,10 +32,11 @@ import { Link as RLink } from "react-router-dom";
 import { useTemplates, renderTemplate } from "@/hooks/useTemplates";
 import type { Tables } from "@/integrations/supabase/types";
 
-const tabs: { id: "all" | "hot" | "unread"; label: string }[] = [
+const tabs: { id: "all" | "hot" | "unread" | "outros"; label: string }[] = [
   { id: "all", label: "Todas" },
   { id: "hot", label: "🔥 Quentes" },
   { id: "unread", label: "⏰ Não lidas" },
+  { id: "outros", label: "Outros (não leads)" },
 ];
 
 export default function ConversasPage() {
@@ -52,7 +53,7 @@ export default function ConversasPage() {
   const tabParam = params.get("tab");
   const consultorParam = params.get("consultor");
   const initialTab: (typeof tabs)[number]["id"] =
-    tabParam === "hot" || tabParam === "unread" || tabParam === "all" ? tabParam : "all";
+    tabParam === "hot" || tabParam === "unread" || tabParam === "all" || tabParam === "outros" ? tabParam : "all";
   const [tab, setTabState] = useState<(typeof tabs)[number]["id"]>(initialTab);
   const setTab = (id: (typeof tabs)[number]["id"]) => {
     setTabState(id);
@@ -65,11 +66,15 @@ export default function ConversasPage() {
   // Mantém o tab sincronizado quando a URL muda (ex.: navegação a partir do Dashboard)
   useEffect(() => {
     const t = params.get("tab");
-    const valid = t === "hot" || t === "unread" || t === "all" ? t : "all";
+    const valid = t === "hot" || t === "unread" || t === "all" || t === "outros" ? t : "all";
     setTabState((prev) => (prev === valid ? prev : valid));
   }, [params]);
   const [query, setQuery] = useState("");
-  const { data: conversations = [], isLoading } = useConversations();
+  // "Outros" são contatos importados que não casam com planilha/anúncio.
+  // Filtramos no nível da query (kind=lead|outros) para nunca poluírem KPIs.
+  const conversationsKind: "lead" | "outros" = tab === "outros" ? "outros" : "lead";
+  const { data: conversations = [], isLoading } = useConversations({ kind: conversationsKind });
+
   const { data: conversationConsultants = [] } = useConversationConsultants();
   useEffect(() => {
     if (!tenantId || !userId) { setMyWhatsAppInstanceIds([]); return; }
@@ -151,8 +156,10 @@ export default function ConversasPage() {
       let q = supabase
         .from("leads")
         .select("*")
+        .eq("kind", conversationsKind)
         .order("created_at", { ascending: false, nullsFirst: false })
         .limit(500);
+
       // Superadmin: leads de TODOS os tenants. Demais: apenas o tenant ativo.
       if (!isSuperadmin) q = q.eq("tenant_id", tenantId);
       if (restricted) {
