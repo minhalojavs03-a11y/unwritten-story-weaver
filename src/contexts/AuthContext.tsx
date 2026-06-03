@@ -170,8 +170,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loading = !authReady || !profileReady || (!!session?.user && profileUserId !== session.user.id);
   const isSuperadmin = roles.includes("superadmin");
-  // Superadmin herda todas as permissões de dono em qualquer tenant
-  const isOwner = roles.includes("owner") || isSuperadmin;
+  // Superadmin e Supervisor herdam todas as permissões de dono no tenant.
+  const isOwner = roles.includes("owner") || roles.includes("supervisor") || isSuperadmin;
 
   return (
     <Ctx.Provider value={{ session, user: session?.user ?? null, loading, tenantId, roles, username, onboardingCompleted, isSuperadmin, isOwner, refreshProfile }}>
