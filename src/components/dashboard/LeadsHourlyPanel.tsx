@@ -18,8 +18,12 @@ const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 type Period = 7 | 30 | 90;
 
-export function LeadsHourlyPanel({ days = 30 }: { days?: Period }) {
-  const { data: leads = [], isLoading } = useLeads();
+export function LeadsHourlyPanel({ days = 30, tenantId, memberId }: { days?: Period; tenantId?: string | null; memberId?: string | null }) {
+  const leadsOpts = tenantId !== undefined || memberId !== undefined
+    ? { tenantId, memberId: memberId ?? null }
+    : undefined;
+  const { data: leads = [], isLoading } = useLeads(leadsOpts);
+
 
   const { hourly, weekday, peakHour, peakDay, total, analyzed, excludedDay, excludedCount, topRanges, topShare } = useMemo(() => {
     const since = Date.now() - days * 24 * 60 * 60 * 1000;
