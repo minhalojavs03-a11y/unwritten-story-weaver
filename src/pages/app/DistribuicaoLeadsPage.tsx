@@ -28,7 +28,9 @@ import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
 
 type Row = {
-  id: string;
+  // id do tenant_members (pode ser null se ainda não existir — criamos sob demanda)
+  id: string | null;
+  user_id: string;
   tenant_id: string;
   display_name: string | null;
   username: string | null;
@@ -45,14 +47,10 @@ type Row = {
   phone: string | null;
 };
 
-function normalize(s: string) {
-  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+function rowKey(r: { id: string | null; user_id: string }) {
+  return r.id ?? `u:${r.user_id}`;
 }
-function isConsultantLike(role: string | null, username: string | null) {
-  const v = normalize(`${role ?? ""} ${username ?? ""}`);
-  if (/(dono|owner|proprietario)/.test(v)) return false;
-  return true;
-}
+
 
 function parseBRL(s: string): number | null {
   const digits = s.replace(/\D/g, "");
