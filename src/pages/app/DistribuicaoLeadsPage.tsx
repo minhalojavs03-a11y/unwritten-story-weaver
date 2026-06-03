@@ -265,8 +265,13 @@ export default function DistribuicaoLeadsPage() {
       return;
     }
     toast.success(`${label} atualizado`);
-    qc.invalidateQueries({ queryKey: ["lead-distribution-members", effectiveTenant] });
-  }
+    qc.setQueryData<Row[]>(distQueryKey, (prev) =>
+      (prev ?? []).map((row) =>
+        rowKey(row) === k ? { ...row, ...patch, id: memberId } : row,
+      ),
+    );
+    setLocal((s) => { const c = { ...s }; delete c[k]; return c; });
+    qc.invalidateQueries({ queryKey: distQueryKey });
 
 
   if (!canAccess) {
