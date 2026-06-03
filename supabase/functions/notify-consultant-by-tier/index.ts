@@ -407,9 +407,6 @@ Deno.serve(async (req) => {
 
     const chosen = ranked[0];
     const chosenPhone = normalizePhone(chosen.phone);
-    if (!chosenPhone) {
-      return json({ ok: true, skipped: "chosen consultant has invalid phone" });
-    }
 
     // Atribui o lead ao escolhido (com guarda de concorrência: só se ainda estiver livre).
     const { data: assigned, error: assignErr } = await admin
@@ -433,8 +430,6 @@ Deno.serve(async (req) => {
       return json({ ok: true, skipped: "lead was just assigned by someone else" });
     }
 
-    // Garante que exista uma conversa para o lead — assim ela já aparece em
-    // "Conversas" do consultor sem precisar clicar em "Assumir".
     const { data: existingConv } = await admin
       .from("conversations")
       .select("id")
@@ -453,32 +448,59 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: sender } = await admin
-      .from("whatsapp_instances")
-      .select("server_url,instance_token,status,is_connected")
-      .eq("tenant_id", lead.tenant_id)
-      .or("is_connected.eq.true,status.eq.connected")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+    // ===== In-app fan-out =====
+    await fanoutAppNotifications(admin, {
+      tenantId: lead.tenant_id,
+      leadId: lead.id,
+      leadName: lead.name || "(sem nome)",
+      creditValue,
+      consultantMemberId: chosen.id,
+      consultantName: chosen.display_name || "Consultor",
+      consultantEmail: chosen.email,
+      consultantNotifyInapp: chosen.notify_inapp !== false,
+    });
 
+    // ===== WhatsApp =====
     const text = buildLeadNotice(lead, creditValue);
-
     let delivered = false;
-    if (sender?.server_url && sender?.instance_token) {
-      try {
-        await randomSendDelay();
-        const r = await fetch(`${sender.server_url}/send/text`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", token: sender.instance_token! },
-          body: JSON.stringify({ number: chosenPhone, text }),
-        });
-        delivered = r.ok;
-      } catch (e) {
-        console.error("whatsapp send error", e);
-      }
+    let waStatus: "sent" | "failed" | "skipped" = "skipped";
+    let waError: string | null = null;
+
+    if (chosen.notify_whatsapp === false) {
+      waStatus = "skipped";
+      waError = "consultant has notify_whatsapp disabled";
+    } else if (!chosenPhone) {
+      waStatus = "failed";
+      waError = "invalid phone";
     } else {
-      console.warn("no connected whatsapp instance — lead assigned without notification");
+      const { data: sender } = await admin
+        .from("whatsapp_instances")
+        .select("server_url,instance_token,status,is_connected")
+        .eq("tenant_id", lead.tenant_id)
+        .or("is_connected.eq.true,status.eq.connected")
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (sender?.server_url && sender?.instance_token) {
+        try {
+          await randomSendDelay();
+          const r = await fetch(`${sender.server_url}/send/text`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", token: sender.instance_token! },
+            body: JSON.stringify({ number: chosenPhone, text }),
+          });
+          delivered = r.ok;
+          waStatus = r.ok ? "sent" : "failed";
+          if (!r.ok) waError = `http ${r.status}`;
+        } catch (e) {
+          console.error("whatsapp send error", e);
+          waStatus = "failed";
+          waError = String(e);
+        }
+      } else {
+        waStatus = "failed";
+        waError = "no connected whatsapp instance";
+      }
     }
 
     await admin.from("lead_notifications").insert({
@@ -490,11 +512,15 @@ Deno.serve(async (req) => {
       message_sent: text,
       delivered,
     });
+    await admin.from("whatsapp_notification_log").insert({
+      tenant_id: lead.tenant_id, consultant_member_id: chosen.id, lead_id: lead.id,
+      status: waStatus, error_message: waError,
+    });
 
     return json({
       ok: true,
       credit_value: creditValue,
-      assigned_to: { id: chosen.id, name: chosen.display_name, delivered },
+      assigned_to: { id: chosen.id, name: chosen.display_name, delivered, wa_status: waStatus },
     });
   } catch (e) {
     console.error(e);
