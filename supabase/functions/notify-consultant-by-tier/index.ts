@@ -195,30 +195,17 @@ Deno.serve(async (req) => {
 
 
 
-    const { data: tierRow } = await admin
-      .from("tenant_members")
-      .select("max_credit_value")
-      .eq("tenant_id", lead.tenant_id)
-      .eq("is_active", true)
-      .eq("receives_leads", true)
-      .not("max_credit_value", "is", null)
-      .gte("max_credit_value", creditValue)
-      .order("max_credit_value", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    if (!tierRow?.max_credit_value) {
-      return json({ ok: true, skipped: "no tier covers this value" });
-    }
-
+    // Busca todos os consultores que cobrem a faixa do lead.
+    // Regra: (min IS NULL OR creditValue >= min) AND (max IS NULL OR creditValue <= max).
     const { data: consultantsRaw } = await admin
       .from("tenant_members")
-      .select("id, display_name, phone, max_credit_value, role_label, daily_lead_limit")
+      .select("id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit")
       .eq("tenant_id", lead.tenant_id)
       .eq("is_active", true)
       .eq("receives_leads", true)
-      .eq("max_credit_value", tierRow.max_credit_value)
-      .not("phone", "is", null);
+      .not("phone", "is", null)
+      .or(`min_credit_value.is.null,min_credit_value.lte.${creditValue}`)
+      .or(`max_credit_value.is.null,max_credit_value.gte.${creditValue}`);
 
     // Somente Consultores recebem leads. Exclui Vendedor, Supervisor, Dono,
     // Menor Aprendiz e contas com "teste" no nome.
