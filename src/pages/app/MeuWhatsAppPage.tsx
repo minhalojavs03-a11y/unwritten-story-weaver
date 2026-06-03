@@ -155,7 +155,11 @@ export default function MeuWhatsAppPage() {
       setConfirmExtra(false);
       toast({ title: "WhatsApp criado", description: "Escaneie o QR para conectar." });
     } catch (e: any) {
-      if (e?.code === "extra_confirmation_required") {
+      if (e?.body?.limit_exceeded) {
+        setLimitExceeded(true);
+        setShowCreate(false);
+        toast({ title: "Limite atingido", description: "Entre em contato com o desenvolvedor.", variant: "destructive" });
+      } else if (e?.code === "extra_confirmation_required") {
         setConfirmExtra(true);
         toast({ title: "Atenção", description: e.message, variant: "destructive" });
       } else {
