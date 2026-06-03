@@ -1620,6 +1620,7 @@ export type Database = {
         Row: {
           column_mapping: Json
           created_at: string
+          distribution_tenant_ids: string[]
           header_row: number
           id: string
           is_active: boolean
@@ -1637,6 +1638,7 @@ export type Database = {
         Insert: {
           column_mapping?: Json
           created_at?: string
+          distribution_tenant_ids?: string[]
           header_row?: number
           id?: string
           is_active?: boolean
@@ -1654,6 +1656,7 @@ export type Database = {
         Update: {
           column_mapping?: Json
           created_at?: string
+          distribution_tenant_ids?: string[]
           header_row?: number
           id?: string
           is_active?: boolean
