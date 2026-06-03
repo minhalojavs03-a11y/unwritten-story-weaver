@@ -432,6 +432,7 @@ export default function DistribuicaoLeadsPage() {
                     </div>
                   </div>
 
+                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-2 text-xs">
                     <Badge variant={receives ? "default" : "secondary"} className="font-normal">
                       {receives ? "Ativo" : "Pausado"}
                     </Badge>
