@@ -19,6 +19,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ShieldAlert, Users2, Info, ChevronDown, ChevronUp, Bell } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+
+const CREDIT_MIN = 300_000;
+const CREDIT_MAX = 2_000_000;
+const CREDIT_STEP = 50_000;
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
 
@@ -324,7 +329,7 @@ export default function DistribuicaoLeadsPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-[auto_160px_160px_120px] md:items-end">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-[auto_1fr_120px] md:items-end">
                       <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background p-2 md:flex-col md:items-start md:border-0 md:bg-transparent md:p-0">
                         <Label className="text-xs text-muted-foreground">Recebe leads</Label>
                         <Switch
@@ -333,46 +338,42 @@ export default function DistribuicaoLeadsPage() {
                         />
                       </div>
 
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Valor mínimo (R$)</Label>
-                        <Input
-                          inputMode="numeric"
-                          placeholder="Sem mínimo"
-                          value={formatBRLInput(minV)}
-                          onChange={(e) =>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs text-muted-foreground">Faixa de carta de crédito</Label>
+                          <span className="text-xs font-medium text-foreground">
+                            {formatCurrency(Number(minV ?? CREDIT_MIN))} — {formatCurrency(Number(maxV ?? CREDIT_MAX))}
+                          </span>
+                        </div>
+                        <Slider
+                          min={CREDIT_MIN}
+                          max={CREDIT_MAX}
+                          step={CREDIT_STEP}
+                          value={[
+                            Math.max(CREDIT_MIN, Math.min(CREDIT_MAX, Number(minV ?? CREDIT_MIN))),
+                            Math.max(CREDIT_MIN, Math.min(CREDIT_MAX, Number(maxV ?? CREDIT_MAX))),
+                          ]}
+                          onValueChange={(vals) => {
+                            const [lo, hi] = vals;
                             setLocal((s) => ({
                               ...s,
-                              [r.id]: { ...s[r.id], min_credit_value: parseBRL(e.target.value) },
-                            }))
-                          }
-                          onBlur={() => {
-                            if ((local[r.id]?.min_credit_value ?? null) !== r.min_credit_value) {
-                              saveDistribution(r, {}, "Valor mínimo da carta");
-                            }
+                              [r.id]: { ...s[r.id], min_credit_value: lo, max_credit_value: hi },
+                            }));
                           }}
-                          className="h-9"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Valor máximo (R$)</Label>
-                        <Input
-                          inputMode="numeric"
-                          placeholder="Sem máximo"
-                          value={formatBRLInput(maxV)}
-                          onChange={(e) =>
-                            setLocal((s) => ({
-                              ...s,
-                              [r.id]: { ...s[r.id], max_credit_value: parseBRL(e.target.value) },
-                            }))
-                          }
-                          onBlur={() => {
-                            if ((local[r.id]?.max_credit_value ?? null) !== r.max_credit_value) {
-                              saveDistribution(r, {}, "Valor máximo da carta");
-                            }
+                          onValueCommit={(vals) => {
+                            const [lo, hi] = vals;
+                            saveDistribution(
+                              r,
+                              { min_credit_value: lo, max_credit_value: hi },
+                              "Faixa de carta",
+                            );
                           }}
-                          className="h-9"
+                          className="py-2"
                         />
+                        <div className="flex justify-between text-[10px] text-muted-foreground">
+                          <span>{formatCurrency(CREDIT_MIN)}</span>
+                          <span>{formatCurrency(CREDIT_MAX)}</span>
+                        </div>
                       </div>
 
                       <div className="space-y-1">
