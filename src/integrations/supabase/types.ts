@@ -995,6 +995,7 @@ export type Database = {
           id: string
           imported_from_sheet: boolean
           interest: string | null
+          kind: string
           last_contact_at: string | null
           last_interaction_at: string | null
           last_message_at: string | null
@@ -1030,6 +1031,7 @@ export type Database = {
           id?: string
           imported_from_sheet?: boolean
           interest?: string | null
+          kind?: string
           last_contact_at?: string | null
           last_interaction_at?: string | null
           last_message_at?: string | null
@@ -1065,6 +1067,7 @@ export type Database = {
           id?: string
           imported_from_sheet?: boolean
           interest?: string | null
+          kind?: string
           last_contact_at?: string | null
           last_interaction_at?: string | null
           last_message_at?: string | null
@@ -2138,6 +2141,10 @@ export type Database = {
         Args: { _username: string }
         Returns: boolean
       }
+      classify_lead_kind: {
+        Args: { _phone: string; _tenant: string }
+        Returns: string
+      }
       complete_onboarding: {
         Args: { _display_name: string; _pin: string; _username: string }
         Returns: undefined
@@ -2235,6 +2242,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_lead_source: {
+        Args: { _imported_from_sheet: boolean; _source: string }
+        Returns: boolean
+      }
       is_tenant_member: {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean
@@ -2250,6 +2261,8 @@ export type Database = {
           username: string
         }[]
       }
+      normalize_phone: { Args: { _phone: string }; Returns: string }
+      reclassify_leads: { Args: { _tenant?: string }; Returns: number }
       regenerate_role_invite: { Args: { _id: string }; Returns: string }
       release_lead: { Args: { _lead_id: string }; Returns: undefined }
       set_ai_pre_attendance: {
