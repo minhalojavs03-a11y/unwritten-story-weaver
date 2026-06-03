@@ -10,7 +10,7 @@ import { PageHeader } from "./PageHeader";
 import { useDashboardMetrics, useLeads, useAppointments } from "@/hooks/useData";
 import { useMyProfile } from "@/hooks/useProfile";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 import { LeadsHourlyPanel } from "@/components/dashboard/LeadsHourlyPanel";
 import { useReportData } from "@/hooks/useReportData";
 import { HealthScore, InsightsPanel, PipelineIntel, WeeklyActivity, ResponseHeatmap } from "@/components/dashboard/ExecutiveWidgets";
@@ -21,11 +21,8 @@ import { DashboardScopeFilter, type DashboardScope } from "@/components/dashboar
 export default function DashboardPage() {
   const { data: profile } = useMyProfile();
   const { member } = useActiveMember();
-  const { roles, isSuperadmin } = useAuth();
-  const roleValue = `${member?.role_label ?? ""} ${member?.username ?? ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const privileged = member
-    ? /(dono|owner|proprietario|supervisor)/.test(roleValue)
-    : /(dono|owner|proprietario|supervisor)/.test(roleValue) || (roles ?? []).some((r: string) => ["owner", "supervisor", "superadmin"].includes(r));
+  const { isSuperadmin, isOwner, isSupervisor } = useEffectiveRole();
+  const privileged = isSuperadmin || isOwner || isSupervisor;
   const consultantScopeMemberId = !privileged ? (member?.id ?? null) : null;
 
   // Filtros do painel — apenas owner/supervisor/superadmin podem trocar.
