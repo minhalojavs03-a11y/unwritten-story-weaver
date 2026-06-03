@@ -22,11 +22,11 @@ export function ProtectedRoute({
   denyConsultant = false,
 }: Props) {
   const { session, loading } = useAuth();
-  const { isSuperadmin, isOwner, isSupervisor } = useEffectiveRole();
+  const { isSuperadmin, isOwner, isSupervisor, isRoleLoading } = useEffectiveRole();
   const { can } = usePermissions();
   const location = useLocation();
 
-  if (loading) {
+  if (loading || isRoleLoading) {
     return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Carregando…</div>;
   }
   if (!session) {

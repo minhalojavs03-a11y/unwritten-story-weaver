@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
+import { useSupportImpersonation } from "@/hooks/useSupportImpersonation";
 
 /**
  * Permissão efetiva considerando o membro interno ativo.
@@ -16,29 +17,36 @@ import { useActiveMember } from "@/contexts/ActiveMemberContext";
 export function useEffectiveRole() {
   const { isOwner, isSuperadmin, roles } = useAuth();
   const { member } = useActiveMember();
+  const { isImpersonating, role: supportRole, isLoadingRole } = useSupportImpersonation();
 
   const label = (member?.role_label ?? "").toLowerCase().trim();
   const memberIsOwner = !member || label === "dono" || label === "owner" || label === "proprietário" || label === "proprietario";
   const memberIsSupervisor = label === "supervisor" || label === "gerente" || label === "gestor";
   const memberIsConsultant = !!member && !memberIsOwner && !memberIsSupervisor;
 
-  const hasSupervisorRole = (roles ?? []).includes("supervisor" as never);
+  const authIsSuperadmin = isSuperadmin && !isImpersonating;
+  const authIsOwner = isOwner && !isImpersonating;
+  const supportIsOwner = isImpersonating && supportRole === "owner";
+  const supportIsSupervisor = isImpersonating && supportRole === "supervisor";
+  const hasSupervisorRole = !isImpersonating && (roles ?? []).includes("supervisor" as never);
 
-  const effectiveIsOwner = isSuperadmin || (isOwner && memberIsOwner);
+  const effectiveIsOwner = authIsSuperadmin || supportIsOwner || (authIsOwner && memberIsOwner);
 
   // Supervisor é true quando:
   //  - não é owner efetivo, E
   //  - o membro ativo tem label de supervisão, OU
   //  - não há membro ativo (ou membro é genérico) e o role de auth é supervisor.
   const effectiveIsSupervisor = !effectiveIsOwner && (
+    supportIsSupervisor ||
     memberIsSupervisor ||
     (!memberIsConsultant && hasSupervisorRole)
   );
 
   return {
-    isSuperadmin,
+    isSuperadmin: authIsSuperadmin,
     isOwner: effectiveIsOwner,
     isSupervisor: effectiveIsSupervisor,
     activeMember: member,
+    isRoleLoading: isImpersonating && isLoadingRole && !supportRole,
   };
 }
