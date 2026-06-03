@@ -135,7 +135,13 @@ export default function DashboardPage() {
       </div>
       <div className="space-y-4 px-4 pb-6 md:space-y-5 md:px-8 md:pb-8">
 
-
+        {privileged && (
+          <DashboardScopeFilter
+            scope={scope}
+            onChange={setScope}
+            showTenantSelector={isSuperadmin}
+          />
+        )}
 
         <section className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
           <StatCard to="/clientes" icon={Users} label="Leads Hoje" value={m?.leadsToday ?? 0} iconColor="bg-emerald-500/10 text-emerald-600" />
@@ -153,7 +159,8 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <LeadsHourlyPanel days={30} />
+        <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
+
 
         {privileged && (
           <section className="space-y-4 md:space-y-5">
