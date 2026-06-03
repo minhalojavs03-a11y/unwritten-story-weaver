@@ -121,11 +121,11 @@ export default function FilaLeadsPage() {
   const [transferFor, setTransferFor] = useState<Lead | null>(null);
   const [transferMessage, setTransferMessage] = useState("");
   const [transferBusy, setTransferBusy] = useState(false);
-  const [activeTab, setActiveTab] = useState<"disponiveis" | "meus">(canSendToOthers ? "disponiveis" : "meus");
+  const [activeTab, setActiveTab] = useState<"disponiveis" | "meus">("meus");
 
   useEffect(() => {
-    if (!canSendToOthers && activeTab !== "meus") setActiveTab("meus");
-  }, [canSendToOthers, activeTab]);
+    if (activeTab !== "meus") setActiveTab("meus");
+  }, [activeTab]);
 
   // Busca server-side em todos os estágios quando o usuário digita
   useEffect(() => {
@@ -135,7 +135,7 @@ export default function FilaLeadsPage() {
       setSearching(false);
       return;
     }
-    if (!canSendToOthers && !activeMember?.id) return;
+    if (!activeMember?.id && !user?.id) return;
     setSearching(true);
     const handle = setTimeout(async () => {
       const digits = q.replace(/\D/g, "");
@@ -144,9 +144,12 @@ export default function FilaLeadsPage() {
         .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id,tenant_id")
         .in("source", ["meta_ads", "importacao_planilha"])
         .limit(50);
-      // Superadmin pesquisa em todos os tenants.
       if (!isSuperadmin) query = query.eq("tenant_id", tenantId);
-      if (!canSendToOthers) query = query.eq("assigned_member_id", activeMember!.id);
+      if (activeMember?.id) {
+        query = query.eq("assigned_member_id", activeMember.id);
+      } else {
+        query = query.eq("assigned_to", user!.id);
+      }
       const orParts = [
         `name.ilike.%${q}%`,
         `email.ilike.%${q}%`,
@@ -225,15 +228,15 @@ export default function FilaLeadsPage() {
     return [...leads, ...extraLeads.filter((l) => !ids.has(l.id))];
   })();
   const myLeads = mergedLeads.filter(isLeadMine);
-  const availableLeads = canSendToOthers ? mergedLeads.filter((l) => !isLeadMine(l)) : [];
-  const sourceLeads = activeTab === "meus" ? myLeads : availableLeads;
+  const availableLeads: Lead[] = [];
+  const sourceLeads = myLeads;
   const filteredLeads = sourceLeads.filter(searchMatch);
 
 
 
   async function load() {
     if (!tenantId && !isSuperadmin) return;
-    if (!canSendToOthers && !activeMember?.id) {
+    if (!activeMember?.id && !user?.id) {
       setLeads([]);
       setAssigneeNames({});
       setNotifiedByLead({});
@@ -246,9 +249,13 @@ export default function FilaLeadsPage() {
       .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id,tenant_id")
       .not("stage", "in", "(perdido,comprou,historico)")
       .in("source", ["meta_ads", "importacao_planilha"]);
-    // Superadmin vê leads importados de todos os tenants.
     if (!isSuperadmin) query = query.eq("tenant_id", tenantId!);
-    if (!canSendToOthers) query = query.eq("assigned_member_id", activeMember!.id);
+    // Sempre mostrar apenas leads atribuídos ao consultor ativo.
+    if (activeMember?.id) {
+      query = query.eq("assigned_member_id", activeMember.id);
+    } else {
+      query = query.eq("assigned_to", user!.id);
+    }
     const { data, error } = await query.order("created_at", { ascending: false }).limit(200);
     if (error) toast.error(error.message);
     const rows = (data as any) || [];
@@ -583,42 +590,7 @@ export default function FilaLeadsPage() {
       />
 
       <div className="space-y-4 p-4 pb-24 md:p-8 md:pb-8">
-        {!loading && canSendToOthers && (
-          <div className="flex items-center gap-2 rounded-full border border-border/60 bg-card p-1 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setActiveTab("disponiveis")}
-              className={`flex-1 rounded-full px-3 py-2 text-xs font-semibold transition md:text-sm ${
-                activeTab === "disponiveis"
-                  ? "bg-primary text-primary-foreground shadow-[0_6px_18px_-10px_hsl(var(--primary)/0.6)]"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Disponíveis
-              <span className={`ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                activeTab === "disponiveis" ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"
-              }`}>
-                {availableLeads.length}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("meus")}
-              className={`flex-1 rounded-full px-3 py-2 text-xs font-semibold transition md:text-sm ${
-                activeTab === "meus"
-                  ? "bg-primary text-primary-foreground shadow-[0_6px_18px_-10px_hsl(var(--primary)/0.6)]"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Meus assumidos
-              <span className={`ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                activeTab === "meus" ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"
-              }`}>
-                {myLeads.length}
-              </span>
-            </button>
-          </div>
-        )}
+        {/* Aba única: apenas leads atribuídos ao consultor ativo */}
 
         {!loading && (sourceLeads.length > 0 || search) && (
           <div className="relative">
