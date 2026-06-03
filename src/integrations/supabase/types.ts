@@ -2335,6 +2335,27 @@ export type Database = {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean
       }
+      list_distribution_consultants: {
+        Args: { _tenant_id: string }
+        Returns: {
+          avatar_color: string
+          avatar_url: string
+          daily_lead_limit: number
+          display_name: string
+          id: string
+          is_active: boolean
+          max_credit_value: number
+          min_credit_value: number
+          notify_inapp: boolean
+          notify_whatsapp: boolean
+          phone: string
+          receives_leads: boolean
+          role_label: string
+          tenant_id: string
+          user_id: string
+          username: string
+        }[]
+      }
       list_tenant_members_public: {
         Args: { _tenant_id: string }
         Returns: {
