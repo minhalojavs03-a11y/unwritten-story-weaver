@@ -2355,6 +2355,7 @@ export type Database = {
         Args: { _tenant_id: string; _user_id: string }
         Returns: string
       }
+      ensure_owner_member: { Args: { _tenant_id: string }; Returns: string }
       ensure_tenant_role_invites: { Args: never; Returns: undefined }
       gamification_executive_overview: {
         Args: { _tenant_id: string }
