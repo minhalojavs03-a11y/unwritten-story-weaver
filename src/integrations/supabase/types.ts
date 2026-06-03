@@ -1807,6 +1807,7 @@ export type Database = {
           role_label: string | null
           tenant_id: string
           updated_at: string
+          user_id: string | null
           username: string
         }
         Insert: {
@@ -1834,6 +1835,7 @@ export type Database = {
           role_label?: string | null
           tenant_id: string
           updated_at?: string
+          user_id?: string | null
           username: string
         }
         Update: {
@@ -1861,6 +1863,7 @@ export type Database = {
           role_label?: string | null
           tenant_id?: string
           updated_at?: string
+          user_id?: string | null
           username?: string
         }
         Relationships: []
@@ -2232,6 +2235,10 @@ export type Database = {
         Returns: string
       }
       current_tenant_id: { Args: never; Returns: string }
+      ensure_distribution_member: {
+        Args: { _tenant_id: string; _user_id: string }
+        Returns: string
+      }
       ensure_tenant_role_invites: { Args: never; Returns: undefined }
       gamification_executive_overview: {
         Args: { _tenant_id: string }
