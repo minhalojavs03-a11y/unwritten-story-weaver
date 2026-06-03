@@ -107,10 +107,14 @@ async function callAI(systemPrompt: string, userPrompt: string): Promise<any> {
 async function analyzeOne(admin: any, m: { id: string; conversation_id: string }) {
   try {
     const { data: msg } = await admin.from("messages")
-      .select("id, tenant_id, conversation_id, lead_id, body, content, direction, sent_by, created_at, message_type")
+      .select("id, tenant_id, conversation_id, lead_id, body, content, direction, sent_by, created_at, message_type, metadata")
       .eq("id", m.id).maybeSingle();
     if (!msg) return { skipped: 1 };
-    if (msg.direction !== "outbound" || !msg.sent_by) {
+    // Aceita outbound do CRM (sent_by != null) E também outbound vinda do
+    // próprio WhatsApp do consultor (fromMe, sem sent_by) — desde que o lead
+    // tenha consultor atribuído. Ignora mensagens da IA.
+    const isAi = !!(msg.metadata && (msg.metadata as any).ai === true);
+    if (msg.direction !== "outbound" || isAi) {
       const result = { skipped: 1 };
       await markAnalyzed(admin, msg, result);
       return result;
@@ -127,6 +131,11 @@ async function analyzeOne(admin: any, m: { id: string; conversation_id: string }
       .select("id, name, assigned_member_id")
       .eq("id", msg.lead_id ?? "").maybeSingle();
     const memberId = lead?.assigned_member_id ?? msg.sent_by;
+    if (!memberId) {
+      const result = { skipped: 1 };
+      await markAnalyzed(admin, msg, result);
+      return result;
+    }
 
     const { data: prevInbound } = await admin.from("messages")
       .select("id, body, content, created_at")
@@ -216,7 +225,7 @@ async function runForTenant(admin: any, tenantId: string, days: number, limit: n
     .select("id, conversation_id")
     .eq("tenant_id", tenantId)
     .eq("direction", "outbound")
-    .not("sent_by", "is", null)
+    .not("lead_id", "is", null)
     .not("conversation_id", "is", null)
     .gte("created_at", since)
     .order("created_at", { ascending: false })
@@ -300,7 +309,7 @@ Deno.serve(async (req: Request) => {
       .select("id, conversation_id")
       .eq("tenant_id", tenantId)
       .eq("direction", "outbound")
-      .not("sent_by", "is", null)
+      .not("lead_id", "is", null)
       .not("conversation_id", "is", null)
       .gte("created_at", since)
       .order("created_at", { ascending: false })

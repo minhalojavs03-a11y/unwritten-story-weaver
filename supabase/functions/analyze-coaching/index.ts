@@ -120,11 +120,12 @@ Deno.serve(async (req: Request) => {
     ]);
     if (already || alreadyClean) return json({ skipped: "already_analyzed" });
 
-    // Mensagem do consultor
+    // Mensagem do consultor (CRM ou WhatsApp nativo "fromMe")
     const { data: msg } = await admin.from("messages")
-      .select("id, tenant_id, conversation_id, lead_id, body, content, direction, sent_by, created_at, message_type")
+      .select("id, tenant_id, conversation_id, lead_id, body, content, direction, sent_by, created_at, message_type, metadata")
       .eq("id", message_id).maybeSingle();
-    if (!msg || msg.direction !== "outbound" || !msg.sent_by) {
+    const isAi = !!(msg?.metadata && (msg.metadata as any).ai === true);
+    if (!msg || msg.direction !== "outbound" || isAi) {
       if (msg) await markAnalyzed(admin, msg, { skipped: 1 });
       return json({ skipped: "not_human_outbound" });
     }
@@ -135,11 +136,15 @@ Deno.serve(async (req: Request) => {
       return json({ skipped: "empty" });
     }
 
-    // Lead e consultor
+    // Lead e consultor — exige lead atribuído para conseguir atribuir o insight a alguém
     const { data: lead } = await admin.from("leads")
       .select("id, name, assigned_member_id, stage, credit_value")
       .eq("id", msg.lead_id ?? "").maybeSingle();
     const memberId = lead?.assigned_member_id ?? msg.sent_by;
+    if (!memberId) {
+      await markAnalyzed(admin, msg, { skipped: 1 });
+      return json({ skipped: "no_member" });
+    }
 
     // Última mensagem inbound antes desta
     const { data: prevInbound } = await admin.from("messages")
