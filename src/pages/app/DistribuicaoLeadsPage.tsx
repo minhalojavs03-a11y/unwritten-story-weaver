@@ -123,8 +123,9 @@ export default function DistribuicaoLeadsPage() {
   const canAccess = isSuperadmin || isOwner;
   const effectiveTenant = authTenantId;
 
+  const distQueryKey = ["lead-distribution-members", isSuperadmin ? "ALL" : effectiveTenant] as const;
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["lead-distribution-members", isSuperadmin ? "ALL" : effectiveTenant],
+    queryKey: distQueryKey,
     enabled: canAccess && (isSuperadmin || !!effectiveTenant),
     queryFn: async (): Promise<Row[]> => {
       const { data, error } = await supabase.rpc("list_distribution_consultants" as any, {
@@ -234,7 +235,16 @@ export default function DistribuicaoLeadsPage() {
       return;
     }
     toast.success(`${label} atualizado`);
-    qc.invalidateQueries({ queryKey: ["lead-distribution-members", effectiveTenant] });
+    // Atualiza imediatamente o cache para refletir o estado salvo (id pode ter sido criado agora).
+    qc.setQueryData<Row[]>(distQueryKey, (prev) =>
+      (prev ?? []).map((row) =>
+        rowKey(row) === k
+          ? { ...row, ...patch, id: memberId, receives_leads: !!next.receives_leads, min_credit_value: minV, max_credit_value: maxV, daily_lead_limit: next.daily_lead_limit ?? null }
+          : row,
+      ),
+    );
+    setLocal((s) => { const c = { ...s }; delete c[k]; return c; });
+    qc.invalidateQueries({ queryKey: distQueryKey });
     qc.invalidateQueries({ queryKey: ["tenant-members", effectiveTenant] });
   }
 
@@ -255,8 +265,16 @@ export default function DistribuicaoLeadsPage() {
       return;
     }
     toast.success(`${label} atualizado`);
-    qc.invalidateQueries({ queryKey: ["lead-distribution-members", effectiveTenant] });
+    qc.setQueryData<Row[]>(distQueryKey, (prev) =>
+      (prev ?? []).map((row) =>
+        rowKey(row) === k ? { ...row, ...patch, id: memberId } : row,
+      ),
+    );
+    setLocal((s) => { const c = { ...s }; delete c[k]; return c; });
+    qc.invalidateQueries({ queryKey: distQueryKey });
   }
+
+
 
 
   if (!canAccess) {
