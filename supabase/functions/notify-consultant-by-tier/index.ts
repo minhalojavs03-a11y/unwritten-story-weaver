@@ -168,17 +168,7 @@ Deno.serve(async (req) => {
         .or("is_connected.eq.true,status.eq.connected")
         .order("created_at", { ascending: true }).limit(1).maybeSingle();
 
-      const text = [
-        `🟢 *Novo lead atribuído a você!*`, ``,
-        `*Nome:* ${lead.name || "(sem nome)"}`,
-        `*Valor da carta:* ${brl(_creditValue)}`,
-        lead.asset_type ? `*Bem:* ${lead.asset_type}` : null,
-        lead.interest ? `*Interesse:* ${lead.interest}` : null,
-        lead.source ? `*Origem:* ${lead.source}` : null, ``,
-        `🔒 Esse lead já está travado no seu nome — *ninguém mais consegue pegar*.`, ``,
-        `👉 Acesse o CRM para retomar o atendimento.`, ``,
-        `_Equipe FeraCon 🦁_`,
-      ].filter(Boolean).join("\n");
+      const text = buildLeadNotice(lead, _creditValue);
 
       let delivered = false;
       if (sender?.server_url && sender?.instance_token) {
@@ -360,23 +350,7 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    const text = [
-      `🟢 *Novo lead atribuído a você!*`,
-      ``,
-      `*Nome:* ${lead.name || "(sem nome)"}`,
-      `*Valor da carta:* ${brl(creditValue)}`,
-      lead.asset_type ? `*Bem:* ${lead.asset_type}` : null,
-      lead.interest ? `*Interesse:* ${lead.interest}` : null,
-      lead.source ? `*Origem:* ${lead.source}` : null,
-      ``,
-      `🔒 Esse lead já está travado no seu nome — *ninguém mais consegue pegar*. Você não precisa correr.`,
-      ``,
-      `👉 Acesse o CRM para retomar o atendimento.`,
-      ``,
-      `🤖 A nossa IA vai iniciar o *pré-atendimento* automaticamente, aquecer o lead e levantar o interesse. Assim que ela concluir, ou se o lead ficar parado por muito tempo, você recebe um novo aviso pra entrar em ação.`,
-      ``,
-      `_Equipe FeraCon 🦁_`,
-    ].filter(Boolean).join("\n");
+    const text = buildLeadNotice(lead, creditValue);
 
     let delivered = false;
     if (sender?.server_url && sender?.instance_token) {
