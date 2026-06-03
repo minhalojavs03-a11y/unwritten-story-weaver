@@ -21,15 +21,33 @@ import { DashboardScopeFilter, type DashboardScope } from "@/components/dashboar
 export default function DashboardPage() {
   const { data: profile } = useMyProfile();
   const { member } = useActiveMember();
-  const { roles } = useAuth();
+  const { roles, isSuperadmin } = useAuth();
   const roleValue = `${member?.role_label ?? ""} ${member?.username ?? ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const privileged = member
     ? /(dono|owner|proprietario|supervisor)/.test(roleValue)
     : /(dono|owner|proprietario|supervisor)/.test(roleValue) || (roles ?? []).some((r: string) => ["owner", "supervisor", "superadmin"].includes(r));
-  const scopeMemberId = !privileged ? (member?.id ?? null) : null;
-  const { data: m } = useDashboardMetrics(scopeMemberId);
-  const { data: allLeads = [] } = useLeads();
-  const leads = scopeMemberId ? allLeads.filter((l) => l.assigned_member_id === scopeMemberId) : allLeads;
+  const consultantScopeMemberId = !privileged ? (member?.id ?? null) : null;
+
+  // Filtros do painel — apenas owner/supervisor/superadmin podem trocar.
+  // Superadmin vê seletor de tenant; owner/supervisor só de consultor (dentro do próprio tenant).
+  const [scope, setScope] = useState<DashboardScope>({ tenantId: null, memberId: null });
+  // Para consultor comum, o escopo é fixo nele mesmo.
+  const effectiveMemberId = consultantScopeMemberId ?? scope.memberId;
+  // tenantId: undefined = padrão (auth tenant ou global p/ superadmin); null = global; string = tenant
+  const effectiveTenantOverride: string | null | undefined = isSuperadmin
+    ? scope.tenantId // null = todos os tenants, string = tenant selecionado
+    : undefined;    // owner/supervisor/consultor: usa o auth tenant
+
+  const metricsScope = {
+    tenantId: effectiveTenantOverride,
+    memberId: effectiveMemberId,
+  };
+  const { data: m } = useDashboardMetrics(metricsScope);
+  const leadsOpts = effectiveTenantOverride !== undefined || effectiveMemberId
+    ? { tenantId: effectiveTenantOverride, memberId: effectiveMemberId }
+    : undefined;
+  const { data: allLeads = [] } = useLeads(leadsOpts);
+  const leads = allLeads;
   // Em modo suporte (superadmin trocou de tenant), saúda o nome do cliente
   let impersonationName: string | null = null;
   try {
@@ -43,7 +61,10 @@ export default function DashboardPage() {
         .split(/\s+/)[0] ?? "");
   const today = new Date(); today.setHours(0,0,0,0);
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
-  const { data: todayAppts = [] } = useAppointments(today, tomorrow);
+  const { data: todayAppts = [] } = useAppointments(today, tomorrow, {
+    tenantId: effectiveTenantOverride,
+    memberId: effectiveMemberId,
+  });
 
   const activeLeads = leads.filter((l) => !["comprou","perdido"].includes(l.stage ?? ""));
 
