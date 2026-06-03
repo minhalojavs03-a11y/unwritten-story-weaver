@@ -774,31 +774,66 @@ export function useAllInstances() {
 }
 
 // ============= DASHBOARD METRICS =============
-export function useDashboardMetrics(memberId?: string | null) {
-  const { tenantId } = useAuth();
+// Backwards-compatible: aceita string|null (memberId) ou objeto { tenantId?, memberId? }.
+// tenantId=null força global (superadmin); undefined = padrão (auth tenant ou global p/ superadmin).
+export function useDashboardMetrics(
+  scopeOrMember?: string | null | { tenantId?: string | null; memberId?: string | null },
+) {
+  const { tenantId: authTenantId, isSuperadmin } = useAuth();
+  const scope = typeof scopeOrMember === "object" && scopeOrMember !== null
+    ? scopeOrMember
+    : { memberId: (scopeOrMember as string | null | undefined) ?? null };
+  const overrideTenant = "tenantId" in scope ? scope.tenantId : undefined;
+  const effectiveTenant = overrideTenant === undefined
+    ? (isSuperadmin ? null : authTenantId)
+    : overrideTenant;
+  const globalScope = effectiveTenant === null;
+  const memberId = scope.memberId ?? null;
   const scoped = !!memberId;
+
   return useQuery({
-    queryKey: ["dashboard_metrics", tenantId, memberId ?? "all"],
-    enabled: !!tenantId,
+    queryKey: ["dashboard_metrics", globalScope ? "__all__" : effectiveTenant, memberId ?? "all"],
+    enabled: globalScope || !!effectiveTenant,
     queryFn: async () => {
       const today = new Date(); today.setHours(0,0,0,0);
       const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
 
+      const applyTenant = <T extends { eq: (col: string, v: string) => T }>(q: T) =>
+        globalScope ? q : q.eq("tenant_id", effectiveTenant!);
+
       const leadsBase = () => {
-        let q = supabase.from("leads").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId!).eq("kind", "lead");
+        let q = supabase.from("leads").select("id", { count: "exact", head: true }).eq("kind", "lead");
+        q = applyTenant(q);
         if (scoped) q = q.eq("assigned_member_id", memberId!);
         return q;
       };
 
       const convBase = () => {
         if (scoped) {
-          return supabase
+          // Filtra por kind='lead' no inner join para nunca contar "outros".
+          let q = supabase
             .from("conversations")
-            .select("id, lead:leads!inner(assigned_member_id)", { count: "exact", head: true })
-            .eq("tenant_id", tenantId!)
-            .eq("lead.assigned_member_id", memberId!);
+            .select("id, lead:leads!inner(assigned_member_id, kind)", { count: "exact", head: true })
+            .eq("lead.assigned_member_id", memberId!)
+            .eq("lead.kind", "lead");
+          q = applyTenant(q);
+          return q;
         }
-        return supabase.from("conversations").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId!);
+        let q = supabase
+          .from("conversations")
+          .select("id, lead:leads!inner(kind)", { count: "exact", head: true })
+          .eq("lead.kind", "lead");
+        q = applyTenant(q);
+        return q;
+      };
+
+      const apptBase = () => {
+        let q = supabase.from("appointments").select("id", { count: "exact", head: true })
+          .gte("scheduled_at", today.toISOString())
+          .lt("scheduled_at", tomorrow.toISOString());
+        q = applyTenant(q);
+        if (scoped) q = q.eq("consultant_member_id", memberId!);
+        return q;
       };
 
       const [leadsToday, activeConv, appts, hot, awaiting] = await Promise.all([
@@ -806,9 +841,7 @@ export function useDashboardMetrics(memberId?: string | null) {
           ? leadsBase().gte("assigned_member_at", today.toISOString()).neq("stage", "historico")
           : leadsBase().gte("created_at", today.toISOString()).neq("stage", "historico"),
         convBase().eq("status", "open"),
-        scoped
-          ? supabase.from("appointments").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId!).eq("consultant_member_id", memberId!).gte("scheduled_at", today.toISOString()).lt("scheduled_at", tomorrow.toISOString())
-          : supabase.from("appointments").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId!).gte("scheduled_at", today.toISOString()).lt("scheduled_at", tomorrow.toISOString()),
+        apptBase(),
         leadsBase().eq("temperature", "hot").not("stage", "in", "(comprou,perdido,historico)"),
         convBase().gt("unread_count", 0),
       ]);
