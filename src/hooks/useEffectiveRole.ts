@@ -30,7 +30,7 @@ export function useEffectiveRole() {
   const supportIsSupervisor = isImpersonating && supportRole === "supervisor";
   const hasSupervisorRole = !isImpersonating && (roles ?? []).includes("supervisor" as never);
 
-  const effectiveIsOwner = authIsSuperadmin || supportIsOwner || (authIsOwner && memberIsOwner);
+  const effectiveIsOwner = authIsSuperadmin || supportIsOwner || (authIsOwner && memberIsOwner) || supportIsSupervisor || memberIsSupervisor || (hasSupervisorRole && !memberIsConsultant);
 
   // Supervisor é true quando:
   //  - não é owner efetivo, E
