@@ -271,22 +271,6 @@ export default function DistribuicaoLeadsPage() {
         subtitle="Configure quem recebe leads, a faixa de carta de crédito e o limite diário por consultor."
       />
       <div className="mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6">
-        {isSuperadmin && (
-          <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
-            <Label className="text-xs text-muted-foreground">Tenant</Label>
-            <Select value={scopeTenantId ?? ""} onValueChange={(v) => setScopeTenantId(v || null)}>
-              <SelectTrigger className="h-9 w-[280px]">
-                <SelectValue placeholder="Selecionar tenant" />
-              </SelectTrigger>
-              <SelectContent>
-                {tenants.map((t: any) => (
-                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
         <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
