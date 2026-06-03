@@ -86,6 +86,45 @@ export type Database = {
         }
         Relationships: []
       }
+      app_notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          lead_id: string | null
+          metadata: Json
+          read: boolean
+          recipient_user_id: string
+          tenant_id: string
+          title: string
+          type: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          metadata?: Json
+          read?: boolean
+          recipient_user_id: string
+          tenant_id: string
+          title: string
+          type?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          metadata?: Json
+          read?: boolean
+          recipient_user_id?: string
+          tenant_id?: string
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           attendees: Json
@@ -1760,6 +1799,8 @@ export type Database = {
           monthly_goal: number
           notification_email: boolean
           notification_whatsapp: boolean
+          notify_inapp: boolean
+          notify_whatsapp: boolean
           password_hash: string
           phone: string | null
           receives_leads: boolean
@@ -1785,6 +1826,8 @@ export type Database = {
           monthly_goal?: number
           notification_email?: boolean
           notification_whatsapp?: boolean
+          notify_inapp?: boolean
+          notify_whatsapp?: boolean
           password_hash: string
           phone?: string | null
           receives_leads?: boolean
@@ -1810,6 +1853,8 @@ export type Database = {
           monthly_goal?: number
           notification_email?: boolean
           notification_whatsapp?: boolean
+          notify_inapp?: boolean
+          notify_whatsapp?: boolean
           password_hash?: string
           phone?: string | null
           receives_leads?: boolean
@@ -2053,6 +2098,36 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_notification_log: {
+        Row: {
+          consultant_member_id: string | null
+          error_message: string | null
+          id: string
+          lead_id: string | null
+          sent_at: string
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          consultant_member_id?: string | null
+          error_message?: string | null
+          id?: string
+          lead_id?: string | null
+          sent_at?: string
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          consultant_member_id?: string | null
+          error_message?: string | null
+          id?: string
+          lead_id?: string | null
+          sent_at?: string
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       whatsapp_sellers: {
         Row: {
           created_at: string
@@ -2280,6 +2355,14 @@ export type Database = {
           _member_id: string
           _min_credit_value: number
           _receives_leads: boolean
+        }
+        Returns: undefined
+      }
+      update_member_notification_channels: {
+        Args: {
+          _member_id: string
+          _notify_inapp: boolean
+          _notify_whatsapp: boolean
         }
         Returns: undefined
       }
