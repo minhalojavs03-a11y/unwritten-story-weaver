@@ -116,7 +116,7 @@ export function AppLayout() {
       return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
     }
     if (isSupervisor) {
-      return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, consultores, config];
+      return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, consultores];
     }
     if (isNilton) {
       return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking];
