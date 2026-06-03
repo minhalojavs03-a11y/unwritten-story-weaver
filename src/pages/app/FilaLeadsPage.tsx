@@ -233,7 +233,7 @@ export default function FilaLeadsPage() {
 
   async function load() {
     if (!tenantId && !isSuperadmin) return;
-    if (!canSendToOthers && !activeMember?.id) {
+    if (!activeMember?.id && !user?.id) {
       setLeads([]);
       setAssigneeNames({});
       setNotifiedByLead({});
@@ -246,9 +246,13 @@ export default function FilaLeadsPage() {
       .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id,tenant_id")
       .not("stage", "in", "(perdido,comprou,historico)")
       .in("source", ["meta_ads", "importacao_planilha"]);
-    // Superadmin vê leads importados de todos os tenants.
     if (!isSuperadmin) query = query.eq("tenant_id", tenantId!);
-    if (!canSendToOthers) query = query.eq("assigned_member_id", activeMember!.id);
+    // Sempre mostrar apenas leads atribuídos ao consultor ativo.
+    if (activeMember?.id) {
+      query = query.eq("assigned_member_id", activeMember.id);
+    } else {
+      query = query.eq("assigned_to", user!.id);
+    }
     const { data, error } = await query.order("created_at", { ascending: false }).limit(200);
     if (error) toast.error(error.message);
     const rows = (data as any) || [];
