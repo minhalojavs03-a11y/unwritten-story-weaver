@@ -37,6 +37,26 @@ function brl(n: number | null | undefined) {
   }
 }
 
+function buildLeadNotice(lead: any, creditValue: number | null): string {
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const dd = String(now.getDate()).padStart(2, "0");
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const yyyy = now.getFullYear();
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mi = String(now.getMinutes()).padStart(2, "0");
+  const category = lead.asset_type || lead.opportunity_type || lead.interest || "—";
+  return [
+    `🔔 *Novo lead atribuído a você!*`,
+    ``,
+    `👤 *Nome:* ${lead.name || "(sem nome)"}`,
+    `💰 *Carta contemplada:* ${brl(creditValue)}`,
+    `📋 *Categoria:* ${category}`,
+    `📅 *Recebido em:* ${dd}/${mm}/${yyyy} às ${hh}:${mi}`,
+    ``,
+    `Acesse o sistema para iniciar o atendimento.`,
+  ].join("\n");
+}
+
 function normalizePhone(p: string | null | undefined): string | null {
   if (!p) return null;
   const d = p.replace(/\D/g, "");
