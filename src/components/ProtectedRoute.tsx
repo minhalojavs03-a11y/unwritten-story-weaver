@@ -26,6 +26,21 @@ export function ProtectedRoute({
   const { can } = usePermissions();
   const location = useLocation();
 
+  const supervisorOk = allowSupervisor && can("view_whatsapp");
+  const denied =
+    !!session &&
+    !loading &&
+    !isRoleLoading &&
+    ((requireOwner && !isOwner && !isSuperadmin && !supervisorOk) ||
+      (denyConsultant && !isSuperadmin && !isOwner && !isSupervisor) ||
+      (requireSuperadmin && !isSuperadmin));
+
+  useEffect(() => {
+    if (denied) {
+      toast.error("Você não tem permissão para acessar esta página.");
+    }
+  }, [denied]);
+
   if (loading || isRoleLoading) {
     return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Carregando…</div>;
   }
@@ -35,19 +50,8 @@ export function ProtectedRoute({
   if (requireSuperadmin && !isSuperadmin) {
     return <Navigate to="/admin/login" replace />;
   }
-  const denied =
-    (requireOwner && !isOwner && !isSuperadmin && !(allowSupervisor && can("view_whatsapp"))) ||
-    (denyConsultant && !isSuperadmin && !isOwner && !isSupervisor);
-
-  useEffect(() => {
-    if (denied && session) {
-      toast.error("Você não tem permissão para acessar esta página.");
-    }
-  }, [denied, session]);
-
-  if (requireOwner && !isOwner && !isSuperadmin) {
-    const supervisorOk = allowSupervisor && can("view_whatsapp");
-    if (!supervisorOk) return <Navigate to="/crm" replace />;
+  if (requireOwner && !isOwner && !isSuperadmin && !supervisorOk) {
+    return <Navigate to="/crm" replace />;
   }
   if (denyConsultant && !isSuperadmin && !isOwner && !isSupervisor) {
     return <Navigate to="/crm" replace />;
