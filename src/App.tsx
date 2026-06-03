@@ -99,12 +99,12 @@ const App = () => (
               <Route path="/whatsapp" element={<ProtectedRoute requireOwner allowSupervisor><WhatsAppPage /></ProtectedRoute>} />
               <Route path="/meu-whatsapp" element={<MeuWhatsAppPage />} />
               <Route path="/treinar-ia" element={<ProtectedRoute requireOwner><TreinarIAPage /></ProtectedRoute>} />
-              <Route path="/configuracoes" element={<ProtectedRoute requireOwner><ConfiguracoesPage /></ProtectedRoute>} />
+              <Route path="/configuracoes" element={<ProtectedRoute requireOwner allowSupervisor><ConfiguracoesPage /></ProtectedRoute>} />
               <Route path="/configuracoes/acessos" element={<ProtectedRoute requireOwner><AcessosPage /></ProtectedRoute>} />
               <Route path="/perfil" element={<MyProfilePage />} />
-              <Route path="/equipe" element={<ProtectedRoute requireOwner><EquipePage /></ProtectedRoute>} />
+              <Route path="/equipe" element={<ProtectedRoute requireOwner allowSupervisor><EquipePage /></ProtectedRoute>} />
               <Route path="/consultores" element={<ProtectedRoute denyConsultant><ConsultoresPage /></ProtectedRoute>} />
-              <Route path="/distribuicao" element={<ProtectedRoute requireOwner><DistribuicaoLeadsPage /></ProtectedRoute>} />
+              <Route path="/distribuicao" element={<ProtectedRoute requireOwner allowSupervisor><DistribuicaoLeadsPage /></ProtectedRoute>} />
               <Route path="/mensagens-prontas" element={<MensagensProntasPage />} />
               <Route path="/changelog" element={<ChangelogPage />} />
               <Route path="/ranking" element={<RankingPage />} />
