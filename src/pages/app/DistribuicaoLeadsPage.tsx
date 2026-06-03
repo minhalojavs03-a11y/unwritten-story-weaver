@@ -223,6 +223,23 @@ export default function DistribuicaoLeadsPage() {
     qc.invalidateQueries({ queryKey: ["tenant-members", effectiveTenant] });
   }
 
+  async function saveChannels(r: Row, patch: Partial<Pick<Row, "notify_inapp" | "notify_whatsapp">>, label: string) {
+    setLocal((s) => ({ ...s, [r.id]: { ...s[r.id], ...patch } }));
+    const next = { ...r, ...local[r.id], ...patch };
+    const { error } = await supabase.rpc("update_member_notification_channels" as any, {
+      _member_id: r.id,
+      _notify_inapp: !!next.notify_inapp,
+      _notify_whatsapp: !!next.notify_whatsapp,
+    });
+    if (error) {
+      toast.error(`Falha ao salvar ${label}: ${error.message}`);
+      setLocal((s) => { const c = { ...s }; delete c[r.id]; return c; });
+      return;
+    }
+    toast.success(`${label} atualizado`);
+    qc.invalidateQueries({ queryKey: ["lead-distribution-members", effectiveTenant] });
+  }
+
   if (!canAccess) {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-3 p-10 text-center">
