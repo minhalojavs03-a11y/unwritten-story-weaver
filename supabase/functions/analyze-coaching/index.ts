@@ -140,7 +140,11 @@ Deno.serve(async (req: Request) => {
     const { data: lead } = await admin.from("leads")
       .select("id, name, assigned_member_id, stage, credit_value")
       .eq("id", msg.lead_id ?? "").maybeSingle();
-    const memberId = lead?.assigned_member_id ?? msg.sent_by;
+    let memberId: string | null = lead?.assigned_member_id ?? msg.sent_by ?? null;
+    if (!memberId) {
+      const { data: ownerMemberId } = await admin.rpc("ensure_owner_member", { _tenant_id: msg.tenant_id });
+      memberId = ownerMemberId ?? null;
+    }
     if (!memberId) {
       await markAnalyzed(admin, msg, { skipped: 1 });
       return json({ skipped: "no_member" });

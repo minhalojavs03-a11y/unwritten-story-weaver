@@ -130,7 +130,12 @@ async function analyzeOne(admin: any, m: { id: string; conversation_id: string }
     const { data: lead } = await admin.from("leads")
       .select("id, name, assigned_member_id")
       .eq("id", msg.lead_id ?? "").maybeSingle();
-    const memberId = lead?.assigned_member_id ?? msg.sent_by;
+    let memberId: string | null = lead?.assigned_member_id ?? msg.sent_by ?? null;
+    if (!memberId) {
+      // Fallback: dono do tenant (caso WhatsApp nativo sem consultor atribuído)
+      const { data: ownerMemberId } = await admin.rpc("ensure_owner_member", { _tenant_id: msg.tenant_id });
+      memberId = ownerMemberId ?? null;
+    }
     if (!memberId) {
       const result = { skipped: 1 };
       await markAnalyzed(admin, msg, result);
