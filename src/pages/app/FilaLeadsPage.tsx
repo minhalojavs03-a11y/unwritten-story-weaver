@@ -136,7 +136,7 @@ export default function FilaLeadsPage() {
       setSearching(false);
       return;
     }
-    if (!activeMember?.id && !user?.id) return;
+    if (!canSeeAll && !activeMember?.id && !user?.id) return;
     setSearching(true);
     const handle = setTimeout(async () => {
       const digits = q.replace(/\D/g, "");
@@ -147,12 +147,14 @@ export default function FilaLeadsPage() {
         .not("stage", "in", "(perdido,comprou,historico)")
         .limit(50);
       if (!isSuperadmin) query = query.eq("tenant_id", tenantId);
-      if (activeMember?.id && user?.id) {
-        query = query.or(`assigned_member_id.eq.${activeMember.id},assigned_to.eq.${user.id}`);
-      } else if (activeMember?.id) {
-        query = query.eq("assigned_member_id", activeMember.id);
-      } else {
-        query = query.eq("assigned_to", user!.id);
+      if (!canSeeAll) {
+        if (activeMember?.id && user?.id) {
+          query = query.or(`assigned_member_id.eq.${activeMember.id},assigned_to.eq.${user.id}`);
+        } else if (activeMember?.id) {
+          query = query.eq("assigned_member_id", activeMember.id);
+        } else {
+          query = query.eq("assigned_to", user!.id);
+        }
       }
       const orParts = [
         `name.ilike.%${q}%`,
