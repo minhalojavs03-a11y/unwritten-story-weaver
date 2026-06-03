@@ -168,7 +168,7 @@ export default function FilaLeadsPage() {
       setSearching(false);
     }, 300);
     return () => clearTimeout(handle);
-  }, [search, tenantId, isSuperadmin, activeMember?.id, user?.id]);
+  }, [search, tenantId, isSuperadmin, activeMember?.id, user?.id, canSeeAll]);
 
   useEffect(() => {
     if (!user?.id) return;
