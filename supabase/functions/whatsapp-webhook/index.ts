@@ -178,19 +178,27 @@ type ExtractedMedia = {
 };
 
 function extractMediaFromPayload(payload: any, m: any): ExtractedMedia {
-  // uazapi flat fields
+  // uazapi flat fields (uazapi v2 puts type/mediaType/messageType on the message object)
   const flatType: string | undefined =
-    payload?.messageType ?? payload?.type ?? m?.messageType ?? m?.type;
+    payload?.messageType ?? payload?.type ?? payload?.mediaType ??
+    m?.messageType ?? m?.type ?? m?.mediaType;
   const flatUrl: string | undefined =
-    m?.mediaUrl ?? m?.media_url ?? m?.fileUrl ?? m?.file_url ?? m?.url ??
-    payload?.mediaUrl ?? payload?.media_url ?? payload?.fileUrl ?? payload?.file_url ?? payload?.url;
+    m?.mediaUrl ?? m?.media_url ?? m?.fileUrl ?? m?.file_url ?? m?.url ?? m?.fileURL ?? m?.directPath ??
+    payload?.mediaUrl ?? payload?.media_url ?? payload?.fileUrl ?? payload?.file_url ?? payload?.url ?? payload?.fileURL;
   const flatMime: string | undefined =
     m?.mimetype ?? m?.mimeType ?? m?.mime ??
     payload?.mimetype ?? payload?.mimeType ?? payload?.mime;
+  // uazapi sometimes embeds the raw base64 directly in `content` for media messages.
+  const contentIsBase64 = typeof m?.content === "string"
+    && m.content.length > 200
+    && /^[A-Za-z0-9+/=\s]+$/.test(m.content)
+    && !/\s/.test(m.content.trim().slice(0, 80));
   const flatB64: string | undefined =
-    m?.base64 ?? m?.fileBase64 ?? m?.file_base64 ?? payload?.base64 ?? payload?.fileBase64;
-  const flatCaption: string | undefined = m?.caption ?? payload?.caption;
-  const flatFileName: string | undefined = m?.fileName ?? m?.filename ?? payload?.fileName ?? payload?.filename;
+    m?.base64 ?? m?.fileBase64 ?? m?.file_base64 ?? m?.fileEncoded ??
+    payload?.base64 ?? payload?.fileBase64 ??
+    (contentIsBase64 ? m.content : undefined);
+  const flatCaption: string | undefined = m?.caption ?? m?.text ?? payload?.caption;
+  const flatFileName: string | undefined = m?.fileName ?? m?.filename ?? m?.documentName ?? payload?.fileName ?? payload?.filename;
   const flatDuration: number | undefined = m?.seconds ?? m?.duration ?? payload?.seconds ?? payload?.duration;
 
   // Baileys-style nested
@@ -209,10 +217,10 @@ function extractMediaFromPayload(payload: any, m: any): ExtractedMedia {
   let kind: ExtractedMedia["kind"] = nestedKind;
   if (!kind && typeof flatType === "string") {
     const t = flatType.toLowerCase();
-    if (t.includes("audio") || t === "ptt") kind = "audio";
-    else if (t.includes("image")) kind = "image";
+    if (t.includes("audio") || t === "ptt" || t.includes("ptt") || t.includes("voice")) kind = "audio";
+    else if (t.includes("image") || t === "photo") kind = "image";
     else if (t.includes("video")) kind = "video";
-    else if (t.includes("document")) kind = "document";
+    else if (t.includes("document") || t === "file") kind = "document";
     else if (t.includes("sticker")) kind = "sticker";
   }
   if (!kind && flatMime) {
@@ -221,6 +229,8 @@ function extractMediaFromPayload(payload: any, m: any): ExtractedMedia {
     else if (flatMime.startsWith("video/")) kind = "video";
     else kind = "document";
   }
+  // Last resort: presence of mediaUrl/base64 even without an explicit type → assume document
+  if (!kind && (flatUrl || flatB64)) kind = "document";
 
   if (!kind) return { url: null, base64: null, mime: null, kind: null, caption: null, fileName: null, durationSec: null };
 
@@ -233,6 +243,39 @@ function extractMediaFromPayload(payload: any, m: any): ExtractedMedia {
     fileName: flatFileName ?? nested?.fileName ?? null,
     durationSec: typeof flatDuration === "number" ? flatDuration : (typeof nested?.seconds === "number" ? nested.seconds : null),
   };
+}
+
+// Fallback: ask uazapi to give us the media bytes for a given external messageid.
+// Used when the webhook payload only signals the media kind but no URL/base64.
+async function fetchProviderMediaBytes(instance: any, externalId: string | null): Promise<{ base64: string | null; mime: string | null; fileName: string | null }> {
+  if (!externalId || !instance?.server_url || !instance?.instance_token) return { base64: null, mime: null, fileName: null };
+  const endpoints: Array<{ url: string; body: Record<string, unknown> }> = [
+    { url: `${instance.server_url}/message/download`, body: { messageid: externalId } },
+    { url: `${instance.server_url}/message/download`, body: { id: externalId } },
+    { url: `${instance.server_url}/chat/getBase64FromMediaMessage`, body: { message: { key: { id: externalId } }, convertToMp4: false } },
+  ];
+  for (const ep of endpoints) {
+    try {
+      const r = await fetch(ep.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", token: instance.instance_token },
+        body: JSON.stringify(ep.body),
+      });
+      if (!r.ok) continue;
+      const d = await r.json().catch(() => null);
+      if (!d) continue;
+      const base64: string | null =
+        d?.base64 ?? d?.fileBase64 ?? d?.data?.base64 ?? d?.data?.fileBase64 ??
+        d?.media ?? d?.result?.base64 ?? null;
+      const mime: string | null =
+        d?.mimetype ?? d?.mimeType ?? d?.contentType ?? d?.data?.mimetype ?? null;
+      const fileName: string | null = d?.fileName ?? d?.filename ?? d?.data?.fileName ?? null;
+      if (base64) return { base64, mime, fileName };
+    } catch (e) {
+      console.warn("fetchProviderMediaBytes failed", ep.url, (e as any)?.message);
+    }
+  }
+  return { base64: null, mime: null, fileName: null };
 }
 
 function extractMessage(payload: any): {
