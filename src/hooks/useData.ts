@@ -98,19 +98,28 @@ async function callWhatsAppManage(body: Record<string, unknown>, accessToken: st
 }
 
 // ============= LEADS =============
-export function useLeads(opts?: { kind?: "lead" | "outros" | "all" }) {
-  const { tenantId, isSuperadmin } = useAuth();
+// opts.tenantId: undefined = padrão (auth tenant ou global p/ superadmin);
+//                null = forçar global (sem filtro); string = forçar aquele tenant.
+// opts.memberId: filtra por assigned_member_id (uso por owner/supervisor).
+export function useLeads(opts?: { kind?: "lead" | "outros" | "all"; tenantId?: string | null; memberId?: string | null }) {
+  const { tenantId: authTenantId, isSuperadmin } = useAuth();
   const qc = useQueryClient();
   const kind = opts?.kind ?? "lead";
+  const overrideTenant = opts && "tenantId" in opts ? opts.tenantId : undefined;
+  const effectiveTenant = overrideTenant === undefined
+    ? (isSuperadmin ? null : authTenantId)
+    : overrideTenant;
+  const globalScope = effectiveTenant === null;
+  const memberId = opts?.memberId ?? null;
+
   const q = useQuery({
-    queryKey: ["leads", isSuperadmin ? "__all__" : tenantId, kind],
-    enabled: !!tenantId || isSuperadmin,
+    queryKey: ["leads", globalScope ? "__all__" : effectiveTenant, kind, memberId ?? "all"],
+    enabled: globalScope || !!effectiveTenant,
     queryFn: async () => {
       let query = supabase.from("leads").select("*").order("created_at", { ascending: false }).limit(2000);
-      // Superadmin enxerga leads de TODOS os tenants (visão centralizada).
-      if (!isSuperadmin) query = query.eq("tenant_id", tenantId!);
-      // Métricas/listas operacionais ignoram contatos "outros" (não-leads).
+      if (!globalScope) query = query.eq("tenant_id", effectiveTenant!);
       if (kind !== "all") query = query.eq("kind", kind);
+      if (memberId) query = query.eq("assigned_member_id", memberId);
       const { data, error } = await query;
       if (error) throw error;
       return (data ?? []) as Tables<"leads">[];
@@ -118,21 +127,21 @@ export function useLeads(opts?: { kind?: "lead" | "outros" | "all" }) {
   });
 
   useEffect(() => {
-    if (!tenantId && !isSuperadmin) return;
+    if (!globalScope && !effectiveTenant) return;
     const ch = supabase
-      .channel(realtimeChannelName("leads-changes", tenantId ?? "all"))
+      .channel(realtimeChannelName("leads-changes", effectiveTenant ?? "all"))
       .on(
         "postgres_changes",
-        isSuperadmin
+        globalScope
           ? { event: "*", schema: "public", table: "leads" }
-          : { event: "*", schema: "public", table: "leads", filter: `tenant_id=eq.${tenantId}` },
+          : { event: "*", schema: "public", table: "leads", filter: `tenant_id=eq.${effectiveTenant}` },
         () => {
           qc.invalidateQueries({ queryKey: ["leads"] });
         },
       )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [tenantId, isSuperadmin, qc]);
+  }, [effectiveTenant, globalScope, qc]);
 
   return q;
 }
