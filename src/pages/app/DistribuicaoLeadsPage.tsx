@@ -235,7 +235,16 @@ export default function DistribuicaoLeadsPage() {
       return;
     }
     toast.success(`${label} atualizado`);
-    qc.invalidateQueries({ queryKey: ["lead-distribution-members", effectiveTenant] });
+    // Atualiza imediatamente o cache para refletir o estado salvo (id pode ter sido criado agora).
+    qc.setQueryData<Row[]>(distQueryKey, (prev) =>
+      (prev ?? []).map((row) =>
+        rowKey(row) === k
+          ? { ...row, ...patch, id: memberId, receives_leads: !!next.receives_leads, min_credit_value: minV, max_credit_value: maxV, daily_lead_limit: next.daily_lead_limit ?? null }
+          : row,
+      ),
+    );
+    setLocal((s) => { const c = { ...s }; delete c[k]; return c; });
+    qc.invalidateQueries({ queryKey: distQueryKey });
     qc.invalidateQueries({ queryKey: ["tenant-members", effectiveTenant] });
   }
 
