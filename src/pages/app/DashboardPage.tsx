@@ -11,6 +11,7 @@ import { useDashboardMetrics, useLeads, useAppointments } from "@/hooks/useData"
 import { useMyProfile } from "@/hooks/useProfile";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
+import { useSupportImpersonation } from "@/hooks/useSupportImpersonation";
 import { LeadsHourlyPanel } from "@/components/dashboard/LeadsHourlyPanel";
 import { useReportData } from "@/hooks/useReportData";
 import { HealthScore, InsightsPanel, PipelineIntel, WeeklyActivity, ResponseHeatmap } from "@/components/dashboard/ExecutiveWidgets";
@@ -22,6 +23,7 @@ export default function DashboardPage() {
   const { data: profile } = useMyProfile();
   const { member } = useActiveMember();
   const { isSuperadmin, isOwner, isSupervisor } = useEffectiveRole();
+  const { context: supportContext } = useSupportImpersonation();
   const privileged = isSuperadmin || isOwner || isSupervisor;
   const consultantScopeMemberId = !privileged ? (member?.id ?? null) : null;
 
@@ -33,7 +35,7 @@ export default function DashboardPage() {
   // tenantId: undefined = padrão (auth tenant ou global p/ superadmin); null = global; string = tenant
   const effectiveTenantOverride: string | null | undefined = isSuperadmin
     ? scope.tenantId // null = todos os tenants, string = tenant selecionado
-    : undefined;    // owner/supervisor/consultor: usa o auth tenant
+    : supportContext?.tenant_id ?? undefined; // modo suporte usa explicitamente o tenant visualizado
 
   const metricsScope = {
     tenantId: effectiveTenantOverride,
