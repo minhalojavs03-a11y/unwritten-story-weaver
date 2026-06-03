@@ -100,6 +100,7 @@ export default function FilaLeadsPage() {
   const navigate = useNavigate();
   const { can } = usePermissions();
   const canSendToOthers = can("assume_any_lead");
+  const canSeeAll = can("view_all_leads");
   const { data: members = [] } = useTenantMembers();
   const consultants = members.filter((m) => isConsultantLike(m.role_label, m.username) && m.receives_leads !== false);
   const assumeMut = useAssumeLead();
