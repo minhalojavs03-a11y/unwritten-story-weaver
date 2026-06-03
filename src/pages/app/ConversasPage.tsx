@@ -379,11 +379,15 @@ export default function ConversasPage() {
             <button key={t.id} onClick={() => setTab(t.id)}
               className={cn("shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors",
                 tab === t.id
-                  ? "bg-[#d9fdd3] text-[#1d6f5c]"
-                  : "bg-[#f0f2f5] text-[#54656f] hover:bg-[#e9edef]")}>
+                  ? (t.id === "outros" ? "bg-muted text-muted-foreground ring-1 ring-border" : "bg-[#d9fdd3] text-[#1d6f5c]")
+                  : (t.id === "outros"
+                      ? "border border-dashed border-border bg-transparent text-muted-foreground hover:bg-muted"
+                      : "bg-[#f0f2f5] text-[#54656f] hover:bg-[#e9edef]"))}
+              title={t.id === "outros" ? "Contatos importados que não estão em planilha/anúncio. Não entram em métricas." : undefined}>
               {t.label}
             </button>
           ))}
+
           {activeConsultorLabel && (
             <button
               type="button"
