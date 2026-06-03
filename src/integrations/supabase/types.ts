@@ -1281,6 +1281,119 @@ export type Database = {
           },
         ]
       }
+      nilton_leads: {
+        Row: {
+          ad_id: string | null
+          ad_name: string | null
+          adset_id: string | null
+          adset_name: string | null
+          assigned_to: string | null
+          campaign_id: string | null
+          campaign_name: string | null
+          carta_value: string | null
+          created_time: string | null
+          form_id: string | null
+          form_name: string | null
+          id: string
+          imported_at: string
+          is_organic: boolean | null
+          lead_status: string | null
+          nome_completo: string | null
+          notes: string | null
+          platform: string | null
+          sheet_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          ad_id?: string | null
+          ad_name?: string | null
+          adset_id?: string | null
+          adset_name?: string | null
+          assigned_to?: string | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          carta_value?: string | null
+          created_time?: string | null
+          form_id?: string | null
+          form_name?: string | null
+          id?: string
+          imported_at?: string
+          is_organic?: boolean | null
+          lead_status?: string | null
+          nome_completo?: string | null
+          notes?: string | null
+          platform?: string | null
+          sheet_id: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          ad_id?: string | null
+          ad_name?: string | null
+          adset_id?: string | null
+          adset_name?: string | null
+          assigned_to?: string | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          carta_value?: string | null
+          created_time?: string | null
+          form_id?: string | null
+          form_name?: string | null
+          id?: string
+          imported_at?: string
+          is_organic?: boolean | null
+          lead_status?: string | null
+          nome_completo?: string | null
+          notes?: string | null
+          platform?: string | null
+          sheet_id?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nilton_leads_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nilton_sync_log: {
+        Row: {
+          duration_ms: number
+          error_message: string | null
+          id: string
+          ran_at: string
+          rows_fetched: number
+          rows_inserted: number
+          rows_skipped: number
+        }
+        Insert: {
+          duration_ms?: number
+          error_message?: string | null
+          id?: string
+          ran_at?: string
+          rows_fetched?: number
+          rows_inserted?: number
+          rows_skipped?: number
+        }
+        Update: {
+          duration_ms?: number
+          error_message?: string | null
+          id?: string
+          ran_at?: string
+          rows_fetched?: number
+          rows_inserted?: number
+          rows_skipped?: number
+        }
+        Relationships: []
+      }
       notification_queue: {
         Row: {
           attempts: number
@@ -2331,6 +2444,7 @@ export type Database = {
         Args: { _imported_from_sheet: boolean; _source: string }
         Returns: boolean
       }
+      is_nilton_user: { Args: { _user_id: string }; Returns: boolean }
       is_tenant_member: {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean
