@@ -279,7 +279,7 @@ export default function DistribuicaoLeadsPage() {
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
             A faixa de carta define o intervalo (mínimo e máximo) de valor de carta de crédito que cada consultor pode receber.
-            Deixe um lado em branco para "sem limite" naquele lado. O limite diário pausa novos envios após atingir o número definido.
+            Use os dois puxadores para escolher de R$ 300 mil a R$ 2 milhões. O limite diário pausa novos envios após atingir o número definido.
             Alterações salvam automaticamente.
           </p>
         </div>
