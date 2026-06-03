@@ -1056,6 +1056,22 @@ Deno.serve(async (req: Request) => {
         if (existing) return json({ instance: sanitize(existing), is_paid: false, reused: true });
       }
 
+      // Limite anti-ansiedade: consultor pode ter no máx. 2 tentativas de instância.
+      // Se já tem 2+ instâncias (conectadas ou não), bloqueia criação de novas.
+      if (!callerCanManageAllInstances && sellerUserId) {
+        const { count: attemptCount } = await admin
+          .from("whatsapp_instances")
+          .select("id", { count: "exact", head: true })
+          .eq("tenant_id", tenantId)
+          .eq("seller_user_id", sellerUserId);
+        if ((attemptCount ?? 0) >= 2) {
+          return json({
+            error: "Limite de tentativas excedido. Você já criou 2 instâncias de WhatsApp. Aguarde alguns minutos, escaneie o QR Code com calma e aguarde a conexão. Se ainda não conseguir, peça ajuda ao administrador.",
+            limit_exceeded: true,
+          }, 429);
+        }
+      }
+
       const rawName = ((body?.name ?? sellerNameRaw ?? callerName) ?? "").toString().trim();
       if (!rawName || rawName.length < 2) return json({ error: "Nome do número é obrigatório (mín. 2 caracteres)." }, 400);
       let displayName = rawName.slice(0, 60);
@@ -1331,6 +1347,20 @@ Deno.serve(async (req: Request) => {
     switch (action) {
       case "get-or-create": {
         if (!instance) {
+          // Anti-ansiedade: consultor não pode estourar instâncias órfãs
+          if (!callerCanManageAllInstances) {
+            const { count: attemptCount } = await admin
+              .from("whatsapp_instances")
+              .select("id", { count: "exact", head: true })
+              .eq("tenant_id", tenantId)
+              .eq("seller_user_id", userId);
+            if ((attemptCount ?? 0) >= 2) {
+              return json({
+                error: "Limite de tentativas excedido. Você já criou 2 instâncias de WhatsApp. Aguarde alguns minutos, escaneie o QR Code com calma e aguarde a conexão. Se ainda não conseguir, peça ajuda ao administrador.",
+                limit_exceeded: true,
+              }, 429);
+            }
+          }
           const ensured = await ensureProviderInstance(admin, tenantId, tenant, instance, webhookUrl, instance?.instance_name || "Principal");
           if (!ensured.ok) return json(ensured.body, ensured.status);
           instance = ensured.instance;
