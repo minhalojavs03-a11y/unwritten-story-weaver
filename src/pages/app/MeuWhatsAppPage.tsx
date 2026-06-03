@@ -69,6 +69,7 @@ export default function MeuWhatsAppPage() {
   const [creating, setCreating] = useState(false);
   const [confirmExtra, setConfirmExtra] = useState(false);
   const [phone, setPhone] = useState("");
+  const [limitExceeded, setLimitExceeded] = useState(false);
 
   // Em modo suporte: identificamos o consultor impersonado e mostramos
   // SOMENTE a instância dele (mesma visão que ele teria ao logar).
