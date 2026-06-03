@@ -43,8 +43,8 @@ export default function DashboardPage() {
   };
   const { data: m } = useDashboardMetrics(metricsScope);
   const leadsOpts = effectiveTenantOverride !== undefined || effectiveMemberId
-    ? { tenantId: effectiveTenantOverride, memberId: effectiveMemberId }
-    : undefined;
+    ? { kind: "all" as const, tenantId: effectiveTenantOverride, memberId: effectiveMemberId }
+    : { kind: "all" as const };
   const { data: allLeads = [] } = useLeads(leadsOpts);
   const leads = allLeads;
   // Em modo suporte (superadmin trocou de tenant), saúda o nome do cliente
