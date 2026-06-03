@@ -800,28 +800,30 @@ export function useDashboardMetrics(
       const applyTenant = <T extends { eq: (col: string, v: string) => T }>(q: T) =>
         globalScope ? q : q.eq("tenant_id", effectiveTenant!);
 
-      const leadsBase = () => {
-        let q = supabase.from("leads").select("id", { count: "exact", head: true }).eq("kind", "lead");
+      const leadsBase = (kind: "lead" | "all" = "lead") => {
+        let q = supabase.from("leads").select("id", { count: "exact", head: true });
+        if (kind !== "all") q = q.eq("kind", kind);
         q = applyTenant(q);
         if (scoped) q = q.eq("assigned_member_id", memberId!);
         return q;
       };
 
-      const convBase = () => {
+      const convBase = (kind: "lead" | "all" = "lead") => {
+        const filterLeadKind = kind !== "all";
         if (scoped) {
           // Filtra por kind='lead' no inner join para nunca contar "outros".
           let q = supabase
             .from("conversations")
             .select("id, lead:leads!inner(assigned_member_id, kind)", { count: "exact", head: true })
-            .eq("lead.assigned_member_id", memberId!)
-            .eq("lead.kind", "lead");
+            .eq("lead.assigned_member_id", memberId!);
+          if (filterLeadKind) q = q.eq("lead.kind", kind);
           q = applyTenant(q);
           return q;
         }
         let q = supabase
           .from("conversations")
-          .select("id, lead:leads!inner(kind)", { count: "exact", head: true })
-          .eq("lead.kind", "lead");
+          .select(filterLeadKind ? "id, lead:leads!inner(kind)" : "id", { count: "exact", head: true });
+        if (filterLeadKind) q = q.eq("lead.kind", kind);
         q = applyTenant(q);
         return q;
       };
@@ -835,21 +837,30 @@ export function useDashboardMetrics(
         return q;
       };
 
-      const [leadsToday, activeConv, appts, hot, awaiting] = await Promise.all([
-        scoped
-          ? leadsBase().gte("assigned_member_at", today.toISOString()).neq("stage", "historico")
-          : leadsBase().gte("created_at", today.toISOString()).neq("stage", "historico"),
+      const leadTodayQuery = (kind: "lead" | "all") => scoped
+        ? leadsBase(kind).gte("assigned_member_at", today.toISOString()).neq("stage", "historico")
+        : leadsBase(kind).gte("created_at", today.toISOString()).neq("stage", "historico");
+      const operationalTodayQuery = (kind: "lead" | "all") => scoped
+        ? leadsBase(kind).gte("assigned_member_at", today.toISOString())
+        : leadsBase(kind).gte("created_at", today.toISOString());
+
+      const [leadsToday, activeConv, appts, hot, awaiting, allToday, allActiveConv, allHot, allAwaiting] = await Promise.all([
+        leadTodayQuery("lead"),
         convBase().eq("status", "open"),
         apptBase(),
         leadsBase().eq("temperature", "hot").not("stage", "in", "(comprou,perdido,historico)"),
         convBase().gt("unread_count", 0),
+        operationalTodayQuery("all"),
+        convBase("all").eq("status", "open"),
+        leadsBase("all").eq("temperature", "hot").not("stage", "in", "(comprou,perdido)"),
+        convBase("all").gt("unread_count", 0),
       ]);
       return {
-        leadsToday: leadsToday.count ?? 0,
-        activeConversations: activeConv.count ?? 0,
+        leadsToday: (leadsToday.count ?? 0) || (allToday.count ?? 0),
+        activeConversations: (activeConv.count ?? 0) || (allActiveConv.count ?? 0),
         appointmentsToday: appts.count ?? 0,
-        hotOpportunities: hot.count ?? 0,
-        awaitingResponse: awaiting.count ?? 0,
+        hotOpportunities: (hot.count ?? 0) || (allHot.count ?? 0),
+        awaitingResponse: (awaiting.count ?? 0) || (allAwaiting.count ?? 0),
       };
     },
   });
