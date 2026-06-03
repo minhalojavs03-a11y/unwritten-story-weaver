@@ -151,20 +151,65 @@ export default function DistribuicaoLeadsPage() {
     queryKey: ["lead-distribution-members", effectiveTenant],
     enabled: !!effectiveTenant && canAccess,
     queryFn: async (): Promise<Row[]> => {
-      const { data, error } = await supabase
-        .from("tenant_members")
-        .select(
-          "id,tenant_id,display_name,username,role_label,avatar_url,avatar_color,is_active,receives_leads,min_credit_value,max_credit_value,daily_lead_limit,notify_inapp,notify_whatsapp,phone" as any,
-        )
+      // 1) Consultores reais: tenant_memberships com role consultant/attendant + perfil
+      const { data: memberships, error: mErr } = await supabase
+        .from("tenant_memberships")
+        .select("user_id, role")
         .eq("tenant_id", effectiveTenant!)
-        .eq("is_active", true)
-        .order("display_name", { ascending: true });
-      if (error) throw error;
-      return ((data ?? []) as any[]).filter((r) => isConsultantLike(r.role_label, r.username)) as Row[];
+        .in("role", ["consultant", "attendant"]);
+      if (mErr) throw mErr;
+      const userIds = (memberships ?? []).map((m: any) => m.user_id);
+      if (userIds.length === 0) return [];
+
+      const [profilesRes, distRes] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, display_name, full_name, username, role_label, avatar_url, avatar_color, phone")
+          .in("id", userIds),
+        supabase
+          .from("tenant_members" as any)
+          .select(
+            "id, user_id, receives_leads, min_credit_value, max_credit_value, daily_lead_limit, notify_inapp, notify_whatsapp, is_active, phone, role_label, display_name, username, avatar_url, avatar_color",
+          )
+          .eq("tenant_id", effectiveTenant!)
+          .in("user_id", userIds),
+      ]);
+      if (profilesRes.error) throw profilesRes.error;
+      if (distRes.error) throw distRes.error;
+      const distByUser = new Map<string, any>();
+      for (const d of (distRes.data as any[]) ?? []) {
+        if (d.user_id) distByUser.set(d.user_id as string, d);
+      }
+      const out: Row[] = (profilesRes.data ?? []).map((p: any) => {
+        const d = distByUser.get(p.id);
+        return {
+          id: d?.id ?? null,
+          user_id: p.id,
+          tenant_id: effectiveTenant!,
+          display_name: d?.display_name ?? p.display_name ?? p.full_name ?? null,
+          username: d?.username ?? p.username ?? null,
+          role_label: d?.role_label ?? p.role_label ?? "Consultor",
+          avatar_url: d?.avatar_url ?? p.avatar_url ?? null,
+          avatar_color: d?.avatar_color ?? p.avatar_color ?? null,
+          is_active: d?.is_active ?? true,
+          receives_leads: d?.receives_leads ?? false,
+          min_credit_value: d?.min_credit_value ?? null,
+          max_credit_value: d?.max_credit_value ?? null,
+          daily_lead_limit: d?.daily_lead_limit ?? null,
+          notify_inapp: d?.notify_inapp ?? true,
+          notify_whatsapp: d?.notify_whatsapp ?? true,
+          phone: d?.phone ?? p.phone ?? null,
+        };
+      });
+      out.sort((a, b) => (a.display_name ?? "").localeCompare(b.display_name ?? ""));
+      return out;
     },
   });
 
-  const memberIds = useMemo(() => rows.map((r) => r.id), [rows]);
+  const memberIds = useMemo(
+    () => rows.map((r) => r.id).filter((x): x is string => !!x),
+    [rows],
+  );
   const { data: todayCounts = {} } = useQuery({
     queryKey: ["lead-distribution-today", effectiveTenant, memberIds.join(",")],
     enabled: !!effectiveTenant && memberIds.length > 0,
@@ -193,20 +238,37 @@ export default function DistribuicaoLeadsPage() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   function valueOf<K extends keyof Row>(r: Row, key: K): Row[K] {
-    return (local[r.id]?.[key] ?? r[key]) as Row[K];
+    return (local[rowKey(r)]?.[key] ?? r[key]) as Row[K];
+  }
+
+  // Garante a linha em tenant_members; devolve o id.
+  async function ensureMemberId(r: Row): Promise<string | null> {
+    if (r.id) return r.id;
+    const { data, error } = await supabase.rpc("ensure_distribution_member" as any, {
+      _tenant_id: r.tenant_id,
+      _user_id: r.user_id,
+    });
+    if (error) {
+      toast.error(`Falha ao preparar consultor: ${error.message}`);
+      return null;
+    }
+    return (data as string) ?? null;
   }
 
   async function saveDistribution(r: Row, patch: Partial<Row>, label: string) {
-    setLocal((s) => ({ ...s, [r.id]: { ...s[r.id], ...patch } }));
-    const next = { ...r, ...local[r.id], ...patch };
+    const k = rowKey(r);
+    setLocal((s) => ({ ...s, [k]: { ...s[k], ...patch } }));
+    const next = { ...r, ...local[k], ...patch };
     const minV = next.min_credit_value ?? null;
     const maxV = next.max_credit_value ?? null;
     if (minV != null && maxV != null && Number(minV) > Number(maxV)) {
       toast.error("Valor mínimo não pode ser maior que o máximo.");
       return;
     }
+    const memberId = await ensureMemberId(r);
+    if (!memberId) return;
     const { error } = await supabase.rpc("update_member_distribution" as any, {
-      _member_id: r.id,
+      _member_id: memberId,
       _receives_leads: !!next.receives_leads,
       _min_credit_value: minV,
       _max_credit_value: maxV,
@@ -216,7 +278,7 @@ export default function DistribuicaoLeadsPage() {
       toast.error(`Falha ao salvar ${label}: ${error.message}`);
       setLocal((s) => {
         const copy = { ...s };
-        delete copy[r.id];
+        delete copy[k];
         return copy;
       });
       return;
@@ -227,21 +289,25 @@ export default function DistribuicaoLeadsPage() {
   }
 
   async function saveChannels(r: Row, patch: Partial<Pick<Row, "notify_inapp" | "notify_whatsapp">>, label: string) {
-    setLocal((s) => ({ ...s, [r.id]: { ...s[r.id], ...patch } }));
-    const next = { ...r, ...local[r.id], ...patch };
+    const k = rowKey(r);
+    setLocal((s) => ({ ...s, [k]: { ...s[k], ...patch } }));
+    const next = { ...r, ...local[k], ...patch };
+    const memberId = await ensureMemberId(r);
+    if (!memberId) return;
     const { error } = await supabase.rpc("update_member_notification_channels" as any, {
-      _member_id: r.id,
+      _member_id: memberId,
       _notify_inapp: !!next.notify_inapp,
       _notify_whatsapp: !!next.notify_whatsapp,
     });
     if (error) {
       toast.error(`Falha ao salvar ${label}: ${error.message}`);
-      setLocal((s) => { const c = { ...s }; delete c[r.id]; return c; });
+      setLocal((s) => { const c = { ...s }; delete c[k]; return c; });
       return;
     }
     toast.success(`${label} atualizado`);
     qc.invalidateQueries({ queryKey: ["lead-distribution-members", effectiveTenant] });
   }
+
 
   if (!canAccess) {
     return (
