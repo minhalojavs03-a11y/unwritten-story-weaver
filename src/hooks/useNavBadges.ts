@@ -28,40 +28,45 @@ export function useNavBadges() {
     staleTime: 15_000,
     refetchInterval: 30_000,
     queryFn: async () => {
-      // Conversas com mensagens não lidas
+      // Conversas com mensagens não lidas — sempre exclui "outros" via inner join.
       let convQuery;
       if (privileged) {
         convQuery = supabase
           .from("conversations")
-          .select("id", { count: "exact", head: true })
+          .select("id, lead:leads!inner(kind)", { count: "exact", head: true })
           .eq("tenant_id", tenantId!)
+          .eq("lead.kind", "lead")
           .gt("unread_count", 0);
       } else if (memberId) {
         convQuery = supabase
           .from("conversations")
-          .select("id, lead:leads!inner(assigned_member_id)", { count: "exact", head: true })
+          .select("id, lead:leads!inner(assigned_member_id,kind)", { count: "exact", head: true })
           .eq("tenant_id", tenantId!)
           .eq("lead.assigned_member_id", memberId)
+          .eq("lead.kind", "lead")
           .gt("unread_count", 0);
       } else {
         convQuery = supabase
           .from("conversations")
-          .select("id, lead:leads!inner(assigned_to)", { count: "exact", head: true })
+          .select("id, lead:leads!inner(assigned_to,kind)", { count: "exact", head: true })
           .eq("tenant_id", tenantId!)
           .eq("lead.assigned_to", userId!)
+          .eq("lead.kind", "lead")
           .gt("unread_count", 0);
       }
 
-      // Leads na fila (ativos)
+      // Leads na fila (ativos) — exclui "outros".
       let filaQuery = supabase
         .from("leads")
         .select("id", { count: "exact", head: true })
         .eq("tenant_id", tenantId!)
+        .eq("kind", "lead")
         .not("stage", "in", "(perdido,comprou,historico)");
       if (!privileged) {
         if (memberId) filaQuery = filaQuery.eq("assigned_member_id", memberId);
         else filaQuery = filaQuery.eq("assigned_to", userId!);
       }
+
 
       const [{ count: convCount }, { count: filaCount }] = await Promise.all([
         convQuery,

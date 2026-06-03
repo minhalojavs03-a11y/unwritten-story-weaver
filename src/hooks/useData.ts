@@ -98,16 +98,19 @@ async function callWhatsAppManage(body: Record<string, unknown>, accessToken: st
 }
 
 // ============= LEADS =============
-export function useLeads() {
+export function useLeads(opts?: { kind?: "lead" | "outros" | "all" }) {
   const { tenantId, isSuperadmin } = useAuth();
   const qc = useQueryClient();
+  const kind = opts?.kind ?? "lead";
   const q = useQuery({
-    queryKey: ["leads", isSuperadmin ? "__all__" : tenantId],
+    queryKey: ["leads", isSuperadmin ? "__all__" : tenantId, kind],
     enabled: !!tenantId || isSuperadmin,
     queryFn: async () => {
       let query = supabase.from("leads").select("*").order("created_at", { ascending: false }).limit(2000);
       // Superadmin enxerga leads de TODOS os tenants (visão centralizada).
       if (!isSuperadmin) query = query.eq("tenant_id", tenantId!);
+      // Métricas/listas operacionais ignoram contatos "outros" (não-leads).
+      if (kind !== "all") query = query.eq("kind", kind);
       const { data, error } = await query;
       if (error) throw error;
       return (data ?? []) as Tables<"leads">[];
@@ -133,6 +136,7 @@ export function useLeads() {
 
   return q;
 }
+
 
 export function useUpdateLead() {
   const qc = useQueryClient();
@@ -164,23 +168,30 @@ export function useCreateLead() {
 }
 
 // ============= CONVERSATIONS + MESSAGES =============
-export function useConversations() {
+export function useConversations(opts?: { kind?: "lead" | "outros" | "all" }) {
   const { tenantId, isSuperadmin } = useAuth();
   // Em modo suporte (impersonação), o superadmin deve enxergar apenas as
   // conversas do tenant que está visualizando — não todas as conversas globais.
   const impersonating = typeof window !== "undefined" && !!window.localStorage.getItem("impersonation_context");
   const scopeAll = isSuperadmin && !impersonating;
+  const kind = opts?.kind ?? "lead";
   const qc = useQueryClient();
   const q = useQuery({
-    queryKey: ["conversations", scopeAll ? "__all__" : tenantId],
+    queryKey: ["conversations", scopeAll ? "__all__" : tenantId, kind],
     enabled: !!tenantId || scopeAll,
     queryFn: async () => {
+      // Inner join garante que o filtro por lead.kind é aplicado no banco,
+      // não na UI, mantendo "outros" fora das métricas.
+      const selectClause = kind === "all"
+        ? "*, lead:leads(*)"
+        : "*, lead:leads!inner(*)";
       let query = supabase
         .from("conversations")
-        .select("*, lead:leads(*)")
+        .select(selectClause)
         .order("last_message_at", { ascending: false, nullsFirst: false })
         .limit(500);
       if (!scopeAll) query = query.eq("tenant_id", tenantId!);
+      if (kind !== "all") query = query.eq("lead.kind", kind);
       const { data, error } = await query;
       if (error) throw error;
       return data ?? [];
@@ -198,6 +209,7 @@ export function useConversations() {
   }, [tenantId, scopeAll, qc]);
   return q;
 }
+
 
 
 export function useMessages(
@@ -755,10 +767,11 @@ export function useDashboardMetrics(memberId?: string | null) {
       const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
 
       const leadsBase = () => {
-        let q = supabase.from("leads").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId!);
+        let q = supabase.from("leads").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId!).eq("kind", "lead");
         if (scoped) q = q.eq("assigned_member_id", memberId!);
         return q;
       };
+
       const convBase = () => {
         if (scoped) {
           return supabase

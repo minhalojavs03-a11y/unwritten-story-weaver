@@ -101,14 +101,15 @@ const App = () => (
               <Route path="/configuracoes/acessos" element={<ProtectedRoute requireOwner><AcessosPage /></ProtectedRoute>} />
               <Route path="/perfil" element={<MyProfilePage />} />
               <Route path="/equipe" element={<ProtectedRoute requireOwner><EquipePage /></ProtectedRoute>} />
-              <Route path="/consultores" element={<ConsultoresPage />} />
-              <Route path="/distribuicao" element={<DistribuicaoLeadsPage />} />
+              <Route path="/consultores" element={<ProtectedRoute denyConsultant><ConsultoresPage /></ProtectedRoute>} />
+              <Route path="/distribuicao" element={<ProtectedRoute denyConsultant><DistribuicaoLeadsPage /></ProtectedRoute>} />
               <Route path="/mensagens-prontas" element={<MensagensProntasPage />} />
               <Route path="/changelog" element={<ChangelogPage />} />
               <Route path="/ranking" element={<RankingPage />} />
-              <Route path="/relatorios" element={<RelatoriosPage />} />
-              <Route path="/coaching" element={<CoachingPage />} />
+              <Route path="/relatorios" element={<ProtectedRoute denyConsultant><RelatoriosPage /></ProtectedRoute>} />
+              <Route path="/coaching" element={<ProtectedRoute denyConsultant><CoachingPage /></ProtectedRoute>} />
               <Route path="/integracoes" element={<ProtectedRoute requireOwner><AdminIntegracoes /></ProtectedRoute>} />
+
             </Route>
 
             {/* Superadmin */}

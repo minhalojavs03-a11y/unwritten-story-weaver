@@ -90,6 +90,12 @@ Deno.serve(async (req) => {
       .eq("id", lead_id)
       .maybeSingle();
     if (leadErr || !lead) return json({ error: "lead not found" }, 404);
+    // Contatos "outros" (não-leads de planilha/anúncio) não disparam notificação
+    // nem ranking nem atribuição automática para consultor.
+    if ((lead as { kind?: string }).kind === "outros") {
+      return json({ ok: true, skipped: "lead kind is outros" });
+    }
+
 
     // Fallback: extrai credit_value de interest se necessário
     let _creditValue: number | null = lead.credit_value;
@@ -235,8 +241,10 @@ Deno.serve(async (req) => {
         .from("leads")
         .select("assigned_member_id")
         .eq("tenant_id", lead.tenant_id)
+        .eq("kind", "lead")
         .in("assigned_member_id", baseIds)
         .gte("assigned_member_at", sinceToday.toISOString());
+
       for (const r of todayRows || []) {
         const mid = (r as any).assigned_member_id as string | null;
         if (mid) todayCountByMember.set(mid, (todayCountByMember.get(mid) ?? 0) + 1);
@@ -261,9 +269,11 @@ Deno.serve(async (req) => {
       .from("leads")
       .select("assigned_member_id, assigned_member_at")
       .eq("tenant_id", lead.tenant_id)
+      .eq("kind", "lead")
       .in("assigned_member_id", memberIds)
       .not("assigned_member_at", "is", null)
       .order("assigned_member_at", { ascending: false });
+
 
     const lastByMember = new Map<string, number>();
     for (const row of lastAssignRows || []) {

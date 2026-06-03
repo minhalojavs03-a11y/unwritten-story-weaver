@@ -32,10 +32,11 @@ import { Link as RLink } from "react-router-dom";
 import { useTemplates, renderTemplate } from "@/hooks/useTemplates";
 import type { Tables } from "@/integrations/supabase/types";
 
-const tabs: { id: "all" | "hot" | "unread"; label: string }[] = [
+const tabs: { id: "all" | "hot" | "unread" | "outros"; label: string }[] = [
   { id: "all", label: "Todas" },
   { id: "hot", label: "🔥 Quentes" },
   { id: "unread", label: "⏰ Não lidas" },
+  { id: "outros", label: "Outros (não leads)" },
 ];
 
 export default function ConversasPage() {
@@ -52,7 +53,7 @@ export default function ConversasPage() {
   const tabParam = params.get("tab");
   const consultorParam = params.get("consultor");
   const initialTab: (typeof tabs)[number]["id"] =
-    tabParam === "hot" || tabParam === "unread" || tabParam === "all" ? tabParam : "all";
+    tabParam === "hot" || tabParam === "unread" || tabParam === "all" || tabParam === "outros" ? tabParam : "all";
   const [tab, setTabState] = useState<(typeof tabs)[number]["id"]>(initialTab);
   const setTab = (id: (typeof tabs)[number]["id"]) => {
     setTabState(id);
@@ -65,11 +66,15 @@ export default function ConversasPage() {
   // Mantém o tab sincronizado quando a URL muda (ex.: navegação a partir do Dashboard)
   useEffect(() => {
     const t = params.get("tab");
-    const valid = t === "hot" || t === "unread" || t === "all" ? t : "all";
+    const valid = t === "hot" || t === "unread" || t === "all" || t === "outros" ? t : "all";
     setTabState((prev) => (prev === valid ? prev : valid));
   }, [params]);
   const [query, setQuery] = useState("");
-  const { data: conversations = [], isLoading } = useConversations();
+  // "Outros" são contatos importados que não casam com planilha/anúncio.
+  // Filtramos no nível da query (kind=lead|outros) para nunca poluírem KPIs.
+  const conversationsKind: "lead" | "outros" = tab === "outros" ? "outros" : "lead";
+  const { data: conversations = [], isLoading } = useConversations({ kind: conversationsKind });
+
   const { data: conversationConsultants = [] } = useConversationConsultants();
   useEffect(() => {
     if (!tenantId || !userId) { setMyWhatsAppInstanceIds([]); return; }
@@ -151,8 +156,10 @@ export default function ConversasPage() {
       let q = supabase
         .from("leads")
         .select("*")
+        .eq("kind", conversationsKind)
         .order("created_at", { ascending: false, nullsFirst: false })
         .limit(500);
+
       // Superadmin: leads de TODOS os tenants. Demais: apenas o tenant ativo.
       if (!isSuperadmin) q = q.eq("tenant_id", tenantId);
       if (restricted) {
@@ -169,7 +176,7 @@ export default function ConversasPage() {
       if (!cancelled) setAssignedLeads(data ?? []);
     })();
     return () => { cancelled = true; };
-  }, [tenantId, member?.id, member?.role_label, canViewAll, userId, conversations, isSuperadmin, myWhatsAppInstanceKey]);
+  }, [tenantId, member?.id, member?.role_label, canViewAll, userId, conversations, isSuperadmin, myWhatsAppInstanceKey, conversationsKind]);
 
   // Dado leadId da URL, encontra/garante uma conversa (busca direta + fallback de criação)
   const [fetchedActive, setFetchedActive] = useState<any | null>(null);
@@ -372,11 +379,15 @@ export default function ConversasPage() {
             <button key={t.id} onClick={() => setTab(t.id)}
               className={cn("shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors",
                 tab === t.id
-                  ? "bg-[#d9fdd3] text-[#1d6f5c]"
-                  : "bg-[#f0f2f5] text-[#54656f] hover:bg-[#e9edef]")}>
+                  ? (t.id === "outros" ? "bg-muted text-muted-foreground ring-1 ring-border" : "bg-[#d9fdd3] text-[#1d6f5c]")
+                  : (t.id === "outros"
+                      ? "border border-dashed border-border bg-transparent text-muted-foreground hover:bg-muted"
+                      : "bg-[#f0f2f5] text-[#54656f] hover:bg-[#e9edef]"))}
+              title={t.id === "outros" ? "Contatos importados que não estão em planilha/anúncio. Não entram em métricas." : undefined}>
               {t.label}
             </button>
           ))}
+
           {activeConsultorLabel && (
             <button
               type="button"

@@ -80,9 +80,11 @@ Deno.serve(async (req) => {
     const { data: leads } = await admin
       .from("leads")
       .select("id, tenant_id, name, phone, credit_value, asset_type, assigned_member_id, last_interaction_at, last_message_at, created_at")
+      .eq("kind", "lead")
       .is("assigned_member_id", null)
       .not("credit_value", "is", null)
       .gte("created_at", recent);
+
 
     const summary: any[] = [];
 
