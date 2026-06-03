@@ -151,7 +151,7 @@ export default function DistribuicaoLeadsPage() {
       const { data, error } = await supabase
         .from("tenant_members")
         .select(
-          "id,tenant_id,display_name,username,role_label,avatar_url,avatar_color,is_active,receives_leads,min_credit_value,max_credit_value,daily_lead_limit" as any,
+          "id,tenant_id,display_name,username,role_label,avatar_url,avatar_color,is_active,receives_leads,min_credit_value,max_credit_value,daily_lead_limit,notify_inapp,notify_whatsapp,phone" as any,
         )
         .eq("tenant_id", effectiveTenant!)
         .eq("is_active", true)
