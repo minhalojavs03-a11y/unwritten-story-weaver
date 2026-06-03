@@ -321,7 +321,7 @@ Deno.serve(async (req) => {
     // Regra: (min IS NULL OR creditValue >= min) AND (max IS NULL OR creditValue <= max).
     const { data: consultantsRaw } = await admin
       .from("tenant_members")
-      .select("id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit")
+      .select("id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit, email, notify_inapp, notify_whatsapp")
       .eq("tenant_id", lead.tenant_id)
       .eq("is_active", true)
       .eq("receives_leads", true)
