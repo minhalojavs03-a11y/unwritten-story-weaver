@@ -795,7 +795,25 @@ Deno.serve(async (req: Request) => {
     }
 
     const { fromMe, isGroup, phone, text: rawText, externalId, pushName, avatar, media } = extractMessage(payload);
-    const hasMedia = !!media.kind && (!!media.url || !!media.base64);
+    let hasMedia = !!media.kind && (!!media.url || !!media.base64);
+
+    // Fallback: o provedor pode anunciar a mídia (messageType=imageMessage etc.)
+    // sem enviar URL nem base64. Nesse caso, baixamos os bytes via API do uazapi
+    // usando o messageid. Isso é o que torna anexos enviados pelo WhatsApp nativo
+    // (consultor mandando uma foto direto do celular) aparecerem no chat.
+    if (media.kind && !media.url && !media.base64 && externalId) {
+      try {
+        const fetched = await fetchProviderMediaBytes(instance, externalId);
+        if (fetched.base64) {
+          media.base64 = fetched.base64;
+          if (!media.mime) media.mime = fetched.mime;
+          if (!media.fileName) media.fileName = fetched.fileName;
+          hasMedia = true;
+        }
+      } catch (e) {
+        console.warn("media fallback fetch failed", (e as any)?.message);
+      }
+    }
 
     // Timestamp da mensagem (usado para descartar history-sync residual)
     const tsRaw =
@@ -810,6 +828,22 @@ Deno.serve(async (req: Request) => {
     const isOldMessage = !!(tsMs && Date.now() - tsMs > 5 * 60 * 1000);
 
     const text = rawText ?? (hasMedia ? (media.caption ?? MEDIA_PLACEHOLDER[media.kind!] ?? "📎 Mídia") : "");
+
+    // Debug: se não conseguimos extrair nem texto nem mídia mas o payload tem
+    // uma mensagem (não é ack/conexão), logamos as chaves para diagnóstico.
+    if (!rawText && !hasMedia && (phone || externalId)) {
+      const m = payload?.message ?? payload?.data?.message ?? payload?.data ?? payload;
+      const mKeys = m && typeof m === "object" ? Object.keys(m).slice(0, 30) : [];
+      console.log("webhook payload undetected", JSON.stringify({
+        event: evt,
+        fromMe,
+        mediaKind: media.kind,
+        mediaHasUrl: !!media.url,
+        mediaHasB64: !!media.base64,
+        externalId,
+        messageKeys: mKeys,
+      }).slice(0, 800));
+    }
 
     // Persistência "raw" exclusiva do superadmin:
     // grupos, mensagens enviadas pelo próprio número e history-sync residual NÃO
