@@ -243,7 +243,7 @@ export default function FilaLeadsPage() {
 
   async function load() {
     if (!tenantId && !isSuperadmin) return;
-    if (!activeMember?.id && !user?.id) {
+    if (!canSeeAll && !activeMember?.id && !user?.id) {
       setLeads([]);
       setAssigneeNames({});
       setNotifiedByLead({});
@@ -257,14 +257,16 @@ export default function FilaLeadsPage() {
       .not("stage", "in", "(perdido,comprou,historico)")
       .eq("kind", "lead");
     if (!isSuperadmin) query = query.eq("tenant_id", tenantId!);
-    // Mostra apenas leads atribuídos ao consultor atual. Suporta atribuição nova
-    // por membro interno e atribuições legadas/importadas por usuário Supabase.
-    if (activeMember?.id && user?.id) {
-      query = query.or(`assigned_member_id.eq.${activeMember.id},assigned_to.eq.${user.id}`);
-    } else if (activeMember?.id) {
-      query = query.eq("assigned_member_id", activeMember.id);
-    } else {
-      query = query.eq("assigned_to", user!.id);
+    // Supervisor/owner/superadmin (view_all_leads) veem toda a fila do tenant.
+    // Demais consultores só veem leads atribuídos a si.
+    if (!canSeeAll) {
+      if (activeMember?.id && user?.id) {
+        query = query.or(`assigned_member_id.eq.${activeMember.id},assigned_to.eq.${user.id}`);
+      } else if (activeMember?.id) {
+        query = query.eq("assigned_member_id", activeMember.id);
+      } else {
+        query = query.eq("assigned_to", user!.id);
+      }
     }
     const { data, error } = await query.order("created_at", { ascending: false }).limit(200);
     if (error) toast.error(error.message);
