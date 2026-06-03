@@ -121,69 +121,34 @@ export default function DistribuicaoLeadsPage() {
   const qc = useQueryClient();
 
   const canAccess = isSuperadmin || isOwner;
-  const { data: tenants = [] } = useAllTenants();
-  const [scopeTenantId, setScopeTenantId] = useState<string | null>(null);
-  useEffect(() => {
-    if (!scopeTenantId && authTenantId) setScopeTenantId(authTenantId);
-  }, [authTenantId, scopeTenantId]);
-  const effectiveTenant = isSuperadmin ? scopeTenantId : authTenantId;
+  const effectiveTenant = authTenantId;
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["lead-distribution-members", effectiveTenant],
     enabled: !!effectiveTenant && canAccess,
     queryFn: async (): Promise<Row[]> => {
-      // 1) Consultores reais: tenant_memberships com role consultant/attendant + perfil
-      const { data: memberships, error: mErr } = await supabase
-        .from("tenant_memberships")
-        .select("user_id, role")
-        .eq("tenant_id", effectiveTenant!)
-        .in("role", ["consultant", "attendant"]);
-      if (mErr) throw mErr;
-      const userIds = (memberships ?? []).map((m: any) => m.user_id);
-      if (userIds.length === 0) return [];
-
-      const [profilesRes, distRes] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("id, display_name, full_name, username, role_label, avatar_url, avatar_color, phone")
-          .in("id", userIds),
-        supabase
-          .from("tenant_members" as any)
-          .select(
-            "id, user_id, receives_leads, min_credit_value, max_credit_value, daily_lead_limit, notify_inapp, notify_whatsapp, is_active, phone, role_label, display_name, username, avatar_url, avatar_color",
-          )
-          .eq("tenant_id", effectiveTenant!)
-          .in("user_id", userIds),
-      ]);
-      if (profilesRes.error) throw profilesRes.error;
-      if (distRes.error) throw distRes.error;
-      const distByUser = new Map<string, any>();
-      for (const d of (distRes.data as any[]) ?? []) {
-        if (d.user_id) distByUser.set(d.user_id as string, d);
-      }
-      const out: Row[] = (profilesRes.data ?? []).map((p: any) => {
-        const d = distByUser.get(p.id);
-        return {
-          id: d?.id ?? null,
-          user_id: p.id,
-          tenant_id: effectiveTenant!,
-          display_name: d?.display_name ?? p.display_name ?? p.full_name ?? null,
-          username: d?.username ?? p.username ?? null,
-          role_label: d?.role_label ?? p.role_label ?? "Consultor",
-          avatar_url: d?.avatar_url ?? p.avatar_url ?? null,
-          avatar_color: d?.avatar_color ?? p.avatar_color ?? null,
-          is_active: d?.is_active ?? true,
-          receives_leads: d?.receives_leads ?? false,
-          min_credit_value: d?.min_credit_value ?? null,
-          max_credit_value: d?.max_credit_value ?? null,
-          daily_lead_limit: d?.daily_lead_limit ?? null,
-          notify_inapp: d?.notify_inapp ?? true,
-          notify_whatsapp: d?.notify_whatsapp ?? true,
-          phone: d?.phone ?? p.phone ?? null,
-        };
+      const { data, error } = await supabase.rpc("list_distribution_consultants" as any, {
+        _tenant_id: effectiveTenant!,
       });
-      out.sort((a, b) => (a.display_name ?? "").localeCompare(b.display_name ?? ""));
-      return out;
+      if (error) throw error;
+      return ((data ?? []) as any[]).map((r) => ({
+        id: r.id ?? null,
+        user_id: r.user_id ?? null,
+        tenant_id: r.tenant_id,
+        display_name: r.display_name ?? null,
+        username: r.username ?? null,
+        role_label: r.role_label ?? "Consultor",
+        avatar_url: r.avatar_url ?? null,
+        avatar_color: r.avatar_color ?? null,
+        is_active: r.is_active ?? true,
+        receives_leads: r.receives_leads ?? false,
+        min_credit_value: r.min_credit_value == null ? CREDIT_MIN : Number(r.min_credit_value),
+        max_credit_value: r.max_credit_value == null ? CREDIT_MAX : Number(r.max_credit_value),
+        daily_lead_limit: r.daily_lead_limit ?? null,
+        notify_inapp: r.notify_inapp ?? true,
+        notify_whatsapp: r.notify_whatsapp ?? true,
+        phone: r.phone ?? null,
+      }));
     },
   });
 
