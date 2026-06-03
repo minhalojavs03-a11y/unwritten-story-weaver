@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-type AppRole = "superadmin" | "owner" | "attendant";
+type AppRole = "superadmin" | "owner" | "supervisor" | "consultant" | "attendant";
 
 type AuthContextRow = {
   tenant_id: string | null;
