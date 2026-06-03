@@ -309,7 +309,7 @@ Deno.serve(async (req: Request) => {
       .select("id, conversation_id")
       .eq("tenant_id", tenantId)
       .eq("direction", "outbound")
-      .not("sent_by", "is", null)
+      .not("lead_id", "is", null)
       .not("conversation_id", "is", null)
       .gte("created_at", since)
       .order("created_at", { ascending: false })
