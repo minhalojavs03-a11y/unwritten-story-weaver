@@ -253,6 +253,25 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
   );
 }
 
+function LimitExceededState() {
+  return (
+    <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-10 text-center">
+      <Ban className="mx-auto h-12 w-12 text-destructive" />
+      <h2 className="mt-3 font-display text-xl font-bold text-destructive">Limite de tentativas excedido</h2>
+      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+        Você já criou o número máximo permitido de instâncias de WhatsApp e nenhuma foi conectada.
+        Por segurança, novas tentativas foram bloqueadas.
+      </p>
+      <p className="mx-auto mt-3 max-w-md text-sm font-medium text-foreground">
+        Entre em contato com o desenvolvedor para liberar uma nova tentativa.
+      </p>
+      <Button className="mt-5" disabled>
+        <Ban className="mr-2 h-4 w-4" /> Criação bloqueada
+      </Button>
+    </div>
+  );
+}
+
 function MyInstance({ instance, onChanged }: { instance: Instance; onChanged: () => void }) {
   const [local, setLocal] = useState<Instance>(instance);
   const [qr, setQr] = useState<string | null>(instance.qr_code);
