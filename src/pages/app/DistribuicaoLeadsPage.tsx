@@ -454,17 +454,18 @@ export default function DistribuicaoLeadsPage() {
                           onChange={(e) =>
                             setLocal((s) => ({
                               ...s,
-                              [r.id]: {
-                                ...s[r.id],
+                              [k]: {
+                                ...s[k],
                                 daily_lead_limit: e.target.value === "" ? null : Math.max(0, Number(e.target.value)),
                               },
                             }))
                           }
                           onBlur={() => {
-                            if ((local[r.id]?.daily_lead_limit ?? null) !== r.daily_lead_limit) {
+                            if ((local[k]?.daily_lead_limit ?? null) !== r.daily_lead_limit) {
                               saveDistribution(r, {}, "Limite diário");
                             }
                           }}
+
                           className="h-9"
                         />
                       </div>
