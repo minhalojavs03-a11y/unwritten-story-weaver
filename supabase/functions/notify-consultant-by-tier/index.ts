@@ -44,17 +44,95 @@ function buildLeadNotice(lead: any, creditValue: number | null): string {
   const yyyy = now.getFullYear();
   const hh = String(now.getHours()).padStart(2, "0");
   const mi = String(now.getMinutes()).padStart(2, "0");
-  const category = lead.asset_type || lead.opportunity_type || lead.interest || "—";
+  const category = lead.asset_type || lead.opportunity_type || lead.interest || "Consórcio";
   return [
     `🔔 *Novo lead atribuído a você!*`,
     ``,
     `👤 *Nome:* ${lead.name || "(sem nome)"}`,
     `💰 *Carta contemplada:* ${brl(creditValue)}`,
-    `📋 *Categoria:* ${category}`,
+    `📋 *Tipo:* ${category}`,
     `📅 *Recebido em:* ${dd}/${mm}/${yyyy} às ${hh}:${mi}`,
     ``,
     `Acesse o sistema para iniciar o atendimento.`,
   ].join("\n");
+}
+
+// ===== In-app notification fan-out =====
+async function fanoutAppNotifications(admin: any, params: {
+  tenantId: string;
+  leadId: string;
+  leadName: string;
+  creditValue: number | null;
+  consultantMemberId: string;
+  consultantName: string;
+  consultantEmail: string | null;
+  consultantNotifyInapp: boolean;
+}) {
+  try {
+    const { tenantId, leadId, leadName, creditValue, consultantMemberId,
+      consultantName, consultantEmail, consultantNotifyInapp } = params;
+    const valueLabel = brl(creditValue);
+    const rows: any[] = [];
+
+    if (consultantNotifyInapp && consultantEmail) {
+      const { data: prof } = await admin
+        .from("profiles").select("id").eq("email", consultantEmail).maybeSingle();
+      if (prof?.id) {
+        rows.push({
+          tenant_id: tenantId, recipient_user_id: prof.id,
+          type: "new_lead",
+          title: "Novo lead atribuído",
+          body: `👤 ${leadName} · 💰 ${valueLabel}`,
+          lead_id: leadId,
+          metadata: { consultant_member_id: consultantMemberId },
+        });
+      }
+    }
+
+    const { data: owners } = await admin
+      .from("tenant_memberships").select("user_id")
+      .eq("tenant_id", tenantId).eq("role", "owner");
+    for (const o of owners || []) {
+      if (!o.user_id) continue;
+      rows.push({
+        tenant_id: tenantId, recipient_user_id: o.user_id,
+        type: "lead_distributed",
+        title: "Lead distribuído",
+        body: `👤 ${leadName} · 💰 ${valueLabel} → ${consultantName}`,
+        lead_id: leadId,
+      });
+    }
+
+    const { data: tenant } = await admin
+      .from("tenants").select("name").eq("id", tenantId).maybeSingle();
+    const tenantName = tenant?.name || "Tenant";
+    const { data: supers } = await admin
+      .from("user_roles").select("user_id").eq("role", "superadmin");
+    for (const s of supers || []) {
+      if (!s.user_id) continue;
+      rows.push({
+        tenant_id: tenantId, recipient_user_id: s.user_id,
+        type: "lead_distributed",
+        title: "Lead distribuído",
+        body: `👤 ${leadName} · 💰 ${valueLabel} → ${consultantName} (${tenantName})`,
+        lead_id: leadId,
+      });
+    }
+
+    const seen = new Set<string>();
+    const unique = rows.filter((r) => {
+      if (seen.has(r.recipient_user_id)) return false;
+      seen.add(r.recipient_user_id);
+      return true;
+    });
+
+    if (unique.length > 0) {
+      const { error } = await admin.from("app_notifications").insert(unique);
+      if (error) console.error("app_notifications insert error", error);
+    }
+  } catch (e) {
+    console.error("fanoutAppNotifications error", e);
+  }
 }
 
 function normalizePhone(p: string | null | undefined): string | null {
