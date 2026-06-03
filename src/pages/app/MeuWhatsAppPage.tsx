@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, RefreshCw, CheckCircle2, Smartphone, Plus, LogOut, AlertCircle, Trash2 } from "lucide-react";
+import { Loader2, RefreshCw, CheckCircle2, Smartphone, Plus, LogOut, AlertCircle, Trash2, Ban } from "lucide-react";
 import { PageHeader } from "./PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +69,7 @@ export default function MeuWhatsAppPage() {
   const [creating, setCreating] = useState(false);
   const [confirmExtra, setConfirmExtra] = useState(false);
   const [phone, setPhone] = useState("");
+  const [limitExceeded, setLimitExceeded] = useState(false);
 
   // Em modo suporte: identificamos o consultor impersonado e mostramos
   // SOMENTE a instância dele (mesma visão que ele teria ao logar).
@@ -119,7 +120,11 @@ export default function MeuWhatsAppPage() {
           });
           mine = c?.instance ?? null;
         } catch (e: any) {
-          toast({ title: "Erro ao preparar WhatsApp", description: e?.message, variant: "destructive" });
+          if (e?.body?.limit_exceeded) {
+            setLimitExceeded(true);
+          } else {
+            toast({ title: "Erro ao preparar WhatsApp", description: e?.message, variant: "destructive" });
+          }
         }
       }
 
@@ -150,7 +155,11 @@ export default function MeuWhatsAppPage() {
       setConfirmExtra(false);
       toast({ title: "WhatsApp criado", description: "Escaneie o QR para conectar." });
     } catch (e: any) {
-      if (e?.code === "extra_confirmation_required") {
+      if (e?.body?.limit_exceeded) {
+        setLimitExceeded(true);
+        setShowCreate(false);
+        toast({ title: "Limite atingido", description: "Entre em contato com o desenvolvedor.", variant: "destructive" });
+      } else if (e?.code === "extra_confirmation_required") {
         setConfirmExtra(true);
         toast({ title: "Atenção", description: e.message, variant: "destructive" });
       } else {
@@ -167,6 +176,8 @@ export default function MeuWhatsAppPage() {
 
       {loading ? (
         <Centered><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></Centered>
+      ) : limitExceeded && !instance ? (
+        <LimitExceededState />
       ) : !instance ? (
         <EmptyState onCreate={() => setShowCreate(true)} />
       ) : (
@@ -237,6 +248,25 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
       </p>
       <Button className="mt-5" onClick={onCreate}>
         <Plus className="mr-2 h-4 w-4" /> Conectar meu WhatsApp
+      </Button>
+    </div>
+  );
+}
+
+function LimitExceededState() {
+  return (
+    <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-10 text-center">
+      <Ban className="mx-auto h-12 w-12 text-destructive" />
+      <h2 className="mt-3 font-display text-xl font-bold text-destructive">Limite de tentativas excedido</h2>
+      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+        Você já criou o número máximo permitido de instâncias de WhatsApp e nenhuma foi conectada.
+        Por segurança, novas tentativas foram bloqueadas.
+      </p>
+      <p className="mx-auto mt-3 max-w-md text-sm font-medium text-foreground">
+        Entre em contato com o desenvolvedor para liberar uma nova tentativa.
+      </p>
+      <Button className="mt-5" disabled>
+        <Ban className="mr-2 h-4 w-4" /> Criação bloqueada
       </Button>
     </div>
   );
