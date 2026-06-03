@@ -63,14 +63,39 @@ function NotificationLog({ memberId }: { memberId: string }) {
   const { data, isLoading } = useQuery({
     queryKey: ["dist-notif-log", memberId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("lead_notifications")
-        .select("id, sent_at, delivered, lead:leads(name, credit_value)")
-        .eq("recipient_member_id", memberId)
-        .order("sent_at", { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return data ?? [];
+      // Combina entradas in-app (app_notifications) e WhatsApp (whatsapp_notification_log)
+      const [waRes, inappRes] = await Promise.all([
+        supabase
+          .from("whatsapp_notification_log" as any)
+          .select("id, sent_at, status, error_message, lead:leads(name, credit_value)")
+          .eq("consultant_member_id", memberId)
+          .order("sent_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("app_notifications" as any)
+          .select("id, created_at, read, lead:leads(name, credit_value), metadata")
+          .eq("type", "new_lead")
+          .contains("metadata", { consultant_member_id: memberId })
+          .order("created_at", { ascending: false })
+          .limit(10),
+      ]);
+      const wa = ((waRes.data ?? []) as any[]).map((r) => ({
+        id: `wa:${r.id}`,
+        channel: "WhatsApp" as const,
+        when: r.sent_at,
+        status: r.status as "sent" | "failed" | "skipped",
+        lead: r.lead,
+      }));
+      const ia = ((inappRes.data ?? []) as any[]).map((r) => ({
+        id: `ia:${r.id}`,
+        channel: "Painel" as const,
+        when: r.created_at,
+        status: r.read ? "viewed" : "sent",
+        lead: r.lead,
+      }));
+      return [...wa, ...ia]
+        .sort((a, b) => (a.when < b.when ? 1 : -1))
+        .slice(0, 10);
     },
   });
   if (isLoading) {
@@ -79,22 +104,27 @@ function NotificationLog({ memberId }: { memberId: string }) {
   if (!data || data.length === 0) {
     return <div className="py-2 text-xs text-muted-foreground">Nenhuma notificação recente.</div>;
   }
+  const statusBadge = (s: string) => {
+    if (s === "sent") return <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-emerald-700 dark:text-emerald-400">✅ Enviado</span>;
+    if (s === "failed") return <span className="rounded bg-destructive/15 px-1.5 py-0.5 text-destructive">❌ Falhou</span>;
+    if (s === "viewed") return <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-sky-700 dark:text-sky-400">👁 Visualizado</span>;
+    return <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">— {s}</span>;
+  };
   return (
     <ul className="divide-y divide-border/60 text-xs">
       {data.map((n: any) => (
-        <li key={n.id} className="flex items-center justify-between gap-2 py-1.5">
-          <div className="min-w-0 flex-1">
+        <li key={n.id} className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-2 py-1.5">
+          <div className="min-w-0">
             <p className="truncate font-medium text-foreground">{n.lead?.name || "(sem nome)"}</p>
             <p className="text-muted-foreground">
               {n.lead?.credit_value != null ? formatCurrency(Number(n.lead.credit_value)) : "—"}
             </p>
           </div>
-          <div className="text-right text-muted-foreground">
-            <div>{new Date(n.sent_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</div>
-            <div className={n.delivered ? "text-emerald-600" : "text-amber-600"}>
-              {n.delivered ? "Enviada" : "Falhou"}
-            </div>
-          </div>
+          <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">{n.channel}</span>
+          {statusBadge(n.status)}
+          <span className="text-right text-muted-foreground">
+            {new Date(n.when).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+          </span>
         </li>
       ))}
     </ul>
