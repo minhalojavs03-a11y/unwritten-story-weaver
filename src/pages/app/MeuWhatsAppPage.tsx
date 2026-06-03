@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, RefreshCw, CheckCircle2, Smartphone, Plus, LogOut, AlertCircle, Trash2 } from "lucide-react";
+import { Loader2, RefreshCw, CheckCircle2, Smartphone, Plus, LogOut, AlertCircle, Trash2, Ban } from "lucide-react";
 import { PageHeader } from "./PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
