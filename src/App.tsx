@@ -36,6 +36,7 @@ import ChangelogPage from "./pages/app/ChangelogPage";
 import RankingPage from "./pages/app/RankingPage";
 import RelatoriosPage from "./pages/app/RelatoriosPage";
 import CoachingPage from "./pages/app/CoachingPage";
+import NiltonLeadsPage from "./pages/app/NiltonLeadsPage";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClientes from "./pages/admin/AdminClientes";
