@@ -17,7 +17,7 @@ import { useSupportImpersonation } from "@/hooks/useSupportImpersonation";
 export function useEffectiveRole() {
   const { isOwner, isSuperadmin, roles } = useAuth();
   const { member } = useActiveMember();
-  const { isImpersonating, role: supportRole } = useSupportImpersonation();
+  const { isImpersonating, role: supportRole, isLoadingRole } = useSupportImpersonation();
 
   const label = (member?.role_label ?? "").toLowerCase().trim();
   const memberIsOwner = !member || label === "dono" || label === "owner" || label === "proprietário" || label === "proprietario";
@@ -47,5 +47,6 @@ export function useEffectiveRole() {
     isOwner: effectiveIsOwner,
     isSupervisor: effectiveIsSupervisor,
     activeMember: member,
+    isRoleLoading: isImpersonating && isLoadingRole && !supportRole,
   };
 }
