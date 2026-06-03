@@ -3,19 +3,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
-import { useAllTenants } from "@/hooks/useData";
 import { PageHeader } from "./PageHeader";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ShieldAlert, Users2, Info, ChevronDown, ChevronUp, Bell } from "lucide-react";
@@ -30,7 +22,7 @@ import { formatCurrency } from "@/lib/format";
 type Row = {
   // id do tenant_members (pode ser null se ainda não existir — criamos sob demanda)
   id: string | null;
-  user_id: string;
+  user_id: string | null;
   tenant_id: string;
   display_name: string | null;
   username: string | null;
@@ -47,19 +39,8 @@ type Row = {
   phone: string | null;
 };
 
-function rowKey(r: { id: string | null; user_id: string }) {
+function rowKey(r: { id: string | null; user_id: string | null }) {
   return r.id ?? `u:${r.user_id}`;
-}
-
-
-function parseBRL(s: string): number | null {
-  const digits = s.replace(/\D/g, "");
-  if (!digits) return null;
-  return Number(digits);
-}
-function formatBRLInput(v: number | null | undefined): string {
-  if (v == null) return "";
-  return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(v);
 }
 
 function NotificationLog({ memberId }: { memberId: string }) {
