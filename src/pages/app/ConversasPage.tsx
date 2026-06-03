@@ -176,7 +176,7 @@ export default function ConversasPage() {
       if (!cancelled) setAssignedLeads(data ?? []);
     })();
     return () => { cancelled = true; };
-  }, [tenantId, member?.id, member?.role_label, canViewAll, userId, conversations, isSuperadmin, myWhatsAppInstanceKey]);
+  }, [tenantId, member?.id, member?.role_label, canViewAll, userId, conversations, isSuperadmin, myWhatsAppInstanceKey, conversationsKind]);
 
   // Dado leadId da URL, encontra/garante uma conversa (busca direta + fallback de criação)
   const [fetchedActive, setFetchedActive] = useState<any | null>(null);
