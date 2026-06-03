@@ -28,9 +28,15 @@ export const fmtPct = (a: number, b: number) => (b > 0 ? `${((a / b) * 100).toFi
 
 function data_lost_pct(lost: number, total: number) { return total > 0 ? (lost / total) * 100 : 0; }
 
-export function useReportData(period: Period, memberFilter: string, scopeMemberId?: string | null) {
-  const { data: allLeads = [] } = useLeads();
-  const { data: members = [] } = useTenantMembers();
+export function useReportData(
+  period: Period,
+  memberFilter: string,
+  scopeMemberId?: string | null,
+  scopeTenantId?: string | null,
+) {
+  // scopeTenantId undefined = padrão; null = global (superadmin); string = tenant específico
+  const { data: allLeads = [] } = useLeads(scopeTenantId !== undefined ? { tenantId: scopeTenantId } : undefined);
+  const { data: members = [] } = useTenantMembers(scopeTenantId === null ? null : scopeTenantId);
 
   return useMemo(() => {
     const start = periodStart(period);
