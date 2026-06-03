@@ -74,8 +74,8 @@ export function AppLayout() {
     return () => window.removeEventListener("storage", read);
   }, []);
 
-  const isSuperadmin = realIsSuperadmin && !impersonating;
-  const isOwner = realIsOwner && !impersonating;
+  const isSuperadmin = realIsSuperadmin;
+  const isOwner = realIsOwner;
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -84,7 +84,7 @@ export function AppLayout() {
   useEffect(() => {
     try { window.localStorage.setItem("sidebar_collapsed", collapsed ? "1" : "0"); } catch { return; }
   }, [collapsed]);
-  const isSupervisor = realIsSupervisor && !impersonating;
+  const isSupervisor = realIsSupervisor;
 
   // Lista única por papel — só o que realmente importa no dia a dia.
   // Itens menos usados ficam em /configuracoes (Mensagens prontas, Gravações,
@@ -109,7 +109,7 @@ export function AppLayout() {
     const meuWa: NavItem = { to: "/meu-whatsapp", label: "Meu WhatsApp", icon: Smartphone };
     const config: NavItem = { to: "/configuracoes", label: "Configurações", icon: Settings };
 
-    if (impersonating) {
+    if (impersonating && !isOwner && !isSupervisor) {
       return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, config];
     }
     if (isOwner || isSuperadmin) {
