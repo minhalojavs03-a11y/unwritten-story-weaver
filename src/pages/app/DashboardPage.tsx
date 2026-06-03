@@ -69,7 +69,7 @@ export default function DashboardPage() {
   const activeLeads = leads.filter((l) => !["comprou","perdido"].includes(l.stage ?? ""));
 
   // Executive analytics (only rendered for privileged users)
-  const execData = useReportData("30d", "all", scopeMemberId);
+  const execData = useReportData("30d", "all", effectiveMemberId, effectiveTenantOverride);
 
   // Speed-to-assume: tempo entre criação do lead e atribuição (em minutos)
   const assignedLeads = leads.filter((l) => l.assigned_member_id && l.assigned_member_at && l.created_at);
