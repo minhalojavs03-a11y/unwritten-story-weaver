@@ -95,6 +95,7 @@ const App = () => (
               <Route path="/clientes" element={<ClientesPage />} />
               <Route path="/leads" element={<LeadsPage />} />
               <Route path="/leads/fila" element={<FilaLeadsPage />} />
+              <Route path="/nilton" element={<NiltonLeadsPage />} />
               <Route path="/whatsapp" element={<ProtectedRoute requireOwner allowSupervisor><WhatsAppPage /></ProtectedRoute>} />
               <Route path="/meu-whatsapp" element={<MeuWhatsAppPage />} />
               <Route path="/treinar-ia" element={<ProtectedRoute requireOwner><TreinarIAPage /></ProtectedRoute>} />
