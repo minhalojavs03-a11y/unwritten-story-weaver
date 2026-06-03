@@ -19,6 +19,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ShieldAlert, Users2, Info, ChevronDown, ChevronUp, Bell } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+
+const CREDIT_MIN = 300_000;
+const CREDIT_MAX = 2_000_000;
+const CREDIT_STEP = 50_000;
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
 
