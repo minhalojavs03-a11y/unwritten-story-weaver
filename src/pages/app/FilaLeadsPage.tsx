@@ -143,9 +143,8 @@ export default function FilaLeadsPage() {
       let query = supabase
         .from("leads")
         .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id,tenant_id")
-        .eq("kind", "lead")
-        .not("stage", "in", "(perdido,comprou,historico)")
         .limit(50);
+      if (!canSeeAll) query = query.eq("kind", "lead").not("stage", "in", "(perdido,comprou,historico)");
       if (!isSuperadmin) query = query.eq("tenant_id", tenantId);
       if (!canSeeAll) {
         if (activeMember?.id && user?.id) {
@@ -253,9 +252,8 @@ export default function FilaLeadsPage() {
     }
     let query = supabase
       .from("leads")
-      .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id,tenant_id")
-      .not("stage", "in", "(perdido,comprou,historico)")
-      .eq("kind", "lead");
+      .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id,tenant_id");
+    if (!canSeeAll) query = query.not("stage", "in", "(perdido,comprou,historico)").eq("kind", "lead");
     if (!isSuperadmin) query = query.eq("tenant_id", tenantId!);
     // Supervisor/owner/superadmin (view_all_leads) veem toda a fila do tenant.
     // Demais consultores só veem leads atribuídos a si.
