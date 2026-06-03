@@ -453,7 +453,7 @@ export default function FilaLeadsPage() {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [tenantId, canSendToOthers, activeMember?.id]);
+  }, [tenantId, canSendToOthers, activeMember?.id, canSeeAll]);
 
   async function syncNow() {
     setSyncing(true);
