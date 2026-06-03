@@ -208,6 +208,23 @@ async function syncConfig(cfg: any, opts: { skipWelcome?: boolean } = {}) {
   const colEmail = mapping.email ? colLetterToIndex(mapping.email) : -1;
   const colInteresse = mapping.interesse ? colLetterToIndex(mapping.interesse) : -1;
 
+  // Distribution: round-robin entre tenants configurados.
+  // Se vazio, mantém comportamento legado (tudo no tenant da config).
+  const distTenants: string[] = Array.isArray(cfg.distribution_tenant_ids) && cfg.distribution_tenant_ids.length > 0
+    ? cfg.distribution_tenant_ids
+    : [cfg.tenant_id];
+  // Resolve owner user_id de cada tenant alvo (para assigned_to)
+  const tenantOwners = new Map<string, string | null>();
+  for (const tId of distTenants) {
+    const ownerRes = await sb(`/tenant_memberships?tenant_id=eq.${tId}&role=eq.owner&select=user_id&limit=1`);
+    const [own] = (await ownerRes.json()) ?? [];
+    tenantOwners.set(tId, own?.user_id || null);
+  }
+  // Contador para round-robin: começa pela quantidade já importada
+  const cntRes = await sb(`/sheet_imported_rows?sheet_sync_config_id=eq.${cfg.id}&select=id`);
+  const cntArr = await cntRes.json();
+  let distCursor = Array.isArray(cntArr) ? cntArr.length : 0;
+
   let newCount = 0;
   let lastRow = startIdx;
 
