@@ -2336,7 +2336,7 @@ export type Database = {
         Returns: boolean
       }
       list_distribution_consultants: {
-        Args: { _tenant_id: string }
+        Args: { _tenant_id?: string }
         Returns: {
           avatar_color: string
           avatar_url: string
