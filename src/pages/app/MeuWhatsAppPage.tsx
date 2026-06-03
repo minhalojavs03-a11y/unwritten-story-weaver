@@ -120,7 +120,11 @@ export default function MeuWhatsAppPage() {
           });
           mine = c?.instance ?? null;
         } catch (e: any) {
-          toast({ title: "Erro ao preparar WhatsApp", description: e?.message, variant: "destructive" });
+          if (e?.body?.limit_exceeded) {
+            setLimitExceeded(true);
+          } else {
+            toast({ title: "Erro ao preparar WhatsApp", description: e?.message, variant: "destructive" });
+          }
         }
       }
 
