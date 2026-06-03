@@ -35,6 +35,9 @@ type Row = {
   min_credit_value: number | null;
   max_credit_value: number | null;
   daily_lead_limit: number | null;
+  notify_inapp: boolean | null;
+  notify_whatsapp: boolean | null;
+  phone: string | null;
 };
 
 function normalize(s: string) {
@@ -60,14 +63,39 @@ function NotificationLog({ memberId }: { memberId: string }) {
   const { data, isLoading } = useQuery({
     queryKey: ["dist-notif-log", memberId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("lead_notifications")
-        .select("id, sent_at, delivered, lead:leads(name, credit_value)")
-        .eq("recipient_member_id", memberId)
-        .order("sent_at", { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return data ?? [];
+      // Combina entradas in-app (app_notifications) e WhatsApp (whatsapp_notification_log)
+      const [waRes, inappRes] = await Promise.all([
+        supabase
+          .from("whatsapp_notification_log" as any)
+          .select("id, sent_at, status, error_message, lead:leads(name, credit_value)")
+          .eq("consultant_member_id", memberId)
+          .order("sent_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("app_notifications" as any)
+          .select("id, created_at, read, lead:leads(name, credit_value), metadata")
+          .eq("type", "new_lead")
+          .contains("metadata", { consultant_member_id: memberId })
+          .order("created_at", { ascending: false })
+          .limit(10),
+      ]);
+      const wa = ((waRes.data ?? []) as any[]).map((r) => ({
+        id: `wa:${r.id}`,
+        channel: "WhatsApp" as const,
+        when: r.sent_at,
+        status: r.status as "sent" | "failed" | "skipped",
+        lead: r.lead,
+      }));
+      const ia = ((inappRes.data ?? []) as any[]).map((r) => ({
+        id: `ia:${r.id}`,
+        channel: "Painel" as const,
+        when: r.created_at,
+        status: r.read ? "viewed" : "sent",
+        lead: r.lead,
+      }));
+      return [...wa, ...ia]
+        .sort((a, b) => (a.when < b.when ? 1 : -1))
+        .slice(0, 10);
     },
   });
   if (isLoading) {
@@ -76,22 +104,27 @@ function NotificationLog({ memberId }: { memberId: string }) {
   if (!data || data.length === 0) {
     return <div className="py-2 text-xs text-muted-foreground">Nenhuma notificação recente.</div>;
   }
+  const statusBadge = (s: string) => {
+    if (s === "sent") return <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-emerald-700 dark:text-emerald-400">✅ Enviado</span>;
+    if (s === "failed") return <span className="rounded bg-destructive/15 px-1.5 py-0.5 text-destructive">❌ Falhou</span>;
+    if (s === "viewed") return <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-sky-700 dark:text-sky-400">👁 Visualizado</span>;
+    return <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">— {s}</span>;
+  };
   return (
     <ul className="divide-y divide-border/60 text-xs">
       {data.map((n: any) => (
-        <li key={n.id} className="flex items-center justify-between gap-2 py-1.5">
-          <div className="min-w-0 flex-1">
+        <li key={n.id} className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-2 py-1.5">
+          <div className="min-w-0">
             <p className="truncate font-medium text-foreground">{n.lead?.name || "(sem nome)"}</p>
             <p className="text-muted-foreground">
               {n.lead?.credit_value != null ? formatCurrency(Number(n.lead.credit_value)) : "—"}
             </p>
           </div>
-          <div className="text-right text-muted-foreground">
-            <div>{new Date(n.sent_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</div>
-            <div className={n.delivered ? "text-emerald-600" : "text-amber-600"}>
-              {n.delivered ? "Enviada" : "Falhou"}
-            </div>
-          </div>
+          <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">{n.channel}</span>
+          {statusBadge(n.status)}
+          <span className="text-right text-muted-foreground">
+            {new Date(n.when).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+          </span>
         </li>
       ))}
     </ul>
@@ -118,7 +151,7 @@ export default function DistribuicaoLeadsPage() {
       const { data, error } = await supabase
         .from("tenant_members")
         .select(
-          "id,tenant_id,display_name,username,role_label,avatar_url,avatar_color,is_active,receives_leads,min_credit_value,max_credit_value,daily_lead_limit" as any,
+          "id,tenant_id,display_name,username,role_label,avatar_url,avatar_color,is_active,receives_leads,min_credit_value,max_credit_value,daily_lead_limit,notify_inapp,notify_whatsapp,phone" as any,
         )
         .eq("tenant_id", effectiveTenant!)
         .eq("is_active", true)
@@ -188,6 +221,23 @@ export default function DistribuicaoLeadsPage() {
     toast.success(`${label} atualizado`);
     qc.invalidateQueries({ queryKey: ["lead-distribution-members", effectiveTenant] });
     qc.invalidateQueries({ queryKey: ["tenant-members", effectiveTenant] });
+  }
+
+  async function saveChannels(r: Row, patch: Partial<Pick<Row, "notify_inapp" | "notify_whatsapp">>, label: string) {
+    setLocal((s) => ({ ...s, [r.id]: { ...s[r.id], ...patch } }));
+    const next = { ...r, ...local[r.id], ...patch };
+    const { error } = await supabase.rpc("update_member_notification_channels" as any, {
+      _member_id: r.id,
+      _notify_inapp: !!next.notify_inapp,
+      _notify_whatsapp: !!next.notify_whatsapp,
+    });
+    if (error) {
+      toast.error(`Falha ao salvar ${label}: ${error.message}`);
+      setLocal((s) => { const c = { ...s }; delete c[r.id]; return c; });
+      return;
+    }
+    toast.success(`${label} atualizado`);
+    qc.invalidateQueries({ queryKey: ["lead-distribution-members", effectiveTenant] });
   }
 
   if (!canAccess) {
@@ -350,6 +400,35 @@ export default function DistribuicaoLeadsPage() {
                           className="h-9"
                         />
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Canais de aviso */}
+                  <div className="mt-3 grid grid-cols-1 gap-2 border-t border-border pt-3 sm:grid-cols-2">
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/60 px-3 py-2">
+                      <div className="min-w-0">
+                        <Label className="text-xs font-medium text-foreground">🔔 Aviso no painel</Label>
+                        <p className="text-[11px] text-muted-foreground">Notificação em tempo real no app.</p>
+                      </div>
+                      <Switch
+                        checked={!!valueOf(r, "notify_inapp")}
+                        onCheckedChange={(v) => saveChannels(r, { notify_inapp: v }, "Aviso no painel")}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/60 px-3 py-2">
+                      <div className="min-w-0">
+                        <Label className="text-xs font-medium text-foreground">📱 Aviso no WhatsApp</Label>
+                        {r.phone ? (
+                          <p className="text-[11px] text-muted-foreground">Mensagem direta ao número cadastrado.</p>
+                        ) : (
+                          <p className="text-[11px] text-amber-600">Número WhatsApp não cadastrado. Cadastre no perfil do consultor.</p>
+                        )}
+                      </div>
+                      <Switch
+                        checked={!!valueOf(r, "notify_whatsapp") && !!r.phone}
+                        disabled={!r.phone}
+                        onCheckedChange={(v) => saveChannels(r, { notify_whatsapp: v }, "Aviso no WhatsApp")}
+                      />
                     </div>
                   </div>
 

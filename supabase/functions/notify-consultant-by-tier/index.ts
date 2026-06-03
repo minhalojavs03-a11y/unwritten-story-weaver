@@ -44,17 +44,95 @@ function buildLeadNotice(lead: any, creditValue: number | null): string {
   const yyyy = now.getFullYear();
   const hh = String(now.getHours()).padStart(2, "0");
   const mi = String(now.getMinutes()).padStart(2, "0");
-  const category = lead.asset_type || lead.opportunity_type || lead.interest || "—";
+  const category = lead.asset_type || lead.opportunity_type || lead.interest || "Consórcio";
   return [
     `🔔 *Novo lead atribuído a você!*`,
     ``,
     `👤 *Nome:* ${lead.name || "(sem nome)"}`,
     `💰 *Carta contemplada:* ${brl(creditValue)}`,
-    `📋 *Categoria:* ${category}`,
+    `📋 *Tipo:* ${category}`,
     `📅 *Recebido em:* ${dd}/${mm}/${yyyy} às ${hh}:${mi}`,
     ``,
     `Acesse o sistema para iniciar o atendimento.`,
   ].join("\n");
+}
+
+// ===== In-app notification fan-out =====
+async function fanoutAppNotifications(admin: any, params: {
+  tenantId: string;
+  leadId: string;
+  leadName: string;
+  creditValue: number | null;
+  consultantMemberId: string;
+  consultantName: string;
+  consultantEmail: string | null;
+  consultantNotifyInapp: boolean;
+}) {
+  try {
+    const { tenantId, leadId, leadName, creditValue, consultantMemberId,
+      consultantName, consultantEmail, consultantNotifyInapp } = params;
+    const valueLabel = brl(creditValue);
+    const rows: any[] = [];
+
+    if (consultantNotifyInapp && consultantEmail) {
+      const { data: prof } = await admin
+        .from("profiles").select("id").eq("email", consultantEmail).maybeSingle();
+      if (prof?.id) {
+        rows.push({
+          tenant_id: tenantId, recipient_user_id: prof.id,
+          type: "new_lead",
+          title: "Novo lead atribuído",
+          body: `👤 ${leadName} · 💰 ${valueLabel}`,
+          lead_id: leadId,
+          metadata: { consultant_member_id: consultantMemberId },
+        });
+      }
+    }
+
+    const { data: owners } = await admin
+      .from("tenant_memberships").select("user_id")
+      .eq("tenant_id", tenantId).eq("role", "owner");
+    for (const o of owners || []) {
+      if (!o.user_id) continue;
+      rows.push({
+        tenant_id: tenantId, recipient_user_id: o.user_id,
+        type: "lead_distributed",
+        title: "Lead distribuído",
+        body: `👤 ${leadName} · 💰 ${valueLabel} → ${consultantName}`,
+        lead_id: leadId,
+      });
+    }
+
+    const { data: tenant } = await admin
+      .from("tenants").select("name").eq("id", tenantId).maybeSingle();
+    const tenantName = tenant?.name || "Tenant";
+    const { data: supers } = await admin
+      .from("user_roles").select("user_id").eq("role", "superadmin");
+    for (const s of supers || []) {
+      if (!s.user_id) continue;
+      rows.push({
+        tenant_id: tenantId, recipient_user_id: s.user_id,
+        type: "lead_distributed",
+        title: "Lead distribuído",
+        body: `👤 ${leadName} · 💰 ${valueLabel} → ${consultantName} (${tenantName})`,
+        lead_id: leadId,
+      });
+    }
+
+    const seen = new Set<string>();
+    const unique = rows.filter((r) => {
+      if (seen.has(r.recipient_user_id)) return false;
+      seen.add(r.recipient_user_id);
+      return true;
+    });
+
+    if (unique.length > 0) {
+      const { error } = await admin.from("app_notifications").insert(unique);
+      if (error) console.error("app_notifications insert error", error);
+    }
+  } catch (e) {
+    console.error("fanoutAppNotifications error", e);
+  }
 }
 
 function normalizePhone(p: string | null | undefined): string | null {
@@ -137,7 +215,7 @@ Deno.serve(async (req) => {
 
       const { data: member } = await admin
         .from("tenant_members")
-        .select("id, display_name, phone, role_label")
+        .select("id, display_name, phone, role_label, email, notify_inapp, notify_whatsapp")
         .eq("id", assignedId)
         .maybeSingle();
 
@@ -149,7 +227,6 @@ Deno.serve(async (req) => {
         return json({ ok: true, skipped: "assigned member is not a consultant" });
       }
       const phone = normalizePhone(member.phone);
-      if (!phone) return json({ ok: true, skipped: "assigned member has invalid phone" });
 
       const { data: existingConv } = await admin
         .from("conversations").select("id")
@@ -161,26 +238,57 @@ Deno.serve(async (req) => {
         });
       }
 
-      const { data: sender } = await admin
-        .from("whatsapp_instances")
-        .select("server_url,instance_token,status,is_connected")
-        .eq("tenant_id", lead.tenant_id)
-        .or("is_connected.eq.true,status.eq.connected")
-        .order("created_at", { ascending: true }).limit(1).maybeSingle();
+      // ===== In-app fan-out =====
+      await fanoutAppNotifications(admin, {
+        tenantId: lead.tenant_id,
+        leadId: lead.id,
+        leadName: lead.name || "(sem nome)",
+        creditValue: _creditValue,
+        consultantMemberId: member.id,
+        consultantName: member.display_name || "Consultor",
+        consultantEmail: member.email,
+        consultantNotifyInapp: member.notify_inapp !== false,
+      });
 
+      // ===== WhatsApp (se permitido e telefone válido) =====
       const text = buildLeadNotice(lead, _creditValue);
-
       let delivered = false;
-      if (sender?.server_url && sender?.instance_token) {
-        try {
-          await randomSendDelay();
-          const r = await fetch(`${sender.server_url}/send/text`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", token: sender.instance_token! },
-            body: JSON.stringify({ number: phone, text }),
-          });
-          delivered = r.ok;
-        } catch (e) { console.error("whatsapp send error", e); }
+      let waStatus: "sent" | "failed" | "skipped" = "skipped";
+      let waError: string | null = null;
+
+      if (member.notify_whatsapp === false) {
+        waStatus = "skipped";
+        waError = "consultant has notify_whatsapp disabled";
+      } else if (!phone) {
+        waStatus = "failed";
+        waError = "invalid phone";
+      } else {
+        const { data: sender } = await admin
+          .from("whatsapp_instances")
+          .select("server_url,instance_token,status,is_connected")
+          .eq("tenant_id", lead.tenant_id)
+          .or("is_connected.eq.true,status.eq.connected")
+          .order("created_at", { ascending: true }).limit(1).maybeSingle();
+        if (sender?.server_url && sender?.instance_token) {
+          try {
+            await randomSendDelay();
+            const r = await fetch(`${sender.server_url}/send/text`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", token: sender.instance_token! },
+              body: JSON.stringify({ number: phone, text }),
+            });
+            delivered = r.ok;
+            waStatus = r.ok ? "sent" : "failed";
+            if (!r.ok) waError = `http ${r.status}`;
+          } catch (e) {
+            console.error("whatsapp send error", e);
+            waStatus = "failed";
+            waError = String(e);
+          }
+        } else {
+          waStatus = "failed";
+          waError = "no connected whatsapp instance";
+        }
       }
 
       await admin.from("lead_notifications").insert({
@@ -189,8 +297,12 @@ Deno.serve(async (req) => {
         recipient_phone: phone, recipient_member_id: member.id,
         message_sent: text, delivered,
       });
+      await admin.from("whatsapp_notification_log").insert({
+        tenant_id: lead.tenant_id, consultant_member_id: member.id, lead_id: lead.id,
+        status: waStatus, error_message: waError,
+      });
 
-      return json({ ok: true, notified_existing_assignee: { id: member.id, name: member.display_name, delivered } });
+      return json({ ok: true, notified_existing_assignee: { id: member.id, name: member.display_name, delivered, wa_status: waStatus } });
     }
     // Lead importado de planilha (base antiga) — não dispara rotação,
     // exceto quando force=true (backfill manual).
@@ -209,7 +321,7 @@ Deno.serve(async (req) => {
     // Regra: (min IS NULL OR creditValue >= min) AND (max IS NULL OR creditValue <= max).
     const { data: consultantsRaw } = await admin
       .from("tenant_members")
-      .select("id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit")
+      .select("id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit, email, notify_inapp, notify_whatsapp")
       .eq("tenant_id", lead.tenant_id)
       .eq("is_active", true)
       .eq("receives_leads", true)
@@ -295,9 +407,6 @@ Deno.serve(async (req) => {
 
     const chosen = ranked[0];
     const chosenPhone = normalizePhone(chosen.phone);
-    if (!chosenPhone) {
-      return json({ ok: true, skipped: "chosen consultant has invalid phone" });
-    }
 
     // Atribui o lead ao escolhido (com guarda de concorrência: só se ainda estiver livre).
     const { data: assigned, error: assignErr } = await admin
@@ -321,8 +430,6 @@ Deno.serve(async (req) => {
       return json({ ok: true, skipped: "lead was just assigned by someone else" });
     }
 
-    // Garante que exista uma conversa para o lead — assim ela já aparece em
-    // "Conversas" do consultor sem precisar clicar em "Assumir".
     const { data: existingConv } = await admin
       .from("conversations")
       .select("id")
@@ -341,32 +448,59 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: sender } = await admin
-      .from("whatsapp_instances")
-      .select("server_url,instance_token,status,is_connected")
-      .eq("tenant_id", lead.tenant_id)
-      .or("is_connected.eq.true,status.eq.connected")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+    // ===== In-app fan-out =====
+    await fanoutAppNotifications(admin, {
+      tenantId: lead.tenant_id,
+      leadId: lead.id,
+      leadName: lead.name || "(sem nome)",
+      creditValue,
+      consultantMemberId: chosen.id,
+      consultantName: chosen.display_name || "Consultor",
+      consultantEmail: chosen.email,
+      consultantNotifyInapp: chosen.notify_inapp !== false,
+    });
 
+    // ===== WhatsApp =====
     const text = buildLeadNotice(lead, creditValue);
-
     let delivered = false;
-    if (sender?.server_url && sender?.instance_token) {
-      try {
-        await randomSendDelay();
-        const r = await fetch(`${sender.server_url}/send/text`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", token: sender.instance_token! },
-          body: JSON.stringify({ number: chosenPhone, text }),
-        });
-        delivered = r.ok;
-      } catch (e) {
-        console.error("whatsapp send error", e);
-      }
+    let waStatus: "sent" | "failed" | "skipped" = "skipped";
+    let waError: string | null = null;
+
+    if (chosen.notify_whatsapp === false) {
+      waStatus = "skipped";
+      waError = "consultant has notify_whatsapp disabled";
+    } else if (!chosenPhone) {
+      waStatus = "failed";
+      waError = "invalid phone";
     } else {
-      console.warn("no connected whatsapp instance — lead assigned without notification");
+      const { data: sender } = await admin
+        .from("whatsapp_instances")
+        .select("server_url,instance_token,status,is_connected")
+        .eq("tenant_id", lead.tenant_id)
+        .or("is_connected.eq.true,status.eq.connected")
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (sender?.server_url && sender?.instance_token) {
+        try {
+          await randomSendDelay();
+          const r = await fetch(`${sender.server_url}/send/text`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", token: sender.instance_token! },
+            body: JSON.stringify({ number: chosenPhone, text }),
+          });
+          delivered = r.ok;
+          waStatus = r.ok ? "sent" : "failed";
+          if (!r.ok) waError = `http ${r.status}`;
+        } catch (e) {
+          console.error("whatsapp send error", e);
+          waStatus = "failed";
+          waError = String(e);
+        }
+      } else {
+        waStatus = "failed";
+        waError = "no connected whatsapp instance";
+      }
     }
 
     await admin.from("lead_notifications").insert({
@@ -378,11 +512,15 @@ Deno.serve(async (req) => {
       message_sent: text,
       delivered,
     });
+    await admin.from("whatsapp_notification_log").insert({
+      tenant_id: lead.tenant_id, consultant_member_id: chosen.id, lead_id: lead.id,
+      status: waStatus, error_message: waError,
+    });
 
     return json({
       ok: true,
       credit_value: creditValue,
-      assigned_to: { id: chosen.id, name: chosen.display_name, delivered },
+      assigned_to: { id: chosen.id, name: chosen.display_name, delivered, wa_status: waStatus },
     });
   } catch (e) {
     console.error(e);
