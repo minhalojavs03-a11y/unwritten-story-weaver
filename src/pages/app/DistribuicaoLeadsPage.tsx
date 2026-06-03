@@ -329,7 +329,7 @@ export default function DistribuicaoLeadsPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-[auto_160px_160px_120px] md:items-end">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-[auto_1fr_120px] md:items-end">
                       <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background p-2 md:flex-col md:items-start md:border-0 md:bg-transparent md:p-0">
                         <Label className="text-xs text-muted-foreground">Recebe leads</Label>
                         <Switch
