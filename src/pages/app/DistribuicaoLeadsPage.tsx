@@ -190,6 +190,10 @@ export default function DistribuicaoLeadsPage() {
   // Garante a linha em tenant_members; devolve o id.
   async function ensureMemberId(r: Row): Promise<string | null> {
     if (r.id) return r.id;
+    if (!r.user_id) {
+      toast.error("Consultor sem usuário vinculado. Recrie o vínculo antes de configurar distribuição.");
+      return null;
+    }
     const { data, error } = await supabase.rpc("ensure_distribution_member" as any, {
       _tenant_id: r.tenant_id,
       _user_id: r.user_id,
@@ -312,7 +316,7 @@ export default function DistribuicaoLeadsPage() {
                   <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
                     <div className="flex min-w-0 flex-1 items-center gap-3">
                       <UserAvatar
-                        userId={r.user_id}
+                        userId={r.user_id ?? r.id ?? name}
                         name={name}
                         avatarUrl={r.avatar_url}
                         avatarColor={r.avatar_color ?? undefined}
