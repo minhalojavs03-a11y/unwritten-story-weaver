@@ -552,13 +552,22 @@ export function useTenantMembers() {
 
 
 // ============= APPOINTMENTS =============
-export function useAppointments(rangeStart?: Date, rangeEnd?: Date) {
-  const { tenantId } = useAuth();
+// scope opcional: tenantId=null força global (superadmin); memberId filtra por consultor.
+export function useAppointments(rangeStart?: Date, rangeEnd?: Date, scope?: { tenantId?: string | null; memberId?: string | null }) {
+  const { tenantId: authTenantId, isSuperadmin } = useAuth();
+  const overrideTenant = scope && "tenantId" in scope ? scope.tenantId : undefined;
+  const effectiveTenant = overrideTenant === undefined
+    ? (isSuperadmin ? null : authTenantId)
+    : overrideTenant;
+  const globalScope = effectiveTenant === null;
+  const memberId = scope?.memberId ?? null;
   return useQuery({
-    queryKey: ["appointments", tenantId, rangeStart?.toISOString(), rangeEnd?.toISOString()],
-    enabled: !!tenantId,
+    queryKey: ["appointments", globalScope ? "__all__" : effectiveTenant, memberId ?? "all", rangeStart?.toISOString(), rangeEnd?.toISOString()],
+    enabled: globalScope || !!effectiveTenant,
     queryFn: async () => {
       let q = supabase.from("appointments").select("*, lead:leads(name, phone)").order("scheduled_at", { ascending: true });
+      if (!globalScope) q = q.eq("tenant_id", effectiveTenant!);
+      if (memberId) q = q.eq("consultant_member_id", memberId);
       if (rangeStart) q = q.gte("scheduled_at", rangeStart.toISOString());
       if (rangeEnd) q = q.lte("scheduled_at", rangeEnd.toISOString());
       const { data, error } = await q;
