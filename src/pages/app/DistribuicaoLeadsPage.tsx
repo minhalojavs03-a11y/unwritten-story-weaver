@@ -364,29 +364,31 @@ export default function DistribuicaoLeadsPage() {
         ) : (
           <div className="space-y-2">
             {rows.map((r) => {
+              const k = rowKey(r);
               const name = r.display_name || r.username || "Consultor";
               const receives = !!valueOf(r, "receives_leads");
               const minV = valueOf(r, "min_credit_value");
               const maxV = valueOf(r, "max_credit_value");
               const dailyLim = valueOf(r, "daily_lead_limit");
-              const todayCount = todayCounts[r.id] ?? 0;
+              const todayCount = r.id ? todayCounts[r.id] ?? 0 : 0;
               const overLimit = dailyLim != null && todayCount >= dailyLim;
-              const isOpen = !!expanded[r.id];
+              const isOpen = !!expanded[k];
 
               return (
                 <div
-                  key={r.id}
+                  key={k}
                   className="rounded-xl border border-border bg-card p-3 transition-shadow hover:shadow-sm md:p-4"
                 >
                   <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
                     <div className="flex min-w-0 flex-1 items-center gap-3">
                       <UserAvatar
-                        userId={r.id}
+                        userId={r.user_id}
                         name={name}
                         avatarUrl={r.avatar_url}
                         avatarColor={r.avatar_color ?? undefined}
                         size={40}
                       />
+
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-foreground">{name}</p>
                         <p className="truncate text-xs text-muted-foreground">{r.role_label || "Consultor"}</p>
