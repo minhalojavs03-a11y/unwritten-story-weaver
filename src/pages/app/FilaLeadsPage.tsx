@@ -590,42 +590,7 @@ export default function FilaLeadsPage() {
       />
 
       <div className="space-y-4 p-4 pb-24 md:p-8 md:pb-8">
-        {!loading && canSendToOthers && (
-          <div className="flex items-center gap-2 rounded-full border border-border/60 bg-card p-1 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setActiveTab("disponiveis")}
-              className={`flex-1 rounded-full px-3 py-2 text-xs font-semibold transition md:text-sm ${
-                activeTab === "disponiveis"
-                  ? "bg-primary text-primary-foreground shadow-[0_6px_18px_-10px_hsl(var(--primary)/0.6)]"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Disponíveis
-              <span className={`ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                activeTab === "disponiveis" ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"
-              }`}>
-                {availableLeads.length}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("meus")}
-              className={`flex-1 rounded-full px-3 py-2 text-xs font-semibold transition md:text-sm ${
-                activeTab === "meus"
-                  ? "bg-primary text-primary-foreground shadow-[0_6px_18px_-10px_hsl(var(--primary)/0.6)]"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Meus assumidos
-              <span className={`ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                activeTab === "meus" ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"
-              }`}>
-                {myLeads.length}
-              </span>
-            </button>
-          </div>
-        )}
+        {/* Aba única: apenas leads atribuídos ao consultor ativo */}
 
         {!loading && (sourceLeads.length > 0 || search) && (
           <div className="relative">
