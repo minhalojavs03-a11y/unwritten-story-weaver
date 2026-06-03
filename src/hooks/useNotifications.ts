@@ -100,10 +100,12 @@ export function useNotifications() {
         .from("leads")
         .select("id, name, phone, source, status, created_at, updated_at, assigned_member_id, assigned_member_at")
         .eq("tenant_id", tenantId)
+        .eq("kind", "lead")
         .gte("created_at", since)
         .order("created_at", { ascending: false })
         .limit(30);
       if (!privileged && memberId) leadsQuery = leadsQuery.eq("assigned_member_id", memberId);
+
 
       // ---- Mensagens recebidas ----
       const msgsQuery = supabase

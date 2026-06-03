@@ -86,8 +86,10 @@ export default function DistribuicaoLeadsPage() {
         .from("leads")
         .select("assigned_member_id")
         .eq("tenant_id", tenantId!)
+        .eq("kind", "lead")
         .in("assigned_member_id", memberIds)
         .gte("assigned_member_at", since.toISOString());
+
       if (error) throw error;
       const counts: Record<string, number> = {};
       for (const r of data ?? []) {

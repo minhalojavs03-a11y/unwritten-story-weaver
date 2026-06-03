@@ -61,7 +61,9 @@ export function useTeam() {
         supabase
           .from("leads")
           .select("assigned_member_id, assigned_to")
-          .eq("tenant_id", tenantId!),
+          .eq("tenant_id", tenantId!)
+          .eq("kind", "lead"),
+
         isSuperadmin
           ? Promise.resolve({ data: [] as { user_id: string }[], error: null })
           : supabase.rpc("get_superadmin_user_ids"),
