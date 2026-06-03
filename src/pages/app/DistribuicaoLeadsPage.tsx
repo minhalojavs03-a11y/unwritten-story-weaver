@@ -35,6 +35,9 @@ type Row = {
   min_credit_value: number | null;
   max_credit_value: number | null;
   daily_lead_limit: number | null;
+  notify_inapp: boolean | null;
+  notify_whatsapp: boolean | null;
+  phone: string | null;
 };
 
 function normalize(s: string) {
