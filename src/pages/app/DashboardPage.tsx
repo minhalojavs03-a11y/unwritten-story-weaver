@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Users, MessageCircle, Calendar, Flame, ArrowRight, AlertTriangle, Clock4, TrendingUp, Trophy, Gauge, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -15,6 +16,7 @@ import { useReportData } from "@/hooks/useReportData";
 import { HealthScore, InsightsPanel, PipelineIntel, WeeklyActivity, ResponseHeatmap } from "@/components/dashboard/ExecutiveWidgets";
 import { WeekComparison } from "@/components/dashboard/WeekComparison";
 import { CoachingPanel } from "@/components/dashboard/CoachingPanel";
+import { DashboardScopeFilter, type DashboardScope } from "@/components/dashboard/DashboardScopeFilter";
 
 export default function DashboardPage() {
   const { data: profile } = useMyProfile();
