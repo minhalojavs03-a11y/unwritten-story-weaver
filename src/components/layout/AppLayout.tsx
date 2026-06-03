@@ -89,9 +89,13 @@ export function AppLayout() {
   // Lista única por papel — só o que realmente importa no dia a dia.
   // Itens menos usados ficam em /configuracoes (Mensagens prontas, Gravações,
   // Treinar IA, Integrações, WhatsApp instâncias, Histórico de updates).
+  const profileName = `${(profile?.username ?? "").toLowerCase()} ${(profile?.display_name ?? "").toLowerCase()} ${(profile?.full_name ?? "").toLowerCase()}`;
+  const isNilton = /\bnilton\b/.test(profileName);
+
   const navItems: NavItem[] = useMemo(() => {
     const home: NavItem = { to: "/crm", label: "Início", icon: Home };
     const fila: NavItem = { to: "/leads/fila", label: "Fila de leads", icon: Inbox };
+    const nilton: NavItem = { to: "/nilton", label: "Leads Nilton RS", icon: Target };
     const conversas: NavItem = { to: "/conversas", label: "Conversas", icon: MessageCircle };
     const pipeline: NavItem = { to: "/pipeline", label: "Pipeline", icon: Kanban };
     const leads: NavItem = { to: "/leads", label: isOwner || isSuperadmin || isSupervisor ? "Leads" : "Meus leads", icon: Users };
@@ -106,19 +110,20 @@ export function AppLayout() {
     const config: NavItem = { to: "/configuracoes", label: "Configurações", icon: Settings };
 
     if (impersonating) {
-      // Em modo suporte, sempre mostra o menu de consultor (visão do vendedor do tenant).
       return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, config];
     }
     if (isOwner || isSuperadmin) {
-      return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
+      return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
     }
     if (isSupervisor) {
       return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, consultores, config];
     }
-    // Consultor / atendente: menu enxuto, sem Configurações nem áreas de gestão.
+    if (isNilton) {
+      return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking];
+    }
     return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking];
 
-  }, [isOwner, isSuperadmin, isSupervisor, impersonating]);
+  }, [isOwner, isSuperadmin, isSupervisor, impersonating, isNilton]);
 
 
   const [impersonateOpen, setImpersonateOpen] = useState(false);
