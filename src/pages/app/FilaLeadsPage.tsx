@@ -121,11 +121,11 @@ export default function FilaLeadsPage() {
   const [transferFor, setTransferFor] = useState<Lead | null>(null);
   const [transferMessage, setTransferMessage] = useState("");
   const [transferBusy, setTransferBusy] = useState(false);
-  const [activeTab, setActiveTab] = useState<"disponiveis" | "meus">(canSendToOthers ? "disponiveis" : "meus");
+  const [activeTab, setActiveTab] = useState<"disponiveis" | "meus">("meus");
 
   useEffect(() => {
-    if (!canSendToOthers && activeTab !== "meus") setActiveTab("meus");
-  }, [canSendToOthers, activeTab]);
+    if (activeTab !== "meus") setActiveTab("meus");
+  }, [activeTab]);
 
   // Busca server-side em todos os estágios quando o usuário digita
   useEffect(() => {
