@@ -156,9 +156,9 @@ export default function ConversasPage() {
       let q = supabase
         .from("leads")
         .select("*")
-        .eq("kind", conversationsKind)
         .order("created_at", { ascending: false, nullsFirst: false })
         .limit(500);
+      if (conversationsKind !== "all") q = q.eq("kind", conversationsKind);
 
       // Superadmin: leads de TODOS os tenants. Demais: apenas o tenant ativo.
       if (!isSuperadmin) q = q.eq("tenant_id", tenantId);
