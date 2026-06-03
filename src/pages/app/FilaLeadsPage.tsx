@@ -142,10 +142,13 @@ export default function FilaLeadsPage() {
       let query = supabase
         .from("leads")
         .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id,tenant_id")
-        .in("source", ["meta_ads", "importacao_planilha"])
+        .eq("kind", "lead")
+        .not("stage", "in", "(perdido,comprou,historico)")
         .limit(50);
       if (!isSuperadmin) query = query.eq("tenant_id", tenantId);
-      if (activeMember?.id) {
+      if (activeMember?.id && user?.id) {
+        query = query.or(`assigned_member_id.eq.${activeMember.id},assigned_to.eq.${user.id}`);
+      } else if (activeMember?.id) {
         query = query.eq("assigned_member_id", activeMember.id);
       } else {
         query = query.eq("assigned_to", user!.id);
@@ -162,7 +165,7 @@ export default function FilaLeadsPage() {
       setSearching(false);
     }, 300);
     return () => clearTimeout(handle);
-  }, [search, tenantId, isSuperadmin, canSendToOthers, activeMember?.id]);
+  }, [search, tenantId, isSuperadmin, activeMember?.id, user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -248,10 +251,13 @@ export default function FilaLeadsPage() {
       .from("leads")
       .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id,tenant_id")
       .not("stage", "in", "(perdido,comprou,historico)")
-      .in("source", ["meta_ads", "importacao_planilha"]);
+      .eq("kind", "lead");
     if (!isSuperadmin) query = query.eq("tenant_id", tenantId!);
-    // Sempre mostrar apenas leads atribuídos ao consultor ativo.
-    if (activeMember?.id) {
+    // Mostra apenas leads atribuídos ao consultor atual. Suporta atribuição nova
+    // por membro interno e atribuições legadas/importadas por usuário Supabase.
+    if (activeMember?.id && user?.id) {
+      query = query.or(`assigned_member_id.eq.${activeMember.id},assigned_to.eq.${user.id}`);
+    } else if (activeMember?.id) {
       query = query.eq("assigned_member_id", activeMember.id);
     } else {
       query = query.eq("assigned_to", user!.id);
