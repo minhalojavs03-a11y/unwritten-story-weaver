@@ -135,7 +135,7 @@ export default function FilaLeadsPage() {
       setSearching(false);
       return;
     }
-    if (!canSendToOthers && !activeMember?.id) return;
+    if (!activeMember?.id && !user?.id) return;
     setSearching(true);
     const handle = setTimeout(async () => {
       const digits = q.replace(/\D/g, "");
@@ -144,9 +144,12 @@ export default function FilaLeadsPage() {
         .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id,tenant_id")
         .in("source", ["meta_ads", "importacao_planilha"])
         .limit(50);
-      // Superadmin pesquisa em todos os tenants.
       if (!isSuperadmin) query = query.eq("tenant_id", tenantId);
-      if (!canSendToOthers) query = query.eq("assigned_member_id", activeMember!.id);
+      if (activeMember?.id) {
+        query = query.eq("assigned_member_id", activeMember.id);
+      } else {
+        query = query.eq("assigned_to", user!.id);
+      }
       const orParts = [
         `name.ilike.%${q}%`,
         `email.ilike.%${q}%`,
