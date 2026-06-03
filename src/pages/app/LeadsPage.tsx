@@ -143,17 +143,25 @@ export default function LeadsPage() {
   const { maxCreditValue } = useActiveMemberLimit();
   void maxCreditValue;
   const leads = (() => {
+    // Considera apenas registros que SÃO leads (descarta kind="outros" —
+    // contatos do WhatsApp sem intenção comercial). Mantém quando kind é
+    // nulo, "lead" ou outros valores explicitamente comerciais.
+    const isRealLead = (l: any) => {
+      const k = (l?.kind ?? "").toString().toLowerCase();
+      return k !== "outros" && k !== "outro" && k !== "contato";
+    };
     // Owners/supervisores/superadmins veem todos os leads, mesmo quando estão
     // operando como um membro interno (ex.: Dono Feracon como "donoferacon").
-    if (can("view_all_leads")) return allLeads;
+    if (can("view_all_leads")) return allLeads.filter(isRealLead);
     if (memberId) {
-      return allLeads.filter((l) => (l as any).assigned_member_id === memberId);
+      return allLeads.filter((l) => (l as any).assigned_member_id === memberId && isRealLead(l));
     }
     return allLeads.filter((l) => {
       const assignedUser = (l as any).assigned_to as string | null | undefined;
-      return !!(user?.id && assignedUser === user.id);
+      return !!(user?.id && assignedUser === user.id) && isRealLead(l);
     });
   })();
+
   const create = useCreateLead();
   const update = useUpdateLead();
   const { data: tenantMembers = [] } = useTenantMembers();
