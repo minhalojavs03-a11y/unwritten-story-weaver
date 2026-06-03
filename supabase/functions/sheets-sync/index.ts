@@ -247,7 +247,7 @@ async function syncConfig(cfg: any, opts: { skipWelcome?: boolean } = {}) {
       continue;
     }
 
-    // Dedupe by row_index
+    // Dedupe by row_index (rastreado no tenant da config — fonte da planilha)
     const dedupeRes = await sb(
       `/sheet_imported_rows?tenant_id=eq.${cfg.tenant_id}&sheet_sync_config_id=eq.${cfg.id}&row_index=eq.${i}&select=id`,
     );
@@ -257,16 +257,18 @@ async function syncConfig(cfg: any, opts: { skipWelcome?: boolean } = {}) {
       continue;
     }
 
-    // Merge por telefone: se já existe um lead com esse telefone no tenant
-    // (geralmente criado pelo webhook do WhatsApp sem nome), atualizamos
-    // nome/interesse/email em vez de duplicar.
+    // Escolhe tenant alvo via round-robin
+    const targetTenant = distTenants[distCursor % distTenants.length];
+    const assignedTo = tenantOwners.get(targetTenant) || null;
+
+    // Merge por telefone dentro do tenant alvo
     let lead: any = null;
     let isNewLead = false;
     if (phone) {
       const variants = phoneVariants(phone);
       const orFilter = variants.map((v) => `phone.eq.${encodeURIComponent(v)}`).join(",");
       const existingLeadRes = await sb(
-        `/leads?tenant_id=eq.${cfg.tenant_id}&or=(${orFilter})&select=id,name,email,interest&limit=1`,
+        `/leads?tenant_id=eq.${targetTenant}&or=(${orFilter})&select=id,name,email,interest&limit=1`,
       );
       const existingLeads = await existingLeadRes.json();
       if (Array.isArray(existingLeads) && existingLeads[0]) {
@@ -285,11 +287,10 @@ async function syncConfig(cfg: any, opts: { skipWelcome?: boolean } = {}) {
     }
 
     if (!lead) {
-      // Create lead
       const leadRes = await sb(`/leads`, {
         method: "POST",
         body: JSON.stringify({
-          tenant_id: cfg.tenant_id,
+          tenant_id: targetTenant,
           name,
           phone,
           email,
@@ -297,9 +298,10 @@ async function syncConfig(cfg: any, opts: { skipWelcome?: boolean } = {}) {
           source: "meta_ads",
           stage: "novo",
           temperature: "hot",
+          assigned_to: assignedTo,
           imported_from_sheet: true,
           sheet_row_index: i,
-          metadata: { raw_row: row },
+          metadata: { raw_row: row, distributed_from: cfg.tenant_id },
         }),
       });
       if (!leadRes.ok) {
@@ -310,21 +312,24 @@ async function syncConfig(cfg: any, opts: { skipWelcome?: boolean } = {}) {
       isNewLead = true;
     }
 
+    // sheet_imported_rows: registra no tenant da config (origem) para dedupe consistente
     await sb(`/sheet_imported_rows`, {
       method: "POST",
       body: JSON.stringify({
         tenant_id: cfg.tenant_id,
         sheet_sync_config_id: cfg.id,
         row_index: i,
-        raw_data: { row },
+        raw_data: { row, routed_to_tenant: targetTenant },
         lead_id: lead.id,
       }),
     });
 
-    // Welcome message via WhatsApp — apenas para leads realmente novos
+    // Welcome via WhatsApp do tenant alvo (a IA de pré-atendimento conduz a conversa)
     if (isNewLead && !opts.skipWelcome) {
-      await sendWelcome(cfg.tenant_id, { ...lead, name, phone, interest });
+      await sendWelcome(targetTenant, { ...lead, name, phone, interest });
     }
+
+    distCursor++;
 
 
     newCount++;
