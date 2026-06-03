@@ -3,34 +3,26 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
-import { useAllTenants } from "@/hooks/useData";
 import { PageHeader } from "./PageHeader";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ShieldAlert, Users2, Info, ChevronDown, ChevronUp, Bell } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { toast } from "sonner";
+import { formatCurrency } from "@/lib/format";
 
 const CREDIT_MIN = 300_000;
 const CREDIT_MAX = 2_000_000;
 const CREDIT_STEP = 50_000;
-import { toast } from "sonner";
-import { formatCurrency } from "@/lib/format";
 
 type Row = {
   // id do tenant_members (pode ser null se ainda não existir — criamos sob demanda)
   id: string | null;
-  user_id: string;
+  user_id: string | null;
   tenant_id: string;
   display_name: string | null;
   username: string | null;
@@ -47,19 +39,8 @@ type Row = {
   phone: string | null;
 };
 
-function rowKey(r: { id: string | null; user_id: string }) {
+function rowKey(r: { id: string | null; user_id: string | null }) {
   return r.id ?? `u:${r.user_id}`;
-}
-
-
-function parseBRL(s: string): number | null {
-  const digits = s.replace(/\D/g, "");
-  if (!digits) return null;
-  return Number(digits);
-}
-function formatBRLInput(v: number | null | undefined): string {
-  if (v == null) return "";
-  return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(v);
 }
 
 function NotificationLog({ memberId }: { memberId: string }) {
@@ -140,69 +121,34 @@ export default function DistribuicaoLeadsPage() {
   const qc = useQueryClient();
 
   const canAccess = isSuperadmin || isOwner;
-  const { data: tenants = [] } = useAllTenants();
-  const [scopeTenantId, setScopeTenantId] = useState<string | null>(null);
-  useEffect(() => {
-    if (!scopeTenantId && authTenantId) setScopeTenantId(authTenantId);
-  }, [authTenantId, scopeTenantId]);
-  const effectiveTenant = isSuperadmin ? scopeTenantId : authTenantId;
+  const effectiveTenant = authTenantId;
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["lead-distribution-members", effectiveTenant],
     enabled: !!effectiveTenant && canAccess,
     queryFn: async (): Promise<Row[]> => {
-      // 1) Consultores reais: tenant_memberships com role consultant/attendant + perfil
-      const { data: memberships, error: mErr } = await supabase
-        .from("tenant_memberships")
-        .select("user_id, role")
-        .eq("tenant_id", effectiveTenant!)
-        .in("role", ["consultant", "attendant"]);
-      if (mErr) throw mErr;
-      const userIds = (memberships ?? []).map((m: any) => m.user_id);
-      if (userIds.length === 0) return [];
-
-      const [profilesRes, distRes] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("id, display_name, full_name, username, role_label, avatar_url, avatar_color, phone")
-          .in("id", userIds),
-        supabase
-          .from("tenant_members" as any)
-          .select(
-            "id, user_id, receives_leads, min_credit_value, max_credit_value, daily_lead_limit, notify_inapp, notify_whatsapp, is_active, phone, role_label, display_name, username, avatar_url, avatar_color",
-          )
-          .eq("tenant_id", effectiveTenant!)
-          .in("user_id", userIds),
-      ]);
-      if (profilesRes.error) throw profilesRes.error;
-      if (distRes.error) throw distRes.error;
-      const distByUser = new Map<string, any>();
-      for (const d of (distRes.data as any[]) ?? []) {
-        if (d.user_id) distByUser.set(d.user_id as string, d);
-      }
-      const out: Row[] = (profilesRes.data ?? []).map((p: any) => {
-        const d = distByUser.get(p.id);
-        return {
-          id: d?.id ?? null,
-          user_id: p.id,
-          tenant_id: effectiveTenant!,
-          display_name: d?.display_name ?? p.display_name ?? p.full_name ?? null,
-          username: d?.username ?? p.username ?? null,
-          role_label: d?.role_label ?? p.role_label ?? "Consultor",
-          avatar_url: d?.avatar_url ?? p.avatar_url ?? null,
-          avatar_color: d?.avatar_color ?? p.avatar_color ?? null,
-          is_active: d?.is_active ?? true,
-          receives_leads: d?.receives_leads ?? false,
-          min_credit_value: d?.min_credit_value ?? null,
-          max_credit_value: d?.max_credit_value ?? null,
-          daily_lead_limit: d?.daily_lead_limit ?? null,
-          notify_inapp: d?.notify_inapp ?? true,
-          notify_whatsapp: d?.notify_whatsapp ?? true,
-          phone: d?.phone ?? p.phone ?? null,
-        };
+      const { data, error } = await supabase.rpc("list_distribution_consultants" as any, {
+        _tenant_id: effectiveTenant!,
       });
-      out.sort((a, b) => (a.display_name ?? "").localeCompare(b.display_name ?? ""));
-      return out;
+      if (error) throw error;
+      return ((data ?? []) as any[]).map((r) => ({
+        id: r.id ?? null,
+        user_id: r.user_id ?? null,
+        tenant_id: r.tenant_id,
+        display_name: r.display_name ?? null,
+        username: r.username ?? null,
+        role_label: r.role_label ?? "Consultor",
+        avatar_url: r.avatar_url ?? null,
+        avatar_color: r.avatar_color ?? null,
+        is_active: r.is_active ?? true,
+        receives_leads: r.receives_leads ?? false,
+        min_credit_value: r.min_credit_value == null ? CREDIT_MIN : Number(r.min_credit_value),
+        max_credit_value: r.max_credit_value == null ? CREDIT_MAX : Number(r.max_credit_value),
+        daily_lead_limit: r.daily_lead_limit ?? null,
+        notify_inapp: r.notify_inapp ?? true,
+        notify_whatsapp: r.notify_whatsapp ?? true,
+        phone: r.phone ?? null,
+      }));
     },
   });
 
@@ -244,6 +190,10 @@ export default function DistribuicaoLeadsPage() {
   // Garante a linha em tenant_members; devolve o id.
   async function ensureMemberId(r: Row): Promise<string | null> {
     if (r.id) return r.id;
+    if (!r.user_id) {
+      toast.error("Consultor sem usuário vinculado. Recrie o vínculo antes de configurar distribuição.");
+      return null;
+    }
     const { data, error } = await supabase.rpc("ensure_distribution_member" as any, {
       _tenant_id: r.tenant_id,
       _user_id: r.user_id,
@@ -325,27 +275,11 @@ export default function DistribuicaoLeadsPage() {
         subtitle="Configure quem recebe leads, a faixa de carta de crédito e o limite diário por consultor."
       />
       <div className="mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6">
-        {isSuperadmin && (
-          <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
-            <Label className="text-xs text-muted-foreground">Tenant</Label>
-            <Select value={scopeTenantId ?? ""} onValueChange={(v) => setScopeTenantId(v || null)}>
-              <SelectTrigger className="h-9 w-[280px]">
-                <SelectValue placeholder="Selecionar tenant" />
-              </SelectTrigger>
-              <SelectContent>
-                {tenants.map((t: any) => (
-                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
         <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
             A faixa de carta define o intervalo (mínimo e máximo) de valor de carta de crédito que cada consultor pode receber.
-            Deixe um lado em branco para "sem limite" naquele lado. O limite diário pausa novos envios após atingir o número definido.
+            Use os dois puxadores para escolher de R$ 300 mil a R$ 2 milhões. O limite diário pausa novos envios após atingir o número definido.
             Alterações salvam automaticamente.
           </p>
         </div>
@@ -382,7 +316,7 @@ export default function DistribuicaoLeadsPage() {
                   <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
                     <div className="flex min-w-0 flex-1 items-center gap-3">
                       <UserAvatar
-                        userId={r.user_id}
+                        userId={r.user_id ?? r.id ?? name}
                         name={name}
                         avatarUrl={r.avatar_url}
                         avatarColor={r.avatar_color ?? undefined}
