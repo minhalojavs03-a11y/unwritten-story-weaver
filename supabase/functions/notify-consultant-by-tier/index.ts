@@ -381,7 +381,7 @@ Deno.serve(async (req) => {
 
     return json({
       ok: true,
-      tier: tierRow.max_credit_value,
+      credit_value: creditValue,
       assigned_to: { id: chosen.id, name: chosen.display_name, delivered },
     });
   } catch (e) {
