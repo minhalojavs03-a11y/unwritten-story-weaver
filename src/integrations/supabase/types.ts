@@ -2444,6 +2444,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_ediane_phone: { Args: { _phone: string }; Returns: boolean }
       is_lead_source: {
         Args: { _imported_from_sheet: boolean; _source: string }
         Returns: boolean
