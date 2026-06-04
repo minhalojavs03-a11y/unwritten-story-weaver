@@ -199,10 +199,13 @@ Deno.serve(async (req) => {
     let _creditValue: number | null = lead.credit_value;
     if (_creditValue == null) _creditValue = parseCreditFromInterest(lead.interest);
 
-    // Se o lead JÁ está atribuído (trigger auto_assign_new_lead), apenas notifica
-    // o consultor responsável — não re-atribui.
-    if (lead.assigned_member_id || lead.assigned_to) {
-      const assignedId = lead.assigned_member_id || lead.assigned_to;
+    // Se o lead JÁ está atribuído a um consultor real (assigned_member_id é
+    // o id em tenant_members). Ignoramos `assigned_to` aqui porque o
+    // sheets-sync usa esse campo como fallback com o user_id do dono — não
+    // significa que um consultor já foi escolhido.
+    if (lead.assigned_member_id) {
+      const assignedId = lead.assigned_member_id;
+
 
       const { data: prevNotif } = await admin
         .from("lead_notifications")
