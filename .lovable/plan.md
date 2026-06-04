@@ -1,107 +1,72 @@
-# Plano: Classificação de Leads, Isolamento de "Outros" e RBAC
+# Refactor: White-label → Empresa única (Feracon)
 
-Mudança em 3 frentes, aplicadas em ordem (cada etapa testável de forma isolada).
+## Estado atual descoberto
+- **15 tenants** no banco. Apenas 1 é a Feracon real (`9ecb99e2-50ee-404f-920b-81cd94cc685e`). Os outros 14 são "tenants pessoais" de cada funcionário (Antonio, Nilton, Gregory, Jean, Kauana, Ediane, Hélio, etc).
+- **13 profiles**, cada um apontando para seu próprio tenant.
+- **1432 leads** espalhados em 9 tenants. Conversas, mensagens, agendamentos idem.
 
----
-
-## Etapa 1 — Classificação `lead` vs `outros`
-
-### Modelo
-- **Migração** em `public.leads`:
-  - `ALTER TABLE public.leads ADD COLUMN kind text NOT NULL DEFAULT 'lead'` com `CHECK (kind IN ('lead','outros'))`.
-  - Índice parcial: `CREATE INDEX idx_leads_tenant_kind ON public.leads(tenant_id, kind)`.
-- **Função SQL** `public.normalize_phone(text)` (immutable): remove `+`, espaços, `-`, `(`, `)`, e prefixo `55` + `0` à esquerda. Usada por classificação e matching.
-- **Função SQL** `public.classify_lead_kind(_tenant uuid, _phone text)`:
-  - Retorna `'lead'` se existir em `leads` do mesmo tenant com `imported_from_sheet = true` OR `source IN ('ads','campaign','excel','sheet','planilha','anuncio','anúncio','meta','facebook','instagram','google')` e telefone normalizado igual.
-  - Caso contrário, `'outros'`.
-
-### Ingestão
-- Patch em `supabase/functions/whatsapp-manage/index.ts` (na importação de conversas) e em `whatsapp-webhook/index.ts` (criação de lead a partir de mensagem nova): após `INSERT/UPSERT` em `leads`, chamar `classify_lead_kind` e setar `kind`. Mantém o comportamento atual de importar tudo.
-- Leads vindos de `sheets-sync` / upload Excel / fontes de anúncio: forçar `kind = 'lead'` explicitamente (não classifica, é fonte).
-
-### Backfill + Re-classificação contínua
-- **Função** `public.reclassify_leads(_tenant uuid DEFAULT NULL)`: percorre leads cujo `imported_from_sheet = false` e `source NOT IN (...)`, recalcula `kind`. Migração executa um run inicial para todo o banco.
-- **Trigger** `AFTER INSERT/UPDATE ON public.leads` quando `imported_from_sheet = true` OR `source` entra na lista: promove leads `outros` do mesmo tenant cujo telefone normalizado bate, para `kind = 'lead'`. Resolve o requisito "se a fonte for atualizada depois, promove outros → lead".
-
----
-
-## Etapa 2 — Isolamento de "Outros" nas métricas
-
-### Regra única
-Todo lugar que conta/agrega/lista leads no funil de negócio aplica `.eq('kind','lead')` no nível da **query**. "Outros" só aparece na aba dedicada de Conversas.
-
-### Pontos de aplicação (queries no frontend e funções SQL)
-- **Hooks**: `useData`, `useNavBadges`, `useReportData`, `useGamification`, `useCoachingInsights`, `useTeam` (agregações), `useNotifications` (badges de lead).
-- **Telas**: `DashboardPage` (KPIs, ExecutiveWidgets, LeadsHourlyPanel, WeekComparison), `LeadsPage`, `FilaLeadsPage` (tab "Todos"), `PipelinePage`, `RankingPage`, `RelatoriosPage`, `CoachingPage`, `DistribuicaoLeadsPage`.
-- **Edge functions** que agregam: `analyze-coaching`, `analyze-simulations`, `notify-consultant-by-tier`, `notify-supervisors`, `enqueue-consultant-followups`, `resume-stalled-leads` → todos passam a filtrar `kind = 'lead'`.
-- **Funções SQL de gamification** (`gamification_ranking`, `gamification_team_overview`, `gamification_executive_overview`): adicionar `JOIN/WHERE` excluindo eventos cujo `lead_id` aponta para `kind = 'outros'`.
-
-### Conversas — aba "Outros"
-- `ConversasPage`: adicionar aba "Outros" ao lado de "Todos/Não lidas/etc".
-  - Query "Todos" e demais abas existentes passam a filtrar `leads.kind = 'lead'` via join.
-  - Aba "Outros" filtra `leads.kind = 'outros'`.
-  - Para consultor: `assigned_to = auth.uid()` (decisão sua).
-  - Badge da aba "Outros" rotulado como **"não leads"** com estilo `muted/secondary` distinto, sem somar ao "Todos".
-
----
-
-## Etapa 3 — RBAC ponta-a-ponta
-
-### RLS (migração)
-Adicionar policies por role usando funções helper já existentes (`has_app_role`, `get_tenant_role`, `is_tenant_member`).
-
-Tabelas afetadas: `leads`, `conversations`, `messages`, `appointments`, `gamification_events`, `coaching_insights`, `lead_notifications`, `lead_transfer_requests`.
-
-Padrão (exemplo `leads`):
-```sql
-DROP POLICY leads_all ON public.leads;
-
--- superadmin: tudo
-CREATE POLICY leads_superadmin ON public.leads FOR ALL TO authenticated
-  USING (has_app_role(auth.uid(),'superadmin'))
-  WITH CHECK (has_app_role(auth.uid(),'superadmin'));
-
--- owner/supervisor: tudo do tenant
-CREATE POLICY leads_owner_sup ON public.leads FOR ALL TO authenticated
-  USING (get_tenant_role(auth.uid(), tenant_id) IN ('owner','supervisor'))
-  WITH CHECK (get_tenant_role(auth.uid(), tenant_id) IN ('owner','supervisor'));
-
--- consultor/attendant: só os próprios + os não atribuídos (fila)
-CREATE POLICY leads_consultant_own ON public.leads FOR SELECT TO authenticated
-  USING (is_tenant_member(auth.uid(), tenant_id)
-         AND (assigned_to = auth.uid() OR assigned_to IS NULL));
-
-CREATE POLICY leads_consultant_write ON public.leads FOR UPDATE TO authenticated
-  USING (is_tenant_member(auth.uid(), tenant_id) AND assigned_to = auth.uid())
-  WITH CHECK (is_tenant_member(auth.uid(), tenant_id) AND assigned_to = auth.uid());
+## Constante canônica
+Usar o tenant **existente** em vez do UUID `00000…0001` (já tem nome "Feracon", slug "feracon"):
+```
+FERACON_TENANT_ID = '9ecb99e2-50ee-404f-920b-81cd94cc685e'
 ```
 
-> Você respondeu "restringir no RLS — consultor SÓ vê os próprios", mas mantenho `assigned_to IS NULL` em **SELECT** para a Fila de Leads continuar funcionando (sem isso, a tela `FilaLeadsPage` quebra completamente para consultor — fila ficaria vazia). Se quiser fila zerada para consultor, removo essa cláusula. Confirme se OK.
+## Etapa 1 — Migração SQL (destrutiva, com backup confirmado)
 
-Para `conversations`/`messages`: consultor vê apenas onde `assigned_to = auth.uid()` (sem `IS NULL`, pois conversa sem dono não faz sentido para consultor individual).
+**1.1 Consolidar dados** — para CADA tabela com `tenant_id` (44 tabelas listadas), rodar:
+```sql
+UPDATE public.<tabela> SET tenant_id = '9ecb99e2-…' WHERE tenant_id <> '9ecb99e2-…';
+```
+Tabelas: ai_config, app_notifications, appointments, automations, billing_settings, business_hours, campaigns, coaching_insights, coaching_message_analysis, conversations, faqs, gamification_*, google_integration, impersonation_log, instance_charges, knowledge_files, lead_notifications, lead_transfer_requests, leads, meeting_recordings, messages, nilton_leads, notification_queue, products, profiles, recording_views, sheet_*, team_invites, templates, tenant_credentials, tenant_invites, tenant_members, tenant_memberships, tenant_role_invites, whatsapp_*.
 
-### Rotas (`src/App.tsx` + `ProtectedRoute`)
-Adicionar prop `denyConsultant` e bloquear consultor em: `/configuracoes/*`, `/distribuicao`, `/equipe`, `/treinar-ia`, `/whatsapp` (já tem requireOwner), `/integracoes`, `/ranking` (manter? — manter, consultor vê só sua pontuação), `/relatorios` (bloquear para consultor), `/coaching` (bloquear). Redireciona para `/crm`.
+**1.2 Deduplicar `tenant_memberships`** — após o UPDATE pode haver `(tenant_id, user_id)` duplicado. Manter o mais antigo, deletar resto.
 
-### Menu/UI (`AppLayout`/`NavLink`)
-Esconder (não desabilitar) itens cujo usuário não pode acessar. Hook `usePermissions` já existe — usar `can()` para filtrar a lista do menu.
+**1.3 Limpar `whatsapp_instances`** — pode haver conflito de instância principal por tenant; manter apenas as do Feracon original.
 
-### Impersonation
-Já existe (`superadmin-impersonate`). Sem mudança — superadmin continua atravessando tudo via policy `*_superadmin`.
+**1.4 Apagar os 14 tenants vazios:**
+```sql
+DELETE FROM public.tenants WHERE id <> '9ecb99e2-…';
+```
 
----
+**1.5 DEFAULT + NOT NULL** em `tenant_id` em todas as 44 tabelas (onde já não for).
 
-## Ordem de entrega
+**1.6 Simplificar RLS** — substituir checks de `is_tenant_member(...)` por checks de role apenas (superadmin/owner/supervisor veem tudo; consultor vê só o atribuído). Pattern aplicado em: leads, conversations, messages, appointments, nilton_leads, app_notifications, lead_notifications, coaching_insights, gamification_events. Demais tabelas mantêm RLS atual (que já vai funcionar porque todos no mesmo tenant).
 
-1. **Migração 1** — coluna `kind`, funções `normalize_phone` / `classify_lead_kind` / `reclassify_leads`, trigger de promoção, backfill inicial.
-2. **Patch edge functions de ingestão** (`whatsapp-manage`, `whatsapp-webhook`) para setar `kind` na criação.
-3. **Filtros `.eq('kind','lead')`** em hooks/telas/funções SQL de gamification + aba "Outros" em `ConversasPage`.
-4. **Migração 2 (RLS)** — substituir policies de `leads/conversations/messages/...` pelas versões role-aware.
-5. **Roteamento + menu** — `ProtectedRoute denyConsultant`, esconder itens no `AppLayout`.
+## Etapa 2 — Código
 
-Cada etapa fechada e validada antes da próxima.
+**2.1** Criar `src/lib/feracon.ts`:
+```ts
+export const FERACON_TENANT_ID = '9ecb99e2-50ee-404f-920b-81cd94cc685e';
+```
 
-## Riscos / atenções
-- Backfill de `kind` em produção: roda em uma migração; volume atual provavelmente OK, mas pode demorar — uso `UPDATE` em batch se necessário.
-- RLS nova de `messages`/`conversations` para consultor pode esconder histórico de leads transferidos. Aceitável dado o requisito ("só os próprios").
-- `assigned_to IS NULL` em `leads` para consultor — preciso confirmação (ver nota acima).
+**2.2** Em `AuthContext` e hooks, fallback: `user?.tenant_id ?? FERACON_TENANT_ID`.
+
+**2.3** Remover UI white-label:
+- `src/pages/admin/AdminClientes.tsx` — remover botão "Novo cliente" e modal de criar tenant. Repurposar página como "Funcionários Feracon" listando profiles + role.
+- `src/components/dashboard/DashboardScopeFilter.tsx` — remover seletor de tenant; manter só o de consultor.
+- `src/pages/admin/AdminDashboard.tsx` — remover stat "Lojas cadastradas/ativas" e a lista de tenants; substituir por "Visão geral Feracon" (consultores ativos, leads hoje, conversas ativas).
+- `src/pages/onboarding/OnboardingPage.tsx` — se houver fluxo de criar tenant, simplificar para apenas username/pin.
+- Strings UI: "loja"→"equipe", "cliente"→"funcionário" no contexto admin, etc.
+
+**2.4** Desabilitar RPC `admin_create_tenant` (drop function ou retornar erro).
+
+## Etapa 3 — Memória
+Reescrever `mem://index.md` core: remover "cada usuário tem seu próprio tenant isolado", substituir por "Tenant único: Feracon (`9ecb99e2-…`). Todos os funcionários compartilham este tenant. Isolamento é por role, não por tenant."
+
+## Riscos
+- **Membership unique constraint** pode falhar se algum user já tinha membership no Feracon + na sua própria. Tratamos com `ON CONFLICT DO NOTHING` + DELETE.
+- **Políticas RLS antigas** podem bloquear o próprio UPDATE da migração — vou rodar como SECURITY DEFINER / superuser na migration.
+- **Caso da Ediane** (memória anterior): ela some do banco original via RLS `is_ediane_phone`. Após fusão, leads dela voltam a aparecer para todos. A policy `RESTRICTIVE` que limita a superadmin **continua valendo** porque é por telefone, não por tenant. OK.
+- **Edge functions** (`register-client`, `whatsapp-bootstrap-principal`) podem criar novos tenants. Vou auditar e forçá-las a usar `FERACON_TENANT_ID`.
+
+## Ordem de execução
+1. Plano aprovado.
+2. Migração SQL única (Etapas 1.1–1.6). Pausa para aprovação.
+3. Após migration rodar com sucesso → mudanças de código (Etapa 2) em paralelo.
+4. Atualizar memória (Etapa 3).
+5. Auditoria final: grep por "loja", "tenant" em strings UI, `admin_create_tenant`, RPC `create_tenant_with_owner`.
+
+## O que NÃO vou fazer
+- Não vou dropar a coluna `tenant_id` nem a tabela `tenants` (instrução explícita do prompt).
+- Não vou mexer no caso Ediane (policies já criadas continuam válidas).
+- Não vou tocar em lógica de feature funcionando (distribuição, coaching, gamification) — só no `tenant_id` filter.
