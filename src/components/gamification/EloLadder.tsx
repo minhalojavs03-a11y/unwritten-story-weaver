@@ -69,16 +69,35 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
       {/* Trilha */}
       <div className={cn("relative mt-4", isCompact ? "mt-3" : "mt-5")}>
         {/* linha base */}
-        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 rounded-full bg-muted" aria-hidden />
-        {/* progresso total da trilha (até elo atual) */}
+        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-muted shadow-inner" aria-hidden />
+        {/* progresso total da trilha (até elo atual) — com carga de energia */}
         <div
-          className="absolute left-0 top-1/2 -translate-y-1/2 h-1 rounded-full transition-all duration-700"
+          className="absolute left-0 top-1/2 -translate-y-1/2 h-2 overflow-hidden rounded-full transition-all duration-700 energy-shine"
           aria-hidden
           style={{
             width: `${trackProgress(currentIdx, levels.length, progress, !!next)}%`,
-            background: `linear-gradient(90deg, ${levels[0].color}, ${current.color})`,
+            boxShadow: `0 0 12px ${current.color}80, inset 0 0 6px rgba(255,255,255,0.35)`,
           }}
-        />
+        >
+          <div
+            className="h-full w-full energy-bar"
+            style={{
+              backgroundImage: `linear-gradient(90deg, ${levels[0].color}, ${current.color}, ${(next ?? current).color}, ${current.color}, ${levels[0].color})`,
+            }}
+          />
+        </div>
+        {/* ponta luminosa indicando avanço */}
+        {next && (
+          <div
+            className="absolute top-1/2 h-3 w-3 -translate-y-1/2 -translate-x-1/2 rounded-full energy-pulse"
+            aria-hidden
+            style={{
+              left: `${trackProgress(currentIdx, levels.length, progress, !!next)}%`,
+              background: current.color,
+              boxShadow: `0 0 14px 3px ${current.color}, 0 0 4px 1px #fff`,
+            }}
+          />
+        )}
 
         <ol className="relative grid" style={{ gridTemplateColumns: `repeat(${levels.length}, minmax(0, 1fr))` }}>
           {levels.map((lv: any, i: number) => {
