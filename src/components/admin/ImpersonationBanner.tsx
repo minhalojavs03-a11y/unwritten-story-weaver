@@ -68,7 +68,7 @@ export function ImpersonationBanner() {
       <div className="flex min-w-0 items-center gap-2">
         <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600" />
         <span className="truncate">
-          <strong>Modo suporte</strong> · Visualizando como <strong>{ctx.tenant_name}</strong>
+          <strong>Modo suporte</strong> · Ambiente de <strong>{ctx.tenant_name}</strong>
         </span>
       </div>
       <button
