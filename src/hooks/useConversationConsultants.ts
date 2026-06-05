@@ -43,7 +43,7 @@ export function useConversationConsultants() {
   // Supervisor = vê conversas mas não é dono/superadmin → restringe a consultores
   const supervisorOnly = !isOwner && !isSuperadmin;
   return useQuery({
-    queryKey: ["conversation-consultants", "v2", tenantId, isSuperadmin, supervisorOnly],
+    queryKey: ["conversation-consultants", "v3", tenantId, isSuperadmin, supervisorOnly],
     enabled: !!tenantId,
     queryFn: async (): Promise<ConsultantOption[]> => {
       // Sistema single-tenant Feracon: superadmin/owner/supervisor enxergam as
@@ -74,10 +74,37 @@ export function useConversationConsultants() {
         (superRolesRes.data ?? []).map((r) => r.user_id),
       );
 
+      // Donos (owner) também são ocultados do dropdown — Ediane só é visível
+      // para o próprio dono/superadmin nas conversas em si, não como filtro.
+      const ownerUserIds = new Set<string>();
+      const ownerNameKeys = new Set<string>();
+      const _normName = (s?: string | null) =>
+        String(s ?? "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+      for (const m of (membershipsRes.data ?? [])) {
+        if (String(m.role || "").toLowerCase() === "owner") {
+          ownerUserIds.add(m.user_id);
+          const k = _normName(m.display_name);
+          if (k) ownerNameKeys.add(k);
+        }
+      }
+
       const profilesById = new Map<string, ProfileOption>();
       for (const p of (profilesRes.data ?? []) as ProfileOption[]) {
         if (!isHiddenFeraconPerson(p as any)) profilesById.set(p.id, p);
+        // Acumula chaves de nome do dono a partir do profile correspondente
+        if (ownerUserIds.has(p.id)) {
+          for (const cand of [p.full_name, p.display_name, p.username]) {
+            const k = _normName(cand);
+            if (k) ownerNameKeys.add(k);
+          }
+        }
       }
+
 
       const list: ConsultantOption[] = [];
 
@@ -128,13 +155,16 @@ export function useConversationConsultants() {
         if (isHiddenFeraconPerson(p as any)) continue;
         if (seen.has(p.id)) continue;
         if (hiddenUserIds.has(p.id)) continue;
+        if (ownerUserIds.has(p.id)) continue;
         const label = (p.role_label || "").toLowerCase();
         if (label.includes("dono") || label.includes("owner") || label.includes("propriet")) continue;
         if (supervisorOnly && (label.includes("supervisor") || label.includes("gerente") || label.includes("gestor"))) continue;
         const key = nameKey(p.full_name, p.display_name, p.username);
+        if (key && ownerNameKeys.has(key)) continue;
         if (key && seenNames.has(key)) continue;
         seen.add(p.id);
         if (key) seenNames.add(key);
+
         list.push({
           id: p.id,
           display_name: p.display_name || p.full_name || "Consultor",
@@ -155,9 +185,11 @@ export function useConversationConsultants() {
         if (label.includes("dono") || label.includes("owner") || label.includes("propriet")) continue;
         if (supervisorOnly && (label.includes("supervisor") || label.includes("gerente") || label.includes("gestor"))) continue;
         const key = nameKey(tm.full_name, tm.display_name, tm.username);
+        if (key && ownerNameKeys.has(key)) continue;
         if (key && seenNames.has(key)) continue;
         seen.add(tm.id);
         if (key) seenNames.add(key);
+
         list.push({
           id: tm.id,
           display_name: tm.display_name || tm.full_name || "Consultor",
