@@ -81,10 +81,23 @@ export function useConversationConsultants() {
 
       const list: ConsultantOption[] = [];
 
-
-
       // ===== Owner/Supervisor: lista pessoas do próprio tenant =====
       const seen = new Set<string>();
+      const seenNames = new Set<string>();
+      const normName = (s?: string | null) =>
+        String(s ?? "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+      const nameKey = (...candidates: (string | null | undefined)[]) => {
+        for (const c of candidates) {
+          const n = normName(c);
+          if (n) return n;
+        }
+        return "";
+      };
 
       for (const m of membershipsRes.data ?? []) {
         const role = String(m.role || "").toLowerCase();
@@ -94,7 +107,10 @@ export function useConversationConsultants() {
         if (seen.has(m.user_id)) continue;
         const p = profilesById.get(m.user_id);
         if (isHiddenFeraconUserId(m.user_id) || isHiddenFeraconPerson(p as any)) continue;
+        const key = nameKey(m.display_name, p?.full_name, p?.display_name, p?.username);
+        if (key && seenNames.has(key)) continue;
         seen.add(m.user_id);
+        if (key) seenNames.add(key);
         list.push({
           id: m.user_id,
           display_name: m.display_name || p?.display_name || p?.full_name || p?.email || "Consultor",
@@ -115,7 +131,10 @@ export function useConversationConsultants() {
         const label = (p.role_label || "").toLowerCase();
         if (label.includes("dono") || label.includes("owner") || label.includes("propriet")) continue;
         if (supervisorOnly && (label.includes("supervisor") || label.includes("gerente") || label.includes("gestor"))) continue;
+        const key = nameKey(p.full_name, p.display_name, p.username);
+        if (key && seenNames.has(key)) continue;
         seen.add(p.id);
+        if (key) seenNames.add(key);
         list.push({
           id: p.id,
           display_name: p.display_name || p.full_name || "Consultor",
@@ -135,7 +154,10 @@ export function useConversationConsultants() {
         const label = (tm.role_label || "").toLowerCase();
         if (label.includes("dono") || label.includes("owner") || label.includes("propriet")) continue;
         if (supervisorOnly && (label.includes("supervisor") || label.includes("gerente") || label.includes("gestor"))) continue;
+        const key = nameKey(tm.full_name, tm.display_name, tm.username);
+        if (key && seenNames.has(key)) continue;
         seen.add(tm.id);
+        if (key) seenNames.add(key);
         list.push({
           id: tm.id,
           display_name: tm.display_name || tm.full_name || "Consultor",
@@ -151,6 +173,7 @@ export function useConversationConsultants() {
 
       list.sort((a, b) => a.display_name.localeCompare(b.display_name));
       return list;
+
     },
   });
 }
