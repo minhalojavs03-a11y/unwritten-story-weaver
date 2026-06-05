@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 const motion = { div: (props: any) => <div {...props} /> } as any;
 import { Trophy, Medal, Flame, Target, TrendingUp, Users, Clock, DollarSign, Calendar, MessageCircle, Award, AlertTriangle } from "lucide-react";
+import { RankEmblem } from "@/components/gamification/RankEmblem";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -164,16 +165,21 @@ function ConsultorView() {
 
       <Card className="overflow-hidden p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div
-              className="flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg"
-              style={{ background: `linear-gradient(135deg, ${current.color}, ${current.color}cc)` }}
-            >
-              <Award className="h-7 w-7" />
-            </div>
+          <div className="flex items-center gap-4">
+            <RankEmblem color={current.color} tier={(config?.levels ?? []).findIndex((l: any) => l.label === current.label) + 1} size={72} />
             <div>
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Nível atual</div>
-              <div className="font-display text-xl font-semibold">{current.label}</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Nível atual</div>
+              <div
+                className="font-display text-xl font-semibold tracking-tight"
+                style={{ color: current.color }}
+              >
+                {current.label}
+              </div>
+              {next && (
+                <div className="text-[11px] text-muted-foreground">
+                  Próx.: <span className="text-foreground">{next.label}</span>
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-6">
