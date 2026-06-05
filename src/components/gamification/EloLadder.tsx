@@ -69,7 +69,7 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
       {/* Trilha */}
       <div className={cn("relative mt-4", isCompact ? "mt-3" : "mt-5")}>
         {/* linha base */}
-        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-2 overflow-hidden rounded-full bg-muted shadow-inner energy-stripes energy-stripes" aria-hidden />
+        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-2 overflow-hidden rounded-full bg-muted shadow-inner energy-stripes" aria-hidden />
         {/* progresso total da trilha (até elo atual) — com carga de energia */}
         <div
           className="absolute left-0 top-1/2 -translate-y-1/2 h-2 overflow-hidden rounded-full transition-all duration-700 energy-shine energy-stripes energy-stripes-light"
