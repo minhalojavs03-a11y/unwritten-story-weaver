@@ -106,11 +106,11 @@ export function useTeam() {
       const usedProfileIds = new Set<string>();
 
       // 1) Membros internos (tenant_members) — fonte de verdade da equipe
-      const fromMembers: TeamMember[] = (membersRes.data ?? [])
-        .map((m) => {
-          if (isHiddenFeraconPerson(m as any)) return null;
+      const fromMembersRaw: (TeamMember & { _linkedProfileId: string | null })[] = [];
+      for (const m of membersRes.data ?? []) {
+          if (isHiddenFeraconPerson(m as any)) continue;
           const linkedProfile = m.email ? profilesByEmail.get(m.email.toLowerCase()) : undefined;
-          if (isHiddenFeraconPerson(linkedProfile as any)) return null;
+          if (isHiddenFeraconPerson(linkedProfile as any)) continue;
           if (linkedProfile) usedProfileIds.add(linkedProfile.id);
 
           const userRoles = linkedProfile ? rolesByUser.get(linkedProfile.id) ?? [] : [];
@@ -121,7 +121,7 @@ export function useTeam() {
             (leadsByMember.get(m.id) ?? 0) +
             (linkedProfile ? leadsByUser.get(linkedProfile.id) ?? 0 : 0);
 
-          return {
+          fromMembersRaw.push({
             id: m.id,
             source: "tenant_member" as const,
             tenant_id: m.tenant_id,
@@ -138,9 +138,9 @@ export function useTeam() {
             primary_role: pickPrimary(roles),
             leads_count: leadsCount,
             _linkedProfileId: linkedProfile?.id ?? null,
-          };
-        })
-        .filter((m): m is TeamMember & { _linkedProfileId: string | null } => !!m)
+          });
+        }
+      const fromMembers: TeamMember[] = fromMembersRaw
         .filter((m) => !(m._linkedProfileId && hiddenUserIds.has(m._linkedProfileId)) && !m.roles.includes("superadmin"))
         .map(({ _linkedProfileId: _omit, ...rest }) => rest);
 
