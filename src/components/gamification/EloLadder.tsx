@@ -182,13 +182,21 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
               Elo atual:{" "}
               <span className="font-semibold" style={{ color: current.color }}>{current.label}</span>
             </span>
-            {next ? (
-              <span className="text-muted-foreground">
-                Próximo:{" "}
-                <span className="font-semibold" style={{ color: next.color }}>{next.label}</span>
-                <span className="ml-1 tabular-nums">· faltam <span className="font-semibold text-foreground">{Math.max(0, next.min_points - points)}</span> pts</span>
-              </span>
-            ) : (
+            {next ? (() => {
+              const salesNeed = Math.max(0, (next.min_sales ?? 0) - sales);
+              const ptsNeed = Math.max(0, next.min_points - points);
+              return (
+                <span className="text-muted-foreground">
+                  Próximo:{" "}
+                  <span className="font-semibold" style={{ color: next.color }}>{next.label}</span>
+                  {salesNeed > 0 ? (
+                    <span className="ml-1 tabular-nums">· faltam <span className="font-semibold text-foreground">{salesNeed}</span> {salesNeed === 1 ? "venda" : "vendas"}</span>
+                  ) : (
+                    <span className="ml-1 tabular-nums">· faltam <span className="font-semibold text-foreground">{ptsNeed}</span> pts</span>
+                  )}
+                </span>
+              );
+            })() : (
               <span className="font-semibold text-amber-600">Elo máximo atingido 🏆</span>
             )}
           </div>
