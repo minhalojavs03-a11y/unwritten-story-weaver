@@ -2358,13 +2358,8 @@ export type Database = {
       ensure_owner_member: { Args: { _tenant_id: string }; Returns: string }
       ensure_tenant_role_invites: { Args: never; Returns: undefined }
       gamification_executive_overview: {
-        Args: { _tenant_id: string }
-        Returns: {
-          total_events: number
-          total_points: number
-          total_revenue: number
-          total_sales: number
-        }[]
+        Args: { _period?: string }
+        Returns: Json
       }
       gamification_member_summary: {
         Args: { _member_id: string; _period?: string }
