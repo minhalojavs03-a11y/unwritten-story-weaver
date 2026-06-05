@@ -99,6 +99,7 @@ async function fanoutAppNotifications(admin: any, params: {
         title: "Lead distribuído",
         body: `👤 ${leadName} · 💰 ${valueLabel} → ${consultantName}`,
         lead_id: leadId,
+        metadata: { consultant_member_id: consultantMemberId, consultant_name: consultantName },
       });
     }
 
@@ -115,6 +116,7 @@ async function fanoutAppNotifications(admin: any, params: {
         title: "Lead distribuído",
         body: `👤 ${leadName} · 💰 ${valueLabel} → ${consultantName} (${tenantName})`,
         lead_id: leadId,
+        metadata: { consultant_member_id: consultantMemberId, consultant_name: consultantName, tenant_name: tenantName },
       });
     }
 
