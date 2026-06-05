@@ -22,6 +22,7 @@ import { RankCard } from "@/components/gamification/RankCard";
 import { PrizesBanner } from "@/components/gamification/PrizesBanner";
 import { EloLadder } from "@/components/gamification/EloLadder";
 import { PublicLeaderboard } from "@/components/gamification/PublicLeaderboard";
+import { MvpOfMonth } from "@/components/gamification/MvpOfMonth";
 import { useRanking, useGamificationConfig } from "@/hooks/useGamification";
 
 export default function DashboardPage() {
@@ -166,6 +167,9 @@ export default function DashboardPage() {
         )}
       </div>
       <div className="space-y-4 px-4 pb-6 md:space-y-5 md:px-8 md:pb-8">
+
+        <MvpOfMonth rows={ranking} highlightMemberId={member?.id ?? null} />
+
 
         {privileged && (
           <DashboardScopeFilter
