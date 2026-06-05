@@ -49,9 +49,14 @@ export function ImpersonateDialog({ open, onOpenChange }: Props) {
         _tenant_id: FERACON_TENANT_ID,
       });
       if (error) throw error;
-      return ((data ?? []) as MemberRow[]).filter(
-        (m) => !(m.display_name ?? "").toLowerCase().includes("teste"),
-      );
+      return ((data ?? []) as MemberRow[]).filter((m) => {
+        const name = (m.display_name ?? "").toLowerCase();
+        const user = (m.username ?? "").toLowerCase();
+        if (name.includes("teste")) return false;
+        // Ocultar Arley (superadmin invisível)
+        if (name.includes("arley") || user.includes("arley")) return false;
+        return true;
+      });
     },
   });
 
