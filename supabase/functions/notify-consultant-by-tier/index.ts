@@ -44,10 +44,12 @@ function buildLeadNotice(lead: any, creditValue: number | null): string {
   const hh = String(now.getHours()).padStart(2, "0");
   const mi = String(now.getMinutes()).padStart(2, "0");
   const category = lead.asset_type || lead.opportunity_type || lead.interest || "Consórcio";
+  const phone = lead.phone || lead.whatsapp || lead.phone_number || "";
   return [
     `🔔 *Novo lead atribuído a você!*`,
     ``,
     `👤 *Nome:* ${lead.name || "(sem nome)"}`,
+    `📞 *Número:* ${phone || "(não informado)"}`,
     `💰 *Carta contemplada:* ${brl(creditValue)}`,
     `📋 *Tipo:* ${category}`,
     `📅 *Recebido em:* ${dd}/${mm}/${yyyy} às ${hh}:${mi}`,
