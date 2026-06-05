@@ -131,9 +131,8 @@ export function MvpOfMonth({ rows, highlightMemberId }: MvpOfMonthProps) {
                       <div className="relative shrink-0">
                         <InitialsAvatar
                           name={row.display_name}
-                          color={row.avatar_color}
                           src={row.avatar_url ?? undefined}
-                          size={40}
+                          className="h-10 w-10 text-sm"
                         />
                         <span className={`absolute -bottom-1 -right-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold shadow ${cfg.chip}`}>
                           {cfg.badge}
