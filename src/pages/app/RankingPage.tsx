@@ -222,11 +222,13 @@ function ConsultorView() {
       <PrizesBanner />
 
       <div>
-        <h2 className="mb-3 font-display text-lg font-semibold">Ranking</h2>
+        <h2 className="mb-3 font-display text-base font-semibold tracking-tight">Corrida do período</h2>
         <TopThree rows={ranking} />
-        <div className="mt-4">
-          <PublicLeaderboard rows={ranking} config={config} highlightMemberId={myId} />
-        </div>
+      </div>
+
+      <div>
+        <h2 className="mb-3 font-display text-lg font-semibold">Ranking &amp; Placar público</h2>
+        <PublicLeaderboard rows={ranking} config={config} highlightMemberId={myId} />
         {myId && !ranking.some((r) => r.member_id === myId) && (
           <p className="mt-2 text-xs text-muted-foreground">Seu desempenho aparece no ranking assim que você tiver pontos no período.</p>
         )}
@@ -261,12 +263,11 @@ function SupervisorView() {
         <KpiTile icon={Trophy} label="Top performer" value={topPerformer?.display_name?.split(" ")[0] ?? "—"} accent="bg-emerald-100 text-emerald-700" />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr] lg:items-start">
-        <RankCard variant="full" period={period} />
-        <div>
-          <h2 className="mb-3 font-display text-base font-semibold tracking-tight">Top 3 destaques</h2>
-          <TopThree rows={ranking} />
-        </div>
+      <RankCard variant="full" period={period} />
+
+      <div>
+        <h2 className="mb-3 font-display text-base font-semibold tracking-tight">Corrida do período</h2>
+        <TopThree rows={ranking} />
       </div>
 
       <EloLadder variant="full" period={period} />
@@ -390,12 +391,11 @@ function ExecutivoView() {
         <PeriodTabs value={period} onChange={setPeriod} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr] lg:items-start">
-        <RankCard variant="full" period={period} />
-        <div>
-          <h2 className="mb-3 font-display text-base font-semibold tracking-tight">Top 3 destaques</h2>
-          <TopThree rows={ranking} />
-        </div>
+      <RankCard variant="full" period={period} />
+
+      <div>
+        <h2 className="mb-3 font-display text-base font-semibold tracking-tight">Corrida do período</h2>
+        <TopThree rows={ranking} />
       </div>
 
       <EloLadder variant="full" period={period} />
@@ -467,14 +467,11 @@ function ExecutivoView() {
       <section>
         <div className="mb-3 flex items-end justify-between">
           <div>
-            <h2 className="font-display text-lg font-semibold">Ranking geral</h2>
-            <p className="text-xs text-muted-foreground">Top performers da equipe no período · placar público</p>
+            <h2 className="font-display text-lg font-semibold">Ranking &amp; Placar público</h2>
+            <p className="text-xs text-muted-foreground">Classificação consolidada da equipe no período</p>
           </div>
         </div>
-        <TopThree rows={ranking} />
-        <div className="mt-4">
-          <PublicLeaderboard rows={ranking} config={config} />
-        </div>
+        <PublicLeaderboard rows={ranking} config={config} />
       </section>
     </div>
   );
