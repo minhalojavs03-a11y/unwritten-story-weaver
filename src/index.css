@@ -339,3 +339,36 @@
     background: hsl(var(--primary) / 0.8);
   }
 }
+
+/* Energy flow on progress bars (gamification) */
+@layer utilities {
+  @keyframes energy-flow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+  @keyframes energy-shine {
+    0% { transform: translateX(-120%) skewX(-20deg); }
+    100% { transform: translateX(320%) skewX(-20deg); }
+  }
+  @keyframes energy-pulse {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 0.9; }
+  }
+  .energy-bar {
+    background-size: 200% 100%;
+    animation: energy-flow 2.2s linear infinite;
+  }
+  .energy-shine::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 35%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent);
+    animation: energy-shine 2.2s ease-in-out infinite;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+  .energy-pulse {
+    animation: energy-pulse 1.8s ease-in-out infinite;
+  }
+}
