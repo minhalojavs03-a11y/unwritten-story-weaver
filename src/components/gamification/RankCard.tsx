@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { ChevronRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RankEmblem } from "./RankEmblem";
-import { useMyGamificationSummary, useGamificationConfig, levelFor, type Period } from "@/hooks/useGamification";
+import { useMyGamificationSummary, useGamificationConfig, levelFor, tierForLevel, type Period } from "@/hooks/useGamification";
 
 type Variant = "full" | "compact";
 
@@ -18,7 +18,7 @@ export function RankCard({ variant = "full", period = "monthly", className, asLi
   const { data: config } = useGamificationConfig();
   const points = summary?.points ?? 0;
   const { current, next, progress } = levelFor(points, config);
-  const tier = Math.max(1, (config?.levels ?? []).findIndex((l: any) => l.label === current.label) + 1);
+  const tier = tierForLevel(current, config);
   const pointsToNext = next ? Math.max(0, next.min_points - points) : 0;
 
   const isCompact = variant === "compact";
