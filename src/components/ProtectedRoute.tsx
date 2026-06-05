@@ -21,19 +21,34 @@ export function ProtectedRoute({
   allowSupervisor = false,
   denyConsultant = false,
 }: Props) {
-  const { session, loading } = useAuth();
+  const { session, loading, isSuperadmin: authIsSuperadmin, user } = useAuth();
   const { isSuperadmin, isOwner, isSupervisor, isRoleLoading } = useEffectiveRole();
   const { can } = usePermissions();
   const location = useLocation();
+  const roleLoadingForRoute = !requireSuperadmin && isRoleLoading;
 
   const supervisorOk = allowSupervisor && can("view_whatsapp");
   const denied =
     !!session &&
     !loading &&
-    !isRoleLoading &&
+    !roleLoadingForRoute &&
     ((requireOwner && !isOwner && !isSuperadmin && !supervisorOk) ||
       (denyConsultant && !isSuperadmin && !isOwner && !isSupervisor) ||
-      (requireSuperadmin && !isSuperadmin));
+      (requireSuperadmin && !authIsSuperadmin));
+
+  useEffect(() => {
+    if (!requireSuperadmin || loading || !authIsSuperadmin || typeof window === "undefined") return;
+
+    window.localStorage.removeItem("impersonation_context");
+    const activeKeys: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (key?.startsWith("feracon.activeMember")) activeKeys.push(key);
+    }
+    activeKeys.forEach((key) => window.localStorage.removeItem(key));
+    if (user?.id) window.sessionStorage.removeItem(`feracon.activeMember.${user.id}`);
+    window.dispatchEvent(new Event("feracon:impersonation"));
+  }, [authIsSuperadmin, loading, requireSuperadmin, user?.id]);
 
   useEffect(() => {
     if (denied) {
@@ -41,13 +56,13 @@ export function ProtectedRoute({
     }
   }, [denied]);
 
-  if (loading || isRoleLoading) {
+  if (loading || roleLoadingForRoute) {
     return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Carregando…</div>;
   }
   if (!session) {
     return <Navigate to={requireSuperadmin ? "/admin/login" : "/login"} replace state={{ from: location }} />;
   }
-  if (requireSuperadmin && !isSuperadmin) {
+  if (requireSuperadmin && !authIsSuperadmin) {
     return <Navigate to="/admin/login" replace />;
   }
   if (requireOwner && !isOwner && !isSuperadmin && !supervisorOk) {
