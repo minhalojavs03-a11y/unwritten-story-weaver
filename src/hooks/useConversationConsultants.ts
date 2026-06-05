@@ -155,13 +155,16 @@ export function useConversationConsultants() {
         if (isHiddenFeraconPerson(p as any)) continue;
         if (seen.has(p.id)) continue;
         if (hiddenUserIds.has(p.id)) continue;
+        if (ownerUserIds.has(p.id)) continue;
         const label = (p.role_label || "").toLowerCase();
         if (label.includes("dono") || label.includes("owner") || label.includes("propriet")) continue;
         if (supervisorOnly && (label.includes("supervisor") || label.includes("gerente") || label.includes("gestor"))) continue;
         const key = nameKey(p.full_name, p.display_name, p.username);
+        if (key && ownerNameKeys.has(key)) continue;
         if (key && seenNames.has(key)) continue;
         seen.add(p.id);
         if (key) seenNames.add(key);
+
         list.push({
           id: p.id,
           display_name: p.display_name || p.full_name || "Consultor",
