@@ -170,15 +170,16 @@ export function PublicLeaderboard({ rows, config, highlightMemberId, timesByMemb
                 </div>
               </div>
 
-              {/* KPIs — performance real do consultor */}
-              <div className="mt-2.5 grid grid-cols-2 gap-1.5 sm:grid-cols-5">
+              {/* KPIs — performance real do consultor (compacto em mobile) */}
+              <div className="mt-2 flex flex-wrap items-center gap-1 sm:grid sm:grid-cols-5 sm:gap-1.5">
                 <StatChip icon={Target} label="Vendas" value={row.sales} tone="emerald" highlight />
-                <StatChip icon={Calendar} label="Reuniões" value={row.meetings} tone="sky" />
-                <StatChip icon={MessageCircle} label="Contatos" value={row.contacts} tone="violet" />
+                <StatChip icon={Calendar} label="Reun." fullLabel="Reuniões" value={row.meetings} tone="sky" />
+                <StatChip icon={MessageCircle} label="Cont." fullLabel="Contatos" value={row.contacts} tone="violet" />
                 <StatChip icon={Inbox} label="Leads" value={row.leads_assumed} tone="slate" />
                 <StatChip
                   icon={Zap}
-                  label="Tempo méd."
+                  label="T. méd."
+                  fullLabel="Tempo méd."
                   value={hasTime ? labelTime(avgMin!) : "—"}
                   tone="amber"
                   valueClassName={hasTime ? timeTone(avgMin!) : undefined}
@@ -208,6 +209,7 @@ const TONE_BG: Record<string, string> = {
 function StatChip({
   icon: Icon,
   label,
+  fullLabel,
   value,
   tone,
   highlight,
@@ -215,6 +217,7 @@ function StatChip({
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
+  fullLabel?: string;
   value: React.ReactNode;
   tone: keyof typeof TONE_BG;
   highlight?: boolean;
@@ -222,19 +225,22 @@ function StatChip({
 }) {
   return (
     <div
+      title={fullLabel ?? label}
       className={cn(
-        "flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[10px]",
+        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] leading-none",
+        "sm:gap-1.5 sm:rounded-lg sm:border sm:px-2 sm:py-1",
         TONE_BG[tone],
-        highlight && "ring-1 ring-emerald-500/30",
+        highlight && "ring-1 ring-emerald-500/40",
       )}
     >
       <Icon className="h-3 w-3 shrink-0 opacity-80" />
-      <div className="min-w-0 leading-tight">
-        <div className={cn("font-display text-[13px] font-bold tabular-nums leading-none", valueClassName)}>
-          {value}
-        </div>
-        <div className="text-[9px] uppercase tracking-wider opacity-70">{label}</div>
-      </div>
+      <span className={cn("font-display text-[11px] font-bold tabular-nums sm:text-[13px]", valueClassName)}>
+        {value}
+      </span>
+      <span className="text-[9px] uppercase tracking-wider opacity-70">
+        <span className="sm:hidden">{label}</span>
+        <span className="hidden sm:inline">{fullLabel ?? label}</span>
+      </span>
     </div>
   );
 }
