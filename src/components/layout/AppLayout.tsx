@@ -157,12 +157,27 @@ export function AppLayout() {
   }
 
   const sidebarWidth = collapsed ? "w-[72px]" : "w-[240px]";
+
+  // Superadmin não deve assumir identidade interna de membro — limpa qualquer
+  // seleção antiga persistida (ex.: Nilton selecionado em sessão anterior)
+  // para evitar que o cabeçalho mostre o nome do membro no lugar do real.
+  useEffect(() => {
+    if (realIsSuperadmin && !impersonating && member) {
+      clearMember();
+    }
+  }, [realIsSuperadmin, impersonating, member, clearMember]);
+
   const activeMemberAvatarUrl = member ? (members.find((mm) => mm.id === member.id)?.avatar_url ?? null) : null;
   const realAccountName = profile?.display_name ?? profile?.full_name?.split(" ")[0] ?? profile?.email ?? "Minha conta";
+  // Para superadmin (real) o cabeçalho sempre mostra a conta logada; ignora
+  // membro interno fora do modo suporte.
+  const useRealIdentity = realIsSuperadmin && !impersonating;
   const shownIdentityName = impersonating
     ? realAccountName
+    : useRealIdentity
+    ? realAccountName
     : (member?.display_name ?? profile?.display_name ?? profile?.full_name?.split(" ")[0] ?? "Perfil");
-  const avatarIdentityName = impersonating
+  const avatarIdentityName = impersonating || useRealIdentity
     ? (profile?.full_name ?? profile?.email ?? "?")
     : (member?.display_name ?? profile?.full_name ?? profile?.email ?? "?");
 
@@ -311,20 +326,23 @@ export function AppLayout() {
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-2 rounded-full p-0.5 outline-none ring-offset-2 transition-shadow hover:ring-2 hover:ring-primary/30 focus-visible:ring-2 focus-visible:ring-primary">
                 <UserAvatar
-                  userId={impersonating ? profile?.id : (member?.id ?? profile?.id)}
+                  userId={impersonating || useRealIdentity ? profile?.id : (member?.id ?? profile?.id)}
                   name={avatarIdentityName}
-                  avatarUrl={impersonating ? profile?.avatar_url : (member ? activeMemberAvatarUrl : profile?.avatar_url)}
-                  avatarColor={impersonating ? profile?.avatar_color : (member?.avatar_color ?? profile?.avatar_color)}
+                  avatarUrl={impersonating || useRealIdentity ? profile?.avatar_url : (member ? activeMemberAvatarUrl : profile?.avatar_url)}
+                  avatarColor={impersonating || useRealIdentity ? profile?.avatar_color : (member?.avatar_color ?? profile?.avatar_color)}
                   size={32}
                 />
                 <div className="hidden flex-col items-start leading-tight md:flex">
                   <span className="text-sm font-medium text-foreground">
                     {shownIdentityName}
                   </span>
-                  {!impersonating && member && (
+                  {!impersonating && !useRealIdentity && member && (
                     <span className="text-[10px] text-muted-foreground">
                       @{member.username}{member.role_label ? ` · ${member.role_label}` : ""}
                     </span>
+                  )}
+                  {!impersonating && useRealIdentity && (
+                    <span className="text-[10px] text-muted-foreground">Superadmin</span>
                   )}
                   {impersonating && (
                     <span className="max-w-[180px] truncate text-[10px] text-amber-600">
