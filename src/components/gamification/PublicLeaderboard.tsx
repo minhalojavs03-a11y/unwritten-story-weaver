@@ -133,7 +133,22 @@ export function PublicLeaderboard({ rows, config, highlightMemberId, timesByMemb
                     <div className="mt-1 flex items-center justify-end text-[10px] text-muted-foreground">
                       <span className="tabular-nums">
                         {next ? (
-                          <>faltam <span className="font-semibold text-foreground">{Math.max(0, next.min_points - row.points)}</span> pts → <span style={{ color: next.color }}>{next.label}</span></>
+                          (() => {
+                            const ptsLeft = Math.max(0, next.min_points - row.points);
+                            const salesLeft = Math.max(0, (next.min_sales ?? 0) - (row.sales ?? 0));
+                            return (
+                              <>
+                                faltam{" "}
+                                <span className="font-semibold text-foreground">{ptsLeft}</span> pts
+                                {salesLeft > 0 && (
+                                  <>
+                                    {" "}+ <span className="font-semibold text-emerald-600">{salesLeft}</span> {salesLeft === 1 ? "venda" : "vendas"}
+                                  </>
+                                )}
+                                {" "}→ <span style={{ color: next.color }}>{next.label}</span>
+                              </>
+                            );
+                          })()
                         ) : (
                           <span className="font-semibold text-amber-600">Elo máximo</span>
                         )}
