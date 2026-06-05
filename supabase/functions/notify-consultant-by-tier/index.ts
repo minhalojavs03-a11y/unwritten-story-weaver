@@ -307,11 +307,9 @@ Deno.serve(async (req) => {
 
       return json({ ok: true, notified_existing_assignee: { id: member.id, name: member.display_name, delivered, wa_status: waStatus } });
     }
-    // Lead importado de planilha (base antiga) — não dispara rotação,
-    // exceto quando force=true (backfill manual).
-    if (lead.imported_from_sheet === true && !force) {
-      return json({ ok: true, skipped: "imported from sheet" });
-    }
+    // Leads importados de planilha entram normalmente na rotação por faixa,
+    // mas marcamos para pular o envio de WhatsApp (apenas atribui no painel).
+    const skipWhatsappForImported = lead.imported_from_sheet === true && !force;
 
     const creditValue: number | null = _creditValue;
     if (creditValue == null) {
