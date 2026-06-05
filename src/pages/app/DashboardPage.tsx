@@ -21,6 +21,8 @@ import { DashboardScopeFilter, type DashboardScope } from "@/components/dashboar
 import { RankCard } from "@/components/gamification/RankCard";
 import { PrizesBanner } from "@/components/gamification/PrizesBanner";
 import { EloLadder } from "@/components/gamification/EloLadder";
+import { PublicLeaderboard } from "@/components/gamification/PublicLeaderboard";
+import { useRanking, useGamificationConfig } from "@/hooks/useGamification";
 
 export default function DashboardPage() {
   const { data: profile } = useMyProfile();
