@@ -43,7 +43,7 @@ export function PublicLeaderboard({ rows, config, highlightMemberId, className }
 
       <ul className="divide-y divide-border/60">
         {rows.map((row, i) => {
-          const { current, next, progress } = levelFor(row.points, config);
+          const { current, next, progress } = levelFor(row.points, config, row.sales ?? 0);
           const tier = tierForLevel(current, config);
           const isMe = highlightMemberId && row.member_id === highlightMemberId;
           const gap = leader ? Math.max(0, leader.points - row.points) : 0;
