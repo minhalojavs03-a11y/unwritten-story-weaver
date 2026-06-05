@@ -99,7 +99,6 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
                   <div
                     className={cn(
                       "transition-all",
-                      isLocked && "opacity-40 grayscale",
                       isCurrent && "scale-110",
                     )}
                   >
