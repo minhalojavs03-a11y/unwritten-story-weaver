@@ -17,11 +17,9 @@ const FN_BY_TYPE: Record<string, string> = {
   consultant_tier_match: "notify-consultant-by-tier",
 };
 
-// === MODO ESTABILIDADE: delay aleatório antes de cada envio (remover quando voltar ao normal).
+// Jitter curto humanizado (o anterior chegava a 150s e estourava o timeout).
 async function randomSendDelay(): Promise<void> {
-  let ms = 5000 + Math.floor(Math.random() * 55000);
-  if (Math.random() < 0.1) ms += 30000 + Math.floor(Math.random() * 60000);
-  console.log("[stability] sleeping", ms, "ms before send");
+  const ms = 1500 + Math.floor(Math.random() * 4500);
   await new Promise((r) => setTimeout(r, ms));
 }
 

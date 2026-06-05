@@ -9,11 +9,10 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// === MODO ESTABILIDADE: delay aleatório antes de cada envio (remover quando voltar ao normal).
+// Pequeno jitter humanizado antes do envio — o anterior chegava a 150s e fazia
+// a edge function estourar o timeout antes de gravar os logs/notificações.
 async function randomSendDelay(): Promise<void> {
-  let ms = 5000 + Math.floor(Math.random() * 55000);
-  if (Math.random() < 0.1) ms += 30000 + Math.floor(Math.random() * 60000);
-  console.log("[stability] sleeping", ms, "ms before send");
+  const ms = 1500 + Math.floor(Math.random() * 4500); // 1.5s–6s
   await new Promise((r) => setTimeout(r, ms));
 }
 
