@@ -201,6 +201,7 @@ function ConsultorView() {
 function SupervisorView() {
   const [period, setPeriod] = useState<Period>("weekly");
   const { data: team = [] } = useTeamOverview(period);
+  const { data: ranking = [] } = useRanking(period);
 
   const offlineCount = team.filter((m) => !m.last_seen_at || (Date.now() - new Date(m.last_seen_at).getTime()) > 30 * 60_000).length;
   const stalledTotal = team.reduce((acc, m) => acc + Number(m.stalled_leads ?? 0), 0);
@@ -219,6 +220,14 @@ function SupervisorView() {
         <KpiTile icon={AlertTriangle} label="Offline (>30min)" value={offlineCount} accent="bg-amber-100 text-amber-700" />
         <KpiTile icon={AlertTriangle} label="Leads parados >48h" value={stalledTotal} accent="bg-red-100 text-red-700" />
         <KpiTile icon={Trophy} label="Top performer" value={topPerformer?.display_name?.split(" ")[0] ?? "—"} accent="bg-emerald-100 text-emerald-700" />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr] lg:items-start">
+        <RankCard variant="full" period={period} />
+        <div>
+          <h2 className="mb-3 font-display text-base font-semibold tracking-tight">Top 3 destaques</h2>
+          <TopThree rows={ranking} />
+        </div>
       </div>
 
       {lowPerformer && (
@@ -334,6 +343,15 @@ function ExecutivoView() {
         </div>
         <PeriodTabs value={period} onChange={setPeriod} />
       </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr] lg:items-start">
+        <RankCard variant="full" period={period} />
+        <div>
+          <h2 className="mb-3 font-display text-base font-semibold tracking-tight">Top 3 destaques</h2>
+          <TopThree rows={ranking} />
+        </div>
+      </div>
+
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <ExecKpiCard icon={DollarSign} label="Receita estimada" value={formatCurrency(Number(overview?.estimated_revenue ?? 0))} hint={`${totals?.sales ?? 0} venda(s) no período`} tone="success" highlight />
