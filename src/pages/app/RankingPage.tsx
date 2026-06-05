@@ -18,10 +18,6 @@ import {
   useRanking, useMyGamificationSummary, useTeamOverview, useExecutiveOverview,
   useGamificationConfig, levelFor, type Period, type RankingRow,
 } from "@/hooks/useGamification";
-import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip,
-  CartesianGrid, BarChart, Bar,
-} from "recharts";
 
 const PERIOD_OPTIONS: { value: Period; label: string }[] = [
   { value: "daily", label: "Hoje" },
