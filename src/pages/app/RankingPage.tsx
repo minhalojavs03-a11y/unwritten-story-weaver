@@ -81,42 +81,52 @@ function MedalIcon({ position }: { position: number }) {
 }
 
 function TopThree({ rows }: { rows: RankingRow[] }) {
-  const top = rows.slice(0, 3);
-  while (top.length < 3) top.push(null as any);
-  const order = [top[1], top[0], top[2]]; // 2,1,3 visualmente
-  const heights = ["h-32", "h-40", "h-28"];
-  const positions = [2, 1, 3];
-  // 1=gold, 2=prata, 3=bronze
-  const podiumStyles: Record<number, string> = {
-    1: "bg-gradient-to-b from-yellow-300 via-yellow-200 to-yellow-50 ring-1 ring-yellow-400/50 shadow-[0_-4px_20px_-6px_rgba(234,179,8,0.45)]",
-    2: "bg-gradient-to-b from-slate-300 via-slate-200 to-slate-50 ring-1 ring-slate-400/50 shadow-[0_-4px_20px_-6px_rgba(148,163,184,0.45)]",
-    3: "bg-gradient-to-b from-orange-300 via-orange-200 to-orange-50 ring-1 ring-orange-400/50 shadow-[0_-4px_20px_-6px_rgba(234,88,12,0.4)]",
+  // Corrida horizontal: cada participante avança em % relativo ao líder.
+  const sorted = [...rows].sort((a, b) => Number(b.points) - Number(a.points));
+  const leaderPoints = Math.max(1, Number(sorted[0]?.points ?? 0));
+  const trackColors: Record<number, string> = {
+    1: "from-yellow-400 to-yellow-200",
+    2: "from-slate-400 to-slate-200",
+    3: "from-orange-400 to-orange-200",
   };
   return (
-    <div className="grid grid-cols-3 gap-3 md:gap-4">
-      {order.map((r, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.08 }}
-          className="flex flex-col items-center justify-end"
-        >
-          {r ? (
-            <>
-              <UserAvatar userId={r.member_id} name={r.display_name} avatarUrl={r.avatar_url} avatarColor={r.avatar_color ?? undefined} size={positions[i] === 1 ? 64 : 48} />
-              <div className="mt-1 text-center text-xs font-semibold text-foreground line-clamp-1">{r.display_name}</div>
-              <div className="text-[10px] text-muted-foreground">{r.points} pts</div>
-            </>
-          ) : (
-            <div className="text-[10px] text-muted-foreground">—</div>
-          )}
-          <div className={cn("mt-2 w-full rounded-t-xl px-2 pb-2 pt-3 text-center", heights[i], podiumStyles[positions[i]])}>
-            <MedalIcon position={positions[i]} />
-          </div>
-        </motion.div>
-      ))}
-    </div>
+    <Card className="overflow-hidden p-4">
+      <div className="mb-3 flex items-center justify-between text-[11px] uppercase tracking-wide text-muted-foreground">
+        <span>Corrida do período</span>
+        <span>% relativo ao 1º</span>
+      </div>
+      {sorted.length === 0 && (
+        <div className="py-6 text-center text-sm text-muted-foreground">Sem dados no período.</div>
+      )}
+      <div className="space-y-3">
+        {sorted.map((r, i) => {
+          const pct = Math.max(2, Math.round((Number(r.points) / leaderPoints) * 100));
+          const accent = trackColors[i + 1] ?? "from-primary/70 to-primary/30";
+          return (
+            <div key={r.member_id} className="flex items-center gap-3">
+              <div className="flex w-32 shrink-0 items-center gap-2 sm:w-40">
+                <MedalIcon position={i + 1} />
+                <UserAvatar userId={r.member_id} name={r.display_name} avatarUrl={r.avatar_url} avatarColor={r.avatar_color ?? undefined} size={28} />
+                <div className="min-w-0">
+                  <div className="truncate text-xs font-semibold">{r.display_name}</div>
+                  <div className="text-[10px] text-muted-foreground">{r.role_label ?? "Consultor"}</div>
+                </div>
+              </div>
+              <div className="relative h-6 flex-1 overflow-hidden rounded-full bg-muted/60 ring-1 ring-border">
+                <div
+                  className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-700", accent)}
+                  style={{ width: `${pct}%` }}
+                />
+                <div className="absolute inset-0 flex items-center justify-between px-3 text-[10px] font-semibold tabular-nums">
+                  <span className="text-foreground/80">{r.points} pts</span>
+                  <span className="text-foreground/70">{pct}%</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
   );
 }
 
