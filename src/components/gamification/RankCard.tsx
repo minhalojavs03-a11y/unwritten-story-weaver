@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { ChevronRight, Sparkles } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { RankEmblem } from "./RankEmblem";
 import { useMyGamificationSummary, useGamificationConfig, levelFor, type Period } from "@/hooks/useGamification";
@@ -11,14 +10,9 @@ type Props = {
   variant?: Variant;
   period?: Period;
   className?: string;
-  /** when true, makes the whole card a link to /ranking */
   asLink?: boolean;
 };
 
-/**
- * Cartão de elo / desempenho — visual sofisticado inspirado em ranks
- * competitivos. Usado em /ranking (full) e no Início (compact, num canto).
- */
 export function RankCard({ variant = "full", period = "monthly", className, asLink = false }: Props) {
   const { data: summary } = useMyGamificationSummary(period);
   const { data: config } = useGamificationConfig();
@@ -33,46 +27,34 @@ export function RankCard({ variant = "full", period = "monthly", className, asLi
   const inner = (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-2xl border border-white/5",
-        "bg-[linear-gradient(135deg,#0b0b16_0%,#13132a_45%,#0a0a18_100%)]",
-        "text-white shadow-[0_18px_50px_-22px_rgba(0,0,0,0.7)]",
+        "group relative overflow-hidden rounded-2xl border border-border bg-card text-card-foreground",
+        "shadow-sm transition-shadow hover:shadow-md",
         isCompact ? "p-3" : "p-5",
         className,
       )}
     >
-      {/* halo da cor do elo */}
+      {/* halo sutil da cor do elo */}
       <div
-        className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full opacity-40 blur-3xl"
+        aria-hidden
+        className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full opacity-20 blur-3xl"
         style={{ background: current.color }}
       />
-      {/* linhas finas decorativas */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.08]"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(45deg, rgba(255,255,255,0.6) 0 1px, transparent 1px 14px)",
-        }}
-      />
-      {/* canto: faixa metálica */}
+      {/* faixa lateral colorida do elo */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -left-px top-3 h-px w-12"
-        style={{ background: `linear-gradient(90deg, transparent, ${current.color})` }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-px bottom-3 h-px w-12"
-        style={{ background: `linear-gradient(270deg, transparent, ${current.color})` }}
+        className="pointer-events-none absolute left-0 top-0 h-full w-1"
+        style={{ background: `linear-gradient(180deg, ${current.color}, ${(next ?? current).color})` }}
       />
 
       <div className={cn("relative flex items-center", isCompact ? "gap-3" : "gap-5")}>
         <RankEmblem color={current.color} tier={tier} size={emblemSize} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase tracking-[0.22em] text-white/45">
+            <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
               {isCompact ? "Meu elo" : "Nível atual"}
             </span>
             {!isCompact && (
-              <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium tabular-nums text-white/70">
+              <span className="rounded-full border border-border bg-muted/50 px-2 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
                 {points} pts
               </span>
             )}
@@ -82,44 +64,43 @@ export function RankCard({ variant = "full", period = "monthly", className, asLi
               "font-display font-semibold tracking-tight",
               isCompact ? "text-base leading-tight" : "text-2xl leading-tight",
             )}
-            style={{ color: current.color, textShadow: `0 0 28px ${current.color}66` }}
+            style={{ color: current.color }}
           >
             {current.label}
           </div>
           {next ? (
             <div className={cn("mt-2", isCompact ? "space-y-1" : "space-y-1.5")}>
-              <div className="flex items-center justify-between text-[10px] text-white/55">
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                 <span className="inline-flex items-center gap-1">
                   <Sparkles className="h-3 w-3" style={{ color: next.color }} />
                   <span className="font-medium" style={{ color: next.color }}>{next.label}</span>
                 </span>
                 <span className="tabular-nums">
-                  faltam <span className="font-semibold text-white">{pointsToNext}</span> pts
+                  faltam <span className="font-semibold text-foreground">{pointsToNext}</span> pts
                 </span>
               </div>
-              <div className="relative h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div className="relative h-1.5 overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full transition-all duration-700"
                   style={{
                     width: `${progress}%`,
                     background: `linear-gradient(90deg, ${current.color}, ${next.color})`,
-                    boxShadow: `0 0 10px ${next.color}80`,
                   }}
                 />
               </div>
             </div>
           ) : (
-            <div className="mt-2 text-[11px] text-white/60">Elo máximo atingido 🏆</div>
+            <div className="mt-2 text-[11px] text-muted-foreground">Elo máximo atingido 🏆</div>
           )}
         </div>
 
         {isCompact && (
-          <ChevronRight className="ml-1 h-4 w-4 shrink-0 text-white/40 transition-transform group-hover:translate-x-0.5 group-hover:text-white/70" />
+          <ChevronRight className="ml-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
         )}
       </div>
 
       {!isCompact && (
-        <div className="relative mt-4 grid grid-cols-3 gap-2 border-t border-white/5 pt-3 text-center">
+        <div className="relative mt-4 grid grid-cols-3 gap-2 border-t border-border pt-3 text-center">
           <Stat label="Posição" value={summary?.rank_position ? `${summary.rank_position}º` : "—"} sub={summary?.total_members ? `de ${summary.total_members}` : undefined} />
           <Stat label="Pontos" value={points.toLocaleString("pt-BR")} />
           <Stat label="Vendas" value={summary?.sales ?? 0} accent={current.color} />
@@ -130,7 +111,7 @@ export function RankCard({ variant = "full", period = "monthly", className, asLi
 
   if (asLink) {
     return (
-      <Link to="/ranking" className={cn("block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-2xl", className)}>
+      <Link to="/ranking" className={cn("block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60", className)}>
         {inner}
       </Link>
     );
@@ -147,7 +128,7 @@ function Stat({ label, value, sub, accent }: { label: string; value: React.React
       >
         {value}
       </div>
-      <div className="text-[9px] uppercase tracking-[0.18em] text-white/45">
+      <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
         {label}{sub ? ` · ${sub}` : ""}
       </div>
     </div>
