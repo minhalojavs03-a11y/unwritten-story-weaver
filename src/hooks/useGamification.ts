@@ -65,6 +65,40 @@ export interface GamificationConfig {
   levels: Array<{ key: string; label: string; min_points: number; color: string }>;
 }
 
+export type GamificationLevel = GamificationConfig["levels"][number];
+
+export const DEFAULT_LEVELS: GamificationLevel[] = [
+  { key: "bronze", label: "Bronze", min_points: 0, color: "#B45309" },
+  { key: "prata", label: "Prata", min_points: 500, color: "#94A3B8" },
+  { key: "ouro", label: "Ouro", min_points: 1500, color: "#D4A017" },
+  { key: "diamante", label: "Diamante", min_points: 4000, color: "#22D3EE" },
+];
+
+export function getGamificationLevels(config?: GamificationConfig | null): GamificationLevel[] {
+  const raw = Array.isArray(config?.levels) ? config.levels : [];
+  const valid = raw.filter((level): level is GamificationLevel => {
+    return !!level && typeof level.label === "string" && Number.isFinite(Number(level.min_points));
+  });
+
+  return (valid.length > 0 ? valid : DEFAULT_LEVELS)
+    .map((level, index) => ({
+      key: level.key || `level-${index}`,
+      label: level.label || DEFAULT_LEVELS[index]?.label || `Nível ${index + 1}`,
+      min_points: Number(level.min_points) || 0,
+      color: level.color || DEFAULT_LEVELS[index]?.color || DEFAULT_LEVELS[0].color,
+    }))
+    .sort((a, b) => a.min_points - b.min_points);
+}
+
+export function tierForLevel(current: GamificationLevel, config?: GamificationConfig | null) {
+  const levels = getGamificationLevels(config);
+  const idx = levels.findIndex((level) => {
+    if (current.key && level.key) return level.key === current.key;
+    return level.label === current.label;
+  });
+  return Math.max(1, idx + 1);
+}
+
 export function useRanking(period: Period = "monthly") {
   return useQuery<RankingRow[]>({
     queryKey: ["gamification_ranking", period],
@@ -137,25 +171,18 @@ export function useGamificationConfig() {
 }
 
 export function levelFor(points: number, config?: GamificationConfig | null) {
-  const DEFAULT_LEVELS = [
-    { key: "bronze", label: "Bronze", min_points: 0, color: "#B45309" },
-    { key: "prata", label: "Prata", min_points: 500, color: "#94A3B8" },
-    { key: "ouro", label: "Ouro", min_points: 1500, color: "#D4A017" },
-    { key: "diamante", label: "Diamante", min_points: 4000, color: "#22D3EE" },
-  ];
-  const raw = config?.levels;
-  const levels = Array.isArray(raw) && raw.length > 0 ? raw : DEFAULT_LEVELS;
-  const sorted = [...levels].sort((a, b) => a.min_points - b.min_points);
+  const sorted = getGamificationLevels(config);
+  const safePoints = Number.isFinite(points) ? points : 0;
   let current = sorted[0] ?? DEFAULT_LEVELS[0];
-  let next: typeof sorted[number] | null = null;
+  let next: GamificationLevel | null = null;
   for (let i = 0; i < sorted.length; i++) {
-    if (points >= sorted[i].min_points) {
+    if (safePoints >= sorted[i].min_points) {
       current = sorted[i];
       next = sorted[i + 1] ?? null;
     }
   }
   const progress = next
-    ? Math.min(100, Math.round(((points - current.min_points) / (next.min_points - current.min_points)) * 100))
+    ? Math.min(100, Math.round(((safePoints - current.min_points) / Math.max(1, next.min_points - current.min_points)) * 100))
     : 100;
   return { current, next, progress };
 }

@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { cn } from "@/lib/utils";
 import { RankEmblem } from "./RankEmblem";
-import { levelFor, type RankingRow, type GamificationConfig } from "@/hooks/useGamification";
+import { levelFor, tierForLevel, type RankingRow, type GamificationConfig } from "@/hooks/useGamification";
 
 type Props = {
   rows: RankingRow[];
@@ -44,7 +44,7 @@ export function PublicLeaderboard({ rows, config, highlightMemberId, className }
       <ul className="divide-y divide-border/60">
         {rows.map((row, i) => {
           const { current, next, progress } = levelFor(row.points, config);
-          const tier = Math.max(1, (config?.levels ?? []).findIndex((l: any) => l.label === current.label) + 1);
+          const tier = tierForLevel(current, config);
           const isMe = highlightMemberId && row.member_id === highlightMemberId;
           const gap = leader ? Math.max(0, leader.points - row.points) : 0;
           const position = i + 1;
