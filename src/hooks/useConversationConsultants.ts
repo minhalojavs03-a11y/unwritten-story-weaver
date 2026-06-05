@@ -43,7 +43,7 @@ export function useConversationConsultants() {
   // Supervisor = vê conversas mas não é dono/superadmin → restringe a consultores
   const supervisorOnly = !isOwner && !isSuperadmin;
   return useQuery({
-    queryKey: ["conversation-consultants", "v2", tenantId, isSuperadmin, supervisorOnly],
+    queryKey: ["conversation-consultants", "v3", tenantId, isSuperadmin, supervisorOnly],
     enabled: !!tenantId,
     queryFn: async (): Promise<ConsultantOption[]> => {
       // Sistema single-tenant Feracon: superadmin/owner/supervisor enxergam as
