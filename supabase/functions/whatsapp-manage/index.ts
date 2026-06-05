@@ -324,6 +324,8 @@ async function registerWebhook(instance: any, webhookUrl: (secret: string) => st
         enabled: true,
         events: ["messages"],
         excludeMessages: ["wasSentByApi", "isGroupYes"],
+        addUrlTypesMessages: true,
+        addUrlEvents: false,
       }),
     });
     console.log("webhook (re)registered status=", r.status);
