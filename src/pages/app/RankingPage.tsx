@@ -201,6 +201,7 @@ function ConsultorView() {
 function SupervisorView() {
   const [period, setPeriod] = useState<Period>("weekly");
   const { data: team = [] } = useTeamOverview(period);
+  const { data: ranking = [] } = useRanking(period);
 
   const offlineCount = team.filter((m) => !m.last_seen_at || (Date.now() - new Date(m.last_seen_at).getTime()) > 30 * 60_000).length;
   const stalledTotal = team.reduce((acc, m) => acc + Number(m.stalled_leads ?? 0), 0);
