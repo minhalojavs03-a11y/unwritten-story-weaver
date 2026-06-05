@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 const motion = { div: (props: any) => <div {...props} /> } as any;
 import { Trophy, Medal, Flame, Target, TrendingUp, Users, Clock, DollarSign, Calendar, MessageCircle, Award, AlertTriangle } from "lucide-react";
 import { RankCard } from "@/components/gamification/RankCard";
+import { PublicLeaderboard } from "@/components/gamification/PublicLeaderboard";
+import { PrizesBanner } from "@/components/gamification/PrizesBanner";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -183,11 +185,13 @@ function ConsultorView() {
         <KpiTile icon={DollarSign} label="Comissão estimada" value={formatCurrency(commission)} accent="bg-emerald-100 text-emerald-700" />
       </div>
 
+      <PrizesBanner />
+
       <div>
         <h2 className="mb-3 font-display text-lg font-semibold">Ranking</h2>
         <TopThree rows={ranking} />
         <div className="mt-4">
-          <RankList rows={ranking} />
+          <PublicLeaderboard rows={ranking} config={config} highlightMemberId={myId} />
         </div>
         {myId && !ranking.some((r) => r.member_id === myId) && (
           <p className="mt-2 text-xs text-muted-foreground">Seu desempenho aparece no ranking assim que você tiver pontos no período.</p>
@@ -202,6 +206,7 @@ function SupervisorView() {
   const [period, setPeriod] = useState<Period>("weekly");
   const { data: team = [] } = useTeamOverview(period);
   const { data: ranking = [] } = useRanking(period);
+  const { data: config } = useGamificationConfig();
 
   const offlineCount = team.filter((m) => !m.last_seen_at || (Date.now() - new Date(m.last_seen_at).getTime()) > 30 * 60_000).length;
   const stalledTotal = team.reduce((acc, m) => acc + Number(m.stalled_leads ?? 0), 0);
@@ -229,6 +234,10 @@ function SupervisorView() {
           <TopThree rows={ranking} />
         </div>
       </div>
+
+      <PrizesBanner />
+
+      <PublicLeaderboard rows={ranking} config={config} />
 
       {lowPerformer && (
         <Card className="border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
@@ -322,6 +331,7 @@ function ExecutivoView() {
   const [period, setPeriod] = useState<Period>("monthly");
   const { data: overview } = useExecutiveOverview(period);
   const { data: ranking = [] } = useRanking(period);
+  const { data: config } = useGamificationConfig();
 
   const totals = overview?.totals;
   const funnelData = overview?.funnel
@@ -414,16 +424,18 @@ function ExecutivoView() {
         </Card>
       </section>
 
+      <PrizesBanner />
+
       <section>
         <div className="mb-3 flex items-end justify-between">
           <div>
             <h2 className="font-display text-lg font-semibold">Ranking geral</h2>
-            <p className="text-xs text-muted-foreground">Top performers da equipe no período</p>
+            <p className="text-xs text-muted-foreground">Top performers da equipe no período · placar público</p>
           </div>
         </div>
         <TopThree rows={ranking} />
         <div className="mt-4">
-          <RankList rows={ranking.slice(0, 10)} />
+          <PublicLeaderboard rows={ranking} config={config} />
         </div>
       </section>
     </div>
