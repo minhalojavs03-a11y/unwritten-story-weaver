@@ -189,7 +189,7 @@ function ConsultorView() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-semibold">Meu desempenho</h1>
+        <h1 className="font-display text-2xl font-semibold pl-3 md:pl-0">Meu desempenho</h1>
         <PeriodTabs value={period} onChange={setPeriod} />
       </div>
 
@@ -248,7 +248,7 @@ function SupervisorView() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-semibold">Ranking da Equipe</h1>
+        <h1 className="font-display text-2xl font-semibold pl-3 md:pl-0">Ranking da Equipe</h1>
         <PeriodTabs value={period} onChange={setPeriod} />
       </div>
 
@@ -374,7 +374,8 @@ function ExecutivoView() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
+        <div className="pl-3 md:pl-0">
+
           <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">Painel executivo</div>
           <h1 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">Visão Executiva</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
@@ -428,7 +429,7 @@ export default function RankingPage() {
   const isSupervisor = can("view_team_metrics") && !isOwner && !isSuperadmin;
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 px-7 py-4 md:p-6">
+    <div className="mx-auto w-full max-w-6xl space-y-5 p-4 md:p-6">
       {isOwner || isSuperadmin ? <ExecutivoView /> : isSupervisor ? <SupervisorView /> : <ConsultorView />}
     </div>
   );
