@@ -145,7 +145,8 @@ export default function FilaLeadsPage() {
         .from("leads")
         .select("id,name,phone,email,interest,source,metadata,created_at,stage,assigned_to,assigned_member_id,tenant_id")
         .limit(50);
-      if (!canSeeAll) query = query.eq("kind", "lead").not("stage", "in", "(perdido,comprou,historico)");
+      query = query.eq("kind", "lead");
+      if (!canSeeAll) query = query.not("stage", "in", "(perdido,comprou,historico)");
       if (!isSuperadmin) query = query.eq("tenant_id", tenantId);
       if (!canSeeAll) {
         if (activeMember?.id && user?.id) {
