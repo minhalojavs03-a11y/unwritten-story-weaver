@@ -343,10 +343,10 @@ export default function FilaLeadsPage() {
         .in("lead_id", leadIds);
       if (!isSuperadmin && tenantId) trq = trq.eq("tenant_id", tenantId);
       const { data: reqs } = await trq;
-      const list = (reqs ?? []) as TransferRequest[];
+      const list = ((reqs ?? []) as TransferRequest[]).filter((r) => !isHiddenFeraconMemberId(r.requester_member_id) && !isHiddenFeraconMemberId(r.owner_member_id));
       setTransferRequests(list);
       const reqMemberIds = Array.from(
-        new Set(list.map((r) => r.requester_member_id).filter((id) => id && !map[id])),
+        new Set(list.map((r) => r.requester_member_id).filter((id) => id && !isHiddenFeraconMemberId(id) && !map[id])),
       ) as string[];
       if (reqMemberIds.length) {
         const { data: mems3 } = await supabase
@@ -354,6 +354,7 @@ export default function FilaLeadsPage() {
           .select("id,display_name,username")
           .in("id", reqMemberIds);
         (mems3 || []).forEach((m: any) => {
+          if (isHiddenFeraconPerson(m)) return;
           map[m.id] = m.display_name || m.username || "Consultor";
         });
         setAssigneeNames({ ...map });
