@@ -222,6 +222,14 @@ function SupervisorView() {
         <KpiTile icon={Trophy} label="Top performer" value={topPerformer?.display_name?.split(" ")[0] ?? "—"} accent="bg-emerald-100 text-emerald-700" />
       </div>
 
+      <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr] lg:items-start">
+        <RankCard variant="full" period={period} />
+        <div>
+          <h2 className="mb-3 font-display text-base font-semibold tracking-tight">Top 3 destaques</h2>
+          <TopThree rows={ranking} />
+        </div>
+      </div>
+
       {lowPerformer && (
         <Card className="border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
           ⚠️ <b>{lowPerformer.display_name}</b> está com {lowPerformer.active_leads} leads ativos e 0 pontos no período. Avalie suporte ou redistribuição.
