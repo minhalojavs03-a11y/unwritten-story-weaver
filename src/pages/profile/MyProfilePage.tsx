@@ -7,6 +7,7 @@ import {
   useUpdateMyMemberProfile,
   useUploadMemberAvatar,
 } from "@/hooks/useMemberProfile";
+import { useSupportImpersonation } from "@/hooks/useSupportImpersonation";
 import { ProfileCoverBanner } from "@/components/profile/ProfileCoverBanner";
 import { ProfileHeroCard } from "@/components/profile/ProfileHeroCard";
 import { PerformanceStats } from "@/components/profile/PerformanceStats";
@@ -18,17 +19,19 @@ import { Loader2 } from "lucide-react";
 export default function MyProfilePage() {
   const { data: baseProfile, isLoading: loadingBase } = useMyProfile();
   const { member } = useActiveMember();
+  const { isImpersonating } = useSupportImpersonation();
   const { data: memberProfile, isLoading: loadingMember } = useMyMemberProfile();
   const updateMember = useUpdateMyMemberProfile();
   const uploadMemberAvatar = useUploadMemberAvatar();
   const { data: tenant } = useMyTenant();
   const { roles } = useAuth();
 
-  const isLoading = member ? loadingMember : loadingBase;
+  const activeProfileMember = isImpersonating ? null : member;
+  const isLoading = activeProfileMember ? loadingMember : loadingBase;
 
   // Quando há membro interno ativo: o "perfil" é o do tenant_member.
   // Caso contrário (owner/superadmin sem membro), usa o profile do auth user.
-  const profile: Profile | null = member
+  const profile: Profile | null = activeProfileMember
     ? (memberProfile
         ? ({
             id: memberProfile.id,
@@ -63,11 +66,11 @@ export default function MyProfilePage() {
   }
 
   const priority: AppRole[] = ["superadmin", "owner", "supervisor", "consultant", "attendant"];
-  const primaryRole: AppRole = member
+  const primaryRole: AppRole = activeProfileMember
     ? "consultant"
     : ((priority.find((r) => roles.includes(r as never)) ?? "consultant") as AppRole);
 
-  const handleSave = member
+  const handleSave = activeProfileMember
     ? async (patch: ProfileUpdate) => {
         await updateMember.mutateAsync({
           full_name: (patch.full_name as string) ?? null,
@@ -93,8 +96,8 @@ export default function MyProfilePage() {
             role={primaryRole}
             tenantName={tenant?.name}
             editable
-            uploadFn={member ? (blob) => uploadMemberAvatar.mutateAsync(blob) : undefined}
-            uploadPending={member ? uploadMemberAvatar.isPending : undefined}
+            uploadFn={activeProfileMember ? (blob) => uploadMemberAvatar.mutateAsync(blob) : undefined}
+            uploadPending={activeProfileMember ? uploadMemberAvatar.isPending : undefined}
           />
 
           <PerformanceStats
