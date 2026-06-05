@@ -167,6 +167,8 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        {!privileged && <PrizesBanner compact />}
+
         <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
 
 
