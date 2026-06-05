@@ -168,9 +168,6 @@ export default function DashboardPage() {
       </div>
       <div className="space-y-4 px-4 pb-6 md:space-y-5 md:px-8 md:pb-8">
 
-        <MvpOfMonth rows={ranking} highlightMemberId={member?.id ?? null} />
-
-
         {privileged && (
           <DashboardScopeFilter
             scope={scope}
@@ -195,8 +192,11 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        <MvpOfMonth rows={ranking} highlightMemberId={member?.id ?? null} />
+
         {!privileged && <EloLadder variant="full" asLink />}
         {!privileged && <PrizesBanner compact />}
+
 
         {/* Placar público da equipe — exibe vendas, reuniões, contatos,
             leads assumidos e tempo médio de atendimento de TODOS. */}
