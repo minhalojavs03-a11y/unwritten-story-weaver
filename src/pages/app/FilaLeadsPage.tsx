@@ -281,6 +281,7 @@ export default function FilaLeadsPage() {
         .select("id,display_name,full_name,email")
         .in("id", userIds);
       (profs || []).forEach((p: any) => {
+        if (isHiddenFeraconPerson(p)) return;
         map[p.id] = p.display_name || p.full_name || p.email || "Consultor";
       });
     }
@@ -290,6 +291,7 @@ export default function FilaLeadsPage() {
         .select("id,display_name,username")
         .in("id", memberIds);
       (mems || []).forEach((m: any) => {
+        if (isHiddenFeraconPerson(m)) return;
         map[m.id] = m.display_name || m.username || "Consultor";
       });
     }
@@ -311,20 +313,21 @@ export default function FilaLeadsPage() {
         new Set((notifs || []).map((n: any) => n.recipient_member_id).filter(Boolean)),
       ) as string[];
       if (notifMemberIds.length) {
-        const missing = notifMemberIds.filter((id) => !map[id]);
+        const missing = notifMemberIds.filter((id) => !isHiddenFeraconMemberId(id) && !map[id]);
         if (missing.length) {
           const { data: mems2 } = await supabase
             .from("tenant_members")
             .select("id,display_name,username")
             .in("id", missing);
           (mems2 || []).forEach((m: any) => {
+            if (isHiddenFeraconPerson(m)) return;
             map[m.id] = m.display_name || m.username || "Consultor";
           });
           setAssigneeNames({ ...map });
         }
       }
       (notifs || []).forEach((n: any) => {
-        if (!n.lead_id || !n.recipient_member_id) return;
+        if (!n.lead_id || !n.recipient_member_id || isHiddenFeraconMemberId(n.recipient_member_id)) return;
         const list = notifMap[n.lead_id] || (notifMap[n.lead_id] = []);
         if (!list.includes(n.recipient_member_id)) list.push(n.recipient_member_id);
       });
