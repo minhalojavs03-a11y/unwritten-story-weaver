@@ -56,22 +56,26 @@ export function AppLayout() {
   // Modo suporte: superadmin visualizando como outro tenant.
   // Enquanto impersonando, esconde menus/atalhos admin e mostra o nome do tenant
   // no cabeçalho, para refletir fielmente a experiência do consultor/dono daquele cliente.
-  const [impersonating, setImpersonating] = useState<{ tenant_name: string } | null>(() => {
+  const [impersonating, setImpersonating] = useState<{ tenant_name: string; target_role?: string | null; target_member_id?: string | null } | null>(() => {
     if (typeof window === "undefined") return null;
     try {
       const raw = window.localStorage.getItem("impersonation_context");
-      return raw ? (JSON.parse(raw) as { tenant_name: string }) : null;
+      return raw ? (JSON.parse(raw) as { tenant_name: string; target_role?: string | null; target_member_id?: string | null }) : null;
     } catch { return null; }
   });
   useEffect(() => {
     const read = () => {
       try {
         const raw = window.localStorage.getItem("impersonation_context");
-        setImpersonating(raw ? (JSON.parse(raw) as { tenant_name: string }) : null);
+        setImpersonating(raw ? (JSON.parse(raw) as { tenant_name: string; target_role?: string | null; target_member_id?: string | null }) : null);
       } catch { setImpersonating(null); }
     };
     window.addEventListener("storage", read);
-    return () => window.removeEventListener("storage", read);
+    window.addEventListener("feracon:impersonation", read);
+    return () => {
+      window.removeEventListener("storage", read);
+      window.removeEventListener("feracon:impersonation", read);
+    };
   }, []);
 
   const isSuperadmin = realIsSuperadmin;
@@ -153,6 +157,14 @@ export function AppLayout() {
   }
 
   const sidebarWidth = collapsed ? "w-[72px]" : "w-[240px]";
+  const activeMemberAvatarUrl = member ? (members.find((mm) => mm.id === member.id)?.avatar_url ?? null) : null;
+  const realAccountName = profile?.display_name ?? profile?.full_name?.split(" ")[0] ?? profile?.email ?? "Minha conta";
+  const shownIdentityName = impersonating
+    ? realAccountName
+    : (member?.display_name ?? profile?.display_name ?? profile?.full_name?.split(" ")[0] ?? "Perfil");
+  const avatarIdentityName = impersonating
+    ? (profile?.full_name ?? profile?.email ?? "?")
+    : (member?.display_name ?? profile?.full_name ?? profile?.email ?? "?");
 
   return (
     <div className={cn(
@@ -299,17 +311,15 @@ export function AppLayout() {
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-2 rounded-full p-0.5 outline-none ring-offset-2 transition-shadow hover:ring-2 hover:ring-primary/30 focus-visible:ring-2 focus-visible:ring-primary">
                 <UserAvatar
-                  userId={impersonating ? undefined : (member?.id ?? profile?.id)}
-                  name={impersonating ? impersonating.tenant_name : (member?.display_name ?? profile?.full_name ?? profile?.email ?? "?")}
-                  avatarUrl={impersonating ? null : (member ? (members.find((mm) => mm.id === member.id)?.avatar_url ?? null) : profile?.avatar_url)}
-                  avatarColor={impersonating ? undefined : (member?.avatar_color ?? profile?.avatar_color)}
+                  userId={impersonating ? profile?.id : (member?.id ?? profile?.id)}
+                  name={avatarIdentityName}
+                  avatarUrl={impersonating ? profile?.avatar_url : (member ? activeMemberAvatarUrl : profile?.avatar_url)}
+                  avatarColor={impersonating ? profile?.avatar_color : (member?.avatar_color ?? profile?.avatar_color)}
                   size={32}
                 />
                 <div className="hidden flex-col items-start leading-tight md:flex">
                   <span className="text-sm font-medium text-foreground">
-                    {impersonating
-                      ? impersonating.tenant_name
-                      : (member?.display_name ?? profile?.display_name ?? profile?.full_name?.split(" ")[0] ?? "Perfil")}
+                    {shownIdentityName}
                   </span>
                   {!impersonating && member && (
                     <span className="text-[10px] text-muted-foreground">
@@ -317,12 +327,23 @@ export function AppLayout() {
                     </span>
                   )}
                   {impersonating && (
-                    <span className="text-[10px] text-amber-600">Modo suporte</span>
+                    <span className="max-w-[180px] truncate text-[10px] text-amber-600">
+                      Suporte em: {impersonating.tenant_name}
+                    </span>
                   )}
                 </div>
               </DropdownMenuTrigger>
 
               <DropdownMenuContent align="end" className="w-52">
+                {impersonating && (
+                  <>
+                    <div className="px-2 py-1.5 text-xs leading-tight">
+                      <div className="font-medium text-foreground">Conta logada: {realAccountName}</div>
+                      <div className="mt-0.5 text-muted-foreground">Visualizando: {impersonating.tenant_name}</div>
+                    </div>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem onClick={() => navigate("/perfil")}>
                   <UserIcon className="mr-2 h-4 w-4" /> Meu perfil
                 </DropdownMenuItem>
