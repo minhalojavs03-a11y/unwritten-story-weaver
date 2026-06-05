@@ -197,16 +197,18 @@ export default function LeadsPage() {
   const [search, setSearch] = useState("");
   const canManage = canViewAll;
 
-  const classifySource = (src: string | null | undefined): "ads" | "import" | "other" => {
-    const s = (src ?? "").toLowerCase();
-    if (s.includes("meta") || s.includes("ads") || s.includes("anuncio") || s.includes("anúncio") || s.includes("sheets") || s.includes("facebook") || s.includes("instagram")) return "ads";
-    if (s.includes("importacao") || s.includes("importação") || s.includes("planilha") || s.includes("excel") || s.includes("csv")) return "import";
+  const classifySource = (lead: { source?: string | null; imported_from_sheet?: boolean | null }): "ads" | "import" | "other" => {
+    const s = (lead.source ?? "").toLowerCase();
+    // Qualquer lead com a flag de planilha/anúncio cai em "Anúncio / Sheets"
+    if (lead.imported_from_sheet) return "ads";
+    if (s.includes("meta") || s.includes("ads") || s.includes("anuncio") || s.includes("anúncio") || s.includes("sheets") || s.includes("facebook") || s.includes("instagram") || s.includes("google") || s.includes("tiktok") || s.includes("linkedin")) return "ads";
+    if (s.includes("importacao") || s.includes("importação") || s.includes("planilha") || s.includes("excel") || s.includes("csv") || s.includes("manual")) return "import";
     return "other";
   };
 
   const sourceCounts = useMemo(() => {
     const counts = { all: leads.length, ads: 0, import: 0, other: 0 };
-    for (const l of leads) counts[classifySource(l.source)]++;
+    for (const l of leads) counts[classifySource(l as any)]++;
     return counts;
   }, [leads]);
 
