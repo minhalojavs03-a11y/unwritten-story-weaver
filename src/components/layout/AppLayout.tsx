@@ -157,6 +157,41 @@ export function AppLayout() {
     navigate("/login", { replace: true });
   }
 
+  async function exitImpersonation() {
+    try {
+      const raw = window.localStorage.getItem("impersonation_context");
+      const ctx = raw ? (JSON.parse(raw) as { previous_tenant_id: string | null }) : null;
+      const { data: u } = await supabase.auth.getUser();
+      if (u?.user) {
+        await supabase
+          .from("profiles")
+          .update({ tenant_id: ctx?.previous_tenant_id ?? null, updated_at: new Date().toISOString() })
+          .eq("id", u.user.id);
+      }
+      window.localStorage.removeItem("impersonation_context");
+      // Limpa qualquer membro interno selecionado durante o modo suporte
+      try {
+        const keys: string[] = [];
+        for (let i = 0; i < window.localStorage.length; i++) {
+          const k = window.localStorage.key(i);
+          if (k && k.startsWith("feracon.activeMember")) keys.push(k);
+        }
+        keys.forEach((k) => window.localStorage.removeItem(k));
+        const sk: string[] = [];
+        for (let i = 0; i < window.sessionStorage.length; i++) {
+          const k = window.sessionStorage.key(i);
+          if (k && k.startsWith("feracon.activeMember")) sk.push(k);
+        }
+        sk.forEach((k) => window.sessionStorage.removeItem(k));
+      } catch { /* ignore */ }
+      window.dispatchEvent(new Event("feracon:impersonation"));
+      navigate("/admin/dashboard", { replace: true });
+      setTimeout(() => window.location.reload(), 100);
+    } catch (e) {
+      console.error("[exitImpersonation]", e);
+    }
+  }
+
   const sidebarWidth = collapsed ? "w-[72px]" : "w-[240px]";
 
   // Superadmin não deve assumir identidade interna de membro — limpa qualquer
