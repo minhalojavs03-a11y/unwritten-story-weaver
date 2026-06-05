@@ -467,7 +467,10 @@ Deno.serve(async (req) => {
     let waStatus: "sent" | "failed" | "skipped" = "skipped";
     let waError: string | null = null;
 
-    if (chosen.notify_whatsapp === false) {
+    if (skipWhatsappForImported) {
+      waStatus = "skipped";
+      waError = "imported_from_sheet: whatsapp suppressed";
+    } else if (chosen.notify_whatsapp === false) {
       waStatus = "skipped";
       waError = "consultant has notify_whatsapp disabled";
     } else if (!chosenPhone) {
