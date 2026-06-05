@@ -78,7 +78,11 @@ export function RankCard({ variant = "full", period = "monthly", className, asLi
                   <span className="font-medium" style={{ color: next.color }}>{next.label}</span>
                 </span>
                 <span className="tabular-nums">
-                  faltam <span className="font-semibold text-foreground">{pointsToNext}</span> pts
+                  {salesToNext > 0 ? (
+                    <>faltam <span className="font-semibold text-foreground">{salesToNext}</span> {salesToNext === 1 ? "venda" : "vendas"}</>
+                  ) : (
+                    <>faltam <span className="font-semibold text-foreground">{pointsToNext}</span> pts</>
+                  )}
                 </span>
               </div>
               <div className="relative h-2 overflow-hidden rounded-full bg-muted shadow-inner">
