@@ -30,6 +30,7 @@ import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { canTakeLead, getMaxAllowedForName, formatBRL } from "@/lib/leadTier";
 import { LeadProgressBar } from "@/components/oticaflow/LeadProgressBar";
+import { isHiddenFeraconMemberId, isHiddenFeraconPerson } from "@/lib/feracon";
 
 function normalizeRole(value: string) {
   return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -102,7 +103,7 @@ export default function FilaLeadsPage() {
   const canSendToOthers = can("assume_any_lead");
   const canSeeAll = can("view_all_leads");
   const { data: members = [] } = useTenantMembers();
-  const consultants = members.filter((m) => isConsultantLike(m.role_label, m.username) && m.receives_leads !== false);
+  const consultants = members.filter((m) => !isHiddenFeraconPerson(m as any) && isConsultantLike(m.role_label, m.username) && m.receives_leads !== false);
   const assumeMut = useAssumeLead();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [assigneeNames, setAssigneeNames] = useState<Record<string, string>>({});

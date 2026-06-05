@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { RoleBadge, type AppRole } from "@/components/ui/RoleBadge";
 import { cn } from "@/lib/utils";
+import { isHiddenFeraconPerson, isHiddenFeraconUserId } from "@/lib/feracon";
 
 /**
  * Mostra o avatar + nome (+ cargo opcional) de quem está responsável por um lead/conversa.
@@ -51,7 +52,7 @@ export function AssigneeBadge({
     },
   });
 
-  if (!userId) {
+  if (!userId || isHiddenFeraconUserId(userId)) {
     return (
       <span className={cn("inline-flex items-center gap-1.5 text-xs text-muted-foreground", className)}>
         <span className="h-6 w-6 rounded-full border border-dashed border-muted-foreground/40" style={{ width: size, height: size }} />
@@ -61,6 +62,8 @@ export function AssigneeBadge({
   }
 
   const name = profile?.display_name || profile?.full_name || profile?.email || "Usuário";
+
+  if (isHiddenFeraconPerson(profile as any)) return null;
 
   return (
     <span className={cn("inline-flex items-center gap-1.5", className)}>
