@@ -860,29 +860,70 @@ async function syncHistory(admin: any, tenantId: string, instance: any, maxChats
       continue;
     }
 
-    // existing external_ids to skip duplicates, scoped by tenant because imported
-    // WhatsApp/provider IDs are globally stable for the connected account.
+    // existing rows (with media_url) to allow back-fill of imported text-only placeholder rows
     const candidateIds = msgs
       .map((m: any) => m?.messageid ?? m?.messageId ?? m?.id ?? m?.key?.id ?? null)
       .filter((id: any) => typeof id === "string" && id.trim());
     const { data: existing } = candidateIds.length
-      ? await admin.from("messages").select("external_id").eq("tenant_id", tenantId).in("external_id", candidateIds)
+      ? await admin.from("messages").select("id, external_id, media_url, message_type").eq("tenant_id", tenantId).in("external_id", candidateIds)
       : { data: [] } as any;
-    const existingIds = new Set((existing ?? []).map((m: any) => m.external_id));
+    const existingByExtId = new Map<string, any>();
+    for (const r of (existing ?? [])) existingByExtId.set(r.external_id, r);
     const seenInBatch = new Set<string>();
 
     const rows: any[] = [];
+    const updates: Array<{ id: string; patch: Record<string, any> }> = [];
     for (const m of msgs) {
-      const text = extractMsgText(m);
-      if (!text) continue;
       const extId = m?.messageid ?? m?.messageId ?? m?.id ?? m?.key?.id ?? null;
-      if (extId && existingIds.has(extId)) continue;
       const fromMe = m?.fromMe === true || m?.key?.fromMe === true || m?.from_me === true;
       const created_at = tsToIso(m?.messageTimestamp ?? m?.timestamp ?? m?.t) ?? new Date().toISOString();
+      const media = extractMediaFromHistoryMsg(m);
+      const text = extractMsgText(m);
+      const hasMedia = !!media.kind;
+      if (!text && !hasMedia) continue;
+
+      // Upload media (only if we don't already have a usable URL).
+      let storedMediaUrl: string | null = null;
+      let storedMime: string | null = media.mime;
+      if (hasMedia) {
+        if (media.base64 || media.url) {
+          const up = await uploadMediaToStorage(admin, instance, tenantId, conv.id, media);
+          storedMediaUrl = up.url;
+          storedMime = up.mime ?? storedMime;
+        }
+        if (!storedMediaUrl) {
+          const got = await fetchProviderMediaBytes(instance, extId ? String(extId) : null);
+          if (got.base64) {
+            const up = await uploadMediaToStorage(admin, instance, tenantId, conv.id, {
+              ...media, base64: got.base64, mime: got.mime ?? storedMime, fileName: got.fileName ?? media.fileName,
+            });
+            storedMediaUrl = up.url;
+            storedMime = up.mime ?? storedMime;
+          }
+        }
+      }
+
+      const bodyText = hasMedia
+        ? (media.caption ?? text ?? MEDIA_PLACEHOLDER[media.kind!] ?? "")
+        : text!;
+      const messageType = hasMedia ? (media.kind ?? "text") : "text";
+
+      // Back-fill an existing imported row that lacks media_url
+      if (extId && existingByExtId.has(extId)) {
+        const prev = existingByExtId.get(extId);
+        if (hasMedia && storedMediaUrl && !prev.media_url) {
+          updates.push({
+            id: prev.id,
+            patch: { media_url: storedMediaUrl, message_type: messageType, body: bodyText },
+          });
+        }
+        continue;
+      }
+
       const createdBucket = Math.floor(new Date(created_at).getTime() / 10_000);
       const signature = extId
         ? `id:${extId}`
-        : `near:${fromMe ? "out" : "in"}:${createdBucket}:${text}`;
+        : `near:${fromMe ? "out" : "in"}:${createdBucket}:${bodyText}`;
       if (seenInBatch.has(signature)) continue;
       seenInBatch.add(signature);
       rows.push({
@@ -891,7 +932,9 @@ async function syncHistory(admin: any, tenantId: string, instance: any, maxChats
         lead_id: lead.id,
         whatsapp_instance_id: instance.id,
         direction: fromMe ? "outbound" : "inbound",
-        body: text,
+        body: bodyText,
+        message_type: messageType,
+        media_url: storedMediaUrl,
         external_id: extId,
         created_at,
       });
@@ -906,9 +949,13 @@ async function syncHistory(admin: any, tenantId: string, instance: any, maxChats
       // update conversation preview
       const last = rows[rows.length - 1];
       await admin.from("conversations").update({
-        last_message_preview: last.body.slice(0, 120),
+        last_message_preview: (last.body ?? "").slice(0, 120),
         last_message_at: last.created_at,
       }).eq("id", conv.id);
+    }
+    for (const u of updates) {
+      const { error } = await admin.from("messages").update(u.patch).eq("id", u.id);
+      if (error) console.error("update message media failed", error.message);
     }
   }
   return { ok: true, chats: importedChats, messages: importedMsgs, skipped, total_chats: chats.length };
