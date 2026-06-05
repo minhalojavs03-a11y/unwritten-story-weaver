@@ -72,7 +72,7 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
         <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-muted shadow-inner" aria-hidden />
         {/* progresso total da trilha (até elo atual) — com carga de energia */}
         <div
-          className="absolute left-0 top-1/2 -translate-y-1/2 h-2 overflow-hidden rounded-full transition-all duration-700 energy-shine"
+          className="absolute left-0 top-1/2 -translate-y-1/2 h-2 overflow-hidden rounded-full transition-all duration-700 energy-shine energy-stripes"
           aria-hidden
           style={{
             width: `${trackProgress(currentIdx, levels.length, progress, !!next)}%`,
@@ -195,7 +195,7 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
           </div>
           <div className="relative h-2 overflow-hidden rounded-full bg-muted shadow-inner">
             <div
-              className="relative h-full overflow-hidden rounded-full transition-all duration-700 energy-shine"
+              className="relative h-full overflow-hidden rounded-full transition-all duration-700 energy-shine energy-stripes"
               style={{
                 width: `${progress}%`,
                 boxShadow: `0 0 10px ${current.color}80`,
