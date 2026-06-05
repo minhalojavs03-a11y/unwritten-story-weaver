@@ -170,15 +170,16 @@ export function PublicLeaderboard({ rows, config, highlightMemberId, timesByMemb
                 </div>
               </div>
 
-              {/* KPIs — performance real do consultor */}
-              <div className="mt-2.5 grid grid-cols-2 gap-1.5 sm:grid-cols-5">
+              {/* KPIs — performance real do consultor (compacto em mobile) */}
+              <div className="mt-2 flex flex-wrap items-center gap-1 sm:grid sm:grid-cols-5 sm:gap-1.5">
                 <StatChip icon={Target} label="Vendas" value={row.sales} tone="emerald" highlight />
-                <StatChip icon={Calendar} label="Reuniões" value={row.meetings} tone="sky" />
-                <StatChip icon={MessageCircle} label="Contatos" value={row.contacts} tone="violet" />
+                <StatChip icon={Calendar} label="Reun." fullLabel="Reuniões" value={row.meetings} tone="sky" />
+                <StatChip icon={MessageCircle} label="Cont." fullLabel="Contatos" value={row.contacts} tone="violet" />
                 <StatChip icon={Inbox} label="Leads" value={row.leads_assumed} tone="slate" />
                 <StatChip
                   icon={Zap}
-                  label="Tempo méd."
+                  label="T. méd."
+                  fullLabel="Tempo méd."
                   value={hasTime ? labelTime(avgMin!) : "—"}
                   tone="amber"
                   valueClassName={hasTime ? timeTone(avgMin!) : undefined}
