@@ -115,6 +115,27 @@ export default function DashboardPage() {
         : { text: "Abaixo do esperado", tone: "rose" as const };
   const diffVsTeam = myTimes.length && teamTimes.length ? myAvg - teamAvg : 0;
 
+  // Ranking público — usado no leaderboard da Início (todos veem todos)
+  const { data: ranking = [] } = useRanking("monthly");
+  const { data: gamConfig } = useGamificationConfig();
+  // Tempo médio de atendimento por membro (em minutos), calculado a partir
+  // dos leads visíveis. Para consultor comum só haverá dados próprios.
+  const timesByMember: Record<string, number> = (() => {
+    const acc: Record<string, { sum: number; n: number }> = {};
+    for (const l of assignedLeads) {
+      const mid = l.assigned_member_id as string | null;
+      if (!mid) continue;
+      const min = minutesToAssume(l);
+      if (!Number.isFinite(min) || min < 0 || min > 60 * 24 * 7) continue;
+      if (!acc[mid]) acc[mid] = { sum: 0, n: 0 };
+      acc[mid].sum += min;
+      acc[mid].n += 1;
+    }
+    const out: Record<string, number> = {};
+    for (const [k, v] of Object.entries(acc)) out[k] = v.n ? v.sum / v.n : 0;
+    return out;
+  })();
+
   const awaiting = m?.awaitingResponse ?? 0;
   const unattended = leads.filter((l) => !l.last_contact_at && !["comprou","perdido"].includes(l.stage ?? "")).length;
 
