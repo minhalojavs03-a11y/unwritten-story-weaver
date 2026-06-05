@@ -131,7 +131,7 @@ export function ImpersonateDialog({ open, onOpenChange }: Props) {
 
       window.dispatchEvent(new Event("feracon:impersonation"));
 
-      toast({ title: `Entrando como ${m.display_name ?? "usuário"}` });
+      toast({ title: `Abrindo ambiente de ${m.display_name ?? "usuário"}` });
       onOpenChange(false);
       navigate("/dashboard", { replace: true });
       setTimeout(() => window.location.reload(), 100);
@@ -154,7 +154,7 @@ export function ImpersonateDialog({ open, onOpenChange }: Props) {
             <Users2 className="h-4 w-4" /> Entrar como usuário
           </DialogTitle>
           <DialogDescription className="text-white/60">
-            Acesse o painel de qualquer pessoa da Feracon para suporte. A sessão fica registrada.
+            Abra o ambiente de atendimento de uma pessoa da Feracon para suporte. A sessão fica registrada.
           </DialogDescription>
         </DialogHeader>
         <Input
@@ -219,7 +219,7 @@ export function ImpersonateDialog({ open, onOpenChange }: Props) {
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
                     <>
-                      <LogIn className="mr-1 h-3.5 w-3.5" /> Entrar
+                      <LogIn className="mr-1 h-3.5 w-3.5" /> Abrir
                     </>
                   )}
                 </Button>
