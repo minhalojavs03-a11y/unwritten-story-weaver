@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
+import { isHiddenFeraconPerson } from "@/lib/feracon";
 
 export type Profile = Tables<"profiles">;
 export type TeamRole = "owner" | "supervisor" | "consultant" | "attendant";
@@ -99,14 +100,17 @@ export function useTeam() {
 
       const profilesByEmail = new Map<string, Profile>();
       for (const p of profilesRes.data ?? []) {
+        if (isHiddenFeraconPerson(p as any)) continue;
         if (p.email) profilesByEmail.set(p.email.toLowerCase(), p as Profile);
       }
       const usedProfileIds = new Set<string>();
 
       // 1) Membros internos (tenant_members) — fonte de verdade da equipe
-      const fromMembers: TeamMember[] = (membersRes.data ?? [])
-        .map((m) => {
+      const fromMembersRaw: (TeamMember & { _linkedProfileId: string | null })[] = [];
+      for (const m of membersRes.data ?? []) {
+          if (isHiddenFeraconPerson(m as any)) continue;
           const linkedProfile = m.email ? profilesByEmail.get(m.email.toLowerCase()) : undefined;
+          if (isHiddenFeraconPerson(linkedProfile as any)) continue;
           if (linkedProfile) usedProfileIds.add(linkedProfile.id);
 
           const userRoles = linkedProfile ? rolesByUser.get(linkedProfile.id) ?? [] : [];
@@ -117,7 +121,7 @@ export function useTeam() {
             (leadsByMember.get(m.id) ?? 0) +
             (linkedProfile ? leadsByUser.get(linkedProfile.id) ?? 0 : 0);
 
-          return {
+          fromMembersRaw.push({
             id: m.id,
             source: "tenant_member" as const,
             tenant_id: m.tenant_id,
@@ -134,13 +138,15 @@ export function useTeam() {
             primary_role: pickPrimary(roles),
             leads_count: leadsCount,
             _linkedProfileId: linkedProfile?.id ?? null,
-          };
-        })
+          });
+        }
+      const fromMembers: TeamMember[] = fromMembersRaw
         .filter((m) => !(m._linkedProfileId && hiddenUserIds.has(m._linkedProfileId)) && !m.roles.includes("superadmin"))
         .map(({ _linkedProfileId: _omit, ...rest }) => rest);
 
       // 2) Profiles que não têm tenant_member equivalente (ex: dono com login por email)
       const fromProfiles: TeamMember[] = (profilesRes.data ?? [])
+        .filter((p) => !isHiddenFeraconPerson(p as any))
         .filter((p) => !usedProfileIds.has(p.id) && !hiddenUserIds.has(p.id))
         .map((p) => {
           const userRoles = rolesByUser.get(p.id) ?? [];

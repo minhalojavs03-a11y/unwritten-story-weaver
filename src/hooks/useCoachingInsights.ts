@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { isHiddenFeraconMemberId, isHiddenFeraconPerson } from "@/lib/feracon";
 
 export type CoachingInsight = {
   id: string;
@@ -39,7 +40,7 @@ export function useCoachingInsights(opts: { memberId?: string; days?: number; in
       const { data, error } = await q;
       if (error) throw error;
 
-      const rows = (data ?? []) as CoachingInsight[];
+      const rows = ((data ?? []) as CoachingInsight[]).filter((row) => !isHiddenFeraconMemberId(row.member_id));
       if (rows.length === 0) return [];
 
       // A tabela de insights não possui FKs formais para leads/consultores; buscar separado
@@ -57,7 +58,7 @@ export function useCoachingInsights(opts: { memberId?: string; days?: number; in
       ]);
 
       const leadMap = new Map((leadsRes.data ?? []).map((l: any) => [l.id, l]));
-      const memberMap = new Map((membersRes.data ?? []).map((m: any) => [m.id, m]));
+      const memberMap = new Map((membersRes.data ?? []).filter((m: any) => !isHiddenFeraconPerson(m)).map((m: any) => [m.id, m]));
 
       return rows.map((row) => ({
         ...row,

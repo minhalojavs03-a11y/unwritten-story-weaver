@@ -14,6 +14,7 @@ import { ShieldAlert, Users2, Info, ChevronDown, ChevronUp, Bell } from "lucide-
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
+import { isHiddenFeraconPerson } from "@/lib/feracon";
 
 const CREDIT_MIN = 300_000;
 const CREDIT_MAX = 2_000_000;
@@ -132,7 +133,7 @@ export default function DistribuicaoLeadsPage() {
         _tenant_id: isSuperadmin ? null : effectiveTenant!,
       });
       if (error) throw error;
-      return ((data ?? []) as any[]).map((r) => ({
+      return ((data ?? []) as any[]).filter((r) => !isHiddenFeraconPerson(r)).map((r) => ({
         id: r.id ?? null,
         user_id: r.user_id ?? null,
         tenant_id: r.tenant_id,

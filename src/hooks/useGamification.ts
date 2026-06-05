@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
+import { isHiddenFeraconPerson } from "@/lib/feracon";
 
 export type Period = "daily" | "weekly" | "monthly" | "all";
 
@@ -70,7 +71,7 @@ export function useRanking(period: Period = "monthly") {
     queryFn: async () => {
       const { data, error } = await (supabase as any).rpc("gamification_ranking", { _period: period });
       if (error) throw error;
-      return (data ?? []) as RankingRow[];
+      return ((data ?? []) as RankingRow[]).filter((row) => !isHiddenFeraconPerson(row as any));
     },
     staleTime: 60_000,
   });
@@ -102,7 +103,7 @@ export function useTeamOverview(period: Period = "weekly") {
     queryFn: async () => {
       const { data, error } = await (supabase as any).rpc("gamification_team_overview", { _period: period });
       if (error) throw error;
-      return (data ?? []) as TeamRow[];
+      return ((data ?? []) as TeamRow[]).filter((row) => !isHiddenFeraconPerson(row as any));
     },
     staleTime: 30_000,
   });

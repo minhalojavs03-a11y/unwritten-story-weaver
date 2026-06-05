@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
+import { isHiddenFeraconPerson } from "@/lib/feracon";
 
 type Instance = {
   id: string;
@@ -405,7 +406,7 @@ export default function WhatsAppPage() {
         .from("profiles")
         .select("id, full_name, email")
         .order("full_name", { ascending: true });
-      setTenantUsers(profs ?? []);
+      setTenantUsers((profs ?? []).filter((p) => !isHiddenFeraconPerson(p as any)));
     })();
   }, []);
 

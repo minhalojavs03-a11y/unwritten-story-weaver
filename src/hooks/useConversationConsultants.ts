@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
+import { isHiddenFeraconPerson, isHiddenFeraconUserId } from "@/lib/feracon";
 
 export type ConsultantOption = {
   id: string; // id usado no filtro de conversas (user_id ou tenant_member.id)
@@ -83,7 +84,9 @@ export function useConversationConsultants() {
       );
 
       const profilesById = new Map<string, ProfileOption>();
-      for (const p of (profilesRes.data ?? []) as ProfileOption[]) profilesById.set(p.id, p);
+      for (const p of (profilesRes.data ?? []) as ProfileOption[]) {
+        if (!isHiddenFeraconPerson(p as any)) profilesById.set(p.id, p);
+      }
 
       const list: ConsultantOption[] = [];
 
@@ -99,6 +102,7 @@ export function useConversationConsultants() {
         for (const m of membershipsRes.data ?? []) {
           const tid = (m as { tenant_id?: string }).tenant_id;
           if (!tid) continue;
+          if (isHiddenFeraconUserId(m.user_id)) continue;
           const role = String(m.role || "").toLowerCase();
           const p = profilesById.get(m.user_id);
           const bucket = byTenant.get(tid) ?? {};
@@ -110,6 +114,7 @@ export function useConversationConsultants() {
           byTenant.set(tid, bucket);
         }
         for (const p of (profilesRes.data ?? []) as (ProfileOption & { tenant_id?: string })[]) {
+          if (isHiddenFeraconPerson(p as any)) continue;
           const tid = p.tenant_id;
           if (!tid) continue;
           const bucket = byTenant.get(tid) ?? {};
@@ -150,6 +155,7 @@ export function useConversationConsultants() {
         if (supervisorOnly && role !== "consultant" && role !== "attendant") continue;
         if (seen.has(m.user_id)) continue;
         const p = profilesById.get(m.user_id);
+        if (isHiddenFeraconUserId(m.user_id) || isHiddenFeraconPerson(p as any)) continue;
         seen.add(m.user_id);
         list.push({
           id: m.user_id,
@@ -165,6 +171,7 @@ export function useConversationConsultants() {
       }
 
       for (const p of profilesRes.data ?? []) {
+        if (isHiddenFeraconPerson(p as any)) continue;
         if (seen.has(p.id)) continue;
         if (hiddenUserIds.has(p.id)) continue;
         const label = (p.role_label || "").toLowerCase();
@@ -185,6 +192,7 @@ export function useConversationConsultants() {
       }
 
       for (const tm of membersRes.data ?? []) {
+        if (isHiddenFeraconPerson(tm as any)) continue;
         if (seen.has(tm.id)) continue;
         const label = (tm.role_label || "").toLowerCase();
         if (label.includes("dono") || label.includes("owner") || label.includes("propriet")) continue;

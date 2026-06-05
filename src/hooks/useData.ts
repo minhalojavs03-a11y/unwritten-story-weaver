@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
+import { isHiddenFeraconPerson } from "@/lib/feracon";
 
 const realtimeChannelName = (scope: string, id: string) =>
   `${scope}-${id}-${Math.random().toString(36).slice(2, 10)}`;
@@ -538,7 +539,7 @@ export function useTenantMembers(overrideTenantId?: string | null) {
       const { data, error } = await supabase.rpc("list_tenant_members_public", { _tenant_id: tenantId! });
       if (error) throw error;
       type Row = { id: string; username: string; display_name: string; role_label: string | null; avatar_color: string | null; avatar_url: string | null; bio: string | null; phone: string | null; last_seen_at: string | null; receives_leads: boolean | null };
-      const rows = (data ?? []) as Row[];
+      const rows = ((data ?? []) as Row[]).filter((r) => !isHiddenFeraconPerson(r));
       const memberRole = (member?.role_label || "").toLowerCase();
       const memberPrivileged = /dono|owner|propriet|supervisor/.test(memberRole);
       const canSeeAll = isSuperadmin || (isOwner && memberPrivileged) || memberPrivileged;

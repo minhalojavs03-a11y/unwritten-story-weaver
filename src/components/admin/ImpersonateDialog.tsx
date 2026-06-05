@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
-import { FERACON_TENANT_ID } from "@/lib/feracon";
+import { FERACON_TENANT_ID, isHiddenFeraconPerson } from "@/lib/feracon";
 
 type Props = { open: boolean; onOpenChange: (v: boolean) => void };
 
@@ -51,10 +51,8 @@ export function ImpersonateDialog({ open, onOpenChange }: Props) {
       if (error) throw error;
       return ((data ?? []) as MemberRow[]).filter((m) => {
         const name = (m.display_name ?? "").toLowerCase();
-        const user = (m.username ?? "").toLowerCase();
         if (name.includes("teste")) return false;
-        // Ocultar Arley (superadmin invisível)
-        if (name.includes("arley") || user.includes("arley")) return false;
+        if (isHiddenFeraconPerson(m as any)) return false;
         return true;
       });
     },

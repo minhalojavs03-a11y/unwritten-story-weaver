@@ -30,6 +30,7 @@ import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { canTakeLead, getMaxAllowedForName, formatBRL } from "@/lib/leadTier";
 import { LeadProgressBar } from "@/components/oticaflow/LeadProgressBar";
+import { isHiddenFeraconMemberId, isHiddenFeraconPerson } from "@/lib/feracon";
 
 function normalizeRole(value: string) {
   return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -102,7 +103,7 @@ export default function FilaLeadsPage() {
   const canSendToOthers = can("assume_any_lead");
   const canSeeAll = can("view_all_leads");
   const { data: members = [] } = useTenantMembers();
-  const consultants = members.filter((m) => isConsultantLike(m.role_label, m.username) && m.receives_leads !== false);
+  const consultants = members.filter((m) => !isHiddenFeraconPerson(m as any) && isConsultantLike(m.role_label, m.username) && m.receives_leads !== false);
   const assumeMut = useAssumeLead();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [assigneeNames, setAssigneeNames] = useState<Record<string, string>>({});
@@ -280,6 +281,7 @@ export default function FilaLeadsPage() {
         .select("id,display_name,full_name,email")
         .in("id", userIds);
       (profs || []).forEach((p: any) => {
+        if (isHiddenFeraconPerson(p)) return;
         map[p.id] = p.display_name || p.full_name || p.email || "Consultor";
       });
     }
@@ -289,6 +291,7 @@ export default function FilaLeadsPage() {
         .select("id,display_name,username")
         .in("id", memberIds);
       (mems || []).forEach((m: any) => {
+        if (isHiddenFeraconPerson(m)) return;
         map[m.id] = m.display_name || m.username || "Consultor";
       });
     }
@@ -310,20 +313,21 @@ export default function FilaLeadsPage() {
         new Set((notifs || []).map((n: any) => n.recipient_member_id).filter(Boolean)),
       ) as string[];
       if (notifMemberIds.length) {
-        const missing = notifMemberIds.filter((id) => !map[id]);
+        const missing = notifMemberIds.filter((id) => !isHiddenFeraconMemberId(id) && !map[id]);
         if (missing.length) {
           const { data: mems2 } = await supabase
             .from("tenant_members")
             .select("id,display_name,username")
             .in("id", missing);
           (mems2 || []).forEach((m: any) => {
+            if (isHiddenFeraconPerson(m)) return;
             map[m.id] = m.display_name || m.username || "Consultor";
           });
           setAssigneeNames({ ...map });
         }
       }
       (notifs || []).forEach((n: any) => {
-        if (!n.lead_id || !n.recipient_member_id) return;
+        if (!n.lead_id || !n.recipient_member_id || isHiddenFeraconMemberId(n.recipient_member_id)) return;
         const list = notifMap[n.lead_id] || (notifMap[n.lead_id] = []);
         if (!list.includes(n.recipient_member_id)) list.push(n.recipient_member_id);
       });
@@ -339,10 +343,10 @@ export default function FilaLeadsPage() {
         .in("lead_id", leadIds);
       if (!isSuperadmin && tenantId) trq = trq.eq("tenant_id", tenantId);
       const { data: reqs } = await trq;
-      const list = (reqs ?? []) as TransferRequest[];
+      const list = ((reqs ?? []) as TransferRequest[]).filter((r) => !isHiddenFeraconMemberId(r.requester_member_id) && !isHiddenFeraconMemberId(r.owner_member_id));
       setTransferRequests(list);
       const reqMemberIds = Array.from(
-        new Set(list.map((r) => r.requester_member_id).filter((id) => id && !map[id])),
+        new Set(list.map((r) => r.requester_member_id).filter((id) => id && !isHiddenFeraconMemberId(id) && !map[id])),
       ) as string[];
       if (reqMemberIds.length) {
         const { data: mems3 } = await supabase
@@ -350,6 +354,7 @@ export default function FilaLeadsPage() {
           .select("id,display_name,username")
           .in("id", reqMemberIds);
         (mems3 || []).forEach((m: any) => {
+          if (isHiddenFeraconPerson(m)) return;
           map[m.id] = m.display_name || m.username || "Consultor";
         });
         setAssigneeNames({ ...map });
