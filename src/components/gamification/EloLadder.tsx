@@ -23,8 +23,9 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
   const { data: summary } = useMyGamificationSummary(period);
   const { data: config } = useGamificationConfig();
   const points = summary?.points ?? 0;
+  const sales = summary?.sales ?? 0;
   const levels = getGamificationLevels(config);
-  const { current, next, progress } = levelFor(points, config);
+  const { current, next, progress } = levelFor(points, config, sales);
   const currentIdx = Math.max(0, levels.findIndex((level) => {
     if (current.key && level.key) return level.key === current.key;
     return level.label === current.label;
