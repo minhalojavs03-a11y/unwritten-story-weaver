@@ -110,7 +110,7 @@ export function AppLayout() {
     const config: NavItem = { to: "/configuracoes", label: "Configurações", icon: Settings };
 
     if (impersonating && !isOwner && !isSupervisor) {
-      return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, coaching, config];
+      return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, config];
     }
     if (isOwner || isSuperadmin) {
       return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
