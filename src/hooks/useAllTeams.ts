@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { isHiddenFeraconPerson } from "@/lib/feracon";
 
 export type AppRoleAll = "superadmin" | "owner" | "supervisor" | "consultant" | "attendant";
 
@@ -51,7 +52,7 @@ export function useAllTeams() {
       }
 
       return (tenantsRes.data ?? []).map((tenant) => {
-        const tenantProfiles = (profilesRes.data ?? []).filter((p) => p.tenant_id === tenant.id);
+        const tenantProfiles = (profilesRes.data ?? []).filter((p) => p.tenant_id === tenant.id && !isHiddenFeraconPerson(p as any));
         const members = tenantProfiles.map((p) => {
           const roles = rolesByUser.get(p.id) ?? [];
           return { ...(p as Tables<"profiles">), roles, primary_role: pickPrimary(roles) };
