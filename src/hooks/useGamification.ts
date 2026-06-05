@@ -180,19 +180,32 @@ export function useGamificationConfig() {
   });
 }
 
-export function levelFor(points: number, config?: GamificationConfig | null) {
+export function levelFor(points: number, config?: GamificationConfig | null, sales: number = 0) {
   const sorted = getGamificationLevels(config);
   const safePoints = Number.isFinite(points) ? points : 0;
+  const safeSales = Number.isFinite(sales) ? sales : 0;
   let current = sorted[0] ?? DEFAULT_LEVELS[0];
-  let next: GamificationLevel | null = null;
+  let nextIdx = sorted.length > 1 ? 1 : -1;
   for (let i = 0; i < sorted.length; i++) {
-    if (safePoints >= sorted[i].min_points) {
-      current = sorted[i];
-      next = sorted[i + 1] ?? null;
+    const lv = sorted[i];
+    // Sales gate: o consultor só sobe de elo quando atinge o mínimo de
+    // pontos E o mínimo de vendas do nível. Sem vendas, não avança.
+    if (safePoints >= lv.min_points && safeSales >= (lv.min_sales ?? 0)) {
+      current = lv;
+      nextIdx = i + 1 < sorted.length ? i + 1 : -1;
     }
   }
-  const progress = next
-    ? Math.min(100, Math.round(((safePoints - current.min_points) / Math.max(1, next.min_points - current.min_points)) * 100))
-    : 100;
+  const next: GamificationLevel | null = nextIdx >= 0 ? sorted[nextIdx] : null;
+  let progress = 100;
+  if (next) {
+    const pointsSpan = Math.max(1, next.min_points - current.min_points);
+    const salesSpan = Math.max(1, (next.min_sales ?? 0) - (current.min_sales ?? 0));
+    const pointsProgress = Math.min(100, ((safePoints - current.min_points) / pointsSpan) * 100);
+    const salesProgress = (next.min_sales ?? 0) > (current.min_sales ?? 0)
+      ? Math.min(100, ((safeSales - (current.min_sales ?? 0)) / salesSpan) * 100)
+      : 100;
+    // O progresso real é limitado pelo requisito mais distante (pontos OU vendas).
+    progress = Math.max(0, Math.round(Math.min(pointsProgress, salesProgress)));
+  }
   return { current, next, progress };
 }
