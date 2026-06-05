@@ -371,38 +371,4 @@
   .energy-pulse {
     animation: energy-pulse 1.8s ease-in-out infinite;
   }
-  /* Diagonal stripes flowing inside progress bars */
-  @keyframes stripes-flow {
-    0% { background-position: 0 0; }
-    100% { background-position: 28px 0; }
-  }
-  .energy-stripes {
-    position: relative;
-  }
-  .energy-stripes::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background-image: repeating-linear-gradient(
-      -45deg,
-      hsl(var(--foreground) / 0.12) 0,
-      hsl(var(--foreground) / 0.12) 6px,
-      transparent 6px,
-      transparent 14px
-    );
-    background-size: 28px 28px;
-    animation: stripes-flow 0.9s linear infinite;
-    pointer-events: none;
-  }
-  /* Stronger white stripes for the filled (colored) portion */
-  .energy-stripes-light::before {
-    background-image: repeating-linear-gradient(
-      -45deg,
-      rgba(255,255,255,0.55) 0,
-      rgba(255,255,255,0.55) 6px,
-      transparent 6px,
-      transparent 14px
-    );
-  }
 }

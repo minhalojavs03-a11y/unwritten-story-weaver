@@ -69,10 +69,10 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
       {/* Trilha */}
       <div className={cn("relative mt-4", isCompact ? "mt-3" : "mt-5")}>
         {/* linha base */}
-        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-2 overflow-hidden rounded-full bg-muted shadow-inner energy-stripes" aria-hidden />
+        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-muted shadow-inner" aria-hidden />
         {/* progresso total da trilha (até elo atual) — com carga de energia */}
         <div
-          className="absolute left-0 top-1/2 -translate-y-1/2 h-2 overflow-hidden rounded-full transition-all duration-700 energy-shine energy-stripes energy-stripes-light"
+          className="absolute left-0 top-1/2 -translate-y-1/2 h-2 overflow-hidden rounded-full transition-all duration-700 energy-shine"
           aria-hidden
           style={{
             width: `${trackProgress(currentIdx, levels.length, progress, !!next)}%`,
@@ -193,9 +193,9 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
               <span className="font-semibold text-amber-600">Elo máximo atingido 🏆</span>
             )}
           </div>
-          <div className="relative h-2 overflow-hidden rounded-full bg-muted shadow-inner energy-stripes">
+          <div className="relative h-2 overflow-hidden rounded-full bg-muted shadow-inner">
             <div
-              className="relative h-full overflow-hidden rounded-full transition-all duration-700 energy-shine energy-stripes energy-stripes-light"
+              className="relative h-full overflow-hidden rounded-full transition-all duration-700 energy-shine"
               style={{
                 width: `${progress}%`,
                 boxShadow: `0 0 10px ${current.color}80`,
