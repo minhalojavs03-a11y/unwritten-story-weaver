@@ -52,7 +52,7 @@ function KpiTile({ icon: Icon, label, value, accent }: { icon: any; label: strin
         <Icon className="h-5 w-5" />
       </div>
       <div>
-        <div className="font-mono text-xl font-bold tabular-nums">{value}</div>
+        <div className="font-display text-2xl font-semibold tabular-nums tracking-tight">{value}</div>
         <div className="text-xs text-muted-foreground">{label}</div>
       </div>
     </Card>
@@ -122,7 +122,7 @@ function RankList({ rows }: { rows: RankingRow[] }) {
             <div className="text-[11px] text-muted-foreground">{r.sales} vendas · {r.meetings} reuniões · {r.contacts} contatos</div>
           </div>
           <div className="text-right">
-            <div className="font-mono text-base font-bold tabular-nums text-foreground">{r.points}</div>
+            <div className="font-display text-base font-semibold tabular-nums text-foreground">{r.points}</div>
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground">pts</div>
           </div>
         </div>
@@ -179,11 +179,11 @@ function ConsultorView() {
           <div className="flex items-center gap-6">
             <div>
               <div className="text-xs text-muted-foreground">Posição</div>
-              <div className="font-mono text-2xl font-bold">{summary?.rank_position || "—"}<span className="text-sm text-muted-foreground">/{summary?.total_members || 0}</span></div>
+              <div className="font-display text-3xl font-semibold tabular-nums tracking-tight">{summary?.rank_position || "—"}<span className="text-sm text-muted-foreground">/{summary?.total_members || 0}</span></div>
             </div>
             <div>
               <div className="text-xs text-muted-foreground">Pontos</div>
-              <div className="font-mono text-2xl font-bold">{points}</div>
+              <div className="font-display text-3xl font-semibold tabular-nums tracking-tight">{points}</div>
             </div>
           </div>
         </div>
@@ -282,12 +282,12 @@ function SupervisorView() {
                   <div className="text-[10px] text-muted-foreground">{m.role_label ?? "Consultor"}</div>
                 </div>
               </div>
-              <div className="col-span-1 text-right font-mono font-semibold">{m.points}</div>
-              <div className="col-span-1 text-right font-mono">{m.sales}</div>
-              <div className="col-span-1 text-right font-mono">{m.meetings}</div>
-              <div className="col-span-1 text-right font-mono">{m.contacts}</div>
-              <div className="col-span-1 text-right font-mono">{m.active_leads}</div>
-              <div className={cn("col-span-1 text-right font-mono", Number(m.stalled_leads) > 0 && "text-red-600")}>{m.stalled_leads}</div>
+              <div className="col-span-1 text-right font-semibold tabular-nums">{m.points}</div>
+              <div className="col-span-1 text-right tabular-nums">{m.sales}</div>
+              <div className="col-span-1 text-right tabular-nums">{m.meetings}</div>
+              <div className="col-span-1 text-right tabular-nums">{m.contacts}</div>
+              <div className="col-span-1 text-right tabular-nums">{m.active_leads}</div>
+              <div className={cn("col-span-1 text-right tabular-nums", Number(m.stalled_leads) > 0 && "text-red-600")}>{m.stalled_leads}</div>
               <div className={cn("col-span-2 text-right text-xs", isOffline ? "text-amber-700" : "text-muted-foreground")}>
                 {m.last_seen_at ? timeAgo(m.last_seen_at) : "nunca"}
               </div>
