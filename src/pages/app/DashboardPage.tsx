@@ -19,6 +19,7 @@ import { WeekComparison } from "@/components/dashboard/WeekComparison";
 import { CoachingPanel } from "@/components/dashboard/CoachingPanel";
 import { DashboardScopeFilter, type DashboardScope } from "@/components/dashboard/DashboardScopeFilter";
 import { RankCard } from "@/components/gamification/RankCard";
+import { PrizesBanner } from "@/components/gamification/PrizesBanner";
 
 export default function DashboardPage() {
   const { data: profile } = useMyProfile();
