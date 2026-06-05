@@ -99,7 +99,7 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
             const isCurrent = i === currentIdx;
             const isAchieved = i < currentIdx;
             const isLocked = i > currentIdx;
-            const pointsTo = Math.max(0, lv.min_points - points);
+            
 
             return (
               <li key={lv.key ?? lv.label} className="flex flex-col items-center text-center">
