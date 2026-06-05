@@ -86,15 +86,15 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
             }}
           />
         </div>
-        {/* ponta luminosa indicando avanço */}
+        {/* ponta indicando avanço */}
         {next && (
           <div
-            className="absolute top-1/2 h-3 w-3 -translate-y-1/2 -translate-x-1/2 rounded-full energy-pulse"
+            className="absolute top-1/2 h-3 w-3 -translate-y-1/2 -translate-x-1/2 rounded-full"
             aria-hidden
             style={{
               left: `${trackProgress(currentIdx, levels.length, progress, !!next)}%`,
               background: current.color,
-              boxShadow: `0 0 14px 3px ${current.color}, 0 0 4px 1px #fff`,
+              boxShadow: `0 0 8px 2px ${current.color}`,
             }}
           />
         )}
