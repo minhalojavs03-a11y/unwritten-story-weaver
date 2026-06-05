@@ -371,9 +371,14 @@ export function AppLayout() {
                     <Settings className="mr-2 h-4 w-4" /> Configurações
                   </DropdownMenuItem>
                 )}
-                {isSuperadmin && (
+                {authIsSuperadmin && (
                   <DropdownMenuItem onClick={() => setImpersonateOpen(true)}>
                     <Repeat className="mr-2 h-4 w-4" /> Trocar de conta
+                  </DropdownMenuItem>
+                )}
+                {authIsSuperadmin && impersonating && (
+                  <DropdownMenuItem onClick={exitImpersonation} className="text-amber-700 focus:text-amber-700">
+                    <Shield className="mr-2 h-4 w-4" /> Voltar ao Superadmin
                   </DropdownMenuItem>
                 )}
                 {member && (
