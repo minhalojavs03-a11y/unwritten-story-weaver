@@ -390,12 +390,11 @@ function ExecutivoView() {
         <PeriodTabs value={period} onChange={setPeriod} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr] lg:items-start">
-        <RankCard variant="full" period={period} />
-        <div>
-          <h2 className="mb-3 font-display text-base font-semibold tracking-tight">Top 3 destaques</h2>
-          <TopThree rows={ranking} />
-        </div>
+      <RankCard variant="full" period={period} />
+
+      <div>
+        <h2 className="mb-3 font-display text-base font-semibold tracking-tight">Corrida do período</h2>
+        <TopThree rows={ranking} />
       </div>
 
       <EloLadder variant="full" period={period} />
