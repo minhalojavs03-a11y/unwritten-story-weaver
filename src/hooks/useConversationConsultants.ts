@@ -185,9 +185,11 @@ export function useConversationConsultants() {
         if (label.includes("dono") || label.includes("owner") || label.includes("propriet")) continue;
         if (supervisorOnly && (label.includes("supervisor") || label.includes("gerente") || label.includes("gestor"))) continue;
         const key = nameKey(tm.full_name, tm.display_name, tm.username);
+        if (key && ownerNameKeys.has(key)) continue;
         if (key && seenNames.has(key)) continue;
         seen.add(tm.id);
         if (key) seenNames.add(key);
+
         list.push({
           id: tm.id,
           display_name: tm.display_name || tm.full_name || "Consultor",
