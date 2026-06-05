@@ -185,11 +185,13 @@ function ConsultorView() {
         <KpiTile icon={DollarSign} label="Comissão estimada" value={formatCurrency(commission)} accent="bg-emerald-100 text-emerald-700" />
       </div>
 
+      <PrizesBanner />
+
       <div>
         <h2 className="mb-3 font-display text-lg font-semibold">Ranking</h2>
         <TopThree rows={ranking} />
         <div className="mt-4">
-          <RankList rows={ranking} />
+          <PublicLeaderboard rows={ranking} config={config} highlightMemberId={myId} />
         </div>
         {myId && !ranking.some((r) => r.member_id === myId) && (
           <p className="mt-2 text-xs text-muted-foreground">Seu desempenho aparece no ranking assim que você tiver pontos no período.</p>
