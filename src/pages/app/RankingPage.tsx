@@ -326,6 +326,7 @@ function ExecutivoView() {
   const [period, setPeriod] = useState<Period>("monthly");
   const { data: overview } = useExecutiveOverview(period);
   const { data: ranking = [] } = useRanking(period);
+  const { data: config } = useGamificationConfig();
 
   const totals = overview?.totals;
   const funnelData = overview?.funnel
@@ -418,16 +419,18 @@ function ExecutivoView() {
         </Card>
       </section>
 
+      <PrizesBanner />
+
       <section>
         <div className="mb-3 flex items-end justify-between">
           <div>
             <h2 className="font-display text-lg font-semibold">Ranking geral</h2>
-            <p className="text-xs text-muted-foreground">Top performers da equipe no período</p>
+            <p className="text-xs text-muted-foreground">Top performers da equipe no período · placar público</p>
           </div>
         </div>
         <TopThree rows={ranking} />
         <div className="mt-4">
-          <RankList rows={ranking.slice(0, 10)} />
+          <PublicLeaderboard rows={ranking} config={config} />
         </div>
       </section>
     </div>
