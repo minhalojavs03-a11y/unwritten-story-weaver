@@ -344,6 +344,15 @@ function ExecutivoView() {
         <PeriodTabs value={period} onChange={setPeriod} />
       </div>
 
+      <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr] lg:items-start">
+        <RankCard variant="full" period={period} />
+        <div>
+          <h2 className="mb-3 font-display text-base font-semibold tracking-tight">Top 3 destaques</h2>
+          <TopThree rows={ranking} />
+        </div>
+      </div>
+
+
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <ExecKpiCard icon={DollarSign} label="Receita estimada" value={formatCurrency(Number(overview?.estimated_revenue ?? 0))} hint={`${totals?.sales ?? 0} venda(s) no período`} tone="success" highlight />
         <ExecKpiCard icon={Trophy} label="Vendas" value={totals?.sales ?? 0} tone="primary" />
