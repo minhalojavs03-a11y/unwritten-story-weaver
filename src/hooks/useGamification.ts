@@ -62,29 +62,39 @@ export interface GamificationConfig {
   points_lead_lost: number;
   fast_response_threshold_seconds: number;
   commission_per_sale: number;
-  levels: Array<{ key: string; label: string; min_points: number; color: string }>;
+  levels: Array<{ key: string; label: string; min_points: number; min_sales?: number; color: string }>;
 }
 
-export type GamificationLevel = GamificationConfig["levels"][number];
+export type GamificationLevel = {
+  key: string;
+  label: string;
+  min_points: number;
+  min_sales: number;
+  color: string;
+};
 
 export const DEFAULT_LEVELS: GamificationLevel[] = [
-  { key: "bronze", label: "Bronze", min_points: 0, color: "#B45309" },
-  { key: "prata", label: "Prata", min_points: 500, color: "#94A3B8" },
-  { key: "ouro", label: "Ouro", min_points: 1500, color: "#D4A017" },
-  { key: "diamante", label: "Diamante", min_points: 4000, color: "#22D3EE" },
+  { key: "bronze", label: "Bronze", min_points: 0, min_sales: 0, color: "#B45309" },
+  { key: "prata", label: "Prata", min_points: 500, min_sales: 5, color: "#94A3B8" },
+  { key: "ouro", label: "Ouro", min_points: 1500, min_sales: 10, color: "#D4A017" },
+  { key: "diamante", label: "Diamante", min_points: 4000, min_sales: 15, color: "#22D3EE" },
+  { key: "lendario", label: "Lendário", min_points: 8000, min_sales: 20, color: "#A855F7" },
 ];
 
 export function getGamificationLevels(config?: GamificationConfig | null): GamificationLevel[] {
   const raw = Array.isArray(config?.levels) ? config.levels : [];
-  const valid = raw.filter((level): level is GamificationLevel => {
+  const valid = raw.filter((level: any) => {
     return !!level && typeof level.label === "string" && Number.isFinite(Number(level.min_points));
   });
 
   return (valid.length > 0 ? valid : DEFAULT_LEVELS)
-    .map((level, index) => ({
+    .map((level: any, index: number) => ({
       key: level.key || `level-${index}`,
       label: level.label || DEFAULT_LEVELS[index]?.label || `Nível ${index + 1}`,
       min_points: Number(level.min_points) || 0,
+      min_sales: Number.isFinite(Number(level.min_sales))
+        ? Number(level.min_sales)
+        : (DEFAULT_LEVELS[index]?.min_sales ?? 0),
       color: level.color || DEFAULT_LEVELS[index]?.color || DEFAULT_LEVELS[0].color,
     }))
     .sort((a, b) => a.min_points - b.min_points);
