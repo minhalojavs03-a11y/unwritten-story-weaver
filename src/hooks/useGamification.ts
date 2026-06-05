@@ -137,14 +137,16 @@ export function useGamificationConfig() {
 }
 
 export function levelFor(points: number, config?: GamificationConfig | null) {
-  const levels = config?.levels ?? [
+  const DEFAULT_LEVELS = [
     { key: "bronze", label: "Bronze", min_points: 0, color: "#B45309" },
     { key: "prata", label: "Prata", min_points: 500, color: "#94A3B8" },
     { key: "ouro", label: "Ouro", min_points: 1500, color: "#D4A017" },
     { key: "diamante", label: "Diamante", min_points: 4000, color: "#22D3EE" },
   ];
+  const raw = config?.levels;
+  const levels = Array.isArray(raw) && raw.length > 0 ? raw : DEFAULT_LEVELS;
   const sorted = [...levels].sort((a, b) => a.min_points - b.min_points);
-  let current = sorted[0];
+  let current = sorted[0] ?? DEFAULT_LEVELS[0];
   let next: typeof sorted[number] | null = null;
   for (let i = 0; i < sorted.length; i++) {
     if (points >= sorted[i].min_points) {
