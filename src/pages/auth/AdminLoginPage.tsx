@@ -10,6 +10,25 @@ import { toast } from "@/hooks/use-toast";
 import adminImage from "@/assets/feracon-login.png";
 import logoFeraconLight from "@/assets/logo-feracon-light.png";
 
+function clearSupportContext() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem("impersonation_context");
+  const localKeys: string[] = [];
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i);
+    if (key?.startsWith("feracon.activeMember")) localKeys.push(key);
+  }
+  localKeys.forEach((key) => window.localStorage.removeItem(key));
+
+  const sessionKeys: string[] = [];
+  for (let i = 0; i < window.sessionStorage.length; i++) {
+    const key = window.sessionStorage.key(i);
+    if (key?.startsWith("feracon.activeMember")) sessionKeys.push(key);
+  }
+  sessionKeys.forEach((key) => window.sessionStorage.removeItem(key));
+  window.dispatchEvent(new Event("feracon:impersonation"));
+}
+
 export default function AdminLoginPage() {
   const location = useLocation();
   const from = (location.state as { from?: { pathname?: string; search?: string } } | null)?.from;
@@ -20,12 +39,16 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
 
   if (authLoading) return <div className="flex min-h-screen items-center justify-center bg-admin-login text-sm text-admin-login-foreground">Carregando…</div>;
-  if (session) return <Navigate to={isSuperadmin ? redirectTo : "/login"} replace />;
+  if (session && isSuperadmin) return <Navigate to={redirectTo} replace />;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
+      clearSupportContext();
+      if (session && !isSuperadmin) {
+        await supabase.auth.signOut();
+      }
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
     } catch (err: unknown) {
@@ -55,7 +78,9 @@ export default function AdminLoginPage() {
           <div className="mb-8 flex flex-col items-start">
             <img src={logoFeraconLight} alt="Consórcio Feracon" className="mb-6 h-14 w-auto object-contain" />
             <h1 className="font-display text-3xl font-bold tracking-tight text-white">Superadmin</h1>
-            <p className="mt-1.5 text-sm text-white/60">Acesso restrito ao painel administrativo</p>
+            <p className="mt-1.5 text-sm text-white/60">
+              {session && !isSuperadmin ? "Entre com a conta superadmin para trocar a sessão atual." : "Acesso restrito ao painel administrativo"}
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
