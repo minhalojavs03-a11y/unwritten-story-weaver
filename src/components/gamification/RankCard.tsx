@@ -17,9 +17,11 @@ export function RankCard({ variant = "full", period = "monthly", className, asLi
   const { data: summary } = useMyGamificationSummary(period);
   const { data: config } = useGamificationConfig();
   const points = summary?.points ?? 0;
-  const { current, next, progress } = levelFor(points, config);
+  const sales = summary?.sales ?? 0;
+  const { current, next, progress } = levelFor(points, config, sales);
   const tier = tierForLevel(current, config);
   const pointsToNext = next ? Math.max(0, next.min_points - points) : 0;
+  const salesToNext = next ? Math.max(0, (next.min_sales ?? 0) - sales) : 0;
 
   const isCompact = variant === "compact";
   const emblemSize = isCompact ? 56 : 80;
