@@ -194,6 +194,15 @@ export default function DashboardPage() {
         {!privileged && <EloLadder variant="full" asLink />}
         {!privileged && <PrizesBanner compact />}
 
+        {/* Placar público da equipe — exibe vendas, reuniões, contatos,
+            leads assumidos e tempo médio de atendimento de TODOS. */}
+        <PublicLeaderboard
+          rows={ranking}
+          config={gamConfig}
+          highlightMemberId={member?.id ?? null}
+          timesByMember={timesByMember}
+        />
+
         <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
 
 
