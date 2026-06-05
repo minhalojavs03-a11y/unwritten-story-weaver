@@ -52,7 +52,7 @@ export function TopAlertBanner() {
       to={current.href}
       style={{ backgroundColor: `hsl(var(${redVar}))`, boxShadow: `0 10px 30px -10px hsl(var(${redVar}) / 0.45)` }}
       className={cn(
-        "group sticky top-0 z-50 flex items-center justify-between gap-3 overflow-hidden border-b border-black/10 px-4 py-1.5 text-white sm:py-2 md:px-8"
+        "group relative z-50 flex items-center justify-between gap-3 overflow-hidden border-b border-black/10 px-4 py-1.5 text-white sm:py-2 md:sticky md:top-0 md:px-8"
       )}
 
     >
