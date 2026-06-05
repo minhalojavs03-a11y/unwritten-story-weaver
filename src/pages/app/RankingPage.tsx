@@ -178,11 +178,11 @@ function ConsultorView() {
           </div>
           <div className="flex items-center gap-6">
             <div>
-              <div className="text-xs text-muted-foreground">Posição</div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">Posição</div>
               <div className="font-display text-3xl font-semibold tabular-nums tracking-tight">{summary?.rank_position || "—"}<span className="text-sm text-muted-foreground">/{summary?.total_members || 0}</span></div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">Pontos</div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">Pontos</div>
               <div className="font-display text-3xl font-semibold tabular-nums tracking-tight">{points}</div>
             </div>
           </div>
