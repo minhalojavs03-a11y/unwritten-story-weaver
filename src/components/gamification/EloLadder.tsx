@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Lock, Check, Sparkles, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RankEmblem } from "./RankEmblem";
-import { useMyGamificationSummary, useGamificationConfig, levelFor, type Period } from "@/hooks/useGamification";
+import { useMyGamificationSummary, useGamificationConfig, levelFor, getGamificationLevels, type Period } from "@/hooks/useGamification";
 
 type Variant = "full" | "compact";
 
@@ -12,13 +12,6 @@ type Props = {
   className?: string;
   asLink?: boolean;
 };
-
-const DEFAULT_LEVELS = [
-  { key: "bronze", label: "Bronze", min_points: 0, color: "#B45309" },
-  { key: "prata", label: "Prata", min_points: 500, color: "#94A3B8" },
-  { key: "ouro", label: "Ouro", min_points: 1500, color: "#D4A017" },
-  { key: "diamante", label: "Diamante", min_points: 4000, color: "#22D3EE" },
-];
 
 /**
  * Escada de elos — mostra TODOS os tiers (Bronze → Diamante) em uma
@@ -30,11 +23,12 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
   const { data: summary } = useMyGamificationSummary(period);
   const { data: config } = useGamificationConfig();
   const points = summary?.points ?? 0;
-  const levels = (config?.levels?.length ? config.levels : DEFAULT_LEVELS)
-    .slice()
-    .sort((a: any, b: any) => a.min_points - b.min_points);
+  const levels = getGamificationLevels(config);
   const { current, next, progress } = levelFor(points, config);
-  const currentIdx = Math.max(0, levels.findIndex((l: any) => l.label === current.label));
+  const currentIdx = Math.max(0, levels.findIndex((level) => {
+    if (current.key && level.key) return level.key === current.key;
+    return level.label === current.label;
+  }));
   const isCompact = variant === "compact";
   const emblemSize = isCompact ? 32 : 56;
 
