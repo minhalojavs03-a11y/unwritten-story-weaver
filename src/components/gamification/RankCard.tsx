@@ -79,14 +79,21 @@ export function RankCard({ variant = "full", period = "monthly", className, asLi
                   faltam <span className="font-semibold text-foreground">{pointsToNext}</span> pts
                 </span>
               </div>
-              <div className="relative h-1.5 overflow-hidden rounded-full bg-muted">
+              <div className="relative h-2 overflow-hidden rounded-full bg-muted shadow-inner">
                 <div
-                  className="h-full rounded-full transition-all duration-700"
+                  className="relative h-full overflow-hidden rounded-full transition-all duration-700 energy-shine"
                   style={{
                     width: `${progress}%`,
-                    background: `linear-gradient(90deg, ${current.color}, ${next.color})`,
+                    boxShadow: `0 0 10px ${current.color}80`,
                   }}
-                />
+                >
+                  <div
+                    className="h-full w-full energy-bar"
+                    style={{
+                      backgroundImage: `linear-gradient(90deg, ${current.color}, ${next.color}, ${current.color}, ${next.color})`,
+                    }}
+                  />
+                </div>
               </div>
             </div>
           ) : (
