@@ -230,7 +230,7 @@ export default function LeadsPage() {
     const q = search.trim().toLowerCase();
     const digitsQ = q.replace(/\D/g, "");
     return leads.filter((l) => {
-      if (sourceFilter !== "all" && classifySource(l.source) !== sourceFilter) return false;
+      if (sourceFilter !== "all" && classifySource(l as any) !== sourceFilter) return false;
       if (period !== "all") {
         const t = new Date(l.created_at as string).getTime();
         if (from && t < from.getTime()) return false;
