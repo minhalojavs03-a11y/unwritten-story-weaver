@@ -374,6 +374,88 @@ export default function ConversasPage() {
           </div>
         </div>
 
+        {canViewAll && (
+          <div className="px-3 pb-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    "inline-flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+                    consultorParam
+                      ? "border-[#bfdbfe] bg-[#dbeafe] text-[#1d4ed8] hover:bg-[#bfdbfe]"
+                      : "border-[#e9edef] bg-white text-[#54656f] hover:bg-[#f5f6f6]"
+                  )}
+                >
+                  <span className="inline-flex items-center gap-1.5 truncate">
+                    👤 {activeConsultorLabel ?? "Conversas por consultor"}
+                  </span>
+                  {consultorParam ? (
+                    <X
+                      className="h-3.5 w-3.5 shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setParams((prev) => {
+                          const next = new URLSearchParams(prev);
+                          next.delete("consultor");
+                          return next;
+                        }, { replace: true });
+                      }}
+                    />
+                  ) : (
+                    <span className="text-[10px] opacity-60">▼</span>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="max-h-[60vh] w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto">
+                <DropdownMenuLabel>Filtrar por consultor</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setParams((prev) => {
+                      const next = new URLSearchParams(prev);
+                      next.delete("consultor");
+                      return next;
+                    }, { replace: true });
+                  }}
+                >
+                  Todos
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setParams((prev) => {
+                      const next = new URLSearchParams(prev);
+                      next.set("consultor", "unassigned");
+                      return next;
+                    }, { replace: true });
+                  }}
+                >
+                  Sem consultor
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {conversationConsultants.map((c) => (
+                  <DropdownMenuItem
+                    key={c.id}
+                    onSelect={() => {
+                      setParams((prev) => {
+                        const next = new URLSearchParams(prev);
+                        next.set("consultor", c.id);
+                        return next;
+                      }, { replace: true });
+                    }}
+                  >
+                    {c.display_name}
+                  </DropdownMenuItem>
+                ))}
+                {conversationConsultants.length === 0 && (
+                  <DropdownMenuItem disabled>Nenhum consultor encontrado</DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+
         <div className="flex gap-1.5 overflow-x-auto px-3 pb-2">
           {tabs.map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)}
@@ -387,24 +469,6 @@ export default function ConversasPage() {
               {t.label}
             </button>
           ))}
-
-          {activeConsultorLabel && (
-            <button
-              type="button"
-              onClick={() => {
-                setParams((prev) => {
-                  const next = new URLSearchParams(prev);
-                  next.delete("consultor");
-                  return next;
-                }, { replace: true });
-              }}
-              className="ml-1 inline-flex shrink-0 items-center gap-1 rounded-full bg-[#dbeafe] px-3 py-1 text-xs font-medium text-[#1d4ed8] hover:bg-[#bfdbfe]"
-              title="Remover filtro de consultor"
-            >
-              👤 {activeConsultorLabel}
-              <X className="h-3 w-3" />
-            </button>
-          )}
         </div>
 
         <ul className="flex-1 overflow-y-auto">
