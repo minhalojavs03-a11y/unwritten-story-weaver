@@ -47,6 +47,7 @@ export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isSuperadmin: realIsSuperadmin, isOwner: realIsOwner, isSupervisor: realIsSupervisor } = useEffectiveRole();
+  const { isSuperadmin: authIsSuperadmin } = useAuth();
   const { data: profile } = useMyProfile();
   const { member, clearMember } = useActiveMember();
   const { data: members = [] } = useTenantMembers();
@@ -154,6 +155,41 @@ export function AppLayout() {
   async function handleLogout() {
     await supabase.auth.signOut();
     navigate("/login", { replace: true });
+  }
+
+  async function exitImpersonation() {
+    try {
+      const raw = window.localStorage.getItem("impersonation_context");
+      const ctx = raw ? (JSON.parse(raw) as { previous_tenant_id: string | null }) : null;
+      const { data: u } = await supabase.auth.getUser();
+      if (u?.user) {
+        await supabase
+          .from("profiles")
+          .update({ tenant_id: ctx?.previous_tenant_id ?? null, updated_at: new Date().toISOString() })
+          .eq("id", u.user.id);
+      }
+      window.localStorage.removeItem("impersonation_context");
+      // Limpa qualquer membro interno selecionado durante o modo suporte
+      try {
+        const keys: string[] = [];
+        for (let i = 0; i < window.localStorage.length; i++) {
+          const k = window.localStorage.key(i);
+          if (k && k.startsWith("feracon.activeMember")) keys.push(k);
+        }
+        keys.forEach((k) => window.localStorage.removeItem(k));
+        const sk: string[] = [];
+        for (let i = 0; i < window.sessionStorage.length; i++) {
+          const k = window.sessionStorage.key(i);
+          if (k && k.startsWith("feracon.activeMember")) sk.push(k);
+        }
+        sk.forEach((k) => window.sessionStorage.removeItem(k));
+      } catch { /* ignore */ }
+      window.dispatchEvent(new Event("feracon:impersonation"));
+      navigate("/admin/dashboard", { replace: true });
+      setTimeout(() => window.location.reload(), 100);
+    } catch (e) {
+      console.error("[exitImpersonation]", e);
+    }
   }
 
   const sidebarWidth = collapsed ? "w-[72px]" : "w-[240px]";
@@ -370,9 +406,14 @@ export function AppLayout() {
                     <Settings className="mr-2 h-4 w-4" /> Configurações
                   </DropdownMenuItem>
                 )}
-                {isSuperadmin && (
+                {authIsSuperadmin && (
                   <DropdownMenuItem onClick={() => setImpersonateOpen(true)}>
                     <Repeat className="mr-2 h-4 w-4" /> Trocar de conta
+                  </DropdownMenuItem>
+                )}
+                {authIsSuperadmin && impersonating && (
+                  <DropdownMenuItem onClick={exitImpersonation} className="text-amber-700 focus:text-amber-700">
+                    <Shield className="mr-2 h-4 w-4" /> Voltar ao Superadmin
                   </DropdownMenuItem>
                 )}
                 {member && (
