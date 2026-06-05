@@ -4,6 +4,7 @@ import { Trophy, Medal, Flame, Target, TrendingUp, Users, Clock, DollarSign, Cal
 import { RankCard } from "@/components/gamification/RankCard";
 import { PublicLeaderboard } from "@/components/gamification/PublicLeaderboard";
 import { PrizesBanner } from "@/components/gamification/PrizesBanner";
+import { EloLadder } from "@/components/gamification/EloLadder";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -167,6 +168,8 @@ function ConsultorView() {
 
       <RankCard variant="full" period={period} />
 
+      <EloLadder variant="full" period={period} />
+
 
       {motivational && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -234,6 +237,8 @@ function SupervisorView() {
           <TopThree rows={ranking} />
         </div>
       </div>
+
+      <EloLadder variant="full" period={period} />
 
       <PrizesBanner />
 
@@ -361,6 +366,8 @@ function ExecutivoView() {
           <TopThree rows={ranking} />
         </div>
       </div>
+
+      <EloLadder variant="full" period={period} />
 
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
