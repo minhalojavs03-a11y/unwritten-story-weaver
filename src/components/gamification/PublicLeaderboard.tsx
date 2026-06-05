@@ -238,8 +238,7 @@ function StatChip({
         {value}
       </span>
       <span className="text-[9px] uppercase tracking-wider opacity-70">
-        <span className="sm:hidden">{label}</span>
-        <span className="hidden sm:inline">{fullLabel ?? label}</span>
+        {fullLabel ?? label}
       </span>
     </div>
   );
