@@ -47,6 +47,7 @@ export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isSuperadmin: realIsSuperadmin, isOwner: realIsOwner, isSupervisor: realIsSupervisor } = useEffectiveRole();
+  const { isSuperadmin: authIsSuperadmin } = useAuth();
   const { data: profile } = useMyProfile();
   const { member, clearMember } = useActiveMember();
   const { data: members = [] } = useTenantMembers();
