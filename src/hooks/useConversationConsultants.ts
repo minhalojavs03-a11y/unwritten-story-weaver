@@ -74,10 +74,37 @@ export function useConversationConsultants() {
         (superRolesRes.data ?? []).map((r) => r.user_id),
       );
 
+      // Donos (owner) também são ocultados do dropdown — Ediane só é visível
+      // para o próprio dono/superadmin nas conversas em si, não como filtro.
+      const ownerUserIds = new Set<string>();
+      const ownerNameKeys = new Set<string>();
+      const _normName = (s?: string | null) =>
+        String(s ?? "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+      for (const m of (membershipsRes.data ?? [])) {
+        if (String(m.role || "").toLowerCase() === "owner") {
+          ownerUserIds.add(m.user_id);
+          const k = _normName(m.display_name);
+          if (k) ownerNameKeys.add(k);
+        }
+      }
+
       const profilesById = new Map<string, ProfileOption>();
       for (const p of (profilesRes.data ?? []) as ProfileOption[]) {
         if (!isHiddenFeraconPerson(p as any)) profilesById.set(p.id, p);
+        // Acumula chaves de nome do dono a partir do profile correspondente
+        if (ownerUserIds.has(p.id)) {
+          for (const cand of [p.full_name, p.display_name, p.username]) {
+            const k = _normName(cand);
+            if (k) ownerNameKeys.add(k);
+          }
+        }
       }
+
 
       const list: ConsultantOption[] = [];
 
