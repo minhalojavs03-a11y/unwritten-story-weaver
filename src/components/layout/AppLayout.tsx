@@ -157,12 +157,27 @@ export function AppLayout() {
   }
 
   const sidebarWidth = collapsed ? "w-[72px]" : "w-[240px]";
+
+  // Superadmin não deve assumir identidade interna de membro — limpa qualquer
+  // seleção antiga persistida (ex.: Nilton selecionado em sessão anterior)
+  // para evitar que o cabeçalho mostre o nome do membro no lugar do real.
+  useEffect(() => {
+    if (realIsSuperadmin && !impersonating && member) {
+      clearMember();
+    }
+  }, [realIsSuperadmin, impersonating, member, clearMember]);
+
   const activeMemberAvatarUrl = member ? (members.find((mm) => mm.id === member.id)?.avatar_url ?? null) : null;
   const realAccountName = profile?.display_name ?? profile?.full_name?.split(" ")[0] ?? profile?.email ?? "Minha conta";
+  // Para superadmin (real) o cabeçalho sempre mostra a conta logada; ignora
+  // membro interno fora do modo suporte.
+  const useRealIdentity = realIsSuperadmin && !impersonating;
   const shownIdentityName = impersonating
     ? realAccountName
+    : useRealIdentity
+    ? realAccountName
     : (member?.display_name ?? profile?.display_name ?? profile?.full_name?.split(" ")[0] ?? "Perfil");
-  const avatarIdentityName = impersonating
+  const avatarIdentityName = impersonating || useRealIdentity
     ? (profile?.full_name ?? profile?.email ?? "?")
     : (member?.display_name ?? profile?.full_name ?? profile?.email ?? "?");
 
