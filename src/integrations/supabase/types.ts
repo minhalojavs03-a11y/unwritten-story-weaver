@@ -2450,6 +2450,10 @@ export type Database = {
         Returns: boolean
       }
       is_nilton_user: { Args: { _user_id: string }; Returns: boolean }
+      is_owner_or_superadmin: {
+        Args: { _tenant_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_tenant_member: {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean
