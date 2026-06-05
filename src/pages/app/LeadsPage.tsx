@@ -151,9 +151,15 @@ export default function LeadsPage() {
       const k = (l?.kind ?? "").toString().toLowerCase();
       return k !== "outros" && k !== "outro" && k !== "contato";
     };
-    // Owners/supervisores/superadmins veem todos os leads, mesmo quando estão
-    // operando como um membro interno (ex.: Dono Feracon como "donoferacon").
-    if (canViewAll) return allLeads;
+    // Owners/supervisores/superadmins veem todos os leads atribuídos
+    // (descarta não-atribuídos para focar na operação real).
+    if (canViewAll) {
+      return allLeads.filter((l) => {
+        const a = (l as any).assigned_to;
+        const m = (l as any).assigned_member_id;
+        return (!!a || !!m) && isRealLead(l);
+      });
+    }
     if (memberId) {
       return allLeads.filter((l) => (l as any).assigned_member_id === memberId && isRealLead(l));
     }
