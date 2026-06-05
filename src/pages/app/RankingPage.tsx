@@ -238,6 +238,8 @@ function SupervisorView() {
         </div>
       </div>
 
+      <EloLadder variant="full" period={period} />
+
       <PrizesBanner />
 
       <PublicLeaderboard rows={ranking} config={config} />
@@ -364,6 +366,8 @@ function ExecutivoView() {
           <TopThree rows={ranking} />
         </div>
       </div>
+
+      <EloLadder variant="full" period={period} />
 
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
