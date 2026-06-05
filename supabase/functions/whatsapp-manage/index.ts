@@ -304,6 +304,8 @@ async function ensureProviderInstance(admin: any, tenantId: string, tenant: any,
         enabled: true,
         events: ["messages"],
         excludeMessages: ["wasSentByApi", "isGroupYes"],
+        addUrlTypesMessages: true,
+        addUrlEvents: false,
       }),
     });
   } catch (e) { console.error("webhook register failed", e); }
