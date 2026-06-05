@@ -155,10 +155,14 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
                         "conquistado"
                       ) : (
                         <>
-                          {lv.min_points.toLocaleString("pt-BR")} pts
-                          {pointsTo > 0 && i === currentIdx + 1 && (
-                            <span className="ml-1 text-foreground/80">· faltam {pointsTo}</span>
-                          )}
+                          {(lv.min_sales ?? 0) > 0 ? `${lv.min_sales} vendas` : `${lv.min_points.toLocaleString("pt-BR")} pts`}
+                          {i === currentIdx + 1 && (() => {
+                            const salesNeed = Math.max(0, (lv.min_sales ?? 0) - sales);
+                            const ptsNeed = Math.max(0, lv.min_points - points);
+                            if (salesNeed > 0) return <span className="ml-1 text-foreground/80">· faltam {salesNeed} {salesNeed === 1 ? "venda" : "vendas"}</span>;
+                            if (ptsNeed > 0) return <span className="ml-1 text-foreground/80">· faltam {ptsNeed} pts</span>;
+                            return null;
+                          })()}
                         </>
                       )}
                     </span>
