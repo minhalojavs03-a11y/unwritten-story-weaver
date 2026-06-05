@@ -121,7 +121,7 @@ export function AppLayout() {
     if (isNilton) {
       return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking];
     }
-    return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking];
+    return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching];
 
   }, [isOwner, isSuperadmin, isSupervisor, impersonating, isNilton]);
 
