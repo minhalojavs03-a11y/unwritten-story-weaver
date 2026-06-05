@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 const motion = { div: (props: any) => <div {...props} /> } as any;
 import { Trophy, Medal, Flame, Target, TrendingUp, Users, Clock, DollarSign, Calendar, MessageCircle, Award, AlertTriangle } from "lucide-react";
 import { RankCard } from "@/components/gamification/RankCard";
+import { PublicLeaderboard } from "@/components/gamification/PublicLeaderboard";
+import { PrizesBanner } from "@/components/gamification/PrizesBanner";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { UserAvatar } from "@/components/ui/UserAvatar";
