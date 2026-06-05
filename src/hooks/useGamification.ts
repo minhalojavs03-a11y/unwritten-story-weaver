@@ -78,7 +78,6 @@ export const DEFAULT_LEVELS: GamificationLevel[] = [
   { key: "prata", label: "Prata", min_points: 500, min_sales: 5, color: "#94A3B8" },
   { key: "ouro", label: "Ouro", min_points: 1500, min_sales: 10, color: "#D4A017" },
   { key: "diamante", label: "Diamante", min_points: 4000, min_sales: 15, color: "#22D3EE" },
-  { key: "lendario", label: "Lendário", min_points: 8000, min_sales: 20, color: "#A855F7" },
 ];
 
 export function getGamificationLevels(config?: GamificationConfig | null): GamificationLevel[] {
