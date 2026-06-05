@@ -59,7 +59,7 @@ export function useAllTeams() {
         });
         const ownerMember = members.find((m) => m.primary_role === "owner") ?? null;
         const ownerByCreator = tenant.created_by
-          ? (profilesRes.data ?? []).find((p) => p.id === tenant.created_by) ?? null
+          ? (profilesRes.data ?? []).find((p) => p.id === tenant.created_by && !isHiddenFeraconPerson(p as any)) ?? null
           : null;
         return {
           tenant: tenant as Tables<"tenants">,

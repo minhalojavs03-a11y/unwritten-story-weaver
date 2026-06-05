@@ -10,6 +10,7 @@ import { Eye, EyeOff, Copy, Plus, Pencil, Trash2, KeyRound, Users } from "lucide
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { isHiddenFeraconPerson } from "@/lib/feracon";
 
 type Cred = {
   id: string;
@@ -82,7 +83,7 @@ export default function AcessosPage() {
         .eq("tenant_id", tenantId!)
         .order("display_name");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).filter((m) => !isHiddenFeraconPerson(m as any));
     },
   });
 
