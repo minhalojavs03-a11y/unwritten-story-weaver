@@ -428,7 +428,7 @@ export default function RankingPage() {
   const isSupervisor = can("view_team_metrics") && !isOwner && !isSuperadmin;
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 px-7 py-4 md:p-6">
+    <div className="mx-auto w-full max-w-6xl space-y-5 p-4 md:p-6">
       {isOwner || isSuperadmin ? <ExecutivoView /> : isSupervisor ? <SupervisorView /> : <ConsultorView />}
     </div>
   );
