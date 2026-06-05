@@ -2367,30 +2367,50 @@ export type Database = {
         }[]
       }
       gamification_member_summary: {
-        Args: { _member_id: string }
+        Args: { _member_id: string; _period?: string }
         Returns: {
-          best_streak: number
-          current_streak: number
-          events: number
+          contacts: number
+          fast_responses: number
+          leads_assumed: number
+          meetings: number
           points: number
+          rank_position: number
+          sales: number
+          total_members: number
         }[]
       }
+      gamification_period_start: { Args: { _period: string }; Returns: string }
       gamification_ranking: {
-        Args: { _from?: string; _tenant_id: string; _to?: string }
+        Args: { _period?: string }
         Returns: {
           avatar_color: string
+          avatar_url: string
+          contacts: number
           display_name: string
-          events: number
+          fast_responses: number
+          leads_assumed: number
+          meetings: number
           member_id: string
           points: number
+          role_label: string
+          sales: number
         }[]
       }
       gamification_team_overview: {
-        Args: { _tenant_id: string }
+        Args: { _period?: string }
         Returns: {
-          active_members: number
-          total_events: number
-          total_points: number
+          active_leads: number
+          avatar_color: string
+          contacts: number
+          display_name: string
+          last_seen_at: string
+          leads_assumed: number
+          meetings: number
+          member_id: string
+          points: number
+          role_label: string
+          sales: number
+          stalled_leads: number
         }[]
       }
       get_invite_by_token: {
