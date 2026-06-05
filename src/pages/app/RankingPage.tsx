@@ -466,14 +466,11 @@ function ExecutivoView() {
       <section>
         <div className="mb-3 flex items-end justify-between">
           <div>
-            <h2 className="font-display text-lg font-semibold">Ranking geral</h2>
-            <p className="text-xs text-muted-foreground">Top performers da equipe no período · placar público</p>
+            <h2 className="font-display text-lg font-semibold">Ranking &amp; Placar público</h2>
+            <p className="text-xs text-muted-foreground">Classificação consolidada da equipe no período</p>
           </div>
         </div>
-        <TopThree rows={ranking} />
-        <div className="mt-4">
-          <PublicLeaderboard rows={ranking} config={config} />
-        </div>
+        <PublicLeaderboard rows={ranking} config={config} />
       </section>
     </div>
   );
