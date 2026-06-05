@@ -17,9 +17,11 @@ export function RankCard({ variant = "full", period = "monthly", className, asLi
   const { data: summary } = useMyGamificationSummary(period);
   const { data: config } = useGamificationConfig();
   const points = summary?.points ?? 0;
-  const { current, next, progress } = levelFor(points, config);
+  const sales = summary?.sales ?? 0;
+  const { current, next, progress } = levelFor(points, config, sales);
   const tier = tierForLevel(current, config);
   const pointsToNext = next ? Math.max(0, next.min_points - points) : 0;
+  const salesToNext = next ? Math.max(0, (next.min_sales ?? 0) - sales) : 0;
 
   const isCompact = variant === "compact";
   const emblemSize = isCompact ? 56 : 80;
@@ -76,7 +78,11 @@ export function RankCard({ variant = "full", period = "monthly", className, asLi
                   <span className="font-medium" style={{ color: next.color }}>{next.label}</span>
                 </span>
                 <span className="tabular-nums">
-                  faltam <span className="font-semibold text-foreground">{pointsToNext}</span> pts
+                  {salesToNext > 0 ? (
+                    <>faltam <span className="font-semibold text-foreground">{salesToNext}</span> {salesToNext === 1 ? "venda" : "vendas"}</>
+                  ) : (
+                    <>faltam <span className="font-semibold text-foreground">{pointsToNext}</span> pts</>
+                  )}
                 </span>
               </div>
               <div className="relative h-2 overflow-hidden rounded-full bg-muted shadow-inner">

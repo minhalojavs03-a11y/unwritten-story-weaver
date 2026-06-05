@@ -174,7 +174,7 @@ function ConsultorView() {
   const myId = member?.id ?? user?.id;
 
   const points = summary?.points ?? 0;
-  const { current, next, progress } = useMemo(() => levelFor(points, config), [points, config]);
+  const { current, next, progress } = useMemo(() => levelFor(points, config, summary?.sales ?? 0), [points, config, summary?.sales]);
   const commission = (summary?.sales ?? 0) * (config?.commission_per_sale ?? 0);
   const conversion = summary && summary.leads_assumed > 0 ? Math.round((summary.sales / summary.leads_assumed) * 100) : 0;
 

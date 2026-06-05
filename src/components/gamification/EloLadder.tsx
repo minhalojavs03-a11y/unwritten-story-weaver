@@ -23,8 +23,9 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
   const { data: summary } = useMyGamificationSummary(period);
   const { data: config } = useGamificationConfig();
   const points = summary?.points ?? 0;
+  const sales = summary?.sales ?? 0;
   const levels = getGamificationLevels(config);
-  const { current, next, progress } = levelFor(points, config);
+  const { current, next, progress } = levelFor(points, config, sales);
   const currentIdx = Math.max(0, levels.findIndex((level) => {
     if (current.key && level.key) return level.key === current.key;
     return level.label === current.label;
@@ -98,7 +99,7 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
             const isCurrent = i === currentIdx;
             const isAchieved = i < currentIdx;
             const isLocked = i > currentIdx;
-            const pointsTo = Math.max(0, lv.min_points - points);
+            
 
             return (
               <li key={lv.key ?? lv.label} className="flex flex-col items-center text-center">
@@ -154,10 +155,14 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
                         "conquistado"
                       ) : (
                         <>
-                          {lv.min_points.toLocaleString("pt-BR")} pts
-                          {pointsTo > 0 && i === currentIdx + 1 && (
-                            <span className="ml-1 text-foreground/80">· faltam {pointsTo}</span>
-                          )}
+                          {(lv.min_sales ?? 0) > 0 ? `${lv.min_sales} vendas` : `${lv.min_points.toLocaleString("pt-BR")} pts`}
+                          {i === currentIdx + 1 && (() => {
+                            const salesNeed = Math.max(0, (lv.min_sales ?? 0) - sales);
+                            const ptsNeed = Math.max(0, lv.min_points - points);
+                            if (salesNeed > 0) return <span className="ml-1 text-foreground/80">· faltam {salesNeed} {salesNeed === 1 ? "venda" : "vendas"}</span>;
+                            if (ptsNeed > 0) return <span className="ml-1 text-foreground/80">· faltam {ptsNeed} pts</span>;
+                            return null;
+                          })()}
                         </>
                       )}
                     </span>
@@ -177,13 +182,21 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
               Elo atual:{" "}
               <span className="font-semibold" style={{ color: current.color }}>{current.label}</span>
             </span>
-            {next ? (
-              <span className="text-muted-foreground">
-                Próximo:{" "}
-                <span className="font-semibold" style={{ color: next.color }}>{next.label}</span>
-                <span className="ml-1 tabular-nums">· faltam <span className="font-semibold text-foreground">{Math.max(0, next.min_points - points)}</span> pts</span>
-              </span>
-            ) : (
+            {next ? (() => {
+              const salesNeed = Math.max(0, (next.min_sales ?? 0) - sales);
+              const ptsNeed = Math.max(0, next.min_points - points);
+              return (
+                <span className="text-muted-foreground">
+                  Próximo:{" "}
+                  <span className="font-semibold" style={{ color: next.color }}>{next.label}</span>
+                  {salesNeed > 0 ? (
+                    <span className="ml-1 tabular-nums">· faltam <span className="font-semibold text-foreground">{salesNeed}</span> {salesNeed === 1 ? "venda" : "vendas"}</span>
+                  ) : (
+                    <span className="ml-1 tabular-nums">· faltam <span className="font-semibold text-foreground">{ptsNeed}</span> pts</span>
+                  )}
+                </span>
+              );
+            })() : (
               <span className="font-semibold text-amber-600">Elo máximo atingido 🏆</span>
             )}
           </div>

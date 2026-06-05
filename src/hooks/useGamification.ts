@@ -62,29 +62,39 @@ export interface GamificationConfig {
   points_lead_lost: number;
   fast_response_threshold_seconds: number;
   commission_per_sale: number;
-  levels: Array<{ key: string; label: string; min_points: number; color: string }>;
+  levels: Array<{ key: string; label: string; min_points: number; min_sales?: number; color: string }>;
 }
 
-export type GamificationLevel = GamificationConfig["levels"][number];
+export type GamificationLevel = {
+  key: string;
+  label: string;
+  min_points: number;
+  min_sales: number;
+  color: string;
+};
 
 export const DEFAULT_LEVELS: GamificationLevel[] = [
-  { key: "bronze", label: "Bronze", min_points: 0, color: "#B45309" },
-  { key: "prata", label: "Prata", min_points: 500, color: "#94A3B8" },
-  { key: "ouro", label: "Ouro", min_points: 1500, color: "#D4A017" },
-  { key: "diamante", label: "Diamante", min_points: 4000, color: "#22D3EE" },
+  { key: "bronze", label: "Bronze", min_points: 0, min_sales: 0, color: "#B45309" },
+  { key: "prata", label: "Prata", min_points: 500, min_sales: 5, color: "#94A3B8" },
+  { key: "ouro", label: "Ouro", min_points: 1500, min_sales: 10, color: "#D4A017" },
+  { key: "diamante", label: "Diamante", min_points: 4000, min_sales: 15, color: "#22D3EE" },
+  { key: "lendario", label: "Lendário", min_points: 8000, min_sales: 20, color: "#A855F7" },
 ];
 
 export function getGamificationLevels(config?: GamificationConfig | null): GamificationLevel[] {
   const raw = Array.isArray(config?.levels) ? config.levels : [];
-  const valid = raw.filter((level): level is GamificationLevel => {
+  const valid = raw.filter((level: any) => {
     return !!level && typeof level.label === "string" && Number.isFinite(Number(level.min_points));
   });
 
   return (valid.length > 0 ? valid : DEFAULT_LEVELS)
-    .map((level, index) => ({
+    .map((level: any, index: number) => ({
       key: level.key || `level-${index}`,
       label: level.label || DEFAULT_LEVELS[index]?.label || `Nível ${index + 1}`,
       min_points: Number(level.min_points) || 0,
+      min_sales: Number.isFinite(Number(level.min_sales))
+        ? Number(level.min_sales)
+        : (DEFAULT_LEVELS[index]?.min_sales ?? 0),
       color: level.color || DEFAULT_LEVELS[index]?.color || DEFAULT_LEVELS[0].color,
     }))
     .sort((a, b) => a.min_points - b.min_points);
@@ -170,19 +180,32 @@ export function useGamificationConfig() {
   });
 }
 
-export function levelFor(points: number, config?: GamificationConfig | null) {
+export function levelFor(points: number, config?: GamificationConfig | null, sales: number = 0) {
   const sorted = getGamificationLevels(config);
   const safePoints = Number.isFinite(points) ? points : 0;
+  const safeSales = Number.isFinite(sales) ? sales : 0;
   let current = sorted[0] ?? DEFAULT_LEVELS[0];
-  let next: GamificationLevel | null = null;
+  let nextIdx = sorted.length > 1 ? 1 : -1;
   for (let i = 0; i < sorted.length; i++) {
-    if (safePoints >= sorted[i].min_points) {
-      current = sorted[i];
-      next = sorted[i + 1] ?? null;
+    const lv = sorted[i];
+    // Sales gate: o consultor só sobe de elo quando atinge o mínimo de
+    // pontos E o mínimo de vendas do nível. Sem vendas, não avança.
+    if (safePoints >= lv.min_points && safeSales >= (lv.min_sales ?? 0)) {
+      current = lv;
+      nextIdx = i + 1 < sorted.length ? i + 1 : -1;
     }
   }
-  const progress = next
-    ? Math.min(100, Math.round(((safePoints - current.min_points) / Math.max(1, next.min_points - current.min_points)) * 100))
-    : 100;
+  const next: GamificationLevel | null = nextIdx >= 0 ? sorted[nextIdx] : null;
+  let progress = 100;
+  if (next) {
+    const pointsSpan = Math.max(1, next.min_points - current.min_points);
+    const salesSpan = Math.max(1, (next.min_sales ?? 0) - (current.min_sales ?? 0));
+    const pointsProgress = Math.min(100, ((safePoints - current.min_points) / pointsSpan) * 100);
+    const salesProgress = (next.min_sales ?? 0) > (current.min_sales ?? 0)
+      ? Math.min(100, ((safeSales - (current.min_sales ?? 0)) / salesSpan) * 100)
+      : 100;
+    // O progresso real é limitado pelo requisito mais distante (pontos OU vendas).
+    progress = Math.max(0, Math.round(Math.min(pointsProgress, salesProgress)));
+  }
   return { current, next, progress };
 }
