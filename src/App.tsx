@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import ClientLoginPage from "./pages/auth/ClientLoginPage";
 import AdminLoginPage from "./pages/auth/AdminLoginPage";
@@ -74,6 +75,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <ActiveMemberProvider>
+            <ErrorBoundary>
             <Routes>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<ClientLoginPage />} />
@@ -131,6 +133,7 @@ const App = () => (
 
             <Route path="*" element={<NotFound />} />
             </Routes>
+            </ErrorBoundary>
           </ActiveMemberProvider>
         </AuthProvider>
       </BrowserRouter>
