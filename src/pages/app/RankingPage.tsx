@@ -18,10 +18,6 @@ import {
   useRanking, useMyGamificationSummary, useTeamOverview, useExecutiveOverview,
   useGamificationConfig, levelFor, type Period, type RankingRow,
 } from "@/hooks/useGamification";
-import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip,
-  CartesianGrid, BarChart, Bar,
-} from "recharts";
 
 const PERIOD_OPTIONS: { value: Period; label: string }[] = [
   { value: "daily", label: "Hoje" },
@@ -371,9 +367,6 @@ function ExecutivoView() {
   const { data: config } = useGamificationConfig();
 
   const totals = overview?.totals;
-  const funnelData = overview?.funnel
-    ? Object.entries(overview.funnel).map(([k, v]) => ({ stage: STAGE_LABELS_PT[k] ?? k, count: Number(v) }))
-    : [];
 
   const periodLabel = PERIOD_OPTIONS.find((p) => p.value === period)?.label ?? "";
   const convPct = Math.round(Number(overview?.conversion_rate ?? 0) * 100);
