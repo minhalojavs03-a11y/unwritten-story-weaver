@@ -206,6 +206,7 @@ function SupervisorView() {
   const [period, setPeriod] = useState<Period>("weekly");
   const { data: team = [] } = useTeamOverview(period);
   const { data: ranking = [] } = useRanking(period);
+  const { data: config } = useGamificationConfig();
 
   const offlineCount = team.filter((m) => !m.last_seen_at || (Date.now() - new Date(m.last_seen_at).getTime()) > 30 * 60_000).length;
   const stalledTotal = team.reduce((acc, m) => acc + Number(m.stalled_leads ?? 0), 0);
@@ -233,6 +234,10 @@ function SupervisorView() {
           <TopThree rows={ranking} />
         </div>
       </div>
+
+      <PrizesBanner />
+
+      <PublicLeaderboard rows={ranking} config={config} />
 
       {lowPerformer && (
         <Card className="border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
