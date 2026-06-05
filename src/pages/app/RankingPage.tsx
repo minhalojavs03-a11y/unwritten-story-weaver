@@ -98,21 +98,36 @@ function TopThree({ rows }: { rows: RankingRow[] }) {
       {sorted.length === 0 && (
         <div className="py-6 text-center text-sm text-muted-foreground">Sem dados no período.</div>
       )}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {sorted.map((r, i) => {
           const pct = Math.max(2, Math.round((Number(r.points) / leaderPoints) * 100));
           const accent = trackColors[i + 1] ?? "from-primary/70 to-primary/30";
           return (
-            <div key={r.member_id} className="flex items-center gap-3">
-              <div className="flex w-32 shrink-0 items-center gap-2 sm:w-40">
+            <div
+              key={r.member_id}
+              className="grid grid-cols-[28px_36px_minmax(0,1fr)_minmax(0,2fr)] items-center gap-3"
+            >
+              {/* Posição */}
+              <div className="flex justify-center">
                 <MedalIcon position={i + 1} />
-                <UserAvatar userId={r.member_id} name={r.display_name} avatarUrl={r.avatar_url} avatarColor={r.avatar_color ?? undefined} size={28} />
-                <div className="min-w-0">
-                  <div className="truncate text-xs font-semibold">{r.display_name}</div>
-                  <div className="text-[10px] text-muted-foreground">{r.role_label ?? "Consultor"}</div>
-                </div>
               </div>
-              <div className="relative h-6 flex-1 overflow-hidden rounded-full bg-muted/60 ring-1 ring-border">
+              {/* Avatar */}
+              <div className="flex justify-center">
+                <UserAvatar
+                  userId={r.member_id}
+                  name={r.display_name}
+                  avatarUrl={r.avatar_url}
+                  avatarColor={r.avatar_color ?? undefined}
+                  size={32}
+                />
+              </div>
+              {/* Nome + cargo */}
+              <div className="min-w-0 leading-tight">
+                <div className="truncate text-xs font-semibold">{r.display_name}</div>
+                <div className="truncate text-[10px] text-muted-foreground">{r.role_label ?? "Consultor"}</div>
+              </div>
+              {/* Barra */}
+              <div className="relative h-6 overflow-hidden rounded-full bg-muted/60 ring-1 ring-border">
                 <div
                   className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-700", accent)}
                   style={{ width: `${pct}%` }}
