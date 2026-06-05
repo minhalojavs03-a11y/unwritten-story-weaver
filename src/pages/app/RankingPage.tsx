@@ -86,6 +86,12 @@ function TopThree({ rows }: { rows: RankingRow[] }) {
   const order = [top[1], top[0], top[2]]; // 2,1,3 visualmente
   const heights = ["h-32", "h-40", "h-28"];
   const positions = [2, 1, 3];
+  // 1=gold, 2=prata, 3=bronze
+  const podiumStyles: Record<number, string> = {
+    1: "bg-gradient-to-b from-yellow-300 via-yellow-200 to-yellow-50 ring-1 ring-yellow-400/50 shadow-[0_-4px_20px_-6px_rgba(234,179,8,0.45)]",
+    2: "bg-gradient-to-b from-slate-300 via-slate-200 to-slate-50 ring-1 ring-slate-400/50 shadow-[0_-4px_20px_-6px_rgba(148,163,184,0.45)]",
+    3: "bg-gradient-to-b from-orange-300 via-orange-200 to-orange-50 ring-1 ring-orange-400/50 shadow-[0_-4px_20px_-6px_rgba(234,88,12,0.4)]",
+  };
   return (
     <div className="grid grid-cols-3 gap-3 md:gap-4">
       {order.map((r, i) => (
@@ -105,7 +111,7 @@ function TopThree({ rows }: { rows: RankingRow[] }) {
           ) : (
             <div className="text-[10px] text-muted-foreground">—</div>
           )}
-          <div className={cn("mt-2 w-full rounded-t-xl bg-gradient-to-b from-primary/20 to-primary/5 px-2 pb-2 pt-3 text-center", heights[i])}>
+          <div className={cn("mt-2 w-full rounded-t-xl px-2 pb-2 pt-3 text-center", heights[i], podiumStyles[positions[i]])}>
             <MedalIcon position={positions[i]} />
           </div>
         </motion.div>
