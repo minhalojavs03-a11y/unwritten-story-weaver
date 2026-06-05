@@ -189,7 +189,7 @@ function ConsultorView() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-semibold">Meu desempenho</h1>
+        <h1 className="font-display text-2xl font-semibold pl-3 md:pl-0">Meu desempenho</h1>
         <PeriodTabs value={period} onChange={setPeriod} />
       </div>
 
