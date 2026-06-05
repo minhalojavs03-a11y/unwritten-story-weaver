@@ -28,9 +28,6 @@ type ProfileOption = {
   last_seen_at: string | null;
 };
 
-type TenantOption = { id: string; name: string | null };
-
-const emptyResult = <T,>() => Promise.resolve({ data: [] as T[], error: null });
 
 /**
  * Lista todos os atendentes/consultores/supervisores do tenant que aparecem
