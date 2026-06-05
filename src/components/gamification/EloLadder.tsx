@@ -193,16 +193,23 @@ export function EloLadder({ variant = "full", period = "monthly", className, asL
               <span className="font-semibold text-amber-600">Elo máximo atingido 🏆</span>
             )}
           </div>
-          <div className="relative h-1.5 overflow-hidden rounded-full bg-muted">
+          <div className="relative h-2 overflow-hidden rounded-full bg-muted shadow-inner">
             <div
-              className="h-full rounded-full transition-all duration-700"
+              className="relative h-full overflow-hidden rounded-full transition-all duration-700 energy-shine"
               style={{
                 width: `${progress}%`,
-                background: next
-                  ? `linear-gradient(90deg, ${current.color}, ${next.color})`
-                  : current.color,
+                boxShadow: `0 0 10px ${current.color}80`,
               }}
-            />
+            >
+              <div
+                className="h-full w-full energy-bar"
+                style={{
+                  backgroundImage: next
+                    ? `linear-gradient(90deg, ${current.color}, ${next.color}, ${current.color}, ${next.color})`
+                    : `linear-gradient(90deg, ${current.color}, #fff8, ${current.color})`,
+                }}
+              />
+            </div>
           </div>
         </div>
       )}
