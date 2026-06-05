@@ -4,6 +4,7 @@ import { Trophy, Medal, Flame, Target, TrendingUp, Users, Clock, DollarSign, Cal
 import { RankCard } from "@/components/gamification/RankCard";
 import { PublicLeaderboard } from "@/components/gamification/PublicLeaderboard";
 import { PrizesBanner } from "@/components/gamification/PrizesBanner";
+import { EloLadder } from "@/components/gamification/EloLadder";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -166,6 +167,8 @@ function ConsultorView() {
       </div>
 
       <RankCard variant="full" period={period} />
+
+      <EloLadder variant="full" period={period} />
 
 
       {motivational && (

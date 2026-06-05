@@ -20,6 +20,7 @@ import { CoachingPanel } from "@/components/dashboard/CoachingPanel";
 import { DashboardScopeFilter, type DashboardScope } from "@/components/dashboard/DashboardScopeFilter";
 import { RankCard } from "@/components/gamification/RankCard";
 import { PrizesBanner } from "@/components/gamification/PrizesBanner";
+import { EloLadder } from "@/components/gamification/EloLadder";
 
 export default function DashboardPage() {
   const { data: profile } = useMyProfile();
@@ -167,6 +168,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        {!privileged && <EloLadder variant="full" asLink />}
         {!privileged && <PrizesBanner compact />}
 
         <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
