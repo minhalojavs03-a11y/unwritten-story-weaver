@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 const motion = { div: (props: any) => <div {...props} /> } as any;
 import { Trophy, Medal, Flame, Target, TrendingUp, Users, Clock, DollarSign, Calendar, MessageCircle, Award, AlertTriangle } from "lucide-react";
-import { RankEmblem } from "@/components/gamification/RankEmblem";
+import { RankCard } from "@/components/gamification/RankCard";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -163,46 +163,8 @@ function ConsultorView() {
         <PeriodTabs value={period} onChange={setPeriod} />
       </div>
 
-      <Card className="overflow-hidden p-5">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <RankEmblem color={current.color} tier={(config?.levels ?? []).findIndex((l: any) => l.label === current.label) + 1} size={72} />
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Nível atual</div>
-              <div
-                className="font-display text-xl font-semibold tracking-tight"
-                style={{ color: current.color }}
-              >
-                {current.label}
-              </div>
-              {next && (
-                <div className="text-[11px] text-muted-foreground">
-                  Próx.: <span className="text-foreground">{next.label}</span>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-6">
-            <div>
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Posição</div>
-              <div className="font-display text-3xl font-semibold tabular-nums tracking-tight">{summary?.rank_position || "—"}<span className="text-sm text-muted-foreground">/{summary?.total_members || 0}</span></div>
-            </div>
-            <div>
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Pontos</div>
-              <div className="font-display text-3xl font-semibold tabular-nums tracking-tight">{points}</div>
-            </div>
-          </div>
-        </div>
-        {next && (
-          <div className="mt-4">
-            <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-              <span>{current.label}</span>
-              <span>{next.label} · {next.min_points} pts</span>
-            </div>
-            <Progress value={progress} />
-          </div>
-        )}
-      </Card>
+      <RankCard variant="full" period={period} />
+
 
       {motivational && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
