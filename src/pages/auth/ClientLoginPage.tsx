@@ -21,6 +21,9 @@ export default function ClientLoginPage() {
     ? `${fromPath}${from?.search ?? ""}`
     : "/crm";
   const { loading: authLoading, session, isSuperadmin, user } = useAuth();
+  // Cadastro desativado: novas contas só por convite. Mantemos o tipo para
+  // compatibilidade do form, mas a UI de signup fica oculta até reativação.
+  const SIGNUP_ENABLED = false;
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -147,22 +150,24 @@ export default function ClientLoginPage() {
             </div>
           ) : (
             <>
-              <div className="mb-5 grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
-                <button
-                  type="button"
-                  onClick={() => setMode("signin")}
-                  className={`h-9 rounded-md text-sm font-semibold transition ${mode === "signin" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-                >
-                  Entrar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode("signup")}
-                  className={`h-9 rounded-md text-sm font-semibold transition ${mode === "signup" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-                >
-                  Criar conta
-                </button>
-              </div>
+              {SIGNUP_ENABLED && (
+                <div className="mb-5 grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setMode("signin")}
+                    className={`h-9 rounded-md text-sm font-semibold transition ${mode === "signin" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                  >
+                    Entrar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode("signup")}
+                    className={`h-9 rounded-md text-sm font-semibold transition ${mode === "signup" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                  >
+                    Criar conta
+                  </button>
+                </div>
+              )}
               <form onSubmit={handleSubmit} className="space-y-4">
                 {mode === "signup" && (
                   <div className="space-y-1.5">
@@ -182,21 +187,23 @@ export default function ClientLoginPage() {
                   {loading ? "Aguarde…" : mode === "signin" ? "Entrar" : "Criar conta"}
                 </Button>
               </form>
-              <p className="mt-4 text-center text-xs text-slate-500">
-                {mode === "signin" ? (
-                  <>Ainda não tem conta?{" "}
-                    <button type="button" onClick={() => setMode("signup")} className="font-semibold text-[hsl(0_84%_50%)] hover:underline">
-                      Criar conta
-                    </button>
-                  </>
-                ) : (
-                  <>Já tem conta?{" "}
-                    <button type="button" onClick={() => setMode("signin")} className="font-semibold text-[hsl(0_84%_50%)] hover:underline">
-                      Entrar
-                    </button>
-                  </>
-                )}
-              </p>
+              {SIGNUP_ENABLED && (
+                <p className="mt-4 text-center text-xs text-slate-500">
+                  {mode === "signin" ? (
+                    <>Ainda não tem conta?{" "}
+                      <button type="button" onClick={() => setMode("signup")} className="font-semibold text-[hsl(0_84%_50%)] hover:underline">
+                        Criar conta
+                      </button>
+                    </>
+                  ) : (
+                    <>Já tem conta?{" "}
+                      <button type="button" onClick={() => setMode("signin")} className="font-semibold text-[hsl(0_84%_50%)] hover:underline">
+                        Entrar
+                      </button>
+                    </>
+                  )}
+                </p>
+              )}
             </>
           )}
 
