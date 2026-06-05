@@ -261,12 +261,11 @@ function SupervisorView() {
         <KpiTile icon={Trophy} label="Top performer" value={topPerformer?.display_name?.split(" ")[0] ?? "—"} accent="bg-emerald-100 text-emerald-700" />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr] lg:items-start">
-        <RankCard variant="full" period={period} />
-        <div>
-          <h2 className="mb-3 font-display text-base font-semibold tracking-tight">Top 3 destaques</h2>
-          <TopThree rows={ranking} />
-        </div>
+      <RankCard variant="full" period={period} />
+
+      <div>
+        <h2 className="mb-3 font-display text-base font-semibold tracking-tight">Corrida do período</h2>
+        <TopThree rows={ranking} />
       </div>
 
       <EloLadder variant="full" period={period} />
