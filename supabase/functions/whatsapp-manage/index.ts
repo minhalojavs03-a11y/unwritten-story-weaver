@@ -580,6 +580,160 @@ function leadOwnerPatchFromInstance(instance: any, lead?: any): Record<string, a
   return { assigned_to: instance.seller_user_id, whatsapp_instance_id: instance.id };
 }
 
+// ===== Media helpers (mirrored from whatsapp-webhook) =====
+type ExtractedMedia = {
+  url: string | null;
+  base64: string | null;
+  mime: string | null;
+  kind: "audio" | "image" | "video" | "document" | "sticker" | null;
+  caption: string | null;
+  fileName: string | null;
+};
+
+const MEDIA_EXT: Record<string, string> = {
+  "audio/ogg": "ogg", "audio/ogg; codecs=opus": "ogg", "audio/opus": "ogg",
+  "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/m4a": "m4a",
+  "audio/wav": "wav", "audio/webm": "webm",
+  "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif",
+  "video/mp4": "mp4", "video/webm": "webm", "video/quicktime": "mov", "video/3gpp": "3gp",
+  "application/pdf": "pdf",
+};
+const MEDIA_PLACEHOLDER: Record<string, string> = {
+  audio: "🎤 Mensagem de voz",
+  image: "📷 Imagem",
+  video: "🎬 Vídeo",
+  document: "📎 Documento",
+  sticker: "🌟 Figurinha",
+};
+
+function extFromMime(mime: string | null, fallback: string): string {
+  if (!mime) return fallback;
+  const clean = mime.split(";")[0].trim().toLowerCase();
+  return MEDIA_EXT[clean] ?? (clean.split("/")[1] || fallback);
+}
+
+function extractMediaFromHistoryMsg(m: any): ExtractedMedia {
+  const flatType: string | undefined = m?.messageType ?? m?.type ?? m?.mediaType;
+  const flatMime: string | undefined = m?.mimetype ?? m?.mimeType ?? m?.mime;
+  const flatUrl: string | undefined =
+    m?.mediaUrl ?? m?.media_url ?? m?.fileUrl ?? m?.file_url ?? m?.url ?? m?.fileURL ?? m?.directPath;
+  const contentIsBase64 = typeof m?.content === "string"
+    && m.content.length > 200
+    && /^[A-Za-z0-9+/=\s]+$/.test(m.content)
+    && !/\s/.test(m.content.trim().slice(0, 80));
+  const flatB64: string | undefined =
+    m?.base64 ?? m?.fileBase64 ?? m?.file_base64 ?? m?.fileEncoded ?? (contentIsBase64 ? m.content : undefined);
+  const flatCaption: string | undefined = m?.caption;
+  const flatFileName: string | undefined = m?.fileName ?? m?.filename ?? m?.documentName;
+
+  const inner = m?.message ?? {};
+  const nestedKind: ExtractedMedia["kind"] = inner?.audioMessage || inner?.pttMessage
+    ? "audio"
+    : inner?.imageMessage ? "image"
+    : inner?.videoMessage ? "video"
+    : inner?.documentMessage ? "document"
+    : inner?.stickerMessage ? "sticker"
+    : null;
+
+  let kind: ExtractedMedia["kind"] = nestedKind;
+  if (!kind && typeof flatType === "string") {
+    const t = flatType.toLowerCase();
+    if (t.includes("audio") || t === "ptt" || t.includes("voice")) kind = "audio";
+    else if (t.includes("image") || t === "photo") kind = "image";
+    else if (t.includes("video")) kind = "video";
+    else if (t.includes("document") || t === "file") kind = "document";
+    else if (t.includes("sticker")) kind = "sticker";
+  }
+  if (!kind && flatMime) {
+    if (flatMime.startsWith("audio/")) kind = "audio";
+    else if (flatMime.startsWith("image/")) kind = "image";
+    else if (flatMime.startsWith("video/")) kind = "video";
+    else kind = "document";
+  }
+  if (!kind && (flatUrl || flatB64)) kind = "document";
+  if (!kind) return { url: null, base64: null, mime: null, kind: null, caption: null, fileName: null };
+
+  return {
+    url: flatUrl ?? null,
+    base64: flatB64 ?? null,
+    mime: flatMime ?? null,
+    kind,
+    caption: flatCaption ?? null,
+    fileName: flatFileName ?? null,
+  };
+}
+
+async function fetchProviderMediaBytes(instance: any, externalId: string | null): Promise<{ base64: string | null; mime: string | null; fileName: string | null }> {
+  if (!externalId || !instance?.server_url || !instance?.instance_token) return { base64: null, mime: null, fileName: null };
+  const endpoints: Array<{ url: string; body: Record<string, unknown> }> = [
+    { url: `${instance.server_url}/message/download`, body: { messageid: externalId } },
+    { url: `${instance.server_url}/message/download`, body: { id: externalId } },
+    { url: `${instance.server_url}/chat/getBase64FromMediaMessage`, body: { message: { key: { id: externalId } }, convertToMp4: false } },
+  ];
+  for (const ep of endpoints) {
+    try {
+      const r = await fetch(ep.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", token: instance.instance_token },
+        body: JSON.stringify(ep.body),
+      });
+      if (!r.ok) continue;
+      const d = await r.json().catch(() => null);
+      if (!d) continue;
+      const base64: string | null =
+        d?.base64 ?? d?.fileBase64 ?? d?.data?.base64 ?? d?.data?.fileBase64 ??
+        d?.media ?? d?.result?.base64 ?? null;
+      const mime: string | null =
+        d?.mimetype ?? d?.mimeType ?? d?.contentType ?? d?.data?.mimetype ?? null;
+      const fileName: string | null = d?.fileName ?? d?.filename ?? d?.data?.fileName ?? null;
+      if (base64) return { base64, mime, fileName };
+    } catch (e) { console.warn("fetchProviderMediaBytes failed", (e as any)?.message); }
+  }
+  return { base64: null, mime: null, fileName: null };
+}
+
+async function uploadMediaToStorage(
+  admin: any,
+  instance: any,
+  tenantId: string,
+  conversationId: string,
+  media: ExtractedMedia,
+): Promise<{ url: string | null; mime: string | null }> {
+  try {
+    let bytes: Uint8Array | null = null;
+    let mime = media.mime ?? null;
+
+    if (media.base64) {
+      const b64 = media.base64.includes(",") ? media.base64.split(",").pop()! : media.base64;
+      const bin = atob(b64.replace(/\s/g, ""));
+      bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    } else if (media.url) {
+      const headers: Record<string, string> = {};
+      if (instance?.instance_token) headers["token"] = instance.instance_token;
+      const r = await fetch(media.url, { headers });
+      if (!r.ok) { console.error("media download failed", r.status); return { url: null, mime }; }
+      mime = mime ?? r.headers.get("content-type");
+      bytes = new Uint8Array(await r.arrayBuffer());
+    } else {
+      return { url: null, mime };
+    }
+
+    const ext = extFromMime(mime, media.kind === "audio" ? "ogg" : "bin");
+    const path = `${tenantId}/${conversationId}/${Date.now()}_${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await admin.storage.from("chat-media").upload(path, bytes, {
+      contentType: mime ?? "application/octet-stream",
+      upsert: false,
+    });
+    if (upErr) { console.error("storage upload error", upErr); return { url: null, mime }; }
+    const { data: pub } = admin.storage.from("chat-media").getPublicUrl(path);
+    return { url: pub?.publicUrl ?? null, mime };
+  } catch (e) {
+    console.error("uploadMediaToStorage error", e);
+    return { url: null, mime: media.mime ?? null };
+  }
+}
+
 async function syncHistory(admin: any, tenantId: string, instance: any, maxChats = 200, msgsPerChat = 30) {
   if (!instance?.server_url || !instance?.instance_token) {
     return { ok: false, error: "instância sem credenciais" };
