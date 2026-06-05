@@ -65,9 +65,8 @@ export function MvpOfMonth({ rows, highlightMemberId }: MvpOfMonthProps) {
                 <div className="relative">
                   <InitialsAvatar
                     name={leader.display_name}
-                    color={leader.avatar_color}
                     src={leader.avatar_url ?? undefined}
-                    size={56}
+                    className="h-14 w-14 text-lg"
                   />
                   <span className={`absolute -bottom-1 -right-1 inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold shadow ${PODIUM[0].chip}`}>
                     1º
