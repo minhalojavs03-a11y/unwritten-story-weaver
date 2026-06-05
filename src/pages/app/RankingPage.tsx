@@ -412,55 +412,6 @@ function ExecutivoView() {
         <ExecKpiCard icon={Award} label="Pontos totais" value={totals?.points ?? 0} tone="primary" />
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-2">
-        <Card className="overflow-hidden p-0">
-          <div className="flex items-center justify-between border-b bg-muted/30 px-5 py-3">
-            <div>
-              <h3 className="font-display text-sm font-semibold">Performance temporal</h3>
-              <p className="text-[11px] text-muted-foreground">Vendas e reuniões por dia</p>
-            </div>
-            <div className="flex items-center gap-3 text-[11px]">
-              <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" />Vendas</span>
-              <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[hsl(var(--success))]" />Reuniões</span>
-            </div>
-          </div>
-          <div className="h-64 p-3">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={overview?.timeseries ?? []} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.6} vertical={false} />
-                <XAxis dataKey="day" fontSize={10} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
-                <YAxis fontSize={10} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} width={28} />
-                <RTooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 10, fontSize: 12 }} />
-                <Line type="monotone" dataKey="sales" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} name="Vendas" />
-                <Line type="monotone" dataKey="meetings" stroke="hsl(var(--success))" strokeWidth={2.5} dot={false} name="Reuniões" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <Card className="overflow-hidden p-0">
-          <div className="flex items-center justify-between border-b bg-muted/30 px-5 py-3">
-            <div>
-              <h3 className="font-display text-sm font-semibold">Funil de conversão</h3>
-              <p className="text-[11px] text-muted-foreground">Volume por estágio do pipeline</p>
-            </div>
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-              {convPct}% conv.
-            </span>
-          </div>
-          <div className="h-64 p-3">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={funnelData} layout="vertical" margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.6} horizontal={false} />
-                <XAxis type="number" fontSize={10} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
-                <YAxis type="category" dataKey="stage" fontSize={11} width={96} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
-                <RTooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 10, fontSize: 12 }} />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 8, 8, 0]} barSize={18} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </section>
 
       <PrizesBanner />
 
