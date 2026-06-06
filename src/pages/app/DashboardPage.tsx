@@ -24,6 +24,7 @@ import { EloLadder } from "@/components/gamification/EloLadder";
 import { PublicLeaderboard } from "@/components/gamification/PublicLeaderboard";
 import { MvpOfMonth } from "@/components/gamification/MvpOfMonth";
 import { useRanking, useGamificationConfig } from "@/hooks/useGamification";
+import { WhatsAppHealthAlert } from "@/components/dashboard/WhatsAppHealthAlert";
 
 export default function DashboardPage() {
   const { data: profile } = useMyProfile();
