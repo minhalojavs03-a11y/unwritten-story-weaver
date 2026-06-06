@@ -212,6 +212,7 @@ export default function NiltonLeadsPage() {
                     <th className="px-4 py-3">Formulário</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3">Recebido em</th>
+                    <th className="px-4 py-3 text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
