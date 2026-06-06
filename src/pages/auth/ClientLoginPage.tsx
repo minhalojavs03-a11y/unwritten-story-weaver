@@ -21,10 +21,10 @@ export default function ClientLoginPage() {
     ? `${fromPath}${from?.search ?? ""}`
     : "/crm";
   const { loading: authLoading, session, isSuperadmin, user } = useAuth();
-  // Cadastro desativado: novas contas só por convite. Mantemos o tipo para
-  // compatibilidade do form, mas a UI de signup fica oculta até reativação.
-  const SIGNUP_ENABLED = false;
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const isJoinFlow = !!fromPath?.startsWith("/join/");
+  // Cadastro só é permitido via link de convite (/join/:token). Fora dele a UI fica oculta.
+  const SIGNUP_ENABLED = isJoinFlow;
+  const [mode, setMode] = useState<"signin" | "signup">(isJoinFlow ? "signup" : "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
