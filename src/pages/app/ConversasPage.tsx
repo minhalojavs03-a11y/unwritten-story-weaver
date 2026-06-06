@@ -1104,8 +1104,57 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
               Liberar
             </Button>
           )}
+          {canOverride && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 rounded-full px-3 text-xs"
+                  disabled={assume.isPending}
+                >
+                  Transferir…
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="max-h-80 w-64 overflow-y-auto">
+                <DropdownMenuLabel>Transferir lead para</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {members
+                  .filter((m: any) => m.id !== assignedId && (m.receives_leads ?? true))
+                  .map((m: any) => (
+                    <DropdownMenuItem
+                      key={m.id}
+                      onClick={() => {
+                        assume.mutate(
+                          { leadId: lead.id, memberId: m.id },
+                          {
+                            onSuccess: () => toast({ title: `Lead transferido para ${m.display_name}` }),
+                            onError: (e: any) => toast({ title: "Erro ao transferir", description: e?.message, variant: "destructive" }),
+                          },
+                        );
+                      }}
+                    >
+                      <span
+                        className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold text-white"
+                        style={{ background: m.avatar_color ?? "#1E40AF" }}
+                      >
+                        {m.display_name?.[0]?.toUpperCase() ?? "?"}
+                      </span>
+                      <span className="truncate">{m.display_name}</span>
+                      {m.role_label && (
+                        <span className="ml-auto text-[10px] text-muted-foreground">{m.role_label}</span>
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                {members.filter((m: any) => m.id !== assignedId).length === 0 && (
+                  <DropdownMenuItem disabled>Nenhum consultor disponível</DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
+
 
 
       {showSearch && (
