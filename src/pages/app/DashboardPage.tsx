@@ -177,6 +177,8 @@ export default function DashboardPage() {
           />
         )}
 
+        {privileged && <WhatsAppHealthAlert />}
+
         <section className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
           <StatCard to="/clientes" icon={Users} label="Leads Hoje" value={m?.leadsToday ?? 0} iconColor="bg-emerald-500/10 text-emerald-600" />
           <StatCard to="/conversas" icon={MessageCircle} label="Conversas Ativas" value={m?.activeConversations ?? 0} iconColor="bg-violet-500/10 text-violet-600" />
