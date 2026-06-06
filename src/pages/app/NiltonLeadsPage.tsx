@@ -216,16 +216,17 @@ export default function NiltonLeadsPage() {
                 </thead>
                 <tbody>
                   {leadsQuery.isLoading && (
-                    <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>
+                    <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>
                   )}
                   {!leadsQuery.isLoading && (leadsQuery.data?.rows?.length ?? 0) === 0 && (
-                    <tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">Nenhum lead encontrado.</td></tr>
+                    <tr><td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">Nenhum lead encontrado.</td></tr>
                   )}
                   {leadsQuery.data?.rows?.map((lead) => {
                     const meta = statusMeta(lead.status);
                     return (
                       <tr key={lead.id} onClick={() => setSelected(lead)} className="cursor-pointer border-t hover:bg-muted/30">
                         <td className="px-4 py-3 font-medium">{lead.nome_completo ?? "—"}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{lead.telefone ?? "—"}</td>
                         <td className="px-4 py-3">{lead.carta_value ?? "—"}</td>
                         <td className="px-4 py-3 text-muted-foreground">{lead.campaign_name ?? "—"}</td>
                         <td className="px-4 py-3 text-muted-foreground">{lead.form_name ?? "—"}</td>
