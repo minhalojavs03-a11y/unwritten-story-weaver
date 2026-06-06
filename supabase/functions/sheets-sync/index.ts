@@ -69,20 +69,40 @@ async function sb(path: string, init: RequestInit = {}) {
   });
 }
 
+async function enqueueWelcomeFallback(tenantId: string, leadId: string, phone: string, reason: string) {
+  try {
+    await sb(`/notification_queue`, {
+      method: "POST",
+      body: JSON.stringify({
+        tenant_id: tenantId,
+        lead_id: leadId,
+        type: "welcome",
+        recipient_phone: String(phone || "").replace(/\D/g, "") || null,
+        status: "pending",
+        due_at: new Date(Date.now() + 30_000).toISOString(),
+        last_error: `inline send failed: ${reason}`.slice(0, 300),
+      }),
+    });
+  } catch (e) {
+    console.error("enqueueWelcomeFallback error", e);
+  }
+}
+
 async function sendWelcome(tenantId: string, lead: any) {
   try {
-    // Find the primary connected WhatsApp instance for this tenant
+    if (!lead?.phone) return;
+    // Lista TODAS as instâncias conectadas (mais recente primeiro) e tenta uma a uma.
     const instRes = await sb(
-      `/whatsapp_instances?tenant_id=eq.${tenantId}&is_connected=eq.true&select=id,server_url,instance_token,seller_user_id&order=created_at.asc&limit=1`,
+      `/whatsapp_instances?tenant_id=eq.${tenantId}&or=(is_connected.eq.true,status.eq.connected)&select=id,server_url,instance_token,seller_user_id&order=updated_at.desc`,
     );
-    const [instance] = (await instRes.json()) ?? [];
-    if (!instance?.server_url || !instance?.instance_token) {
+    const all = (await instRes.json()) ?? [];
+    const candidates = (all as any[]).filter((i) => i.server_url && i.instance_token);
+    if (!candidates.length) {
       console.log("welcome skipped: no connected instance", tenantId);
+      await enqueueWelcomeFallback(tenantId, lead.id, lead.phone, "no connected instance");
       return;
     }
-    if (!lead?.phone) return;
 
-    // Tenant name
     const tRes = await sb(`/tenants?id=eq.${tenantId}&select=name`);
     const [tenant] = (await tRes.json()) ?? [];
     const company = tenant?.name || "nossa equipe";
@@ -98,20 +118,37 @@ async function sendWelcome(tenantId: string, lead: any) {
       `Posso te enviar agora as opções de carta e parcela que mais se encaixam no seu perfil?`;
 
     const phoneDigits = String(lead.phone).replace(/\D/g, "");
-
-    // Send via provider
     await randomSendDelay();
-    const r = await fetch(`${instance.server_url.replace(/\/$/, "")}/send/text`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", token: instance.instance_token },
-      body: JSON.stringify({ number: phoneDigits, text, message: text }),
-    });
-    if (!r.ok) {
-      console.error("welcome send failed", r.status, (await r.text()).slice(0, 200));
+
+    let instance: any = null;
+    let lastErr = "";
+    let lastStatus = 0;
+    for (const cand of candidates) {
+      const r = await fetch(`${cand.server_url.replace(/\/$/, "")}/send/text`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", token: cand.instance_token },
+        body: JSON.stringify({ number: phoneDigits, text, message: text }),
+      });
+      if (r.ok) { instance = cand; break; }
+      lastStatus = r.status;
+      lastErr = (await r.text()).slice(0, 300);
+      console.error("welcome send failed", r.status, "instance", cand.id, lastErr);
+      // Sessão morta → marca como desconectada e tenta a próxima.
+      if (r.status === 503 && /not reconnectable|disconnected/i.test(lastErr)) {
+        await sb(`/whatsapp_instances?id=eq.${cand.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ is_connected: false, status: "disconnected", updated_at: new Date().toISOString() }),
+        });
+        continue;
+      }
+      break;
+    }
+    if (!instance) {
+      // Não desistir: enfileira para a fila reprocessar (já com lógica multi-instância).
+      await enqueueWelcomeFallback(tenantId, lead.id, lead.phone, `provider ${lastStatus}: ${lastErr}`);
       return;
     }
 
-    // Update lead instance + last_message_at
     await sb(`/leads?id=eq.${lead.id}`, {
       method: "PATCH",
       body: JSON.stringify({
@@ -120,7 +157,6 @@ async function sendWelcome(tenantId: string, lead: any) {
       }),
     });
 
-    // Ensure conversation
     const cRes = await sb(
       `/conversations?tenant_id=eq.${tenantId}&lead_id=eq.${lead.id}&select=id&limit=1`,
     );
@@ -179,6 +215,7 @@ async function sendWelcome(tenantId: string, lead: any) {
     });
   } catch (e) {
     console.error("sendWelcome error", e);
+    try { await enqueueWelcomeFallback(tenantId, lead.id, lead.phone, String(e)); } catch {}
   }
 }
 
