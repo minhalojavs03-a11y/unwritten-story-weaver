@@ -13,7 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, Search, Inbox, CheckCircle2, Clock, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, RefreshCw, Search, Inbox, CheckCircle2, Clock, XCircle, ChevronLeft, ChevronRight, Phone } from "lucide-react";
 
 type NiltonLead = {
   id: string;
