@@ -9,7 +9,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const SHEET_CSV_URL =
-  "https://docs.google.com/spreadsheets/d/1LCum1mpvVARZddfnep1-CA8MA22vydUk-xrxVZVrYEA/export?format=csv&gid=0";
+  "https://docs.google.com/spreadsheets/d/1mNfWIEfaqp_oZtv6i1tWzhCmFvEaKQGb4EmrX8RG5vY/export?format=csv&gid=0";
 
 // Hard-coded Nilton identity (looked up once via DB; fallback constants used
 // here to keep the function robust even if a profile row is renamed).

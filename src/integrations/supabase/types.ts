@@ -1303,6 +1303,7 @@ export type Database = {
           platform: string | null
           sheet_id: string
           status: string
+          telefone: string | null
           tenant_id: string
           updated_at: string
         }
@@ -1327,6 +1328,7 @@ export type Database = {
           platform?: string | null
           sheet_id: string
           status?: string
+          telefone?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -1351,6 +1353,7 @@ export type Database = {
           platform?: string | null
           sheet_id?: string
           status?: string
+          telefone?: string | null
           tenant_id?: string
           updated_at?: string
         }

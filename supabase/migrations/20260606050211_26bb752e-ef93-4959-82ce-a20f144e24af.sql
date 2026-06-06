@@ -1,0 +1,1 @@
+ALTER TABLE public.nilton_leads ADD COLUMN IF NOT EXISTS telefone text;
