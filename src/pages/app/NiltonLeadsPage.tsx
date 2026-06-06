@@ -206,6 +206,7 @@ export default function NiltonLeadsPage() {
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3">Nome</th>
+                    <th className="px-4 py-3">Telefone</th>
                     <th className="px-4 py-3">Carta (valor)</th>
                     <th className="px-4 py-3">Campanha</th>
                     <th className="px-4 py-3">Formulário</th>
