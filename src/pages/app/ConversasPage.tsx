@@ -1127,10 +1127,15 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
       {/* Área de mensagens */}
       <div ref={messagesScrollRef} className="wa-bg-chat min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 md:px-[8%]">
         {messages.length === 0 && (() => {
+          const src = String((lead as any)?.source || "").toLowerCase();
+          const isAdLead = /meta|ads|anuncio|anúncio|facebook|instagram|sheet/.test(src);
           const isImported =
-            (lead as any)?.imported_from_sheet === true ||
-            (lead as any)?.metadata?.imported_from_history === true ||
-            (lead as any)?.metadata?.imported_from_sheet === true;
+            !isAdLead && (
+              (lead as any)?.imported_from_sheet === true ||
+              (lead as any)?.metadata?.imported_from_history === true ||
+              (lead as any)?.metadata?.imported_from_sheet === true ||
+              src === "excel" || src === "import" || src === "manual"
+            );
           return (
             <div className="mx-auto max-w-sm text-center">
               {isImported ? (

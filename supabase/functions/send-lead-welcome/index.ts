@@ -67,23 +67,10 @@ Deno.serve(async (req) => {
         return json({ ok: true, skipped: "conversation already in progress" });
       }
 
-      // 3) Já existe conversa registrada? pula.
-      const { data: anyConv } = await admin
-        .from("conversations")
-        .select("id")
-        .eq("lead_id", lead_id)
-        .limit(1);
-      if (anyConv && anyConv.length) {
-        await admin.from("lead_notifications").insert({
-          tenant_id: lead.tenant_id,
-          lead_id: lead.id,
-          type: "welcome",
-          recipient_phone: String(lead.phone || "").replace(/\D/g, "") || null,
-          message_sent: "[skipped: conversation already exists]",
-          delivered: true,
-        });
-        return json({ ok: true, skipped: "conversation already exists" });
-      }
+      // 3) NÃO usar "existe conversa" como guarda — `notify-consultant-by-tier`
+      //    pré-cria uma conversa vazia assim que o lead entra, e isso fazia o
+      //    welcome ser silenciosamente pulado. O guard 2 (qualquer mensagem)
+      //    já cobre o caso real de "atendimento já em andamento".
     }
 
     // Pega TODAS as instâncias marcadas como conectadas (mais recente primeiro)
