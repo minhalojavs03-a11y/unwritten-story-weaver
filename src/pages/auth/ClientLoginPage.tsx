@@ -16,12 +16,15 @@ export default function ClientLoginPage() {
   const navigate = useNavigate();
   const LOGIN_GATE_KEY = "feracon.loginGate.passed";
   const from = (location.state as { from?: { pathname?: string; search?: string } } | null)?.from;
-  const fromPath = from?.pathname;
-  const redirectTo = fromPath && clientRoutes.some((path) => fromPath === path || fromPath.startsWith(`${path}/`))
-    ? `${fromPath}${from?.search ?? ""}`
-    : "/crm";
-  const { loading: authLoading, session, isSuperadmin, user } = useAuth();
+  const nextParam = new URLSearchParams(location.search).get("next");
+  const fromPath = from?.pathname ?? (nextParam ?? undefined);
   const isJoinFlow = !!fromPath?.startsWith("/join/");
+  const redirectTo = isJoinFlow
+    ? fromPath!
+    : fromPath && clientRoutes.some((path) => fromPath === path || fromPath.startsWith(`${path}/`))
+      ? `${fromPath}${from?.search ?? ""}`
+      : "/crm";
+  const { loading: authLoading, session, isSuperadmin, user } = useAuth();
   // Cadastro só é permitido via link de convite (/join/:token). Fora dele a UI fica oculta.
   const SIGNUP_ENABLED = isJoinFlow;
   const [mode, setMode] = useState<"signin" | "signup">(isJoinFlow ? "signup" : "signin");
