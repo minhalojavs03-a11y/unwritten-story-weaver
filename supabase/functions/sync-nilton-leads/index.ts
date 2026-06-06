@@ -139,7 +139,8 @@ Deno.serve(async (req) => {
         platform: row[11] ?? null,
         carta_value: row[12] ?? null,
         nome_completo: row[13] ?? null,
-        lead_status: (row[14] ?? "CREATED OK").trim() || "CREATED OK",
+        telefone: (row[14] ?? "").toString().replace(/^p:/i, "").trim() || null,
+        lead_status: (row[15] ?? "CREATED OK").trim() || "CREATED OK",
         tenant_id: niltonTenantId,
         assigned_to: niltonUserId,
       };
