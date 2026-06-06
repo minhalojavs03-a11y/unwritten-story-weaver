@@ -27,6 +27,7 @@ type NiltonLead = {
   is_organic: boolean;
   carta_value: string | null;
   nome_completo: string | null;
+  telefone: string | null;
   lead_status: string | null;
   status: string;
   notes: string | null;
