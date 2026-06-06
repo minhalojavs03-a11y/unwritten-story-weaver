@@ -297,6 +297,7 @@ export default function NiltonLeadsPage() {
                 <SheetDescription>Detalhes do lead Rio Grande do Sul</SheetDescription>
               </SheetHeader>
               <div className="mt-4 space-y-4 text-sm">
+                <Field label="Telefone" value={selected.telefone} />
                 <Field label="Valor da carta" value={selected.carta_value} />
                 <Field label="Campanha" value={selected.campaign_name} />
                 <Field label="Conjunto" value={selected.adset_name} />
