@@ -24,6 +24,7 @@ import { EloLadder } from "@/components/gamification/EloLadder";
 import { PublicLeaderboard } from "@/components/gamification/PublicLeaderboard";
 import { MvpOfMonth } from "@/components/gamification/MvpOfMonth";
 import { useRanking, useGamificationConfig } from "@/hooks/useGamification";
+import { WhatsAppHealthAlert } from "@/components/dashboard/WhatsAppHealthAlert";
 
 export default function DashboardPage() {
   const { data: profile } = useMyProfile();
@@ -175,6 +176,8 @@ export default function DashboardPage() {
             showTenantSelector={isSuperadmin}
           />
         )}
+
+        {privileged && <WhatsAppHealthAlert />}
 
         <section className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
           <StatCard to="/clientes" icon={Users} label="Leads Hoje" value={m?.leadsToday ?? 0} iconColor="bg-emerald-500/10 text-emerald-600" />
