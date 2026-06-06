@@ -217,13 +217,14 @@ export default function NiltonLeadsPage() {
                 </thead>
                 <tbody>
                   {leadsQuery.isLoading && (
-                    <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>
+                    <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>
                   )}
                   {!leadsQuery.isLoading && (leadsQuery.data?.rows?.length ?? 0) === 0 && (
-                    <tr><td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">Nenhum lead encontrado.</td></tr>
+                    <tr><td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">Nenhum lead encontrado.</td></tr>
                   )}
                   {leadsQuery.data?.rows?.map((lead) => {
                     const meta = statusMeta(lead.status);
+                    const canAtender = lead.status === "novo";
                     return (
                       <tr key={lead.id} onClick={() => setSelected(lead)} className="cursor-pointer border-t hover:bg-muted/30">
                         <td className="px-4 py-3 font-medium">{lead.nome_completo ?? "—"}</td>
@@ -233,6 +234,24 @@ export default function NiltonLeadsPage() {
                         <td className="px-4 py-3 text-muted-foreground">{lead.form_name ?? "—"}</td>
                         <td className="px-4 py-3"><Badge variant="outline" className={meta.color}>{meta.label}</Badge></td>
                         <td className="px-4 py-3 text-muted-foreground">{fmtDate(lead.created_time ?? lead.imported_at)}</td>
+                        <td className="px-4 py-3 text-center">
+                          {canAtender && (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              className="gap-1"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                await updateMut.mutateAsync({ id: lead.id, patch: { status: "em_atendimento" } });
+                                toast.success("Lead em atendimento");
+                                setSelected({ ...lead, status: "em_atendimento" });
+                              }}
+                            >
+                              <Phone className="h-3.5 w-3.5" />
+                              Atender
+                            </Button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
