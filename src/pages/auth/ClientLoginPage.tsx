@@ -59,22 +59,39 @@ export default function ClientLoginPage() {
     try {
       if (mode === "signup") {
         const normalizedEmail = email.trim().toLowerCase();
-        const { error: registerError } = await supabase.functions.invoke("register-client", {
-          body: { email: normalizedEmail, password, fullName, tenantName: fullName },
-        });
-        if (registerError) {
-          let message = registerError.message;
-          const response = (registerError as { context?: unknown }).context;
-          if (response instanceof Response) {
-            const body = await response.clone().json().catch(() => null) as { error?: string } | null;
-            message = body?.error ?? message;
+        if (isJoinFlow) {
+          // Cadastro via convite: cria apenas o usuário Auth; o tenant é
+          // atribuído quando JoinPage chama accept_role_invite.
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: normalizedEmail,
+            password,
+            options: {
+              emailRedirectTo: `${window.location.origin}${fromPath ?? "/crm"}`,
+              data: { full_name: fullName },
+            },
+          });
+          if (signUpError) throw signUpError;
+          // Garante sessão imediata (caso confirmação por e-mail esteja desativada).
+          const { error: signInError } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+          if (signInError) throw signInError;
+          toast({ title: "Conta criada", description: "Aceite o convite para entrar na equipe." });
+        } else {
+          const { error: registerError } = await supabase.functions.invoke("register-client", {
+            body: { email: normalizedEmail, password, fullName, tenantName: fullName },
+          });
+          if (registerError) {
+            let message = registerError.message;
+            const response = (registerError as { context?: unknown }).context;
+            if (response instanceof Response) {
+              const body = await response.clone().json().catch(() => null) as { error?: string } | null;
+              message = body?.error ?? message;
+            }
+            throw new Error(message);
           }
-          throw new Error(message);
+          const { error: signInError } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+          if (signInError) throw signInError;
+          toast({ title: "Conta criada", description: "Bem-vindo!" });
         }
-
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
-        if (signInError) throw signInError;
-        toast({ title: "Conta criada", description: "Bem-vindo!" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
         if (error) throw error;
