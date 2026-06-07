@@ -18,10 +18,11 @@ export function WhatsAppStatusPill() {
 
   const targetMemberId = supportContext?.target_member_id ?? member?.id ?? null;
   const targetTenantId = supportContext?.tenant_id ?? tenantId ?? null;
+  const supportName = supportContext?.tenant_name?.trim() ?? null;
 
   const { data } = useQuery({
-    queryKey: ["wa-status-pill", targetTenantId, targetMemberId, user?.id],
-    enabled: !!targetTenantId && (!!targetMemberId || !!user?.id),
+    queryKey: ["wa-status-pill", targetTenantId, targetMemberId, supportName, user?.id],
+    enabled: !!targetTenantId && (!!targetMemberId || !!supportName || !!user?.id),
     refetchInterval: 60_000,
     staleTime: 30_000,
     queryFn: async () => {
@@ -34,6 +35,15 @@ export function WhatsAppStatusPill() {
           .from("tenant_members")
           .select("user_id")
           .eq("id", targetMemberId)
+          .maybeSingle();
+        targetUserId = (tm as { user_id?: string | null } | null)?.user_id ?? null;
+      }
+      if (!targetUserId && supportContext?.tenant_id && supportName) {
+        const { data: tm } = await supabase
+          .from("tenant_members")
+          .select("user_id")
+          .eq("tenant_id", supportContext.tenant_id)
+          .or(`display_name.eq.${supportName},username.eq.${supportName}`)
           .maybeSingle();
         targetUserId = (tm as { user_id?: string | null } | null)?.user_id ?? null;
       }
