@@ -42,8 +42,10 @@ export default function DashboardPage() {
   // dashboard fica preso ao tenant_member alvo (ex.: Micaelly), do contrário
   // o painel apareceria zerado porque o filtro global some no superadmin.
   const impersonatedMemberId = supportContext?.target_member_id ?? null;
+  // Em modo suporte, o alvo da impersonação SEMPRE vence (evita que um
+  // member ativo legado — ex.: o próprio superadmin Arley — vaze para o RPC).
   // Para consultor comum, o escopo é fixo nele mesmo.
-  const effectiveMemberId = consultantScopeMemberId ?? impersonatedMemberId ?? scope.memberId;
+  const effectiveMemberId = impersonatedMemberId ?? consultantScopeMemberId ?? scope.memberId;
   // tenantId: undefined = padrão (auth tenant ou global p/ superadmin); null = global; string = tenant
   const effectiveTenantOverride: string | null | undefined = supportContext?.tenant_id
     ? supportContext.tenant_id
