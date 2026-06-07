@@ -74,6 +74,7 @@ const App = () => (
       <Sonner />
       <InstallPrompt />
       <BrowserRouter>
+        <ScrollToTop />
         <AuthProvider>
           <ActiveMemberProvider>
             <ErrorBoundary>
