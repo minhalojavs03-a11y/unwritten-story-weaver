@@ -1,0 +1,2 @@
+DELETE FROM public.messages WHERE body ILIKE '%TESTE — Disparo do número oficial Feracon%';
+UPDATE public.conversations SET last_message_preview = NULL WHERE last_message_preview ILIKE '%TESTE — Disparo do número oficial Feracon%';
