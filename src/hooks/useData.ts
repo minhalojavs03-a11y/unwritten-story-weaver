@@ -537,9 +537,10 @@ export function useTenantMembers(overrideTenantId?: string | null) {
   const { tenantId: authTenantId } = useAuth();
   const { isOwner, isSuperadmin } = useAuth();
   const { member } = useActiveMember();
-  const tenantId = overrideTenantId !== undefined ? overrideTenantId : authTenantId;
+  const effectiveUser = useEffectiveUser();
+  const tenantId = overrideTenantId !== undefined ? overrideTenantId : (effectiveUser.isImpersonating ? effectiveUser.tenantId : authTenantId);
   return useQuery({
-    queryKey: ["tenant_members_public", tenantId],
+    queryKey: ["tenant_members_public", tenantId, effectiveUser.isImpersonating ? effectiveUser.memberId : "auth"],
     enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("list_tenant_members_public", { _tenant_id: tenantId! });
@@ -548,9 +549,14 @@ export function useTenantMembers(overrideTenantId?: string | null) {
       const rows = ((data ?? []) as Row[]).filter((r) => !isHiddenFeraconPerson(r));
       const memberRole = (member?.role_label || "").toLowerCase();
       const memberPrivileged = /dono|owner|propriet|supervisor/.test(memberRole);
-      const canSeeAll = isSuperadmin || (isOwner && memberPrivileged) || memberPrivileged;
+      const supportRole = (effectiveUser.role ?? "").toLowerCase();
+      const supportPrivileged = ["owner", "supervisor", "superadmin"].includes(supportRole);
+      const canSeeAll = effectiveUser.isImpersonating
+        ? supportPrivileged
+        : isSuperadmin || (isOwner && memberPrivileged) || memberPrivileged;
       if (canSeeAll) return rows;
-      return rows.map((r) => (r.id === member?.id ? r : { ...r, phone: null, bio: null }));
+      const visibleMemberId = effectiveUser.isImpersonating ? effectiveUser.memberId : member?.id;
+      return rows.map((r) => (r.id === visibleMemberId ? r : { ...r, phone: null, bio: null }));
     },
   });
 }
