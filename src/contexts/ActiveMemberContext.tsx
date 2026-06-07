@@ -28,9 +28,40 @@ const ActiveMemberCtx = createContext<Ctx>({
   clearMember: () => {},
 });
 
+type ImpersonationCtx = {
+  target_member_id?: string | null;
+  target_name?: string | null;
+  tenant_name?: string | null;
+  target_role?: string | null;
+  target_email?: string | null;
+};
+
+function readImpersonation(): ImpersonationCtx | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem("impersonation_context");
+    return raw ? (JSON.parse(raw) as ImpersonationCtx) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function ActiveMemberProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [member, setMemberState] = useState<ActiveMember | null>(null);
+  const [impersonationTick, setImpersonationTick] = useState(0);
+
+  // Reage a mudanças no impersonation_context para refazer o auto-bind.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const tick = () => setImpersonationTick((n) => n + 1);
+    window.addEventListener("storage", tick);
+    window.addEventListener("feracon:impersonation", tick);
+    return () => {
+      window.removeEventListener("storage", tick);
+      window.removeEventListener("feracon:impersonation", tick);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -42,6 +73,30 @@ export function ActiveMemberProvider({ children }: { children: ReactNode }) {
     }
     let cancelled = false;
     (async () => {
+      // Em modo suporte, o alvo da impersonação SEMPRE vence sobre o member
+      // do superadmin armazenado no localStorage. Isso garante que qualquer
+      // página que use `useActiveMember()` (Dashboard, Conversas, Relatórios,
+      // etc.) enxergue o consultor que está sendo visualizado, não o admin.
+      const imp = readImpersonation();
+      if (imp?.target_member_id) {
+        const { data } = await supabase
+          .from("tenant_members")
+          .select("id,username,display_name,role_label,avatar_color")
+          .eq("id", imp.target_member_id)
+          .maybeSingle();
+        if (cancelled) return;
+        if (data) {
+          setMemberState({
+            id: data.id,
+            username: data.username ?? "",
+            display_name: data.display_name ?? imp.target_name ?? "",
+            role_label: data.role_label ?? imp.target_role ?? null,
+            avatar_color: data.avatar_color ?? null,
+          });
+          return;
+        }
+      }
+
       const key = storageKey(user.id);
       try {
         // localStorage (dispositivo confiável) tem precedência sobre sessionStorage
@@ -91,7 +146,7 @@ export function ActiveMemberProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user?.id, impersonationTick]);
 
   // Em SIGNED_OUT só limpamos o estado em memória; mantemos o registro no
   // localStorage para que, ao logar novamente com o mesmo usuário (ex.: após
