@@ -131,8 +131,8 @@ export default function ClientLoginPage() {
       <section className="relative flex flex-1 items-start justify-center px-4 pb-6 pt-5 sm:p-10 lg:items-center lg:p-16">
         <div className="relative z-10 w-full max-w-sm">
 
-          <div className="mb-4 flex flex-col items-start sm:mb-8">
-            <img src={logoFeracon} alt="Consórcio Feracon" className="mb-3 h-14 w-auto object-contain sm:mb-5 sm:h-20" />
+          <div className="mb-3 flex flex-col items-start sm:mb-8">
+            <img src={logoFeracon} alt="Consórcio Feracon" className="mb-2 h-12 w-auto object-contain sm:mb-5 sm:h-20" />
             <p className="mt-1 text-sm text-slate-500">
 
               {session
