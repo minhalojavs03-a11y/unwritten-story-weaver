@@ -31,6 +31,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const memberId: string | undefined = body?.member_id;
     const targetPhoneRaw: string | undefined = body?.phone;
+    const all: boolean = body?.all === true;
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
