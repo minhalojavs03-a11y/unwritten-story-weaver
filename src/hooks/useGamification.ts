@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { isHiddenFeraconPerson } from "@/lib/feracon";
+import { useEffectiveUser } from "@/hooks/useEffectiveUser";
 
 export type Period = "daily" | "weekly" | "monthly" | "all";
 
@@ -123,7 +124,8 @@ export function useRanking(period: Period = "monthly") {
 export function useMyGamificationSummary(period: Period = "monthly") {
   const { user } = useAuth();
   const { member } = useActiveMember();
-  const memberId = member?.id ?? user?.id;
+  const effectiveUser = useEffectiveUser();
+  const memberId = effectiveUser.isImpersonating ? effectiveUser.memberId : (member?.id ?? user?.id);
   return useQuery<MemberSummary | null>({
     queryKey: ["gamification_member_summary", memberId, period],
     enabled: !!memberId,
