@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
+import { useEffectiveUser } from "@/hooks/useEffectiveUser";
 import { isHiddenFeraconPerson } from "@/lib/feracon";
 
 const realtimeChannelName = (scope: string, id: string) =>
@@ -104,23 +105,26 @@ async function callWhatsAppManage(body: Record<string, unknown>, accessToken: st
 // opts.memberId: filtra por assigned_member_id (uso por owner/supervisor).
 export function useLeads(opts?: { kind?: "lead" | "outros" | "all"; tenantId?: string | null; memberId?: string | null }) {
   const { tenantId: authTenantId, isSuperadmin } = useAuth();
+  const effectiveUser = useEffectiveUser();
   const qc = useQueryClient();
   const kind = opts?.kind ?? "lead";
   const overrideTenant = opts && "tenantId" in opts ? opts.tenantId : undefined;
   const effectiveTenant = overrideTenant === undefined
-    ? (isSuperadmin ? null : authTenantId)
+    ? (effectiveUser.isImpersonating ? effectiveUser.tenantId : (isSuperadmin ? null : authTenantId))
     : overrideTenant;
   const globalScope = effectiveTenant === null;
-  const memberId = opts?.memberId ?? null;
+  const memberId = opts?.memberId ?? (effectiveUser.isImpersonating ? effectiveUser.memberId : null);
+  const targetUserId = effectiveUser.isImpersonating ? effectiveUser.id : null;
 
   const q = useQuery({
-    queryKey: ["leads", globalScope ? "__all__" : effectiveTenant, kind, memberId ?? "all"],
+    queryKey: ["leads", globalScope ? "__all__" : effectiveTenant, kind, memberId ?? "all", targetUserId ?? "no-user"],
     enabled: globalScope || !!effectiveTenant,
     queryFn: async () => {
       let query = supabase.from("leads").select("*").order("created_at", { ascending: false }).limit(2000);
       if (!globalScope) query = query.eq("tenant_id", effectiveTenant!);
       if (kind !== "all") query = query.eq("kind", kind);
-      if (memberId) query = query.eq("assigned_member_id", memberId);
+      if (memberId && targetUserId) query = query.or(`assigned_member_id.eq.${memberId},assigned_to.eq.${targetUserId}`);
+      else if (memberId) query = query.eq("assigned_member_id", memberId);
       const { data, error } = await query;
       if (error) throw error;
       return (data ?? []) as Tables<"leads">[];
@@ -180,15 +184,14 @@ export function useCreateLead() {
 // ============= CONVERSATIONS + MESSAGES =============
 export function useConversations(opts?: { kind?: "lead" | "outros" | "all" }) {
   const { tenantId, isSuperadmin } = useAuth();
-  // Em modo suporte (impersonação), o superadmin deve enxergar apenas as
-  // conversas do tenant que está visualizando — não todas as conversas globais.
-  const impersonating = typeof window !== "undefined" && !!window.localStorage.getItem("impersonation_context");
-  const scopeAll = isSuperadmin && !impersonating;
+  const effectiveUser = useEffectiveUser();
+  const effectiveTenant = effectiveUser.isImpersonating ? effectiveUser.tenantId : tenantId;
+  const scopeAll = isSuperadmin && !effectiveUser.isImpersonating;
   const kind = opts?.kind ?? "lead";
   const qc = useQueryClient();
   const q = useQuery({
-    queryKey: ["conversations", scopeAll ? "__all__" : tenantId, kind],
-    enabled: !!tenantId || scopeAll,
+    queryKey: ["conversations", scopeAll ? "__all__" : effectiveTenant, kind, effectiveUser.memberId ?? "all", effectiveUser.id ?? "no-user"],
+    enabled: !!effectiveTenant || scopeAll,
     queryFn: async () => {
       // Inner join garante que o filtro por lead.kind é aplicado no banco,
       // não na UI, mantendo "outros" fora das métricas.
@@ -200,23 +203,26 @@ export function useConversations(opts?: { kind?: "lead" | "outros" | "all" }) {
         .select(selectClause)
         .order("last_message_at", { ascending: false, nullsFirst: false })
         .limit(500);
-      if (!scopeAll) query = query.eq("tenant_id", tenantId!);
+      if (!scopeAll) query = query.eq("tenant_id", effectiveTenant!);
       if (kind !== "all") query = query.eq("lead.kind", kind);
       const { data, error } = await query;
       if (error) throw error;
+      if (effectiveUser.isImpersonating && effectiveUser.memberId) {
+        return (data ?? []).filter((c: any) => c.lead?.assigned_member_id === effectiveUser.memberId || c.lead?.assigned_to === effectiveUser.id);
+      }
       return data ?? [];
     },
   });
   useEffect(() => {
-    if (!tenantId && !scopeAll) return;
+    if (!effectiveTenant && !scopeAll) return;
     const ch = supabase
-      .channel(realtimeChannelName("conv-changes", tenantId ?? "all"))
+      .channel(realtimeChannelName("conv-changes", effectiveTenant ?? "all"))
       .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, () =>
         qc.invalidateQueries({ queryKey: ["conversations"] })
       )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [tenantId, scopeAll, qc]);
+  }, [effectiveTenant, scopeAll, qc]);
   return q;
 }
 
