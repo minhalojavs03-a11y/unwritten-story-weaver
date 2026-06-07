@@ -40,6 +40,32 @@ export default function CoachingPage() {
     enabled: canViewAll || !!member?.id,
   });
   const qc = useQueryClient();
+  const autoRanRef = useRef(false);
+
+  useEffect(() => {
+    if (autoRanRef.current) return;
+    if (!(canViewAll || !!member?.id)) return;
+    autoRanRef.current = true;
+    (async () => {
+      setBackfilling(true);
+      try {
+        const res = await runCoachingBackfill(30, false);
+        const queued = res.queued ?? 0;
+        if (queued > 0) {
+          const refresh = () => {
+            qc.invalidateQueries({ queryKey: ["coaching_insights"] });
+            qc.invalidateQueries({ queryKey: ["coaching_by_member"] });
+          };
+          [5000, 15000, 30000, 60000, 120000].forEach(ms => setTimeout(refresh, ms));
+        }
+      } catch (e) {
+        // silencioso: análise automática não deve incomodar
+        console.warn("[coaching] auto-backfill falhou", e);
+      } finally {
+        setBackfilling(false);
+      }
+    })();
+  }, [canViewAll, member?.id, qc]);
 
   async function handleBackfill(force = false) {
     if (force && !window.confirm("Isso vai apagar os alertas atuais (não tratados) dos últimos 30 dias e rodar a análise novamente já considerando áudio transcrito e simulações. Continuar?")) {
