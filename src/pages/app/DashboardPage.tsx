@@ -17,6 +17,7 @@ import { useReportData } from "@/hooks/useReportData";
 import { HealthScore, InsightsPanel, PipelineIntel, WeeklyActivity, ResponseHeatmap } from "@/components/dashboard/ExecutiveWidgets";
 import { WeekComparison } from "@/components/dashboard/WeekComparison";
 import { CoachingPanel } from "@/components/dashboard/CoachingPanel";
+import { MyCoachingPanel } from "@/components/dashboard/MyCoachingPanel";
 import { DashboardScopeFilter, type DashboardScope } from "@/components/dashboard/DashboardScopeFilter";
 import { RankCard } from "@/components/gamification/RankCard";
 import { PrizesBanner } from "@/components/gamification/PrizesBanner";
@@ -213,6 +214,8 @@ export default function DashboardPage() {
         </section>
 
         <MvpOfMonth rows={ranking} highlightMemberId={member?.id ?? null} />
+
+        {!privileged && member?.id && <MyCoachingPanel memberId={member.id} days={30} />}
 
         {!privileged && <EloLadder variant="full" asLink />}
         {!privileged && <PrizesBanner compact />}
