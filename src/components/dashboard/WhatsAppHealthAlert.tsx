@@ -90,92 +90,90 @@ export function WhatsAppHealthAlert() {
 
   return (
     <section
-      className={`rounded-2xl border p-4 md:p-5 ${
+      className={`rounded-xl border px-3 py-2.5 md:px-4 md:py-3 ${
         hasIssues
           ? "border-rose-500/30 bg-rose-500/5"
           : "border-emerald-500/30 bg-emerald-500/5"
       }`}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2.5">
           <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
               hasIssues ? "bg-rose-500/15 text-rose-600" : "bg-emerald-500/15 text-emerald-600"
             }`}
           >
-            {hasIssues ? <AlertTriangle className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
+            {hasIssues ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
           </div>
-          <div className="min-w-0">
-            <h2 className="font-display text-base font-semibold tracking-tight md:text-lg">
-              {hasIssues
-                ? `${disconnected.length} WhatsApp${disconnected.length > 1 ? "s" : ""} desconectado${
-                    disconnected.length > 1 ? "s" : ""
-                  } na equipe`
-                : "Todos os WhatsApp da equipe estão conectados"}
-            </h2>
-            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted-foreground md:text-sm">
-              O CRM da Feracon foi projetado para operar com o WhatsApp de cada consultor conectado
-              o tempo todo. Quando um número fica fora do ar, o sistema não consegue receber
-              respostas, distribuir leads, registrar conversas, classificar temperatura, disparar
-              automações e tampouco notificar a equipe. <strong>Grande parte dos feedbacks de
-              "falha no sistema" vem exatamente de instâncias desconectadas</strong> — não de bug
-              no software. Reconectar é prioridade máxima.
-            </p>
-          </div>
+          <h2 className="truncate font-display text-sm font-semibold tracking-tight md:text-base">
+            {hasIssues
+              ? `${disconnected.length} WhatsApp${disconnected.length > 1 ? "s" : ""} desconectado${
+                  disconnected.length > 1 ? "s" : ""
+                } · ${connected.length} ok`
+              : `Todos os ${connected.length} WhatsApp conectados`}
+          </h2>
         </div>
-        {hasIssues && (
-          <button
-            type="button"
-            onClick={handleNotify}
-            disabled={sending}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-rose-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:opacity-60 md:text-sm"
-          >
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            Avisar Ediane e Antonio
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {hasIssues && (
+            <details className="group text-xs">
+              <summary className="cursor-pointer list-none text-muted-foreground hover:text-foreground">
+                por que importa?
+              </summary>
+              <p className="mt-2 max-w-3xl text-xs leading-relaxed text-muted-foreground">
+                O CRM opera com o WhatsApp de cada consultor conectado. Quando um número cai, o sistema
+                não recebe respostas, distribui leads ou registra conversas.{" "}
+                <strong>Boa parte dos "falha no sistema" é instância desconectada</strong> — reconectar é prioridade.
+              </p>
+            </details>
+          )}
+          {hasIssues && (
+            <button
+              type="button"
+              onClick={handleNotify}
+              disabled={sending}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:opacity-60"
+            >
+              {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+              Avisar Ediane e Antonio
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <div className="rounded-xl border border-rose-500/20 bg-background/40 p-3">
-          <div className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-rose-600">
-            <XCircle className="h-3.5 w-3.5" /> Desconectados ({disconnected.length})
-          </div>
-          {disconnected.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Nenhum 🎉</p>
-          ) : (
-            <ul className="space-y-1.5">
+      {hasIssues && (
+        <div className="mt-2.5 grid gap-2 md:grid-cols-2">
+          <div className="rounded-lg border border-rose-500/20 bg-background/40 px-2.5 py-2">
+            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-rose-600">
+              <XCircle className="h-3 w-3" /> Desconectados ({disconnected.length})
+            </div>
+            <ul className="space-y-0.5">
               {disconnected.map((i) => (
-                <li key={i.id} className="flex items-center justify-between gap-2 text-sm">
+                <li key={i.id} className="flex items-center justify-between gap-2 text-xs">
                   <span className="truncate font-medium">{consultantName(i)}</span>
-                  <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
                     {i.phone_number || "sem número"}
                   </span>
                 </li>
               ))}
             </ul>
-          )}
-        </div>
-        <div className="rounded-xl border border-emerald-500/20 bg-background/40 p-3">
-          <div className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-600">
-            <CheckCircle2 className="h-3.5 w-3.5" /> Conectados ({connected.length})
           </div>
-          {connected.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Nenhum WhatsApp conectado.</p>
-          ) : (
-            <ul className="space-y-1.5">
+          <div className="rounded-lg border border-emerald-500/20 bg-background/40 px-2.5 py-2">
+            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-600">
+              <CheckCircle2 className="h-3 w-3" /> Conectados ({connected.length})
+            </div>
+            <ul className="grid grid-cols-1 gap-x-3 gap-y-0.5 sm:grid-cols-2">
               {connected.map((i) => (
-                <li key={i.id} className="flex items-center justify-between gap-2 text-sm">
+                <li key={i.id} className="flex items-center justify-between gap-2 text-xs">
                   <span className="truncate font-medium">{consultantName(i)}</span>
-                  <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
                     {i.phone_number || "—"}
                   </span>
                 </li>
               ))}
             </ul>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }
