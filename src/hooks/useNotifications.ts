@@ -70,15 +70,24 @@ function setLastSeen(key: string, iso: string) {
 }
 
 export function useNotifications() {
-  const { tenantId, roles } = useAuth();
+  const { tenantId: authTenantId, roles } = useAuth();
   const { member } = useActiveMember();
+  const effective = useEffectiveUser();
+  const tenantId = effective.isImpersonating ? effective.tenantId : authTenantId;
   const [items, setItems] = useState<NotificationItem[]>([]);
 
   const privileged = useMemo(
-    () => isPrivileged(member?.role_label, member?.username, roles as string[], !!member),
-    [member, roles]
+    () => {
+      // Em modo suporte, herda o nível de privilégio do alvo (não do superadmin).
+      if (effective.isImpersonating) {
+        const r = (effective.role ?? "").toLowerCase();
+        return ["owner", "supervisor", "superadmin"].includes(r);
+      }
+      return isPrivileged(member?.role_label, member?.username, roles as string[], !!member);
+    },
+    [effective.isImpersonating, effective.role, member, roles]
   );
-  const memberId = member?.id ?? null;
+  const memberId = effective.isImpersonating ? effective.memberId : (member?.id ?? null);
   const key = tenantId ? scopeKey(tenantId, privileged ? null : memberId) : "";
 
   useEffect(() => {
