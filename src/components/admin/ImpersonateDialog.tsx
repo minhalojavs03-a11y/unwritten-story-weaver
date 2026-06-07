@@ -73,6 +73,11 @@ export function ImpersonateDialog({ open, onOpenChange }: Props) {
     setBusyId(m.id);
     try {
       const targetRole = inferTargetRole(m.role_label);
+      const { data: targetMember } = await supabase
+        .from("tenant_members")
+        .select("user_id,email,display_name,username")
+        .eq("id", m.id)
+        .maybeSingle();
 
       // Limpa qualquer active member anterior para não vazar contexto
       try {
@@ -99,6 +104,9 @@ export function ImpersonateDialog({ open, onOpenChange }: Props) {
           previous_tenant_id: null,
           target_role: targetRole,
           target_member_id: m.id,
+          target_user_id: targetMember?.user_id ?? null,
+          target_name: targetMember?.display_name ?? m.display_name ?? m.username ?? "Usuário",
+          target_email: targetMember?.email ?? null,
         }),
       );
 
