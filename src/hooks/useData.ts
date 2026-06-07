@@ -66,9 +66,11 @@ async function callWhatsAppManageOnce(body: Record<string, unknown>, accessToken
     headers: { Authorization: `Bearer ${accessToken}` },
     body,
   });
-  if (error || (data as any)?.error) {
-    const ctxStatus = (error as any)?.context?.status;
-    const payloadErr = (data as any)?.error as string | undefined;
+  const invokePayload = data as { error?: string } | null;
+  const invokeError = error as { context?: { status?: number } } | null;
+  if (error || invokePayload?.error) {
+    const ctxStatus = invokeError?.context?.status;
+    const payloadErr = invokePayload?.error;
     if (ctxStatus === 401 || /unauthorized/i.test(payloadErr ?? "")) throw new Error("unauthorized");
     const msg = payloadErr || await getFunctionErrorMessage(error, "Falha ao enviar pelo WhatsApp");
     throw new Error(msg);
@@ -208,7 +210,8 @@ export function useConversations(opts?: { kind?: "lead" | "outros" | "all" }) {
       const { data, error } = await query;
       if (error) throw error;
       if (effectiveUser.isImpersonating && effectiveUser.memberId) {
-        return (data ?? []).filter((c: any) => c.lead?.assigned_member_id === effectiveUser.memberId || c.lead?.assigned_to === effectiveUser.id);
+        type ConversationWithLead = { lead?: { assigned_member_id?: string | null; assigned_to?: string | null } | null };
+        return ((data ?? []) as ConversationWithLead[]).filter((c) => c.lead?.assigned_member_id === effectiveUser.memberId || c.lead?.assigned_to === effectiveUser.id);
       }
       return data ?? [];
     },
@@ -251,9 +254,9 @@ export function useMessages(
             .from("leads")
             .select("id, phone")
             .eq("tenant_id", tenantId);
-          const matched = (siblings ?? [])
-            .filter((l: any) => (l.phone ?? "").replace(/\D/g, "") === digits)
-            .map((l: any) => l.id as string);
+          const matched = ((siblings ?? []) as Array<{ id: string; phone: string | null }>)
+            .filter((l) => (l.phone ?? "").replace(/\D/g, "") === digits)
+            .map((l) => l.id);
           leadIds = Array.from(new Set([...leadIds, ...matched]));
         }
       }
