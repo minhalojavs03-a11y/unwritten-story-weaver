@@ -23,6 +23,7 @@ import { WhatsAppDisconnectBanner } from "@/components/layout/WhatsAppDisconnect
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { ImpersonateDialog } from "@/components/admin/ImpersonateDialog";
 import { NotificationsBell } from "@/components/layout/NotificationsBell";
+import { WhatsAppStatusPill } from "@/components/layout/WhatsAppStatusPill";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -357,7 +358,8 @@ export function AppLayout() {
             </Sheet>
             <img src={logoFeraconDark} alt="Consórcio Feracon" className="h-9 w-auto cursor-pointer object-contain" onClick={() => navigate("/crm")} />
           </div>
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1.5">
+            <WhatsAppStatusPill />
             <NotificationsBell />
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-2 rounded-full p-0.5 outline-none ring-offset-2 transition-shadow hover:ring-2 hover:ring-primary/30 focus-visible:ring-2 focus-visible:ring-primary">
