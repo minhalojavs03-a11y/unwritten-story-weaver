@@ -151,8 +151,8 @@ export default function DashboardPage() {
   return (
     <>
       <div className="grid grid-cols-1 items-start gap-4 pl-7 pr-4 pt-1 pb-2 md:grid-cols-2 md:pl-8 md:pr-8 md:pt-2 md:pb-3">
-        <div className="min-w-0 flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
-          <div className="min-w-0 flex-1 order-2 md:order-1">
+        <div className="min-w-0 flex items-start justify-between gap-3 md:block">
+          <div className="min-w-0 flex-1">
             <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600 ring-1 ring-emerald-500/20">
               <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
               Painel ao vivo
@@ -163,24 +163,25 @@ export default function DashboardPage() {
             <p className="mt-1 text-xs text-muted-foreground md:text-sm">{dataCap}</p>
           </div>
           {!privileged && (
-            <>
-              {/* Mobile: minimal, discreet inline elo */}
-              <div className="order-1 self-end md:hidden">
-                <RankCard variant="minimal" asLink />
-              </div>
-              {/* Desktop: compact card */}
-              <div className="hidden md:block ml-auto shrink-0 w-[260px] md:w-[300px]">
-                <RankCard variant="compact" asLink className="w-full" />
-              </div>
-            </>
+            /* Mobile: minimal, discreet inline elo */
+            <div className="shrink-0 self-start md:hidden">
+              <RankCard variant="minimal" asLink />
+            </div>
           )}
         </div>
+        {!privileged && (
+          /* Desktop: compact card in right column */
+          <div className="hidden md:block min-w-0 ml-auto w-full max-w-[300px]">
+            <RankCard variant="compact" asLink className="w-full" />
+          </div>
+        )}
         {privileged && (
           <div className="min-w-0">
             <WhatsAppHealthAlert />
           </div>
         )}
       </div>
+
 
       <div className="space-y-4 px-4 pb-6 md:space-y-5 md:px-8 md:pb-8">
 
