@@ -2336,7 +2336,9 @@ export type Database = {
         Args: { _name: string; _plan?: string; _slug?: string }
         Returns: string
       }
-      assume_lead: { Args: { _lead_id: string }; Returns: undefined }
+      assume_lead:
+        | { Args: { _lead_id: string }; Returns: undefined }
+        | { Args: { _lead_id: string; _member_id: string }; Returns: undefined }
       check_username_available: {
         Args: { _username: string }
         Returns: boolean
@@ -2409,6 +2411,16 @@ export type Database = {
           role_label: string
           sales: number
           stalled_leads: number
+        }[]
+      }
+      get_dashboard_metrics_v2: {
+        Args: { _member_id?: string; _tenant_id?: string }
+        Returns: {
+          active_conversations: number
+          appointments_today: number
+          awaiting_response: number
+          hot_opportunities: number
+          leads_today: number
         }[]
       }
       get_invite_by_token: {
@@ -2511,7 +2523,12 @@ export type Database = {
       normalize_phone: { Args: { _phone: string }; Returns: string }
       reclassify_leads: { Args: { _tenant?: string }; Returns: number }
       regenerate_role_invite: { Args: { _id: string }; Returns: string }
-      release_lead: { Args: { _lead_id: string }; Returns: undefined }
+      release_lead:
+        | { Args: { _lead_id: string }; Returns: undefined }
+        | {
+            Args: { _lead_id: string; _member_id?: string }
+            Returns: undefined
+          }
       set_ai_pre_attendance: {
         Args: { _enabled: boolean; _lead_id: string }
         Returns: undefined
