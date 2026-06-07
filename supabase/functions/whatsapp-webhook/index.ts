@@ -1048,14 +1048,16 @@ Deno.serve(async (req: Request) => {
       if (upd) lead = upd;
     }
 
-    let { data: conv } = await admin
+    const { data: convRows } = await admin
       .from("conversations")
       .select("*")
       .eq("lead_id", lead!.id)
       .eq("whatsapp_instance_id", instance.id)
-      .maybeSingle();
+      .order("created_at", { ascending: true })
+      .limit(1);
+    let conv: any = convRows?.[0] ?? null;
     if (!conv) {
-      const { data: createdConv } = await admin.from("conversations").insert({
+      const { data: createdConv, error: insertConvErr } = await admin.from("conversations").insert({
         tenant_id: instance.tenant_id,
         lead_id: lead!.id,
         whatsapp_instance_id: instance.id,
@@ -1063,7 +1065,18 @@ Deno.serve(async (req: Request) => {
         last_message_at: new Date().toISOString(),
         unread_count: 1,
       }).select("*").single();
-      conv = createdConv;
+      if (insertConvErr && insertConvErr.code === "23505") {
+        const { data: existingRows } = await admin
+          .from("conversations")
+          .select("*")
+          .eq("lead_id", lead!.id)
+          .eq("whatsapp_instance_id", instance.id)
+          .order("created_at", { ascending: true })
+          .limit(1);
+        conv = existingRows?.[0] ?? null;
+      } else {
+        conv = createdConv;
+      }
     } else {
       await admin.from("conversations").update({
         last_message_preview: text.slice(0, 120),
