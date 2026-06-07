@@ -10,6 +10,33 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Único número autorizado a ENVIAR mensagens em nome da empresa (47 9235-2804).
+// Todas as mensagens automáticas (pré-atendimento, welcome, follow-ups) saem por aqui.
+const COMPANY_PHONE_DIGITS = "4792352804";
+
+async function pickCompanyInstance(admin: any, tenantId: string) {
+  const { data: principal } = await admin
+    .from("whatsapp_instances")
+    .select("id,server_url,instance_token,phone_number,is_connected,status,updated_at")
+    .eq("tenant_id", tenantId)
+    .or("is_connected.eq.true,status.eq.connected")
+    .ilike("phone_number", `%${COMPANY_PHONE_DIGITS}%`)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (principal?.server_url && principal?.instance_token) return principal;
+  // Fallback (apenas se o número principal estiver fora do ar)
+  const { data: any_ } = await admin
+    .from("whatsapp_instances")
+    .select("id,server_url,instance_token,phone_number,is_connected,status,updated_at")
+    .eq("tenant_id", tenantId)
+    .or("is_connected.eq.true,status.eq.connected")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return any_;
+}
+
 // === MODO ESTABILIDADE: delay aleatório antes de cada envio (remover quando voltar ao normal).
 async function randomSendDelay(): Promise<void> {
   let ms = 5000 + Math.floor(Math.random() * 55000);
