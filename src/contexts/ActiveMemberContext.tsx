@@ -40,14 +40,57 @@ export function ActiveMemberProvider({ children }: { children: ReactNode }) {
       setMemberState(null);
       return;
     }
-    try {
+    let cancelled = false;
+    (async () => {
       const key = storageKey(user.id);
-      // localStorage (dispositivo confiável) tem precedência sobre sessionStorage
-      const raw = localStorage.getItem(key) ?? sessionStorage.getItem(key);
-      setMemberState(raw ? (JSON.parse(raw) as ActiveMember) : null);
-    } catch {
-      setMemberState(null);
-    }
+      try {
+        // localStorage (dispositivo confiável) tem precedência sobre sessionStorage
+        const raw = localStorage.getItem(key) ?? sessionStorage.getItem(key);
+        if (raw) {
+          if (!cancelled) setMemberState(JSON.parse(raw) as ActiveMember);
+          return;
+        }
+      } catch {
+        /* fallthrough para auto-bind */
+      }
+
+      // Auto-bind: se o usuário autenticado já tem um tenant_member na Feracon,
+      // assumimos esse perfil sem exigir seleção manual. Evita o estado
+      // "Selecione seu perfil no topo" para consultores.
+      try {
+        const { data } = await supabase
+          .from("tenant_members")
+          .select("id,username,display_name,role_label,avatar_color")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (cancelled) return;
+        if (data) {
+          const m: ActiveMember = {
+            id: data.id,
+            username: data.username ?? "",
+            display_name: data.display_name ?? "",
+            role_label: data.role_label ?? null,
+            avatar_color: data.avatar_color ?? null,
+          };
+          try {
+            localStorage.setItem(key, JSON.stringify(m));
+          } catch {
+            /* ignore storage errors */
+          }
+          setMemberState(m);
+        } else {
+          setMemberState(null);
+        }
+      } catch {
+        if (!cancelled) setMemberState(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   // Em SIGNED_OUT só limpamos o estado em memória; mantemos o registro no
