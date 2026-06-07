@@ -87,15 +87,8 @@ Deno.serve(async (req) => {
     const disconnected = enriched.filter((i) => !i.connected);
     const connected = enriched.filter((i) => i.connected);
 
-    // Escolhe uma instância CONECTADA do tenant para enviar.
-    const { data: sender } = await admin
-      .from("whatsapp_instances")
-      .select("server_url,instance_token")
-      .eq("tenant_id", FERACON_TENANT_ID)
-      .or("is_connected.eq.true,status.eq.connected")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+    // Envia sempre pelo número principal (47 9235-2804) com fallback caso esteja fora.
+    const sender = await pickNotifierInstance(admin, FERACON_TENANT_ID);
 
     if (!sender?.server_url || !sender?.instance_token) {
       return json({ error: "Nenhuma instância conectada para enviar o aviso." }, 400);
