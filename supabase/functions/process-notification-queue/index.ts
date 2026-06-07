@@ -77,14 +77,7 @@ async function processOne(admin: ReturnType<typeof createClient>, type: string) 
 
     if (type === "announcement") {
       // Send a free-text message directly to a phone via the tenant's instance.
-      const { data: instance } = await admin
-        .from("whatsapp_instances")
-        .select("server_url,instance_token")
-        .eq("tenant_id", candidate.tenant_id)
-        .or("is_connected.eq.true,status.eq.connected")
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
+      const instance = await pickNotifierInstance(admin, candidate.tenant_id);
       if (!instance?.server_url || !instance?.instance_token) {
         throw new Error("no connected whatsapp instance");
       }
