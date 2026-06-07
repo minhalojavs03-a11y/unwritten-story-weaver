@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.whatsapp-webhook]
 verify_jwt = false
+
+[functions.test-consultant-notify]
+verify_jwt = false
