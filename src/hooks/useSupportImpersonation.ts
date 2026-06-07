@@ -9,6 +9,9 @@ export type SupportImpersonationContext = {
   previous_tenant_id: string | null;
   target_role?: AppRole | string | null;
   target_member_id?: string | null;
+  target_user_id?: string | null;
+  target_name?: string | null;
+  target_email?: string | null;
 };
 
 const STORAGE_KEY = "impersonation_context";
