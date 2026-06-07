@@ -137,37 +137,35 @@ export default function LeadsPage() {
   const { data: allLeads = [], isLoading } = useLeads(canViewAll ? { kind: "all" } : undefined);
   const { member } = useActiveMember();
   const { user } = useAuth();
-  const memberId = member?.id ?? null;
-  // Filtro estrito por atribuição:
-  // - Se há um membro interno ativo (Lucas, etc.), SEMPRE mostra apenas os
-  //   leads atribuídos a ele, mesmo que o usuário Supabase seja owner.
-  // - Sem membro ativo, só owner/supervisor/superadmin vê tudo.
+  const effective = useEffectiveUser();
+  // Em modo suporte (Arley olhando Micaelly), o filtro deve ser feito pelo
+  // membro/usuário alvo, não pelo do superadmin logado.
+  const memberId = effective.isImpersonating ? effective.memberId : (member?.id ?? null);
+  const effectiveUserId = effective.isImpersonating ? effective.id : (user?.id ?? null);
   const { maxCreditValue } = useActiveMemberLimit();
   void maxCreditValue;
   const leads = (() => {
-    // Considera apenas registros que SÃO leads (descarta kind="outros" —
-    // contatos do WhatsApp sem intenção comercial). Mantém quando kind é
-    // nulo, "lead" ou outros valores explicitamente comerciais.
     const isRealLead = (l: any) => {
       const k = (l?.kind ?? "").toString().toLowerCase();
       return k !== "outros" && k !== "outro" && k !== "contato";
     };
-    // Owners/supervisores/superadmins veem todos os leads atribuídos
-    // (descarta não-atribuídos para focar na operação real).
-    if (canViewAll) {
+    if (canViewAll && !effective.isImpersonating) {
       return allLeads.filter((l) => {
         const a = (l as any).assigned_to;
         const m = (l as any).assigned_member_id;
         return (!!a || !!m) && isRealLead(l);
       });
     }
-    if (memberId) {
-      return allLeads.filter((l) => (l as any).assigned_member_id === memberId && isRealLead(l));
+    if (memberId || effectiveUserId) {
+      return allLeads.filter((l) => {
+        const m = (l as any).assigned_member_id as string | null | undefined;
+        const a = (l as any).assigned_to as string | null | undefined;
+        const byMember = !!memberId && m === memberId;
+        const byUser = !!effectiveUserId && a === effectiveUserId;
+        return (byMember || byUser) && isRealLead(l);
+      });
     }
-    return allLeads.filter((l) => {
-      const assignedUser = (l as any).assigned_to as string | null | undefined;
-      return !!(user?.id && assignedUser === user.id) && isRealLead(l);
-    });
+    return [];
   })();
 
   const create = useCreateLead();
