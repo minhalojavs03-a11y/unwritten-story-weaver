@@ -214,6 +214,8 @@ export default function DashboardPage() {
 
         <MvpOfMonth rows={ranking} highlightMemberId={member?.id ?? null} />
 
+        {!privileged && member?.id && <MyCoachingPanel memberId={member.id} days={30} />}
+
         {!privileged && <EloLadder variant="full" asLink />}
         {!privileged && <PrizesBanner compact />}
 
