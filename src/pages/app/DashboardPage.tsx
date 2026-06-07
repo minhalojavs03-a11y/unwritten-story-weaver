@@ -150,20 +150,27 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="flex flex-wrap items-start justify-between gap-4 pl-7 pr-4 pt-1 pb-2 md:pl-8 md:pr-8 md:pt-2 md:pb-3">
-        <div className="min-w-0 flex-1">
-          <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600 ring-1 ring-emerald-500/20">
-            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-            Painel ao vivo
-          </span>
-          <h1 className="font-display text-xl font-bold leading-tight tracking-tight md:text-3xl">
-            {saudacao}{firstName ? `, ${firstName}` : ""}, vamos vender hoje.
-          </h1>
-          <p className="mt-1 text-xs text-muted-foreground md:text-sm">{dataCap}</p>
+      <div className="grid grid-cols-1 items-start gap-4 pl-7 pr-4 pt-1 pb-2 md:grid-cols-2 md:pl-8 md:pr-8 md:pt-2 md:pb-3">
+        <div className="min-w-0 flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600 ring-1 ring-emerald-500/20">
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+              Painel ao vivo
+            </span>
+            <h1 className="font-display text-xl font-bold leading-tight tracking-tight md:text-3xl">
+              {saudacao}{firstName ? `, ${firstName}` : ""}, vamos vender hoje.
+            </h1>
+            <p className="mt-1 text-xs text-muted-foreground md:text-sm">{dataCap}</p>
+          </div>
+          {!privileged && (
+            <div className="w-full shrink-0 sm:w-[260px] md:w-[300px]">
+              <RankCard variant="compact" asLink className="w-full" />
+            </div>
+          )}
         </div>
-        {!privileged && (
-          <div className="w-full shrink-0 sm:w-[260px] md:w-[300px]">
-            <RankCard variant="compact" asLink className="w-full" />
+        {privileged && (
+          <div className="min-w-0">
+            <WhatsAppHealthAlert />
           </div>
         )}
       </div>
@@ -177,7 +184,6 @@ export default function DashboardPage() {
           />
         )}
 
-        {privileged && <WhatsAppHealthAlert />}
 
         <section className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
           <StatCard to="/clientes" icon={Users} label="Leads Hoje" value={m?.leadsToday ?? 0} iconColor="bg-emerald-500/10 text-emerald-600" />
