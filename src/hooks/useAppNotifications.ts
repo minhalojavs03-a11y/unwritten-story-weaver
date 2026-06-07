@@ -42,7 +42,9 @@ function playBeep() {
 
 export function useAppNotifications() {
   const { user } = useAuth();
-  const userId = user?.id ?? null;
+  const effective = useEffectiveUser();
+  // Em modo suporte, lê as notificações do alvo (Micaelly), não do superadmin.
+  const userId = (effective.isImpersonating ? effective.id : user?.id) ?? null;
   const [items, setItems] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
 
