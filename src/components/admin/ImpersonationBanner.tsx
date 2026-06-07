@@ -4,7 +4,15 @@ import { ShieldAlert, LogOut, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-type Ctx = { tenant_id: string; tenant_name: string; previous_tenant_id: string | null };
+type Ctx = {
+  tenant_id: string;
+  tenant_name: string;
+  previous_tenant_id: string | null;
+  target_member_id?: string | null;
+  target_user_id?: string | null;
+  target_name?: string | null;
+  target_email?: string | null;
+};
 
 export function ImpersonationBanner() {
   const [ctx, setCtx] = useState<Ctx | null>(null);
@@ -68,7 +76,8 @@ export function ImpersonationBanner() {
       <div className="flex min-w-0 items-center gap-2">
         <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600" />
         <span className="truncate">
-          <strong>Modo suporte</strong> · Ambiente de <strong>{ctx.tenant_name}</strong>
+          <strong>Modo suporte</strong> · Visualizando como <strong>{ctx.target_name ?? ctx.tenant_name}</strong>
+          {ctx.target_email ? ` (${ctx.target_email})` : ""} · ID: {ctx.target_user_id ?? ctx.target_member_id ?? "resolvendo"} · Queries como alvo ✓
         </span>
       </div>
       <button
