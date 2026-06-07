@@ -50,14 +50,73 @@ Deno.serve(async (req) => {
       return json({ error: "Company instance 4792352804 not connected" }, 400);
     }
 
-    // Resolve recipient: by member_id, by phone, or default to first eligible consultant
+    async function sendOne(name: string, phoneRaw: string | null) {
+      const phone = normPhone(phoneRaw);
+      if (!phone) return { name, phone: phoneRaw, ok: false, error: "invalid phone" };
+      const now = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+      const text = [
+        `🧪 *TESTE — Disparo do número oficial Feracon*`,
+        ``,
+        `Olá ${name}, esta é uma mensagem automática de teste.`,
+        `Confirma que o número *47 9235-2804* está enviando avisos para consultores corretamente.`,
+        ``,
+        `⏰ ${now}`,
+        `_Pode ignorar — não é um lead real._`,
+      ].join("\n");
+      try {
+        const r = await fetch(`${sender.server_url.replace(/\/$/, "")}/send/text`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", token: sender.instance_token },
+          body: JSON.stringify({ number: phone, text }),
+        });
+        const raw = await r.text();
+        return r.ok
+          ? { name, phone, ok: true }
+          : { name, phone, ok: false, status: r.status, error: raw.slice(0, 200) };
+      } catch (e) {
+        return { name, phone, ok: false, error: String(e) };
+      }
+    }
+
+    if (all) {
+      const { data: consultants } = await admin
+        .from("tenant_members")
+        .select("id, display_name, phone, role_label, notify_whatsapp")
+        .eq("tenant_id", TENANT_ID)
+        .eq("is_active", true)
+        .eq("receives_leads", true)
+        .eq("notify_whatsapp", true)
+        .ilike("role_label", "%consultor%")
+        .not("phone", "is", null)
+        .order("display_name");
+
+      const eligible = (consultants || []).filter((c: any) => {
+        const role = String(c.role_label || "").toLowerCase();
+        const nm = String(c.display_name || "").toLowerCase();
+        return !role.includes("supervisor") && !role.includes("aprendiz")
+          && !role.includes("dono") && !nm.includes("teste");
+      });
+
+      const results: any[] = [];
+      for (let i = 0; i < eligible.length; i++) {
+        const c = eligible[i];
+        if (i > 0) {
+          // Anti-ban delay 4–10s entre envios
+          const ms = 4000 + Math.floor(Math.random() * 6000);
+          await new Promise((r) => setTimeout(r, ms));
+        }
+        results.push(await sendOne(c.display_name || "Consultor", c.phone));
+      }
+      return json({ ok: true, sender_phone: sender.phone_number, count: results.length, results });
+    }
+
     let recipientPhone: string | null = null;
     let recipientName = "Consultor";
 
     if (memberId) {
       const { data: m } = await admin
         .from("tenant_members")
-        .select("display_name, phone, role_label")
+        .select("display_name, phone")
         .eq("id", memberId)
         .maybeSingle();
       if (!m) return json({ error: "member not found" }, 404);
@@ -66,53 +125,13 @@ Deno.serve(async (req) => {
     } else if (targetPhoneRaw) {
       recipientPhone = normPhone(targetPhoneRaw);
     } else {
-      const { data: c } = await admin
-        .from("tenant_members")
-        .select("display_name, phone")
-        .eq("tenant_id", TENANT_ID)
-        .eq("is_active", true)
-        .eq("receives_leads", true)
-        .ilike("role_label", "%consultor%")
-        .not("role_label", "ilike", "%supervisor%")
-        .not("phone", "is", null)
-        .order("display_name")
-        .limit(1)
-        .maybeSingle();
-      if (!c) return json({ error: "no consultant found" }, 404);
-      recipientPhone = normPhone(c.phone);
-      recipientName = c.display_name || "Consultor";
+      return json({ error: "provide member_id, phone, or all=true" }, 400);
     }
 
     if (!recipientPhone) return json({ error: "invalid recipient phone" }, 400);
-
-    const now = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-    const text = [
-      `🧪 *TESTE — Disparo do número oficial Feracon*`,
-      ``,
-      `Olá ${recipientName}, esta é uma mensagem automática de teste.`,
-      `Confirma que o número *47 9235-2804* está enviando avisos para consultores corretamente.`,
-      ``,
-      `⏰ ${now}`,
-      `_Pode ignorar — não é um lead real._`,
-    ].join("\n");
-
-    const r = await fetch(`${sender.server_url.replace(/\/$/, "")}/send/text`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", token: sender.instance_token },
-      body: JSON.stringify({ number: recipientPhone, text }),
-    });
-    const raw = await r.text();
-    if (!r.ok) {
-      return json({ error: "send failed", status: r.status, detail: raw.slice(0, 400) }, 502);
-    }
-
-    return json({
-      ok: true,
-      sender_phone: sender.phone_number,
-      recipient_phone: recipientPhone,
-      recipient_name: recipientName,
-      preview: text,
-    });
+    const result = await sendOne(recipientName, recipientPhone);
+    if (!result.ok) return json({ error: "send failed", ...result }, 502);
+    return json({ ok: true, sender_phone: sender.phone_number, ...result });
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
   }
