@@ -182,7 +182,8 @@ Deno.serve(async (req: Request) => {
         try {
           const { data: lead } = await admin.from("leads").select("id, name, phone").eq("id", m.lead_id).maybeSingle();
           if (!lead?.phone) { skipped++; console.log("skip no_phone", m.lead_id); continue; }
-          const { data: instance } = await admin.from("whatsapp_instances").select("*").eq("id", m.whatsapp_instance_id).maybeSingle();
+          // SEMPRE envia pela instância do número oficial da empresa (47 9235-2804).
+          const instance = await pickCompanyInstance(admin, m.tenant_id);
           if (!instance?.server_url || !instance?.instance_token) { skipped++; continue; }
           const { data: aiCfg } = await admin.from("ai_config").select("*").eq("tenant_id", m.tenant_id).maybeSingle();
           if (aiCfg && aiCfg.enabled === false) { skipped++; continue; }
