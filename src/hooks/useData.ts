@@ -801,12 +801,13 @@ export function useDashboardMetrics(
   scopeOrMember?: string | null | { tenantId?: string | null; memberId?: string | null },
 ) {
   const { tenantId: authTenantId } = useAuth();
+  const effectiveUser = useEffectiveUser();
   const scope = typeof scopeOrMember === "object" && scopeOrMember !== null
     ? scopeOrMember
     : { memberId: (scopeOrMember as string | null | undefined) ?? null };
   const overrideTenant = "tenantId" in scope ? scope.tenantId : undefined;
-  const tenantId = (overrideTenant ?? authTenantId) ?? null;
-  const memberId = scope.memberId ?? null;
+  const tenantId = (overrideTenant ?? (effectiveUser.isImpersonating ? effectiveUser.tenantId : authTenantId)) ?? null;
+  const memberId = scope.memberId ?? (effectiveUser.isImpersonating ? effectiveUser.memberId : null);
 
   return useQuery({
     queryKey: ["dashboard_metrics", tenantId ?? "auto", memberId ?? "all"],
