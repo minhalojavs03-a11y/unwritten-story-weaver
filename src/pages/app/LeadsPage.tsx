@@ -22,6 +22,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { useActiveMemberLimit } from "@/hooks/useActiveMemberLimit";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffectiveUser } from "@/hooks/useEffectiveUser";
 import { cn } from "@/lib/utils";
 
 const QUALIFICATION_OPTIONS = [
