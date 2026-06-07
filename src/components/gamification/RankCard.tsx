@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { RankEmblem } from "./RankEmblem";
 import { useMyGamificationSummary, useGamificationConfig, levelFor, tierForLevel, type Period } from "@/hooks/useGamification";
 
-type Variant = "full" | "compact";
+type Variant = "full" | "compact" | "minimal";
 
 type Props = {
   variant?: Variant;
@@ -24,7 +24,40 @@ export function RankCard({ variant = "full", period = "monthly", className, asLi
   const salesToNext = next ? Math.max(0, (next.min_sales ?? 0) - sales) : 0;
 
   const isCompact = variant === "compact";
-  const emblemSize = isCompact ? 56 : 80;
+  const isMinimal = variant === "minimal";
+  const emblemSize = isMinimal ? 32 : isCompact ? 56 : 80;
+
+  if (isMinimal) {
+    const minimalInner = (
+      <div className={cn("group inline-flex items-center gap-2", className)}>
+        <RankEmblem color={current.color} tier={tier} size={emblemSize} />
+        <div className="min-w-0 leading-tight">
+          <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">Meu elo</div>
+          <div className="font-display text-sm font-semibold tracking-tight" style={{ color: current.color }}>
+            {current.label}
+          </div>
+          {next && (
+            <div className="text-[10px] text-muted-foreground tabular-nums">
+              {salesToNext > 0 ? (
+                <>faltam <span className="font-semibold text-foreground">{salesToNext}</span> {salesToNext === 1 ? "venda" : "vendas"}</>
+              ) : (
+                <>faltam <span className="font-semibold text-foreground">{pointsToNext}</span> pts</>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+    if (asLink) {
+      return (
+        <Link to="/ranking" className={cn("inline-flex rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60", className)}>
+          {minimalInner}
+        </Link>
+      );
+    }
+    return minimalInner;
+  }
+
 
   const inner = (
     <div
