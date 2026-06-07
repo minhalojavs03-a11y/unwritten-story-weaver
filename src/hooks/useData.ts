@@ -813,7 +813,7 @@ export function useDashboardMetrics(
   const memberId = scope.memberId ?? (effectiveUser.isImpersonating ? effectiveUser.memberId : null);
 
   return useQuery({
-    queryKey: ["dashboard_metrics", tenantId ?? "auto", memberId ?? "all"],
+    queryKey: ["dashboard_metrics_v3", tenantId ?? "auto", memberId ?? "all"],
     queryFn: async () => {
       const args: Record<string, string | null> = {};
       if (tenantId) args._tenant_id = tenantId;
