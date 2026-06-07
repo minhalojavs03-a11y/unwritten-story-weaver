@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffectiveUser } from "@/hooks/useEffectiveUser";
 import { toast } from "sonner";
 
 export type AppNotification = {
@@ -41,7 +42,9 @@ function playBeep() {
 
 export function useAppNotifications() {
   const { user } = useAuth();
-  const userId = user?.id ?? null;
+  const effective = useEffectiveUser();
+  // Em modo suporte, lê as notificações do alvo (Micaelly), não do superadmin.
+  const userId = (effective.isImpersonating ? effective.id : user?.id) ?? null;
   const [items, setItems] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
 
