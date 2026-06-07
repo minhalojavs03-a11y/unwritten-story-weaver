@@ -47,14 +47,22 @@ export function WhatsAppStatusPill() {
           .maybeSingle();
         targetUserId = (tm as { user_id?: string | null } | null)?.user_id ?? null;
       }
-      if (!targetUserId) targetUserId = user?.id ?? null;
-      if (!targetUserId) return null;
+      if (!targetUserId && !supportName) targetUserId = user?.id ?? null;
 
-      const { data: rows, error } = await supabase
+      let query = supabase
         .from("whatsapp_instances")
         .select("is_connected,status")
-        .eq("tenant_id", targetTenantId!)
-        .or(`seller_user_id.eq.${targetUserId},created_by_user_id.eq.${targetUserId}`);
+        .eq("tenant_id", targetTenantId!);
+
+      if (targetUserId) {
+        query = query.or(`seller_user_id.eq.${targetUserId},created_by_user_id.eq.${targetUserId}`);
+      } else if (supportName) {
+        query = query.or(`seller_name.eq.${supportName},instance_name.eq.${supportName}`);
+      } else {
+        return null;
+      }
+
+      const { data: rows, error } = await query;
       if (error) throw error;
       if (!rows || rows.length === 0) return null;
       const connected = rows.some(
