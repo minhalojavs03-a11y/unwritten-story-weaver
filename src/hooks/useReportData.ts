@@ -29,6 +29,9 @@ export const fmtPct = (a: number, b: number) => (b > 0 ? `${((a / b) * 100).toFi
 
 function data_lost_pct(lost: number, total: number) { return total > 0 ? (lost / total) * 100 : 0; }
 
+type ReportLeadScope = { assigned_member_id?: string | null; assigned_to?: string | null };
+type ReportMemberScope = { id: string; user_id?: string | null };
+
 export function useReportData(
   period: Period,
   memberFilter: string,
@@ -41,9 +44,9 @@ export function useReportData(
   const { data: members = [] } = useTenantMembers(scopeTenantId === null ? null : scopeTenantId);
 
   return useMemo(() => {
-    const memberUserById = new Map(members.map((m: any) => [m.id, m.user_id ?? null]));
+    const memberUserById = new Map(members.map((m: ReportMemberScope) => [m.id, m.user_id ?? null]));
     const scopedUserId = effectiveUser.isImpersonating && scopeMemberId === effectiveUser.memberId ? effectiveUser.id : null;
-    const belongsToMember = (lead: any, memberId: string) =>
+    const belongsToMember = (lead: ReportLeadScope, memberId: string) =>
       lead.assigned_member_id === memberId
       || (!!memberUserById.get(memberId) && lead.assigned_to === memberUserById.get(memberId))
       || (!!scopedUserId && scopeMemberId === memberId && lead.assigned_to === scopedUserId);
