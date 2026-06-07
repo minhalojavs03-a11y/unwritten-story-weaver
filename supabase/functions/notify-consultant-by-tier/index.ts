@@ -16,6 +16,33 @@ async function randomSendDelay(): Promise<void> {
   await new Promise((r) => setTimeout(r, ms));
 }
 
+// Único número autorizado a enviar avisos internos (supervisor / principal Feracon).
+// "47 9235-2804" → dígitos com DDI: 554792352804.
+const NOTIFIER_PHONE_DIGITS = "4792352804";
+
+async function pickNotifierInstance(admin: any, tenantId: string) {
+  const { data: sup } = await admin
+    .from("whatsapp_instances")
+    .select("server_url,instance_token,status,is_connected,phone_number")
+    .eq("tenant_id", tenantId)
+    .or("is_connected.eq.true,status.eq.connected")
+    .ilike("phone_number", `%${NOTIFIER_PHONE_DIGITS}%`)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (sup?.server_url && sup?.instance_token) return sup;
+  // Fallback: se o número principal estiver fora do ar, evita blackout total.
+  const { data: any_ } = await admin
+    .from("whatsapp_instances")
+    .select("server_url,instance_token,status,is_connected,phone_number")
+    .eq("tenant_id", tenantId)
+    .or("is_connected.eq.true,status.eq.connected")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return any_;
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
