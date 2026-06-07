@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useLeads, useTenantMembers } from "@/hooks/useData";
+import { useEffectiveUser } from "@/hooks/useEffectiveUser";
 import { stageLabels, stageOrder, type Stage } from "@/data/mock";
 
 export type Period = "today" | "7d" | "30d" | "month" | "year" | "all";
@@ -34,14 +35,18 @@ export function useReportData(
   scopeMemberId?: string | null,
   scopeTenantId?: string | null,
 ) {
+  const effectiveUser = useEffectiveUser();
   // scopeTenantId undefined = padrão; null = global (superadmin); string = tenant específico
   const { data: allLeads = [] } = useLeads(scopeTenantId !== undefined ? { tenantId: scopeTenantId } : undefined);
   const { data: members = [] } = useTenantMembers(scopeTenantId === null ? null : scopeTenantId);
 
   return useMemo(() => {
     const memberUserById = new Map(members.map((m: any) => [m.id, m.user_id ?? null]));
+    const scopedUserId = effectiveUser.isImpersonating && scopeMemberId === effectiveUser.memberId ? effectiveUser.id : null;
     const belongsToMember = (lead: any, memberId: string) =>
-      lead.assigned_member_id === memberId || (!!memberUserById.get(memberId) && lead.assigned_to === memberUserById.get(memberId));
+      lead.assigned_member_id === memberId
+      || (!!memberUserById.get(memberId) && lead.assigned_to === memberUserById.get(memberId))
+      || (!!scopedUserId && scopeMemberId === memberId && lead.assigned_to === scopedUserId);
     const start = periodStart(period);
     let leads = allLeads.filter((l) => !start || (l.created_at && new Date(l.created_at) >= start));
     if (scopeMemberId) leads = leads.filter((l) => belongsToMember(l, scopeMemberId));
@@ -228,7 +233,7 @@ export function useReportData(
       funnel, maxStage, campaigns, monthly, lostReasons, memberStats,
       weekly: weeklySorted, responseHeatmap, pipelineIntel, healthScore, healthDims, insights,
     };
-  }, [allLeads, members, period, memberFilter, scopeMemberId]);
+  }, [allLeads, members, period, memberFilter, scopeMemberId, effectiveUser.isImpersonating, effectiveUser.memberId, effectiveUser.id]);
 }
 
 export type ReportData = ReturnType<typeof useReportData>;
