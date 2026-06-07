@@ -14,6 +14,31 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
+// Único número autorizado a ENVIAR mensagens em nome da empresa (47 9235-2804).
+const COMPANY_PHONE_DIGITS = "4792352804";
+
+async function pickCompanyInstance(admin: any, tenantId: string) {
+  const { data: principal } = await admin
+    .from("whatsapp_instances")
+    .select("id,server_url,instance_token,phone_number,is_connected,status")
+    .eq("tenant_id", tenantId)
+    .or("is_connected.eq.true,status.eq.connected")
+    .ilike("phone_number", `%${COMPANY_PHONE_DIGITS}%`)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (principal?.server_url && principal?.instance_token) return principal;
+  const { data: any_ } = await admin
+    .from("whatsapp_instances")
+    .select("id,server_url,instance_token,phone_number,is_connected,status")
+    .eq("tenant_id", tenantId)
+    .or("is_connected.eq.true,status.eq.connected")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return any_;
+}
+
 function ok(b: unknown = { ok: true }, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
