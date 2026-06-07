@@ -19,6 +19,31 @@ const RECIPIENTS = [
   { name: "Arley (cópia)", phone: "5517997091070" },
 ];
 
+// Único número autorizado a enviar avisos internos (supervisor / principal Feracon).
+const NOTIFIER_PHONE_DIGITS = "4792352804";
+
+async function pickNotifierInstance(admin: any, tenantId: string) {
+  const { data: sup } = await admin
+    .from("whatsapp_instances")
+    .select("server_url,instance_token")
+    .eq("tenant_id", tenantId)
+    .or("is_connected.eq.true,status.eq.connected")
+    .ilike("phone_number", `%${NOTIFIER_PHONE_DIGITS}%`)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (sup?.server_url && sup?.instance_token) return sup;
+  const { data: any_ } = await admin
+    .from("whatsapp_instances")
+    .select("server_url,instance_token")
+    .eq("tenant_id", tenantId)
+    .or("is_connected.eq.true,status.eq.connected")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return any_;
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -62,15 +87,8 @@ Deno.serve(async (req) => {
     const disconnected = enriched.filter((i) => !i.connected);
     const connected = enriched.filter((i) => i.connected);
 
-    // Escolhe uma instância CONECTADA do tenant para enviar.
-    const { data: sender } = await admin
-      .from("whatsapp_instances")
-      .select("server_url,instance_token")
-      .eq("tenant_id", FERACON_TENANT_ID)
-      .or("is_connected.eq.true,status.eq.connected")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+    // Envia sempre pelo número principal (47 9235-2804) com fallback caso esteja fora.
+    const sender = await pickNotifierInstance(admin, FERACON_TENANT_ID);
 
     if (!sender?.server_url || !sender?.instance_token) {
       return json({ error: "Nenhuma instância conectada para enviar o aviso." }, 400);
