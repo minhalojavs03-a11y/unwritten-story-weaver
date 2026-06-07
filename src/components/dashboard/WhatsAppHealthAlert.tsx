@@ -174,6 +174,24 @@ export function WhatsAppHealthAlert() {
           </div>
         </div>
       )}
+
+      {!hasIssues && (
+        <div className="mt-2.5 rounded-lg border border-emerald-500/20 bg-background/40 px-2.5 py-2">
+          <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-600">
+            <CheckCircle2 className="h-3 w-3" /> Tudo conectado — equipe operando 100%
+          </div>
+          <ul className="grid grid-cols-1 gap-x-3 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-3">
+            {connected.map((i) => (
+              <li key={i.id} className="flex items-center justify-between gap-2 text-xs">
+                <span className="truncate font-medium">{consultantName(i)}</span>
+                <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                  {i.phone_number || "—"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }
