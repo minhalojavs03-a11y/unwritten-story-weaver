@@ -2521,6 +2521,10 @@ export type Database = {
         }[]
       }
       normalize_phone: { Args: { _phone: string }; Returns: string }
+      parse_credit_from_interest: {
+        Args: { _interest: string }
+        Returns: number
+      }
       reclassify_leads: { Args: { _tenant?: string }; Returns: number }
       regenerate_role_invite: { Args: { _id: string }; Returns: string }
       release_lead:
