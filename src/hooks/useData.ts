@@ -621,7 +621,9 @@ export function useUpdateAppointment() {
 
 // ============= TENANT / AI / WHATSAPP =============
 export function useMyTenant() {
-  const { tenantId } = useAuth();
+  const { tenantId: authTenantId } = useAuth();
+  const effectiveUser = useEffectiveUser();
+  const tenantId = effectiveUser.isImpersonating ? effectiveUser.tenantId : authTenantId;
   return useQuery({
     queryKey: ["tenant", tenantId],
     enabled: !!tenantId,
@@ -634,7 +636,9 @@ export function useMyTenant() {
 }
 
 export function useAiConfig() {
-  const { tenantId } = useAuth();
+  const { tenantId: authTenantId } = useAuth();
+  const effectiveUser = useEffectiveUser();
+  const tenantId = effectiveUser.isImpersonating ? effectiveUser.tenantId : authTenantId;
   return useQuery({
     queryKey: ["ai_config", tenantId],
     enabled: !!tenantId,
@@ -674,7 +678,9 @@ export function useToggleAiPreAttendance() {
 }
 
 export function useWhatsAppInstance() {
-  const { tenantId } = useAuth();
+  const { tenantId: authTenantId } = useAuth();
+  const effectiveUser = useEffectiveUser();
+  const tenantId = effectiveUser.isImpersonating ? effectiveUser.tenantId : authTenantId;
   return useQuery({
     queryKey: ["wa_instance", tenantId],
     enabled: !!tenantId,
