@@ -561,12 +561,13 @@ export function useTenantMembers(overrideTenantId?: string | null) {
 // scope opcional: tenantId=null força global (superadmin); memberId filtra por consultor.
 export function useAppointments(rangeStart?: Date, rangeEnd?: Date, scope?: { tenantId?: string | null; memberId?: string | null }) {
   const { tenantId: authTenantId, isSuperadmin } = useAuth();
+  const effectiveUser = useEffectiveUser();
   const overrideTenant = scope && "tenantId" in scope ? scope.tenantId : undefined;
   const effectiveTenant = overrideTenant === undefined
-    ? (isSuperadmin ? null : authTenantId)
+    ? (effectiveUser.isImpersonating ? effectiveUser.tenantId : (isSuperadmin ? null : authTenantId))
     : overrideTenant;
   const globalScope = effectiveTenant === null;
-  const memberId = scope?.memberId ?? null;
+  const memberId = scope?.memberId ?? (effectiveUser.isImpersonating ? effectiveUser.memberId : null);
   return useQuery({
     queryKey: ["appointments", globalScope ? "__all__" : effectiveTenant, memberId ?? "all", rangeStart?.toISOString(), rangeEnd?.toISOString()],
     enabled: globalScope || !!effectiveTenant,
