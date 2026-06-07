@@ -100,18 +100,11 @@ Deno.serve(async (req) => {
       //    já cobre o caso real de "atendimento já em andamento".
     }
 
-    // Pega TODAS as instâncias marcadas como conectadas (mais recente primeiro)
-    // e tenta enviar até alguma funcionar. Se o provedor responder 503
-    // "session is not reconnectable", marca a instância como desconectada.
-    const { data: instances } = await admin
-      .from("whatsapp_instances")
-      .select("id,server_url,instance_token,updated_at")
-      .eq("tenant_id", lead.tenant_id)
-      .or("is_connected.eq.true,status.eq.connected")
-      .order("updated_at", { ascending: false });
-    const candidates = (instances ?? []).filter((i: any) => i.server_url && i.instance_token);
-    if (!candidates.length) {
-      return json({ error: "no connected whatsapp instance" }, 400);
+    // SEMPRE envia pela instância do número oficial da empresa (47 9235-2804),
+    // nunca pelo número pessoal do consultor.
+    const principal = await pickCompanyInstance(admin, lead.tenant_id);
+    if (!principal?.server_url || !principal?.instance_token) {
+      return json({ error: "no connected whatsapp instance (company number)" }, 400);
     }
 
     const { data: tenant } = await admin
@@ -131,31 +124,23 @@ Deno.serve(async (req) => {
     const phoneDigits = String(lead.phone).replace(/\D/g, "");
     await randomSendDelay();
 
-    let instance: any = null;
-    let lastErr = "";
-    let lastStatus = 0;
-    for (const cand of candidates) {
-      const r = await fetch(`${cand.server_url.replace(/\/$/, "")}/send/text`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", token: cand.instance_token },
-        body: JSON.stringify({ number: phoneDigits, text, message: text }),
-      });
-      if (r.ok) { instance = cand; break; }
-      lastStatus = r.status;
-      lastErr = (await r.text()).slice(0, 300);
-      console.error("welcome send failed", r.status, "instance", cand.id, lastErr);
-      // Sessão morta no provedor → marca desconectada e tenta a próxima.
-      if (r.status === 503 && /not reconnectable|disconnected/i.test(lastErr)) {
+    const r = await fetch(`${principal.server_url.replace(/\/$/, "")}/send/text`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", token: principal.instance_token },
+      body: JSON.stringify({ number: phoneDigits, text, message: text }),
+    });
+    if (!r.ok) {
+      const detail = (await r.text()).slice(0, 300);
+      console.error("welcome send failed", r.status, "instance", principal.id, detail);
+      if (r.status === 503 && /not reconnectable|disconnected/i.test(detail)) {
         await admin.from("whatsapp_instances")
           .update({ is_connected: false, status: "disconnected", updated_at: new Date().toISOString() })
-          .eq("id", cand.id);
-        continue;
+          .eq("id", principal.id);
       }
-      break;
+      return json({ error: `provider ${r.status}`, detail }, 502);
     }
-    if (!instance) {
-      return json({ error: `provider ${lastStatus}`, detail: lastErr }, 502);
-    }
+    const instance = principal;
+
 
     await admin.from("leads").update({
       whatsapp_instance_id: instance.id,
