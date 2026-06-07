@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
+import { useEffectiveUser } from "@/hooks/useEffectiveUser";
 
 export type NotificationType =
   | "new_lead"
