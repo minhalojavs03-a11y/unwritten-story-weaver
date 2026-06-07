@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Mic, MessageCircle, Check, ExternalLink, Filter, Sparkles, Loader2, FileCheck2, RefreshCw, Download } from "lucide-react";
