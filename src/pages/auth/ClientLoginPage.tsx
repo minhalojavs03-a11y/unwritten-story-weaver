@@ -229,7 +229,7 @@ export default function ClientLoginPage() {
             </>
           )}
 
-          <p className="mt-6 text-xs text-slate-400 sm:mt-10">© {new Date().getFullYear()} Consórcio Feracon</p>
+          <p className="mt-4 text-xs text-slate-400 sm:mt-10">© {new Date().getFullYear()} Consórcio Feracon</p>
         </div>
       </section>
     </main>
