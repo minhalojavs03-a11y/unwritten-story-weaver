@@ -74,6 +74,10 @@ export type GamificationLevel = {
   color: string;
 };
 
+type RawGamificationLevel = Partial<GamificationLevel> & { min_points?: number | string; min_sales?: number | string };
+type RpcResult<T> = Promise<{ data: T | null; error: Error | null }>;
+const rpcClient = supabase as unknown as { rpc: <T>(name: string, args?: Record<string, unknown>) => RpcResult<T> };
+
 export const DEFAULT_LEVELS: GamificationLevel[] = [
   { key: "bronze", label: "Bronze", min_points: 0, min_sales: 0, color: "#B45309" },
   { key: "prata", label: "Prata", min_points: 500, min_sales: 5, color: "#94A3B8" },
@@ -83,12 +87,12 @@ export const DEFAULT_LEVELS: GamificationLevel[] = [
 
 export function getGamificationLevels(config?: GamificationConfig | null): GamificationLevel[] {
   const raw = Array.isArray(config?.levels) ? config.levels : [];
-  const valid = raw.filter((level: any) => {
+  const valid = (raw as RawGamificationLevel[]).filter((level) => {
     return !!level && typeof level.label === "string" && Number.isFinite(Number(level.min_points));
   });
 
   return (valid.length > 0 ? valid : DEFAULT_LEVELS)
-    .map((level: any, index: number) => ({
+    .map((level: RawGamificationLevel, index: number) => ({
       key: level.key || `level-${index}`,
       label: level.label || DEFAULT_LEVELS[index]?.label || `Nível ${index + 1}`,
       min_points: Number(level.min_points) || 0,
@@ -113,9 +117,9 @@ export function useRanking(period: Period = "monthly") {
   return useQuery<RankingRow[]>({
     queryKey: ["gamification_ranking", period],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("gamification_ranking", { _period: period });
+      const { data, error } = await rpcClient.rpc<RankingRow[]>("gamification_ranking", { _period: period });
       if (error) throw error;
-      return ((data ?? []) as RankingRow[]).filter((row) => !isHiddenFeraconPerson(row as any));
+      return ((data ?? []) as RankingRow[]).filter((row) => !isHiddenFeraconPerson(row as unknown as Record<string, unknown>));
     },
     staleTime: 60_000,
   });
@@ -130,7 +134,7 @@ export function useMyGamificationSummary(period: Period = "monthly") {
     queryKey: ["gamification_member_summary", memberId, period],
     enabled: !!memberId,
     queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("gamification_member_summary", {
+      const { data, error } = await rpcClient.rpc<MemberSummary[] | MemberSummary>("gamification_member_summary", {
         _member_id: memberId,
         _period: period,
       });
@@ -146,9 +150,9 @@ export function useTeamOverview(period: Period = "weekly") {
   return useQuery<TeamRow[]>({
     queryKey: ["gamification_team_overview", period],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("gamification_team_overview", { _period: period });
+      const { data, error } = await rpcClient.rpc<TeamRow[]>("gamification_team_overview", { _period: period });
       if (error) throw error;
-      return ((data ?? []) as TeamRow[]).filter((row) => !isHiddenFeraconPerson(row as any));
+      return ((data ?? []) as TeamRow[]).filter((row) => !isHiddenFeraconPerson(row as unknown as Record<string, unknown>));
     },
     staleTime: 30_000,
   });
@@ -158,7 +162,7 @@ export function useExecutiveOverview(period: Period = "monthly") {
   return useQuery<ExecutiveOverview | null>({
     queryKey: ["gamification_executive_overview", period],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("gamification_executive_overview", { _period: period });
+      const { data, error } = await rpcClient.rpc<ExecutiveOverview>("gamification_executive_overview", { _period: period });
       if (error) throw error;
       return (data ?? null) as ExecutiveOverview | null;
     },
@@ -170,7 +174,7 @@ export function useGamificationConfig() {
   return useQuery<GamificationConfig | null>({
     queryKey: ["gamification_config"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("gamification_config")
         .select("*")
         .maybeSingle();
