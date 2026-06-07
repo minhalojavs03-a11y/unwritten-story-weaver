@@ -4,6 +4,7 @@ import { MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
+import { useSupportImpersonation } from "@/hooks/useSupportImpersonation";
 
 /**
  * Pílula compacta ao lado do sino: status do WhatsApp do perfil ATIVO
@@ -13,10 +14,15 @@ import { useActiveMember } from "@/contexts/ActiveMemberContext";
 export function WhatsAppStatusPill() {
   const { tenantId, user } = useAuth();
   const { member } = useActiveMember();
+  const { context: supportContext } = useSupportImpersonation();
+
+  const targetMemberId = supportContext ? (supportContext.target_member_id ?? null) : (member?.id ?? null);
+  const targetTenantId = supportContext?.tenant_id ?? tenantId ?? null;
+  const supportName = supportContext?.tenant_name?.trim() ?? null;
 
   const { data } = useQuery({
-    queryKey: ["wa-status-pill", tenantId, member?.id, user?.id],
-    enabled: !!tenantId && (!!member?.id || !!user?.id),
+    queryKey: ["wa-status-pill", targetTenantId, targetMemberId, supportName, user?.id],
+    enabled: !!targetTenantId && (!!targetMemberId || !!supportName || !!user?.id),
     refetchInterval: 60_000,
     staleTime: 30_000,
     queryFn: async () => {
@@ -24,22 +30,39 @@ export function WhatsAppStatusPill() {
       //    selecionado (caso normal e também em modo suporte/impersonação),
       //    usamos o user_id desse membro — não o do usuário logado real.
       let targetUserId: string | null = null;
-      if (member?.id) {
+      if (targetMemberId) {
         const { data: tm } = await supabase
           .from("tenant_members")
           .select("user_id")
-          .eq("id", member.id)
+          .eq("id", targetMemberId)
           .maybeSingle();
         targetUserId = (tm as { user_id?: string | null } | null)?.user_id ?? null;
       }
-      if (!targetUserId) targetUserId = user?.id ?? null;
-      if (!targetUserId) return null;
+      if (!targetUserId && supportContext?.tenant_id && supportName) {
+        const { data: tm } = await supabase
+          .from("tenant_members")
+          .select("user_id")
+          .eq("tenant_id", supportContext.tenant_id)
+          .or(`display_name.eq.${supportName},username.eq.${supportName}`)
+          .maybeSingle();
+        targetUserId = (tm as { user_id?: string | null } | null)?.user_id ?? null;
+      }
+      if (!targetUserId && !supportName) targetUserId = user?.id ?? null;
 
-      const { data: rows, error } = await supabase
+      let query = supabase
         .from("whatsapp_instances")
         .select("is_connected,status")
-        .eq("tenant_id", tenantId!)
-        .or(`seller_user_id.eq.${targetUserId},created_by_user_id.eq.${targetUserId}`);
+        .eq("tenant_id", targetTenantId!);
+
+      if (targetUserId) {
+        query = query.or(`seller_user_id.eq.${targetUserId},created_by_user_id.eq.${targetUserId}`);
+      } else if (supportName) {
+        query = query.or(`seller_name.eq.${supportName},instance_name.eq.${supportName}`);
+      } else {
+        return null;
+      }
+
+      const { data: rows, error } = await query;
       if (error) throw error;
       if (!rows || rows.length === 0) return null;
       const connected = rows.some(
