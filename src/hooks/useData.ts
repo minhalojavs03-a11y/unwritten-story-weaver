@@ -262,14 +262,14 @@ export function useMessages(
       // o consultor; sem isso o chat abre vazio.
       let leadIds: string[] = leadId ? [leadId] : [];
       if (tenantId && phone) {
-        const digits = phone.replace(/\D/g, "");
-        if (digits.length >= 8) {
+        const digitVariants = phoneDigitVariants(phone);
+        if (digitVariants.length > 0) {
           const { data: siblings } = await supabase
             .from("leads")
             .select("id, phone")
             .eq("tenant_id", tenantId);
           const matched = ((siblings ?? []) as Array<{ id: string; phone: string | null }>)
-            .filter((l) => (l.phone ?? "").replace(/\D/g, "") === digits)
+            .filter((l) => phoneDigitVariants(l.phone).some((d) => digitVariants.includes(d)))
             .map((l) => l.id);
           leadIds = Array.from(new Set([...leadIds, ...matched]));
         }
