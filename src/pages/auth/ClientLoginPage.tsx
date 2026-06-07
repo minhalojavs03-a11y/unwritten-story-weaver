@@ -115,9 +115,9 @@ export default function ClientLoginPage() {
   }
 
   return (
-    <main className="grid min-h-screen bg-white text-slate-900 lg:grid-cols-2">
+    <main className="flex min-h-screen flex-col bg-white text-slate-900 lg:grid lg:grid-cols-2">
       {/* Visual side */}
-      <aside className="relative h-[34vh] max-h-72 min-h-[200px] overflow-hidden sm:h-80 sm:max-h-none lg:order-last lg:h-auto lg:min-h-0">
+      <aside className="relative h-[42vh] min-h-[240px] max-h-[360px] overflow-hidden sm:h-80 sm:max-h-none lg:order-last lg:h-auto lg:min-h-0 lg:max-h-none">
         <img src={opticaImage} alt="Consórcio Feracon" width={1280} height={1600} className="absolute inset-0 h-full w-full object-cover object-[center_20%] lg:object-center" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         <div className="absolute bottom-3 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 lg:bottom-12 lg:left-12 lg:right-12">
@@ -128,8 +128,9 @@ export default function ClientLoginPage() {
       </aside>
 
       {/* Form side */}
-      <section className="relative flex items-center justify-center p-4 sm:p-10 lg:p-16">
+      <section className="relative flex flex-1 items-start justify-center px-4 pb-6 pt-5 sm:p-10 lg:items-center lg:p-16">
         <div className="relative z-10 w-full max-w-sm">
+
           <div className="mb-4 flex flex-col items-start sm:mb-8">
             <img src={logoFeracon} alt="Consórcio Feracon" className="mb-3 h-14 w-auto object-contain sm:mb-5 sm:h-20" />
             <p className="mt-1 text-sm text-slate-500">
