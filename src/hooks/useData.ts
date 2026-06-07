@@ -774,94 +774,39 @@ export function useAllInstances() {
 }
 
 // ============= DASHBOARD METRICS =============
-// Backwards-compatible: aceita string|null (memberId) ou objeto { tenantId?, memberId? }.
-// tenantId=null força global (superadmin); undefined = padrão (auth tenant ou global p/ superadmin).
+// Calcula no banco (RPC get_dashboard_metrics_v2) usando fuso de São Paulo e a
+// regra correta de visibilidade: consultor sempre vê seus próprios números,
+// inclusive em leads legados que só têm assigned_to. Owner/supervisor/superadmin
+// podem passar memberId para filtrar a vista de um consultor.
 export function useDashboardMetrics(
   scopeOrMember?: string | null | { tenantId?: string | null; memberId?: string | null },
 ) {
-  const { tenantId: authTenantId, isSuperadmin } = useAuth();
+  const { tenantId: authTenantId } = useAuth();
   const scope = typeof scopeOrMember === "object" && scopeOrMember !== null
     ? scopeOrMember
     : { memberId: (scopeOrMember as string | null | undefined) ?? null };
   const overrideTenant = "tenantId" in scope ? scope.tenantId : undefined;
-  const effectiveTenant = overrideTenant === undefined
-    ? (isSuperadmin ? null : authTenantId)
-    : overrideTenant;
-  const globalScope = effectiveTenant === null;
+  const tenantId = (overrideTenant ?? authTenantId) ?? null;
   const memberId = scope.memberId ?? null;
-  const scoped = !!memberId;
 
   return useQuery({
-    queryKey: ["dashboard_metrics", globalScope ? "__all__" : effectiveTenant, memberId ?? "all"],
-    enabled: globalScope || !!effectiveTenant,
+    queryKey: ["dashboard_metrics", tenantId ?? "auto", memberId ?? "all"],
     queryFn: async () => {
-      const today = new Date(); today.setHours(0,0,0,0);
-      const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
-
-      const applyTenant = <T extends { eq: (col: string, v: string) => T }>(q: T) =>
-        globalScope ? q : q.eq("tenant_id", effectiveTenant!);
-
-      const leadsBase = (kind: "lead" | "all" = "lead") => {
-        let q = supabase.from("leads").select("id", { count: "exact", head: true });
-        if (kind !== "all") q = q.eq("kind", kind);
-        q = applyTenant(q);
-        if (scoped) q = q.eq("assigned_member_id", memberId!);
-        return q;
-      };
-
-      const convBase = (kind: "lead" | "all" = "lead") => {
-        const filterLeadKind = kind !== "all";
-        if (scoped) {
-          // Filtra por kind='lead' no inner join para nunca contar "outros".
-          let q = supabase
-            .from("conversations")
-            .select("id, lead:leads!inner(assigned_member_id, kind)", { count: "exact", head: true })
-            .eq("lead.assigned_member_id", memberId!);
-          if (filterLeadKind) q = q.eq("lead.kind", kind);
-          q = applyTenant(q);
-          return q;
-        }
-        let q = supabase
-          .from("conversations")
-          .select(filterLeadKind ? "id, lead:leads!inner(kind)" : "id", { count: "exact", head: true });
-        if (filterLeadKind) q = q.eq("lead.kind", kind);
-        q = applyTenant(q);
-        return q;
-      };
-
-      const apptBase = () => {
-        let q = supabase.from("appointments").select("id", { count: "exact", head: true })
-          .gte("scheduled_at", today.toISOString())
-          .lt("scheduled_at", tomorrow.toISOString());
-        q = applyTenant(q);
-        if (scoped) q = q.eq("consultant_member_id", memberId!);
-        return q;
-      };
-
-      const leadTodayQuery = (kind: "lead" | "all") => scoped
-        ? leadsBase(kind).gte("assigned_member_at", today.toISOString()).neq("stage", "historico")
-        : leadsBase(kind).gte("created_at", today.toISOString()).neq("stage", "historico");
-      const operationalTodayQuery = (kind: "lead" | "all") => scoped
-        ? leadsBase(kind).gte("assigned_member_at", today.toISOString())
-        : leadsBase(kind).gte("created_at", today.toISOString());
-
-      const [leadsToday, activeConv, appts, hot, awaiting, allToday, allActiveConv, allHot, allAwaiting] = await Promise.all([
-        leadTodayQuery("lead"),
-        convBase().eq("status", "open"),
-        apptBase(),
-        leadsBase().eq("temperature", "hot").not("stage", "in", "(comprou,perdido,historico)"),
-        convBase().gt("unread_count", 0),
-        operationalTodayQuery("all"),
-        convBase("all").eq("status", "open"),
-        leadsBase("all").eq("temperature", "hot").not("stage", "in", "(comprou,perdido)"),
-        convBase("all").gt("unread_count", 0),
-      ]);
+      const args: Record<string, string | null> = {};
+      if (tenantId) args._tenant_id = tenantId;
+      if (memberId) args._member_id = memberId;
+      const { data, error } = await supabase.rpc(
+        "get_dashboard_metrics_v2" as never,
+        args as never,
+      );
+      if (error) throw error;
+      const row = Array.isArray(data) ? (data[0] as any) : (data as any);
       return {
-        leadsToday: (leadsToday.count ?? 0) || (allToday.count ?? 0),
-        activeConversations: (activeConv.count ?? 0) || (allActiveConv.count ?? 0),
-        appointmentsToday: appts.count ?? 0,
-        hotOpportunities: (hot.count ?? 0) || (allHot.count ?? 0),
-        awaitingResponse: (awaiting.count ?? 0) || (allAwaiting.count ?? 0),
+        leadsToday: Number(row?.leads_today ?? 0),
+        activeConversations: Number(row?.active_conversations ?? 0),
+        appointmentsToday: Number(row?.appointments_today ?? 0),
+        hotOpportunities: Number(row?.hot_opportunities ?? 0),
+        awaitingResponse: Number(row?.awaiting_response ?? 0),
       };
     },
   });
