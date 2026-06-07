@@ -60,7 +60,7 @@ export function PublicLeaderboard({ rows, config, highlightMemberId, timesByMemb
         </span>
       </div>
 
-      <ul className="divide-y divide-border/60">
+      <ul className="divide-y divide-border/60 lg:grid lg:grid-cols-2 lg:divide-y-0 lg:[&>li]:border-b lg:[&>li]:border-border/60 lg:[&>li:nth-child(odd)]:border-r">
         {rows.map((row, i) => {
           const { current, next, progress } = levelFor(row.points, config, row.sales ?? 0);
           const tier = tierForLevel(current, config);
