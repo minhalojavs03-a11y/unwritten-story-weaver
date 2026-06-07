@@ -186,6 +186,8 @@ export default function DashboardPage() {
           <StatCard to="/conversas?tab=hot" icon={Flame} label="Leads Quentes" value={m?.hotOpportunities ?? 0} iconColor="bg-rose-500/10 text-rose-600" />
         </section>
 
+        <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
+
         <section>
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Ações rápidas</h2>
           <div className="flex flex-wrap gap-2">
@@ -209,9 +211,6 @@ export default function DashboardPage() {
           highlightMemberId={member?.id ?? null}
           timesByMember={timesByMember}
         />
-
-        <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
-
 
         {privileged && (
           <section className="space-y-4 md:space-y-5">
