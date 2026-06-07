@@ -117,22 +117,23 @@ export default function ClientLoginPage() {
   return (
     <main className="grid min-h-screen bg-white text-slate-900 lg:grid-cols-2">
       {/* Visual side */}
-      <aside className="relative h-80 overflow-hidden sm:h-96 lg:order-last lg:h-auto">
+      <aside className="relative h-[34vh] max-h-72 min-h-[200px] overflow-hidden sm:h-80 sm:max-h-none lg:order-last lg:h-auto lg:min-h-0">
         <img src={opticaImage} alt="Consórcio Feracon" width={1280} height={1600} className="absolute inset-0 h-full w-full object-cover object-[center_20%] lg:object-center" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-        <div className="absolute bottom-6 left-6 right-6 lg:bottom-12 lg:left-12 lg:right-12">
-          <span className="inline-block rounded-full bg-[hsl(0_84%_50%)] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-md">CRM Feracon</span>
-          <h2 className="mt-3 font-display text-2xl font-bold leading-tight text-white drop-shadow-lg lg:text-4xl">O CRM Exclusivo da Equipe Feracon!</h2>
-          <p className="mt-2 max-w-md text-sm text-white/90 lg:text-base">Leads, atendimento e vendas conectados em um só lugar.</p>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        <div className="absolute bottom-3 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 lg:bottom-12 lg:left-12 lg:right-12">
+          <span className="inline-block rounded-full bg-[hsl(0_84%_50%)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-md sm:px-3 sm:py-1 sm:text-xs">CRM Feracon</span>
+          <h2 className="mt-1.5 font-display text-lg font-bold leading-tight text-white drop-shadow-lg sm:mt-3 sm:text-2xl lg:text-4xl">O CRM Exclusivo da Equipe Feracon!</h2>
+          <p className="mt-1 max-w-md text-xs text-white/90 sm:mt-2 sm:text-sm lg:text-base">Leads, atendimento e vendas conectados em um só lugar.</p>
         </div>
       </aside>
 
       {/* Form side */}
-      <section className="relative flex items-center justify-center p-6 sm:p-10 lg:p-16">
+      <section className="relative flex items-center justify-center p-4 sm:p-10 lg:p-16">
         <div className="relative z-10 w-full max-w-sm">
-          <div className="mb-8 flex flex-col items-start">
-            <img src={logoFeracon} alt="Consórcio Feracon" className="mb-5 h-20 w-auto object-contain" />
-            <p className="mt-1.5 text-sm text-slate-500">
+          <div className="mb-4 flex flex-col items-start sm:mb-8">
+            <img src={logoFeracon} alt="Consórcio Feracon" className="mb-3 h-14 w-auto object-contain sm:mb-5 sm:h-20" />
+            <p className="mt-1 text-sm text-slate-500">
+
               {session
                 ? "Você já está conectado"
                 : fromPath?.startsWith("/join/")
@@ -227,7 +228,7 @@ export default function ClientLoginPage() {
             </>
           )}
 
-          <p className="mt-10 text-xs text-slate-400">© {new Date().getFullYear()} Consórcio Feracon</p>
+          <p className="mt-6 text-xs text-slate-400 sm:mt-10">© {new Date().getFullYear()} Consórcio Feracon</p>
         </div>
       </section>
     </main>
