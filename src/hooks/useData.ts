@@ -813,7 +813,14 @@ export function useDashboardMetrics(
         args as never,
       );
       if (error) throw error;
-      const row = Array.isArray(data) ? (data[0] as any) : (data as any);
+      type DashboardMetricsRow = {
+        leads_today?: number | string | null;
+        active_conversations?: number | string | null;
+        appointments_today?: number | string | null;
+        hot_opportunities?: number | string | null;
+        awaiting_response?: number | string | null;
+      };
+      const row = (Array.isArray(data) ? data[0] : data) as DashboardMetricsRow | null;
       return {
         leadsToday: Number(row?.leads_today ?? 0),
         activeConversations: Number(row?.active_conversations ?? 0),
