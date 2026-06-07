@@ -18,6 +18,31 @@ async function randomSendDelay(): Promise<void> {
   await new Promise((r) => setTimeout(r, ms));
 }
 
+// Único número autorizado a enviar avisos internos (supervisor / principal Feracon).
+const NOTIFIER_PHONE_DIGITS = "4792352804";
+
+async function pickNotifierInstance(admin: any, tenantId: string) {
+  const { data: sup } = await admin
+    .from("whatsapp_instances")
+    .select("server_url,instance_token,status,is_connected")
+    .eq("tenant_id", tenantId)
+    .or("is_connected.eq.true,status.eq.connected")
+    .ilike("phone_number", `%${NOTIFIER_PHONE_DIGITS}%`)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (sup?.server_url && sup?.instance_token) return sup;
+  const { data: any_ } = await admin
+    .from("whatsapp_instances")
+    .select("server_url,instance_token,status,is_connected")
+    .eq("tenant_id", tenantId)
+    .or("is_connected.eq.true,status.eq.connected")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return any_;
+}
+
 const SUPERVISORS = [
   { name: "Ediane", phone: "554599874647" },
   { name: "Antonio", phone: "554891218235" },
