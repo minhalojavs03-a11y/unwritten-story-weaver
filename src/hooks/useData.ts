@@ -10,6 +10,20 @@ import { isHiddenFeraconPerson } from "@/lib/feracon";
 const realtimeChannelName = (scope: string, id: string) =>
   `${scope}-${id}-${Math.random().toString(36).slice(2, 10)}`;
 
+function phoneDigitVariants(phone: string | null | undefined): string[] {
+  const digits = (phone ?? "").replace(/\D/g, "");
+  const set = new Set<string>();
+  if (!digits) return [];
+  set.add(digits);
+  if (digits.length === 13 && digits.startsWith("55") && digits[4] === "9") {
+    set.add(digits.slice(0, 4) + digits.slice(5));
+  }
+  if (digits.length === 12 && digits.startsWith("55")) {
+    set.add(digits.slice(0, 4) + "9" + digits.slice(4));
+  }
+  return Array.from(set);
+}
+
 async function getFunctionErrorMessage(error: unknown, fallback: string) {
   const context = (error as { context?: unknown } | null)?.context;
   if (context instanceof Response) {
