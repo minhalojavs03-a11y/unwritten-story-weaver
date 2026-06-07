@@ -16,7 +16,7 @@ export function WhatsAppStatusPill() {
   const { member } = useActiveMember();
   const { context: supportContext } = useSupportImpersonation();
 
-  const targetMemberId = supportContext?.target_member_id ?? member?.id ?? null;
+  const targetMemberId = supportContext ? (supportContext.target_member_id ?? null) : (member?.id ?? null);
   const targetTenantId = supportContext?.tenant_id ?? tenantId ?? null;
   const supportName = supportContext?.tenant_name?.trim() ?? null;
 
