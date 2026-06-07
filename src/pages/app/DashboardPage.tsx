@@ -163,7 +163,7 @@ export default function DashboardPage() {
             <p className="mt-1 text-xs text-muted-foreground md:text-sm">{dataCap}</p>
           </div>
           {!privileged && (
-            <div className="w-full shrink-0 sm:w-[260px] md:w-[300px]">
+            <div className="ml-auto shrink-0 w-[200px] sm:w-[220px]">
               <RankCard variant="compact" asLink className="w-full" />
             </div>
           )}
