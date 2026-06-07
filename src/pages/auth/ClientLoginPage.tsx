@@ -128,11 +128,12 @@ export default function ClientLoginPage() {
       </aside>
 
       {/* Form side */}
-      <section className="relative flex items-center justify-center p-6 sm:p-10 lg:p-16">
+      <section className="relative flex items-center justify-center p-4 sm:p-10 lg:p-16">
         <div className="relative z-10 w-full max-w-sm">
-          <div className="mb-8 flex flex-col items-start">
-            <img src={logoFeracon} alt="Consórcio Feracon" className="mb-5 h-20 w-auto object-contain" />
-            <p className="mt-1.5 text-sm text-slate-500">
+          <div className="mb-4 flex flex-col items-start sm:mb-8">
+            <img src={logoFeracon} alt="Consórcio Feracon" className="mb-3 h-14 w-auto object-contain sm:mb-5 sm:h-20" />
+            <p className="mt-1 text-sm text-slate-500">
+
               {session
                 ? "Você já está conectado"
                 : fromPath?.startsWith("/join/")
