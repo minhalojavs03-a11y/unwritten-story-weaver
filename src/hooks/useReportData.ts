@@ -39,10 +39,13 @@ export function useReportData(
   const { data: members = [] } = useTenantMembers(scopeTenantId === null ? null : scopeTenantId);
 
   return useMemo(() => {
+    const memberUserById = new Map(members.map((m: any) => [m.id, m.user_id ?? null]));
+    const belongsToMember = (lead: any, memberId: string) =>
+      lead.assigned_member_id === memberId || (!!memberUserById.get(memberId) && lead.assigned_to === memberUserById.get(memberId));
     const start = periodStart(period);
     let leads = allLeads.filter((l) => !start || (l.created_at && new Date(l.created_at) >= start));
-    if (scopeMemberId) leads = leads.filter((l) => l.assigned_member_id === scopeMemberId);
-    else if (memberFilter && memberFilter !== "all") leads = leads.filter((l) => l.assigned_member_id === memberFilter);
+    if (scopeMemberId) leads = leads.filter((l) => belongsToMember(l, scopeMemberId));
+    else if (memberFilter && memberFilter !== "all") leads = leads.filter((l) => belongsToMember(l, memberFilter));
 
     const total = leads.length;
     const contacted = leads.filter((l) => l.last_contact_at).length;
@@ -94,7 +97,7 @@ export function useReportData(
       .slice(0, 6);
 
     const memberStats = members.map((m) => {
-      const my = leads.filter((l) => l.assigned_member_id === m.id);
+      const my = leads.filter((l) => belongsToMember(l, m.id));
       const myContacted = my.filter((l) => l.last_contact_at).length;
       const myWon = my.filter((l) => l.stage === "comprou");
       const myLost = my.filter((l) => l.stage === "perdido").length;
@@ -179,7 +182,7 @@ export function useReportData(
       return Math.max(0, Math.min(100, Math.round(100 - ((avgMin - 5) / 55) * 100)));
     })();
     const dimEngagement = (() => {
-      const active = members.filter((mb) => leads.some((l) => l.assigned_member_id === mb.id && l.last_contact_at && (NOW - new Date(l.last_contact_at).getTime()) / 86_400_000 < 7)).length;
+      const active = members.filter((mb) => leads.some((l) => belongsToMember(l, mb.id) && l.last_contact_at && (NOW - new Date(l.last_contact_at).getTime()) / 86_400_000 < 7)).length;
       return members.length > 0 ? Math.round((active / members.length) * 100) : 0;
     })();
     const healthDims = [
