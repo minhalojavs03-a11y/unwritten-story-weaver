@@ -4,6 +4,7 @@ import { MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
+import { useSupportImpersonation } from "@/hooks/useSupportImpersonation";
 
 /**
  * Pílula compacta ao lado do sino: status do WhatsApp do perfil ATIVO
@@ -13,10 +14,14 @@ import { useActiveMember } from "@/contexts/ActiveMemberContext";
 export function WhatsAppStatusPill() {
   const { tenantId, user } = useAuth();
   const { member } = useActiveMember();
+  const { context: supportContext } = useSupportImpersonation();
+
+  const targetMemberId = supportContext?.target_member_id ?? member?.id ?? null;
+  const targetTenantId = supportContext?.tenant_id ?? tenantId ?? null;
 
   const { data } = useQuery({
-    queryKey: ["wa-status-pill", tenantId, member?.id, user?.id],
-    enabled: !!tenantId && (!!member?.id || !!user?.id),
+    queryKey: ["wa-status-pill", targetTenantId, targetMemberId, user?.id],
+    enabled: !!targetTenantId && (!!targetMemberId || !!user?.id),
     refetchInterval: 60_000,
     staleTime: 30_000,
     queryFn: async () => {
@@ -24,11 +29,11 @@ export function WhatsAppStatusPill() {
       //    selecionado (caso normal e também em modo suporte/impersonação),
       //    usamos o user_id desse membro — não o do usuário logado real.
       let targetUserId: string | null = null;
-      if (member?.id) {
+      if (targetMemberId) {
         const { data: tm } = await supabase
           .from("tenant_members")
           .select("user_id")
-          .eq("id", member.id)
+          .eq("id", targetMemberId)
           .maybeSingle();
         targetUserId = (tm as { user_id?: string | null } | null)?.user_id ?? null;
       }
@@ -38,7 +43,7 @@ export function WhatsAppStatusPill() {
       const { data: rows, error } = await supabase
         .from("whatsapp_instances")
         .select("is_connected,status")
-        .eq("tenant_id", tenantId!)
+        .eq("tenant_id", targetTenantId!)
         .or(`seller_user_id.eq.${targetUserId},created_by_user_id.eq.${targetUserId}`);
       if (error) throw error;
       if (!rows || rows.length === 0) return null;
