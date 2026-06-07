@@ -797,6 +797,41 @@ Deno.serve(async (req: Request) => {
     const { fromMe, isGroup, phone, text: rawText, externalId, pushName, avatar, media } = extractMessage(payload);
     let hasMedia = !!media.kind && (!!media.url || !!media.base64);
 
+    // ===========================================================================
+    // BLOQUEIO DE CONVERSAS INTERNAS:
+    // Mensagens cujo "outro lado" é o próprio número oficial da empresa
+    // (4792352804) OU o telefone de qualquer membro interno (tenant_members)
+    // NÃO devem virar lead nem ser anexadas a thread de cliente. Esses são
+    // disparos de notificação/teste consultor↔empresa e estavam vazando para
+    // conversas de leads aleatórios via lookup por telefone.
+    // ===========================================================================
+    if (phone) {
+      const peerDigits = phone.replace(/\D/g, "");
+      const NOTIFIER_DIGITS = "4792352804";
+      const peerTail = peerDigits.replace(/^55/, "");
+      const isCompanyNotifier =
+        peerDigits.endsWith(NOTIFIER_DIGITS) || peerTail.endsWith(NOTIFIER_DIGITS);
+      let isInternalMember = false;
+      if (!isCompanyNotifier && peerTail.length >= 10) {
+        const { data: memberHit } = await admin
+          .from("tenant_members")
+          .select("id")
+          .eq("tenant_id", instance.tenant_id)
+          .eq("is_active", true)
+          .not("phone", "is", null)
+          .or(`phone.ilike.%${peerTail}%,phone.ilike.%${peerDigits}%`)
+          .limit(1)
+          .maybeSingle();
+        isInternalMember = !!memberHit;
+      }
+      if (isCompanyNotifier || isInternalMember) {
+        console.log("webhook ignored: internal peer (member/notifier)", JSON.stringify({
+          phone, fromMe, isCompanyNotifier, isInternalMember,
+        }).slice(0, 300));
+        return ok({ ignored: "internal_peer", reason: isCompanyNotifier ? "company_notifier" : "tenant_member" });
+      }
+    }
+
     // Fallback: o provedor pode anunciar a mídia (messageType=imageMessage etc.)
     // sem enviar URL nem base64. Nesse caso, baixamos os bytes via API do uazapi
     // usando o messageid. Isso é o que torna anexos enviados pelo WhatsApp nativo
