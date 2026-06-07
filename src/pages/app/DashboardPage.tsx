@@ -212,9 +212,6 @@ export default function DashboardPage() {
           timesByMember={timesByMember}
         />
 
-        <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
-
-
         {privileged && (
           <section className="space-y-4 md:space-y-5">
             <div className="flex items-center justify-between gap-3">
