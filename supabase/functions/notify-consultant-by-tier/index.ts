@@ -502,14 +502,7 @@ Deno.serve(async (req) => {
       waStatus = "failed";
       waError = "invalid phone";
     } else {
-      const { data: sender } = await admin
-        .from("whatsapp_instances")
-        .select("server_url,instance_token,status,is_connected")
-        .eq("tenant_id", lead.tenant_id)
-        .or("is_connected.eq.true,status.eq.connected")
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
+      const sender = await pickNotifierInstance(admin, lead.tenant_id);
       if (sender?.server_url && sender?.instance_token) {
         try {
           await randomSendDelay();
