@@ -38,12 +38,18 @@ export default function DashboardPage() {
   // Filtros do painel — apenas owner/supervisor/superadmin podem trocar.
   // Superadmin vê seletor de tenant; owner/supervisor só de consultor (dentro do próprio tenant).
   const [scope, setScope] = useState<DashboardScope>({ tenantId: null, memberId: null });
+  // Em modo suporte, o superadmin "vira" o consultor visualizado: escopo do
+  // dashboard fica preso ao tenant_member alvo (ex.: Micaelly), do contrário
+  // o painel apareceria zerado porque o filtro global some no superadmin.
+  const impersonatedMemberId = supportContext?.target_member_id ?? null;
   // Para consultor comum, o escopo é fixo nele mesmo.
-  const effectiveMemberId = consultantScopeMemberId ?? scope.memberId;
+  const effectiveMemberId = consultantScopeMemberId ?? impersonatedMemberId ?? scope.memberId;
   // tenantId: undefined = padrão (auth tenant ou global p/ superadmin); null = global; string = tenant
-  const effectiveTenantOverride: string | null | undefined = isSuperadmin
-    ? scope.tenantId // null = todos os tenants, string = tenant selecionado
-    : supportContext?.tenant_id ?? undefined; // modo suporte usa explicitamente o tenant visualizado
+  const effectiveTenantOverride: string | null | undefined = supportContext?.tenant_id
+    ? supportContext.tenant_id
+    : isSuperadmin
+      ? scope.tenantId // null = todos os tenants, string = tenant selecionado
+      : undefined;
 
   const metricsScope = {
     tenantId: effectiveTenantOverride,
