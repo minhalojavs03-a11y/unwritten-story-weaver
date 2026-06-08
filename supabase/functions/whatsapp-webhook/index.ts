@@ -681,6 +681,19 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
     if (!instance) return ok({ error: "instance not found" }, 404);
 
+    // SINGLE-TENANT FERACON: independente de qual instância dispare o webhook,
+    // todos leads/conversas/mensagens DEVEM ficar no tenant Feracon. Instâncias
+    // órfãs em outros tenants estavam fazendo respostas de clientes irem para
+    // leads duplicados "kind=outros" invisíveis para a equipe.
+    const FERACON_TENANT_ID = "9ecb99e2-50ee-404f-920b-81cd94cc685e";
+    if (instance.tenant_id !== FERACON_TENANT_ID) {
+      console.warn("webhook: coercing instance tenant_id to Feracon", {
+        instance_id: instance.id,
+        original_tenant: instance.tenant_id,
+      });
+      instance.tenant_id = FERACON_TENANT_ID;
+    }
+
     const payload = await req.json().catch(() => ({}));
     const evt = String(payload?.event ?? payload?.type ?? "").toLowerCase();
     console.log("webhook payload event=", evt);
