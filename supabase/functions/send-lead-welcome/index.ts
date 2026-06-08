@@ -81,17 +81,7 @@ Deno.serve(async (req) => {
     if (!lead.phone) return json({ ok: true, skipped: "no phone" });
 
     if (!force) {
-      // 1) Já enviamos welcome antes? pula.
-      const { data: already } = await admin
-        .from("lead_notifications")
-        .select("id")
-        .eq("lead_id", lead_id)
-        .eq("type", "welcome")
-        .eq("delivered", true)
-        .limit(1);
-      if (already && already.length) return json({ ok: true, skipped: "already welcomed" });
-
-      // 2) Já existe QUALQUER mensagem trocada com esse lead? pula
+      // 1) Já existe mensagem confirmada no provedor? pula.
       //    (evita repetir abordagem quando a instância caiu e voltou — continuar de onde parou).
       const { data: anyMsg } = await admin
         .from("messages")
