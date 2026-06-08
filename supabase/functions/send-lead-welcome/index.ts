@@ -52,6 +52,23 @@ function json(body: unknown, status = 200) {
   });
 }
 
+async function parseProviderResponse(resp: Response) {
+  const raw = await resp.text();
+  let data: any = {};
+  try { data = JSON.parse(raw); } catch { data = { raw }; }
+  return { raw, data };
+}
+
+function providerMessageId(data: any): string | null {
+  const found =
+    data?.id ?? data?.messageId ?? data?.messageid ?? data?.key?.id ??
+    data?.data?.id ?? data?.data?.messageId ?? data?.data?.messageid ?? data?.data?.key?.id ??
+    data?.response?.id ?? data?.response?.messageId ?? data?.response?.messageid ?? data?.response?.key?.id ??
+    data?.message?.id ?? data?.message?.messageId ?? data?.message?.messageid ?? data?.message?.key?.id ??
+    (Array.isArray(data?.messages) ? data.messages[0]?.key?.id ?? data.messages[0]?.id : null);
+  return found ? String(found).trim() : null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
@@ -146,8 +163,10 @@ Deno.serve(async (req) => {
       headers: { "Content-Type": "application/json", token: principal.instance_token },
       body: JSON.stringify({ number: phoneDigits, text, message: text }),
     });
-    if (!r.ok) {
-      const detail = (await r.text()).slice(0, 300);
+    const { raw, data } = await parseProviderResponse(r);
+    const providerId = providerMessageId(data);
+    if (!r.ok || !providerId) {
+      const detail = (!providerId && r.ok ? `provider accepted without message id: ${raw}` : raw).slice(0, 300);
       console.error("welcome send failed", r.status, "instance", principal.id, detail);
       if (r.status === 503 && /not reconnectable|disconnected/i.test(detail)) {
         await admin.from("whatsapp_instances")
@@ -196,6 +215,7 @@ Deno.serve(async (req) => {
         body: text,
         content: text,
         status: "sent",
+          external_id: providerId,
         metadata: { welcome: true, source: "backfill" },
       });
     }
