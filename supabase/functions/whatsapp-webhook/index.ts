@@ -670,8 +670,12 @@ Deno.serve(async (req: Request) => {
 
   try {
     const url = new URL(req.url);
-    const secret = url.searchParams.get("secret");
+    const rawSecret = url.searchParams.get("secret");
+    const secret = rawSecret?.split("/")[0]?.trim() || null;
     if (!secret) return ok({ error: "missing secret" }, 401);
+    if (rawSecret !== secret) {
+      console.warn("webhook: normalized provider-mutated secret", { suffix: rawSecret?.slice(secret.length, 80) });
+    }
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
     const { data: instance } = await admin
@@ -1104,6 +1108,25 @@ Deno.serve(async (req: Request) => {
       .order("created_at", { ascending: true })
       .limit(1);
     let conv: any = convRows?.[0] ?? null;
+    if (!conv) {
+      const { data: legacyRows } = await admin
+        .from("conversations")
+        .select("*")
+        .eq("lead_id", lead!.id)
+        .is("whatsapp_instance_id", null)
+        .order("created_at", { ascending: true })
+        .limit(1);
+      const legacyConv = legacyRows?.[0] ?? null;
+      if (legacyConv) {
+        const { data: updatedLegacy } = await admin.from("conversations").update({
+          whatsapp_instance_id: instance.id,
+          last_message_preview: text.slice(0, 120),
+          last_message_at: new Date().toISOString(),
+          unread_count: (legacyConv.unread_count ?? 0) + 1,
+        }).eq("id", legacyConv.id).select("*").single();
+        conv = updatedLegacy ?? legacyConv;
+      }
+    }
     if (!conv) {
       const { data: createdConv, error: insertConvErr } = await admin.from("conversations").insert({
         tenant_id: instance.tenant_id,
