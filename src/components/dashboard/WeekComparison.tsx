@@ -105,7 +105,7 @@ const METRICS: { key: keyof WeekStats; label: string; color: string }[] = [
 ];
 
 export function WeekComparison({ leads }: Props) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [offset, setOffset] = useState(1); // 1 = semana passada
 
   const { current, previous, currentRange, previousRange } = useMemo(() => {
