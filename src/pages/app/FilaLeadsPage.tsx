@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, Phone, Mail, Inbox, CheckCircle2, Clock, XCircle, Trophy, MessageCircle, ArrowLeft, Search, X, Send, ArrowRightLeft, Check } from "lucide-react";
+import { Loader2, RefreshCw, Phone, Mail, Inbox, CheckCircle2, Clock, XCircle, Trophy, MessageCircle, ArrowLeft, Search, X, Send, ArrowRightLeft, Check, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "./PageHeader";
 import { usePermissions } from "@/hooks/usePermissions";
