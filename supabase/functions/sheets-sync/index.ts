@@ -88,6 +88,23 @@ async function enqueueWelcomeFallback(tenantId: string, leadId: string, phone: s
   }
 }
 
+async function parseProviderResponse(resp: Response) {
+  const raw = await resp.text();
+  let data: any = {};
+  try { data = JSON.parse(raw); } catch { data = { raw }; }
+  return { raw, data };
+}
+
+function providerMessageId(data: any): string | null {
+  const found =
+    data?.id ?? data?.messageId ?? data?.messageid ?? data?.key?.id ??
+    data?.data?.id ?? data?.data?.messageId ?? data?.data?.messageid ?? data?.data?.key?.id ??
+    data?.response?.id ?? data?.response?.messageId ?? data?.response?.messageid ?? data?.response?.key?.id ??
+    data?.message?.id ?? data?.message?.messageId ?? data?.message?.messageid ?? data?.message?.key?.id ??
+    (Array.isArray(data?.messages) ? data.messages[0]?.key?.id ?? data.messages[0]?.id : null);
+  return found ? String(found).trim() : null;
+}
+
 // Número oficial da empresa — TODA pré-abordagem de IA sai daqui (47 9235-2804).
 const COMPANY_PHONE_DIGITS = "4792352804";
 
@@ -132,6 +149,7 @@ async function sendWelcome(tenantId: string, lead: any) {
     await randomSendDelay();
 
     let instance: any = null;
+    let providerId: string | null = null;
     let lastErr = "";
     let lastStatus = 0;
     for (const cand of candidates) {
@@ -140,9 +158,11 @@ async function sendWelcome(tenantId: string, lead: any) {
         headers: { "Content-Type": "application/json", token: cand.instance_token },
         body: JSON.stringify({ number: phoneDigits, text, message: text }),
       });
-      if (r.ok) { instance = cand; break; }
       lastStatus = r.status;
-      lastErr = (await r.text()).slice(0, 300);
+      const { raw, data } = await parseProviderResponse(r);
+      providerId = providerMessageId(data);
+      if (r.ok && providerId) { instance = cand; break; }
+      lastErr = (r.ok ? `provider accepted without message id: ${raw}` : raw).slice(0, 300);
       console.error("welcome send failed", r.status, "instance", cand.id, lastErr);
       // Sessão morta → marca como desconectada e tenta a próxima.
       if (r.status === 503 && /not reconnectable|disconnected/i.test(lastErr)) {
@@ -208,6 +228,7 @@ async function sendWelcome(tenantId: string, lead: any) {
           body: text,
           content: text,
           status: "sent",
+          external_id: providerId,
           metadata: { welcome: true, source: "sheets-sync" },
         }),
       });

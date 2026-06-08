@@ -40,11 +40,25 @@ async function markMessageFailed(admin: any, messageId: string | null) {
 
 async function markMessageDelivered(admin: any, messageId: string | null, data: any) {
   if (!messageId) return;
-  const providerId = data?.id || data?.messageId || data?.key?.id || null;
+  const providerId = providerMessageId(data);
+  if (!providerId) {
+    await markMessageFailed(admin, messageId);
+    throw new Error("provider accepted without message id");
+  }
   await admin.from("messages").update({
     status: "delivered",
-    ...(providerId ? { external_id: providerId } : {}),
+    external_id: providerId,
   }).eq("id", messageId);
+}
+
+function providerMessageId(data: any): string | null {
+  const found =
+    data?.id ?? data?.messageId ?? data?.messageid ?? data?.key?.id ??
+    data?.data?.id ?? data?.data?.messageId ?? data?.data?.messageid ?? data?.data?.key?.id ??
+    data?.response?.id ?? data?.response?.messageId ?? data?.response?.messageid ?? data?.response?.key?.id ??
+    data?.message?.id ?? data?.message?.messageId ?? data?.message?.messageid ?? data?.message?.key?.id ??
+    (Array.isArray(data?.messages) ? data.messages[0]?.key?.id ?? data.messages[0]?.id : null);
+  return found ? String(found).trim() : null;
 }
 
 function json(body: unknown, status = 200) {
