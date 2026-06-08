@@ -475,9 +475,14 @@ export default function ConversasPage() {
               <li key={c.id}>
                 <button
                   onClick={() => {
-                    if (c.lead_id) setParams({ lead: c.lead_id });
-                    else setParams({ conv: c.id });
+                    setParams((prev) => {
+                      const next = new URLSearchParams(prev);
+                      if (c.lead_id) { next.set("lead", c.lead_id); next.delete("conv"); }
+                      else { next.set("conv", c.id); next.delete("lead"); }
+                      return next;
+                    }, { replace: true });
                   }}
+
                   className={cn(
                     "flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-[#f5f6f6]",
                     isActive && "wa-list-item-active"
