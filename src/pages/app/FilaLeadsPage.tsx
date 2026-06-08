@@ -790,13 +790,6 @@ export default function FilaLeadsPage() {
                             </Button>
                           );
                         }
-                        if (!activeMember?.id || !assignedMemberId) {
-                          return (
-                            <Button disabled size="sm" variant="outline" className="rounded-full h-9 px-4 text-xs md:h-10 md:px-5 md:text-sm">
-                              Em atendimento
-                            </Button>
-                          );
-                        }
                         if (canSeeAll) {
                           return (
                             <Button
@@ -807,6 +800,13 @@ export default function FilaLeadsPage() {
                             >
                               <Eye className="mr-1.5 h-3.5 w-3.5" />
                               Ver atendimento
+                            </Button>
+                          );
+                        }
+                        if (!activeMember?.id || !assignedMemberId) {
+                          return (
+                            <Button disabled size="sm" variant="outline" className="rounded-full h-9 px-4 text-xs md:h-10 md:px-5 md:text-sm">
+                              Em atendimento
                             </Button>
                           );
                         }
