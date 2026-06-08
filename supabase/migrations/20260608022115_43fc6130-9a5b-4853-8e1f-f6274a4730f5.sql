@@ -1,0 +1,1 @@
+UPDATE public.whatsapp_instances SET is_connected = false, status = 'disconnected', updated_at = now() WHERE id = '6d2d8eee-bac9-46bc-92b1-6efef33c0b8e';
