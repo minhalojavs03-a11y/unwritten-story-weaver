@@ -415,17 +415,6 @@ export default function ConversasPage() {
                   onSelect={() => {
                     setParams((prev) => {
                       const next = new URLSearchParams(prev);
-                      next.delete("consultor");
-                      return next;
-                    }, { replace: true });
-                  }}
-                >
-                  Todos
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => {
-                    setParams((prev) => {
-                      const next = new URLSearchParams(prev);
                       next.set("consultor", "unassigned");
                       return next;
                     }, { replace: true });
@@ -434,6 +423,7 @@ export default function ConversasPage() {
                   Sem consultor
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+
                 {conversationConsultants.map((c) => (
                   <DropdownMenuItem
                     key={c.id}
