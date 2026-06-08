@@ -226,8 +226,43 @@ export function useReportData(
     if (data_lost_pct(lost.length, total) > 30) {
       insights.push({ level: "warning", text: `Taxa de perda elevada: ${data_lost_pct(lost.length, total).toFixed(0)}% dos leads do período`, tag: "Funil" });
     }
+
+    // Insights complementares — garantem sinal mesmo sem fechamentos ainda
+    const topByLeads = [...memberStats].sort((a, b) => b.leads - a.leads)[0];
+    if (topByLeads && topByLeads.leads > 0) {
+      insights.push({ level: "info", text: `${topByLeads.name} concentra o maior volume: ${topByLeads.leads} leads no período`, tag: "Carteira" });
+    }
+    const topMeetings = [...memberStats].sort((a, b) => b.meetings - a.meetings)[0];
+    if (topMeetings && topMeetings.meetings > 0) {
+      insights.push({ level: "success", text: `${topMeetings.name} lidera em agendamentos: ${topMeetings.meetings} reuniões`, tag: "Agenda" });
+    }
+    const fastest = [...memberStats].filter((m) => m.avgResp > 0).sort((a, b) => a.avgResp - b.avgResp)[0];
+    if (fastest) {
+      const mins = Math.round(fastest.avgResp * 60);
+      insights.push({ level: "success", text: `${fastest.name} é o mais rápido para assumir: média de ${mins < 60 ? `${mins} min` : `${fastest.avgResp.toFixed(1)} h`}`, tag: "SLA" });
+    }
+    const uncontacted = leads.filter((l) => !l.last_contact_at).length;
+    if (uncontacted > 0 && total > 0) {
+      const pct = Math.round((uncontacted / total) * 100);
+      if (pct >= 20) {
+        insights.push({ level: "warning", text: `${uncontacted} leads (${pct}%) ainda sem primeiro contato registrado`, tag: "Cobertura" });
+      } else {
+        insights.push({ level: "info", text: `Cobertura de contato em ${100 - pct}% dos leads do período`, tag: "Cobertura" });
+      }
+    }
+    const inAttendance = leads.filter((l) => l.stage === "atendimento").length;
+    if (inAttendance > 0) {
+      insights.push({ level: "info", text: `${inAttendance} leads em atendimento ativo agora`, tag: "Pipeline" });
+    }
+    if (topCampaign && topCampaign.leads > 0 && !(topCampaign.revenue > 0)) {
+      insights.push({ level: "info", text: `Fonte "${topCampaign.name}" é a que mais traz leads (${topCampaign.leads})`, tag: "Origem" });
+    }
+    if (total > 0 && insights.length < 3) {
+      insights.push({ level: "info", text: `${total} leads no período • ${inMeeting.length} em fase de reunião • ${members.length} consultores ativos`, tag: "Resumo" });
+    }
+
     if (insights.length === 0) {
-      insights.push({ level: "info", text: "Sem destaques relevantes no período selecionado", tag: "Geral" });
+      insights.push({ level: "info", text: total === 0 ? "Nenhum lead criado no período selecionado — amplie o filtro para ver insights" : "Sem destaques relevantes no período selecionado", tag: "Geral" });
     }
 
     return {
