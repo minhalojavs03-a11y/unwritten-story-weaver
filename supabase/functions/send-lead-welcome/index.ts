@@ -97,6 +97,9 @@ Deno.serve(async (req) => {
         .from("messages")
         .select("id")
         .eq("lead_id", lead_id)
+        .eq("direction", "outbound")
+        .not("external_id", "is", null)
+        .in("status", ["sent", "delivered", "read"])
         .limit(1);
       if (anyMsg && anyMsg.length) {
         // Marca como welcomed para a fila não tentar de novo no futuro.
