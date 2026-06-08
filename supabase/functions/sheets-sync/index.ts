@@ -88,15 +88,26 @@ async function enqueueWelcomeFallback(tenantId: string, leadId: string, phone: s
   }
 }
 
+// Número oficial da empresa — TODA pré-abordagem de IA sai daqui (47 9235-2804).
+const COMPANY_PHONE_DIGITS = "4792352804";
+
 async function sendWelcome(tenantId: string, lead: any) {
   try {
     if (!lead?.phone) return;
-    // Lista TODAS as instâncias conectadas (mais recente primeiro) e tenta uma a uma.
-    const instRes = await sb(
-      `/whatsapp_instances?tenant_id=eq.${tenantId}&or=(is_connected.eq.true,status.eq.connected)&select=id,server_url,instance_token,seller_user_id&order=updated_at.desc`,
+    // Prioriza SEMPRE a instância do número oficial da empresa. Só usa outra
+    // se o número principal estiver fora do ar.
+    const principalRes = await sb(
+      `/whatsapp_instances?tenant_id=eq.${tenantId}&or=(is_connected.eq.true,status.eq.connected)&phone_number=ilike.*${COMPANY_PHONE_DIGITS}*&select=id,server_url,instance_token,seller_user_id&order=updated_at.desc`,
     );
-    const all = (await instRes.json()) ?? [];
-    const candidates = (all as any[]).filter((i) => i.server_url && i.instance_token);
+    const principal = (await principalRes.json()) ?? [];
+    let candidates = (principal as any[]).filter((i) => i.server_url && i.instance_token);
+    if (!candidates.length) {
+      const fallbackRes = await sb(
+        `/whatsapp_instances?tenant_id=eq.${tenantId}&or=(is_connected.eq.true,status.eq.connected)&select=id,server_url,instance_token,seller_user_id&order=updated_at.desc`,
+      );
+      const all = (await fallbackRes.json()) ?? [];
+      candidates = (all as any[]).filter((i) => i.server_url && i.instance_token);
+    }
     if (!candidates.length) {
       console.log("welcome skipped: no connected instance", tenantId);
       await enqueueWelcomeFallback(tenantId, lead.id, lead.phone, "no connected instance");
