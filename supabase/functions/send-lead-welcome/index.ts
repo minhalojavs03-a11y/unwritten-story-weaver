@@ -111,13 +111,30 @@ Deno.serve(async (req) => {
       .from("tenants").select("name").eq("id", lead.tenant_id).maybeSingle();
     const company = tenant?.name || "nossa equipe";
 
+    // Busca o consultor responsável (atribuído na rotação) para apresentá-lo já
+    // na primeira abordagem.
+    let consultantFirstName: string | null = null;
+    if (lead.assigned_member_id) {
+      const { data: member } = await admin
+        .from("tenant_members")
+        .select("display_name")
+        .eq("id", lead.assigned_member_id)
+        .maybeSingle();
+      const full = (member?.display_name || "").trim();
+      if (full) consultantFirstName = full.split(/\s+/)[0];
+    }
+
     const firstName = (lead.name || "").trim().split(/\s+/)[0] || "tudo bem";
+    const consultantLine = consultantFirstName
+      ? `Seu atendimento será conduzido pelo(a) consultor(a) *${consultantFirstName}*, que vai cuidar de tudo com você. `
+      : "";
     const interestLine = lead.interest
       ? `Vi aqui que você tem interesse em *${lead.interest}* — me confirma se está correto? `
       : "";
     const text =
       `Olá, ${firstName}! 👋 Aqui é o atendimento da *${company} Consórcios*. ` +
       `Recebemos seu contato e queremos te ajudar a realizar esse sonho. 🏡🚗\n\n` +
+      consultantLine +
       interestLine +
       `Posso te enviar agora as opções de carta e parcela que mais se encaixam no seu perfil?`;
 
