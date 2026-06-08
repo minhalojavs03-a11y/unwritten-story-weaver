@@ -797,6 +797,19 @@ export default function FilaLeadsPage() {
                             </Button>
                           );
                         }
+                        if (canSeeAll) {
+                          return (
+                            <Button
+                              onClick={() => navigate(`/conversas?lead=${lead.id}`)}
+                              size="sm"
+                              variant="outline"
+                              className="rounded-full h-9 px-4 text-xs md:h-10 md:px-5 md:text-sm border-primary/40 text-primary hover:bg-primary/10"
+                            >
+                              <Eye className="mr-1.5 h-3.5 w-3.5" />
+                              Ver atendimento
+                            </Button>
+                          );
+                        }
                         return (
                           <Button
                             onClick={() => { setTransferFor(lead); setTransferMessage(""); }}
