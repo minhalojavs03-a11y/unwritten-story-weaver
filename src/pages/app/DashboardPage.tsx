@@ -260,9 +260,10 @@ export default function DashboardPage() {
               <ResponseHeatmap heatmap={execData.responseHeatmap} />
             </div>
 
-            <WeekComparison leads={leads} />
-
-            <CoachingPanel days={30} />
+            <div className="grid gap-4 lg:grid-cols-2 items-start">
+              <WeekComparison leads={leads} />
+              <CoachingPanel days={30} />
+            </div>
           </section>
         )}
 
