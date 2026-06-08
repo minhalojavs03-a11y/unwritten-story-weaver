@@ -658,20 +658,8 @@ function ConversasNavWithSubmenu({
           <div className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">
             Conversas por consultor
           </div>
-          <button
-            type="button"
-            onClick={() => onPickConsultor(null)}
-            className={cn(
-              "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition-colors",
-              isOnConversas && !currentConsultor
-                ? "bg-white/15 text-white"
-                : "text-white/80 hover:bg-white/10 hover:text-white",
-            )}
-          >
-            <Users2 className="h-4 w-4" />
-            <span>Todas as conversas</span>
-          </button>
-          <div className="my-1 h-px bg-white/5" />
+
+
           <div className="max-h-80 overflow-y-auto">
             {loadingMembers && (
               <div className="px-2 py-2 text-xs text-white/50">Carregando consultores…</div>
