@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, Phone, Mail, Inbox, CheckCircle2, Clock, XCircle, Trophy, MessageCircle, ArrowLeft, Search, X, Send, ArrowRightLeft, Check } from "lucide-react";
+import { Loader2, RefreshCw, Phone, Mail, Inbox, CheckCircle2, Clock, XCircle, Trophy, MessageCircle, ArrowLeft, Search, X, Send, ArrowRightLeft, Check, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "./PageHeader";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -794,6 +794,19 @@ export default function FilaLeadsPage() {
                           return (
                             <Button disabled size="sm" variant="outline" className="rounded-full h-9 px-4 text-xs md:h-10 md:px-5 md:text-sm">
                               Em atendimento
+                            </Button>
+                          );
+                        }
+                        if (canSeeAll) {
+                          return (
+                            <Button
+                              onClick={() => navigate(`/conversas?lead=${lead.id}`)}
+                              size="sm"
+                              variant="outline"
+                              className="rounded-full h-9 px-4 text-xs md:h-10 md:px-5 md:text-sm border-primary/40 text-primary hover:bg-primary/10"
+                            >
+                              <Eye className="mr-1.5 h-3.5 w-3.5" />
+                              Ver atendimento
                             </Button>
                           );
                         }
