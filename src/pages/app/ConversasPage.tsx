@@ -533,7 +533,7 @@ export default function ConversasPage() {
         ) : (
           <ConversationDetail
             conv={active}
-            onBack={() => setParams({})}
+            onBack={() => setParams((prev) => { const n = new URLSearchParams(prev); n.delete("lead"); n.delete("conv"); return n; }, { replace: true })}
             showInfo={showInfo}
             onToggleInfo={() => setShowInfo((v) => !v)}
           />
