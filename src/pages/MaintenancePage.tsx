@@ -1,4 +1,5 @@
-import { Wrench } from "lucide-react";
+import { Wrench, ShieldCheck } from "lucide-react";
+import { Link } from "react-router-dom";
 import logoFeraconLight from "@/assets/logo-feracon-light.png";
 
 export default function MaintenancePage() {
@@ -25,6 +26,14 @@ export default function MaintenancePage() {
         <div className="mt-10 rounded-xl border border-white/10 bg-white/[0.03] px-5 py-3 text-xs text-white/50">
           Dúvidas urgentes? Entre em contato com o suporte interno.
         </div>
+
+        <Link
+          to="/admin/login"
+          className="mt-6 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-medium text-white/70 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+        >
+          <ShieldCheck className="h-4 w-4" />
+          Acesso superadmin
+        </Link>
 
         <p className="mt-8 text-[11px] uppercase tracking-[0.2em] text-white/30">
           Consórcio Feracon · {new Date().getFullYear()}
