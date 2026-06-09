@@ -934,22 +934,24 @@ Deno.serve(async (req: Request) => {
               }).eq("id", leadMatch.id).select("*").single();
               if (updatedLead) attachedLead = updatedLead;
             }
+            // Uma única conversa por lead — independente da instância de WhatsApp.
             const { data: convMatches } = await admin
               .from("conversations")
               .select("*")
+              .eq("tenant_id", instance.tenant_id)
               .eq("lead_id", leadMatch.id)
-              .eq("whatsapp_instance_id", instance.id)
               .order("created_at", { ascending: true })
               .limit(1);
             const convMatch = convMatches?.[0] ?? null;
             if (convMatch) {
-              attachedConv = convMatch;
-              await admin.from("conversations").update({
+              const { data: updatedConv } = await admin.from("conversations").update({
+                whatsapp_instance_id: instance.id,
                 last_message_preview: text.slice(0, 120),
                 last_message_at: new Date(tsMs ?? Date.now()).toISOString(),
-              }).eq("id", convMatch.id);
+              }).eq("id", convMatch.id).select("*").single();
+              attachedConv = updatedConv ?? convMatch;
             } else {
-              const { data: createdConv, error: insertConvErr } = await admin.from("conversations").insert({
+              const { data: createdConv } = await admin.from("conversations").insert({
                 tenant_id: instance.tenant_id,
                 lead_id: leadMatch.id,
                 whatsapp_instance_id: instance.id,
@@ -957,18 +959,7 @@ Deno.serve(async (req: Request) => {
                 last_message_at: new Date(tsMs ?? Date.now()).toISOString(),
                 unread_count: 0,
               }).select("*").single();
-              if (insertConvErr && insertConvErr.code === "23505") {
-                const { data: existingRows } = await admin
-                  .from("conversations")
-                  .select("*")
-                  .eq("lead_id", leadMatch.id)
-                  .eq("whatsapp_instance_id", instance.id)
-                  .order("created_at", { ascending: true })
-                  .limit(1);
-                attachedConv = existingRows?.[0] ?? null;
-              } else {
-                attachedConv = createdConv;
-              }
+              attachedConv = createdConv;
             }
           }
         }
