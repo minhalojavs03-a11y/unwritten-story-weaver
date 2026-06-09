@@ -55,6 +55,12 @@ import NotFound from "./pages/NotFound.tsx";
 import ProposalWhatsappOficial from "./pages/ProposalWhatsappOficial";
 import UbertiProposta from "./pages/UbertiProposta";
 import JoinPage from "./pages/JoinPage";
+import MaintenancePage from "./pages/MaintenancePage";
+
+// Modo manutenção global do CRM. Quando true, apenas o superadmin
+// pode acessar o painel /admin/* (via /admin/login). Demais usuários
+// veem a tela de manutenção e não conseguem fazer login.
+const MAINTENANCE_MODE = true;
 
 const queryClient = new QueryClient({
   defaultOptions: {
