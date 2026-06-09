@@ -10,9 +10,32 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Único número autorizado a ENVIAR mensagens em nome da empresa (47 9235-2804).
-// Todas as mensagens automáticas (pré-atendimento, welcome, follow-ups) saem por aqui.
+// Número oficial da empresa (fallback caso o consultor responsável não tenha
+// instância conectada). A regra principal é enviar pela instância do PRÓPRIO
+// consultor responsável pelo lead — assim a conversa nasce já no WhatsApp dele.
 const COMPANY_PHONE_DIGITS = "4792352804";
+
+async function pickConsultantInstance(admin: any, tenantId: string, assignedMemberId: string | null) {
+  if (!assignedMemberId) return null;
+  const { data: member } = await admin
+    .from("tenant_members")
+    .select("user_id")
+    .eq("id", assignedMemberId)
+    .maybeSingle();
+  const userId = member?.user_id;
+  if (!userId) return null;
+  const { data: inst } = await admin
+    .from("whatsapp_instances")
+    .select("id,server_url,instance_token,phone_number,is_connected,status,updated_at")
+    .eq("tenant_id", tenantId)
+    .eq("seller_user_id", userId)
+    .or("is_connected.eq.true,status.eq.connected")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (inst?.server_url && inst?.instance_token) return inst;
+  return null;
+}
 
 async function pickCompanyInstance(admin: any, tenantId: string) {
   const { data: principal } = await admin
@@ -36,6 +59,7 @@ async function pickCompanyInstance(admin: any, tenantId: string) {
     .maybeSingle();
   return any_;
 }
+
 
 // === MODO ESTABILIDADE: delay aleatório antes de cada envio (remover quando voltar ao normal).
 async function randomSendDelay(): Promise<void> {
