@@ -85,6 +85,28 @@ const App = () => (
           <ActiveMemberProvider>
             <ErrorBoundary>
             <Routes>
+            {MAINTENANCE_MODE ? (
+              <>
+                {/* Apenas superadmin continua acessando o painel /admin */}
+                <Route path="/admin/login" element={<AdminLoginPage />} />
+                <Route path="/admin" element={<ProtectedRoute requireSuperadmin><AdminLayout /></ProtectedRoute>}>
+                  <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="clientes" element={<AdminClientes />} />
+                  <Route path="equipes" element={<AdminEquipes />} />
+                  <Route path="instancias" element={<AdminInstancias />} />
+                  <Route path="ia" element={<AdminIA />} />
+                  <Route path="templates" element={<AdminTemplates />} />
+                  <Route path="automacoes" element={<AdminAutomacoes />} />
+                  <Route path="campanhas" element={<AdminCampanhas />} />
+                  <Route path="integracoes" element={<AdminIntegracoes />} />
+                  <Route path="financeiro" element={<AdminFinanceiro />} />
+                </Route>
+                {/* Tudo o mais cai na tela de manutenção, inclusive /login */}
+                <Route path="*" element={<MaintenancePage />} />
+              </>
+            ) : (
+              <>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<ClientLoginPage />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -140,6 +162,8 @@ const App = () => (
             </Route>
 
             <Route path="*" element={<NotFound />} />
+              </>
+            )}
             </Routes>
             </ErrorBoundary>
           </ActiveMemberProvider>
