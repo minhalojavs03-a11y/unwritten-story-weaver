@@ -841,7 +841,8 @@ async function syncHistory(admin: any, tenantId: string, instance: any, maxChats
     if (!lead) continue;
 
     // upsert conversation
-    let { data: conv } = await admin.from("conversations").select("*").eq("lead_id", lead.id).eq("whatsapp_instance_id", instance.id).maybeSingle();
+    // Uma única conversa por lead — reusa se existir, independente da instância.
+    let { data: conv } = await admin.from("conversations").select("*").eq("tenant_id", tenantId).eq("lead_id", lead.id).order("created_at", { ascending: true }).limit(1).maybeSingle();
     if (!conv) {
       const { data: createdConv, error: createConvError } = await admin.from("conversations").insert({
         tenant_id: tenantId, lead_id: lead.id, whatsapp_instance_id: instance.id,
