@@ -1246,6 +1246,14 @@ Deno.serve(async (req: Request) => {
       return ok({ silenced: true });
     }
 
+    // === IA DESATIVADA GLOBALMENTE ===
+    // Por decisão operacional, a IA NÃO responde mais nada via webhook.
+    // A única mensagem automatizada que sai é a boas-vindas inicial (enviada
+    // pela função `send-lead-welcome`). Todo o restante da conversa fica
+    // 100% nas mãos do consultor responsável pelo lead.
+    return ok({ ai_disabled_globally: true });
+
+
     // Pausa a IA assim que o consultor digitar QUALQUER mensagem na conversa,
     // seja pelo CRM (sent_by != null) ou pelo próprio celular do vendedor
     // (mensagem fromMe que cai como outbound sem metadata.ai). Mensagens
