@@ -119,10 +119,10 @@ export function AppLayout() {
       return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, config];
     }
     if (isOwner || isSuperadmin) {
-      return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
+      return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
     }
     if (isSupervisor) {
-      return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
+      return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
     }
     if (isNilton) {
       return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking];

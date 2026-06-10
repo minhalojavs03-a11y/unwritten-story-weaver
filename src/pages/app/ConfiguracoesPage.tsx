@@ -5,15 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Smartphone, AlertCircle, CheckCircle2, ArrowRight, KeyRound, MessageSquareText, Video, Sparkles, History, Plug } from "lucide-react";
+import { Smartphone, AlertCircle, CheckCircle2, ArrowRight, KeyRound, MessageSquareText, Video, Sparkles, History, Plug, Users2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAiConfig, useMyTenant, useUpdateAiConfig, useWhatsAppInstance } from "@/hooks/useData";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function ConfiguracoesPage() {
   const { isOwner } = useAuth();
+  const { can } = usePermissions();
+  const canManageTeam = can("manage_team");
   const { data: tenant } = useMyTenant();
   const { data: ai } = useAiConfig();
   const { data: wa } = useWhatsAppInstance();
@@ -98,6 +101,7 @@ export default function ConfiguracoesPage() {
           <section className="rounded-xl border bg-card p-4 md:p-6">
             <h2 className="mb-3 font-display text-base font-semibold md:mb-4 md:text-lg">Mais</h2>
             <div className="grid gap-2 sm:grid-cols-2">
+              {canManageTeam && <ShortcutLink to="/equipe" icon={Users2} title="Equipe" desc="Membros, convites e metas" />}
               <ShortcutLink to="/mensagens-prontas" icon={MessageSquareText} title="Mensagens prontas" desc="Templates de WhatsApp" />
               <ShortcutLink to="/gravacoes" icon={Video} title="Gravações" desc="Vídeos de simulações" />
               {isOwner && <ShortcutLink to="/treinar-ia" icon={Sparkles} title="Treinar IA" desc="Base de conhecimento" />}
