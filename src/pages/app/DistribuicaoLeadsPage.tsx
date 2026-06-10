@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, Users2, Info, ChevronDown, ChevronUp, Bell } from "lucide-react";
+import { ShieldAlert, Users2, Info, ChevronDown, ChevronUp, Bell, Smartphone, SmartphoneNfc } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
@@ -181,6 +181,27 @@ export default function DistribuicaoLeadsPage() {
     },
   });
 
+  // Conjunto de user_ids com pelo menos uma instância WhatsApp conectada — regra de fila usa isso.
+  const { data: connectedUserIds = new Set<string>() } = useQuery({
+    queryKey: ["dist-wa-connected", effectiveTenant],
+    enabled: !!effectiveTenant,
+    queryFn: async (): Promise<Set<string>> => {
+      const { data, error } = await supabase
+        .from("whatsapp_instances")
+        .select("seller_user_id,is_connected,status")
+        .eq("tenant_id", effectiveTenant!);
+      if (error) throw error;
+      const s = new Set<string>();
+      for (const r of (data ?? []) as any[]) {
+        if (r.seller_user_id && (r.is_connected === true || r.status === "connected")) {
+          s.add(r.seller_user_id);
+        }
+      }
+      return s;
+    },
+    refetchInterval: 30_000,
+  });
+
   const [local, setLocal] = useState<Record<string, Partial<Row>>>({});
   useEffect(() => setLocal({}), [rows.length, effectiveTenant]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -343,7 +364,24 @@ export default function DistribuicaoLeadsPage() {
                       />
 
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-foreground">{name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-semibold text-foreground">{name}</p>
+                          {r.user_id && connectedUserIds.has(r.user_id) ? (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400"
+                              title="WhatsApp conectado — está na fila"
+                            >
+                              <SmartphoneNfc className="h-3 w-3" /> WA conectado
+                            </span>
+                          ) : (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-1.5 py-0.5 text-[10px] font-medium text-destructive"
+                              title="Sem WhatsApp conectado — não recebe leads, fila pula para o próximo"
+                            >
+                              <Smartphone className="h-3 w-3" /> Sem WA — não recebe
+                            </span>
+                          )}
+                        </div>
                         <p className="truncate text-xs text-muted-foreground">{r.role_label || "Consultor"}</p>
                       </div>
                     </div>
