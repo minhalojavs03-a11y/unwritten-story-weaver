@@ -1058,26 +1058,15 @@ Deno.serve(async (req: Request) => {
     const isTestLead = TEST_PHONES.some((p) => phoneDigits.endsWith(p));
 
     if (!lead) {
-      const initialName = pushName ?? canonical;
-      const { data: created, error: createErr } = await admin.from("leads").insert({
-        tenant_id: instance.tenant_id,
-        name: initialName,
-        phone: canonical,
-        source: isTestLead ? "Teste" : "WhatsApp",
-        tags: isTestLead ? ["teste"] : [],
-        whatsapp_instance_id: instance.id,
-        ...leadOwnerPatchFromInstance(instance),
-        last_message_at: new Date().toISOString(),
-      }).select("*").single();
-      if (createErr || !created) {
-        console.error("lead create error", createErr);
-        return ok({ error: "lead create failed", detail: createErr?.message }, 500);
-      }
-      lead = created;
-      isNewLead = true;
+      // POLÍTICA: trabalhamos somente com leads vindos de anúncio/planilha.
+      // Telefone desconhecido NÃO vira lead nem conversa — apenas loga e ignora.
+      // Isso impede que contatos aleatórios do WhatsApp poluam o CRM.
+      console.log("webhook: phone has no matching lead, ignored", { phone: canonical, instance_id: instance.id });
+      return ok({ ignored: true, reason: "phone not in lead database" });
     } else {
       const existingTags: string[] = Array.isArray(lead.tags) ? lead.tags : [];
       const needsTestTag = isTestLead && !existingTags.includes("teste");
+
       const patch: Record<string, any> = { last_message_at: new Date().toISOString() };
       if (lead.phone !== canonical) patch.phone = canonical;
       // Backfill name when it's missing or just a phone-like placeholder
