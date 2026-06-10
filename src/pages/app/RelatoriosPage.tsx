@@ -323,6 +323,9 @@ function SupervisorDashboard({ data }: { data: ReturnType<typeof useReportData> 
         <KpiCard label="Sem contato" value={data.memberStats.reduce((s, m) => s + m.uncontacted, 0)} sub="aguardando 1º toque" tone="warning" icon={AlertTriangle} />
       </div>
 
+      <ConsorcioFunnel funnel={data.funnel} lost={data.lost} lostReasons={data.lostReasons} />
+
+
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="lg:col-span-2"><HealthScore score={data.healthScore} dims={data.healthDims} /></div>
         <div className="lg:col-span-3"><InsightsPanel insights={data.insights} /></div>
