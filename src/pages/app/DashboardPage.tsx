@@ -26,6 +26,7 @@ import { PublicLeaderboard } from "@/components/gamification/PublicLeaderboard";
 import { MvpOfMonth } from "@/components/gamification/MvpOfMonth";
 import { useRanking, useGamificationConfig } from "@/hooks/useGamification";
 import { WhatsAppHealthAlert } from "@/components/dashboard/WhatsAppHealthAlert";
+import { ResponseRatePanel } from "@/components/dashboard/ResponseRatePanel";
 
 export default function DashboardPage() {
   const { data: profile } = useMyProfile();
@@ -211,6 +212,9 @@ export default function DashboardPage() {
         </section>
 
         <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
+
+        <ResponseRatePanel memberId={effectiveMemberId} compact />
+
 
         <section>
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Ações rápidas</h2>

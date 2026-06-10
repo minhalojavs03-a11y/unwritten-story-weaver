@@ -21,6 +21,7 @@ import {
   CHART_COLORS, SectionTitle, ChartTooltip,
   HealthScore, InsightsPanel, PipelineIntel, WeeklyActivity, ResponseHeatmap,
 } from "@/components/dashboard/ExecutiveWidgets";
+import { ResponseRatePanel } from "@/components/dashboard/ResponseRatePanel";
 
 
 // ─── Building blocks ────────────────────────────────────────────────────────
@@ -524,6 +525,9 @@ export default function RelatoriosPage() {
             setMemberFilter={setMemberFilter}
             showMember={canViewAll && tab !== "personal"}
           />
+
+          <ResponseRatePanel memberId={memberFilter === "all" ? null : memberFilter} />
+
 
           {isExecutive && (
             <TabsContent value="owner" className="mt-0"><OwnerDashboard data={dataGlobal} /></TabsContent>
