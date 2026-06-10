@@ -36,7 +36,7 @@ export function TopAlertBanner() {
     if (bannerItems.length <= 1) return;
     const id = setInterval(() => {
       setIndex((prev) => (prev + 1) % bannerItems.length);
-    }, 5000);
+    }, 12000);
     return () => clearInterval(id);
   }, [bannerItems.length]);
 
