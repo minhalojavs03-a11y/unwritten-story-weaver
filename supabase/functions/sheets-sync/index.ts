@@ -106,19 +106,32 @@ function providerMessageId(data: any): string | null {
   return found ? String(found).trim() : null;
 }
 
-// Número oficial da empresa — TODA pré-abordagem de IA sai daqui (47 9235-2804).
+// Número oficial da empresa — usado APENAS como último fallback se o consultor
+// responsável pelo lead não tiver instância de WhatsApp conectada.
 const COMPANY_PHONE_DIGITS = "4792352804";
 
 async function sendWelcome(tenantId: string, lead: any) {
   try {
     if (!lead?.phone) return;
-    // Prioriza SEMPRE a instância do número oficial da empresa. Só usa outra
-    // se o número principal estiver fora do ar.
-    const principalRes = await sb(
-      `/whatsapp_instances?tenant_id=eq.${tenantId}&or=(is_connected.eq.true,status.eq.connected)&phone_number=ilike.*${COMPANY_PHONE_DIGITS}*&select=id,server_url,instance_token,seller_user_id&order=updated_at.desc`,
-    );
-    const principal = (await principalRes.json()) ?? [];
-    let candidates = (principal as any[]).filter((i) => i.server_url && i.instance_token);
+    // REGRA: a pré-abordagem da IA deve sair SEMPRE pela instância do
+    // consultor a quem o lead foi atribuído — assim a conversa nasce já no
+    // WhatsApp dele. Só caímos no número oficial da empresa se o consultor
+    // não tiver nenhuma instância conectada.
+    let candidates: any[] = [];
+    if (lead.assigned_to) {
+      const consultantRes = await sb(
+        `/whatsapp_instances?tenant_id=eq.${tenantId}&seller_user_id=eq.${lead.assigned_to}&or=(is_connected.eq.true,status.eq.connected)&select=id,server_url,instance_token,seller_user_id&order=updated_at.desc`,
+      );
+      const consultant = (await consultantRes.json()) ?? [];
+      candidates = (consultant as any[]).filter((i) => i.server_url && i.instance_token);
+    }
+    if (!candidates.length) {
+      const principalRes = await sb(
+        `/whatsapp_instances?tenant_id=eq.${tenantId}&or=(is_connected.eq.true,status.eq.connected)&phone_number=ilike.*${COMPANY_PHONE_DIGITS}*&select=id,server_url,instance_token,seller_user_id&order=updated_at.desc`,
+      );
+      const principal = (await principalRes.json()) ?? [];
+      candidates = (principal as any[]).filter((i) => i.server_url && i.instance_token);
+    }
     if (!candidates.length) {
       const fallbackRes = await sb(
         `/whatsapp_instances?tenant_id=eq.${tenantId}&or=(is_connected.eq.true,status.eq.connected)&select=id,server_url,instance_token,seller_user_id&order=updated_at.desc`,
