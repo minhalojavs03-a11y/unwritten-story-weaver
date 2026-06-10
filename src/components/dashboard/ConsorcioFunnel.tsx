@@ -64,11 +64,11 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
           >
             <defs>
               {stages.map((s) => {
-                const st = STAGE_STYLE[s.key];
+                const color = `hsl(var(${STAGE_STYLE[s.key].token}))`;
                 return (
                   <linearGradient key={s.key} id={`funnel-grad-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={st.from} />
-                    <stop offset="100%" stopColor={st.to} />
+                    <stop offset="0%" stopColor={color} stopOpacity={1} />
+                    <stop offset="100%" stopColor={color} stopOpacity={0.82} />
                   </linearGradient>
                 );
               })}
