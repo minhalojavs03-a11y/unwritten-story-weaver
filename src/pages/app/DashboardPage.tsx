@@ -214,6 +214,10 @@ export default function DashboardPage() {
 
         <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
 
+        {privileged && (
+          <ConsorcioFunnel funnel={execData.funnel} lost={execData.lost} lostReasons={execData.lostReasons} />
+        )}
+
         <ResponseRatePanel memberId={effectiveMemberId} compact />
 
 
@@ -252,8 +256,6 @@ export default function DashboardPage() {
               </div>
               <Link to="/relatorios" className="shrink-0 text-xs font-medium text-primary hover:underline">Abrir Relatórios & BI →</Link>
             </div>
-
-            <ConsorcioFunnel funnel={execData.funnel} lost={execData.lost} lostReasons={execData.lostReasons} />
 
             <PipelineIntel pipeline={execData.pipelineIntel} total={execData.total} />
 
