@@ -257,8 +257,6 @@ export default function DashboardPage() {
               <Link to="/relatorios" className="shrink-0 text-xs font-medium text-primary hover:underline">Abrir Relatórios & BI →</Link>
             </div>
 
-            <ConsorcioFunnel funnel={execData.funnel} lost={execData.lost} lostReasons={execData.lostReasons} />
-
             <PipelineIntel pipeline={execData.pipelineIntel} total={execData.total} />
 
             <div className="grid gap-4 lg:grid-cols-5">
