@@ -11,9 +11,12 @@ import { useAiConfig, useMyTenant, useUpdateAiConfig, useWhatsAppInstance } from
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function ConfiguracoesPage() {
   const { isOwner } = useAuth();
+  const { can } = usePermissions();
+  const canManageTeam = can("manage_team");
   const { data: tenant } = useMyTenant();
   const { data: ai } = useAiConfig();
   const { data: wa } = useWhatsAppInstance();
