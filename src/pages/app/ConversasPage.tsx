@@ -259,22 +259,10 @@ export default function ConversasPage() {
       const prevOwned = prev ? (shouldRestrict ? isOwnedByCurrent(prev) : true) : false;
       if (!prev || (currentOwned && !prevOwned) || (currentOwned === prevOwned && curTs > prevTs)) byLead.set(key, c);
     }
-    // Inclui leads atribuídos sem conversa ainda (entradas sintéticas)
-    const existingLeadIds = new Set(Array.from(byLead.values()).map((c: any) => c.lead_id).filter(Boolean));
-    for (const l of assignedLeads) {
-      if (!existingLeadIds.has(l.id)) {
-        byLead.set(l.id, {
-          id: `virtual:${l.id}`,
-          lead_id: l.id,
-          tenant_id: l.tenant_id,
-          last_message_at: l.assigned_member_at ?? l.created_at,
-          last_message_preview: null,
-          unread_count: 0,
-          lead: l,
-          __virtual: true,
-        });
-      }
-    }
+    // Conversas virtuais (lead atribuído sem mensagem) DESATIVADAS.
+    // Decisão: a lista de /conversas só mostra conversas com mensagens reais.
+    // Leads sem mensagem ficam em /leads ou /pipeline, não aqui.
+
     return Array.from(byLead.values())
       .sort((a, b) => new Date(b.last_message_at ?? b.created_at ?? 0).getTime() - new Date(a.last_message_at ?? a.created_at ?? 0).getTime())
       .filter((c: any) => {
