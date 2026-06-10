@@ -214,6 +214,10 @@ export default function DashboardPage() {
 
         <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
 
+        {privileged && (
+          <ConsorcioFunnel funnel={execData.funnel} lost={execData.lost} lostReasons={execData.lostReasons} />
+        )}
+
         <ResponseRatePanel memberId={effectiveMemberId} compact />
 
 
