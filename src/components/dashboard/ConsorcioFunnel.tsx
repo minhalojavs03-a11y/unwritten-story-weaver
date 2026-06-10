@@ -86,7 +86,7 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
                   />
                   {/* Quantidade ao centro */}
                   <text
-                    x={W / 2}
+                    x={CENTER}
                     y={y + H / 2 + 6}
                     textAnchor="middle"
                     className="fill-white font-display"
