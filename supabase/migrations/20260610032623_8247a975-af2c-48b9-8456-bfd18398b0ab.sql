@@ -1,0 +1,1 @@
+SELECT cron.unschedule('whatsapp-auto-sync-every-2min');
