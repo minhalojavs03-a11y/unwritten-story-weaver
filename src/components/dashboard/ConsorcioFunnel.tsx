@@ -63,10 +63,24 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
             role="img"
             aria-label="Funil de conversão de consórcio"
           >
+            <defs>
+              {stages.map((s) => {
+                const st = STAGE_STYLE[s.key];
+                return (
+                  <linearGradient key={s.key} id={`funnel-grad-${s.key}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={st.from} />
+                    <stop offset="100%" stopColor={st.to} />
+                  </linearGradient>
+                );
+              })}
+              <filter id="funnel-shadow" x="-5%" y="-5%" width="110%" height="120%">
+                <feDropShadow dx="0" dy="1.5" stdDeviation="2" floodOpacity="0.18" />
+              </filter>
+            </defs>
             {stages.map((s, i) => {
               const style = STAGE_STYLE[s.key];
               const w = widthFor(s.count);
-              const wNext = stages[i + 1] ? widthFor(stages[i + 1].count) : w * 0.75;
+              const wNext = stages[i + 1] ? widthFor(stages[i + 1].count) : w * 0.78;
               const y = i * (H + GAP);
               const x1 = CENTER - w / 2;
               const x2 = CENTER + w / 2;
@@ -82,9 +96,11 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
                 <g key={s.key}>
                   <polygon
                     points={points}
-                    fill={style.fill}
-                    className="transition-opacity hover:opacity-90"
+                    fill={`url(#funnel-grad-${s.key})`}
+                    filter="url(#funnel-shadow)"
+                    className="transition-opacity hover:opacity-95"
                   />
+
                   {/* Quantidade ao centro */}
                   <text
                     x={CENTER}
