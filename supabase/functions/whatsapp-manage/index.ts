@@ -12,11 +12,12 @@ const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const WHATSAPI_API_TOKEN = Deno.env.get("WHATSAPI_API_TOKEN") ?? "";
 const WHATSAPI_CREATE_URL = Deno.env.get("WHATSAPI_CREATE_URL") ?? "";
 
-// === MODO ESTABILIDADE: delay aleatório antes de cada envio (remover quando voltar ao normal).
+// === Delay humano leve antes de cada envio (modo normal pós-manutenção).
 async function randomSendDelay(): Promise<void> {
-  let ms = 5000 + Math.floor(Math.random() * 55000);
-  if (Math.random() < 0.1) ms += 30000 + Math.floor(Math.random() * 60000);
-  console.log("[stability] sleeping", ms, "ms before send");
+  // Modo normal: pequeno jitter humano (1.5s–4s) para não parecer robô,
+  // sem os longos delays do modo manutenção.
+  let ms = 1500 + Math.floor(Math.random() * 2500);
+  if (Math.random() < 0.05) ms += 3000 + Math.floor(Math.random() * 7000);
   await new Promise((r) => setTimeout(r, ms));
 }
 
