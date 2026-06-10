@@ -181,6 +181,27 @@ export default function DistribuicaoLeadsPage() {
     },
   });
 
+  // Conjunto de user_ids com pelo menos uma instância WhatsApp conectada — regra de fila usa isso.
+  const { data: connectedUserIds = new Set<string>() } = useQuery({
+    queryKey: ["dist-wa-connected", effectiveTenant],
+    enabled: !!effectiveTenant,
+    queryFn: async (): Promise<Set<string>> => {
+      const { data, error } = await supabase
+        .from("whatsapp_instances")
+        .select("seller_user_id,is_connected,status")
+        .eq("tenant_id", effectiveTenant!);
+      if (error) throw error;
+      const s = new Set<string>();
+      for (const r of (data ?? []) as any[]) {
+        if (r.seller_user_id && (r.is_connected === true || r.status === "connected")) {
+          s.add(r.seller_user_id);
+        }
+      }
+      return s;
+    },
+    refetchInterval: 30_000,
+  });
+
   const [local, setLocal] = useState<Record<string, Partial<Row>>>({});
   useEffect(() => setLocal({}), [rows.length, effectiveTenant]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
