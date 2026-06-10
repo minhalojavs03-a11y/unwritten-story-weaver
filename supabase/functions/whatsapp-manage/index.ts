@@ -977,8 +977,13 @@ async function syncHistory(admin: any, tenantId: string, instance: any, maxChats
   return { ok: true, chats: importedChats, messages: importedMsgs, skipped, total_chats: chats.length };
 }
 
-async function autoSyncHistoryOnce(admin: any, tenantId: string, instance: any, reason: string) {
-  if (!instance?.id || !(instance.is_connected || instance.status === "connected")) return null;
+async function autoSyncHistoryOnce(_admin: any, _tenantId: string, _instance: any, _reason: string) {
+  // Importação de histórico do WhatsApp está DESLIGADA por decisão do produto:
+  // o CRM trabalha apenas com leads vindos da planilha/anúncios; conversas
+  // antigas do número pessoal não devem entrar no banco.
+  return null;
+  // eslint-disable-next-line no-unreachable
+  if (!_instance?.id) return null;
   const metadata = (instance.metadata ?? {}) as Record<string, any>;
 
   // Se já completou com chats importados, não roda de novo.
@@ -1109,23 +1114,7 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
       if (!inst) return json({ error: "instância não encontrada" }, 404);
       if (!inst.is_connected) return json({ error: "instância não conectada" }, 400);
-      const r = await syncHistory(
-        adminClient,
-        adminTenantId,
-        inst,
-        Number(adminBody?.maxChats ?? 200),
-        Number(adminBody?.msgsPerChat ?? 30),
-      );
-      await adminClient.from("whatsapp_instances").update({
-        metadata: {
-          ...(inst.metadata ?? {}),
-          history_sync_started_at: new Date().toISOString(),
-          history_sync_completed_at: Number((r as any)?.total_chats ?? 0) > 0 ? new Date().toISOString() : null,
-          history_sync_reason: "admin-sync",
-          history_sync_result: r,
-        },
-      }).eq("id", inst.id);
-      return json({ ok: true, ...r });
+      return json({ ok: false, disabled: true, message: "Importação de histórico do WhatsApp está desativada. O CRM usa apenas leads da planilha/anúncios." }, 400);
     }
 
 
@@ -1673,14 +1662,7 @@ Deno.serve(async (req: Request) => {
       }
 
       case "sync-history": {
-        if (!instance) return json({ error: "sem instância" }, 404);
-        if (!instance.is_connected) return json({ error: "instância não conectada" }, 400);
-        // Executa na própria requisição para não perder a importação quando o Edge encerrar a execução.
-        const maxChats = body?.maxChats ?? 80;
-        const msgsPerChat = body?.msgsPerChat ?? 20;
-        const r = await syncHistory(admin, tenantId, instance, maxChats, msgsPerChat);
-        console.log("syncHistory done:", JSON.stringify(r));
-        return json({ ok: true, ...r, message: `Importação concluída: ${r.chats} conversas e ${r.messages} mensagens.` });
+        return json({ ok: false, disabled: true, message: "Importação de histórico do WhatsApp está desativada. O CRM usa apenas leads da planilha/anúncios." }, 400);
       }
 
       case "disconnect": {
