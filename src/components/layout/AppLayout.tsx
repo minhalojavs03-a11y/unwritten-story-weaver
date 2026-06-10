@@ -104,7 +104,7 @@ export function AppLayout() {
     const nilton: NavItem = { to: "/nilton", label: "Leads Nilton RS", icon: Target };
     const conversas: NavItem = { to: "/conversas", label: "Conversas", icon: MessageCircle };
     const pipeline: NavItem = { to: "/pipeline", label: "Pipeline", icon: Kanban };
-    const leads: NavItem = { to: "/leads", label: isOwner || isSuperadmin || isSupervisor ? "Leads" : "Meus leads", icon: Users };
+    const leads: NavItem = { to: isSupervisor && !isOwner && !isSuperadmin ? "/distribuicao" : "/leads", label: isOwner || isSuperadmin || isSupervisor ? "Leads" : "Meus leads", icon: Users };
     const agenda: NavItem = { to: "/agenda", label: "Agenda", icon: Calendar };
     const ranking: NavItem = { to: "/ranking", label: "Ranking", icon: Trophy };
     const relatorios: NavItem = { to: "/relatorios", label: "Relatórios", icon: BarChart3 };
@@ -122,7 +122,7 @@ export function AppLayout() {
       return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
     }
     if (isSupervisor) {
-      return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
+      return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, equipe, distribuicao, config];
     }
     if (isNilton) {
       return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking];
