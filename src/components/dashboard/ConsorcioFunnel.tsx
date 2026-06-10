@@ -29,14 +29,17 @@ interface Props {
 export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = false }: Props) {
   const stages = funnel.filter((s) => s.key !== "perdido");
   const top = Math.max(1, stages[0]?.count ?? 1);
-  const W = 520;
-  const H = 60;          // altura de cada bloco
+  const FUNNEL_W = 360;        // largura útil do funil
+  const PAD_L = 60;            // espaço à esquerda p/ "-x%"
+  const PAD_R = 170;           // espaço à direita p/ rótulos longos ("Simulação Enviada")
+  const W = FUNNEL_W + PAD_L + PAD_R;
+  const CENTER = PAD_L + FUNNEL_W / 2;
+  const H = 60;
   const GAP = 6;
-  const MIN_W = 90;      // largura mínima do bloco final
+  const MIN_W = 80;
 
-  // largura proporcional ao volume da etapa
   const widthFor = (count: number) =>
-    Math.max(MIN_W, (count / top) * (W - 40));
+    Math.max(MIN_W, (count / top) * FUNNEL_W);
 
   return (
     <Card className="p-5">
@@ -55,7 +58,7 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
         <div className="flex flex-col items-center">
           <svg
             viewBox={`0 0 ${W} ${(H + GAP) * stages.length}`}
-            className="w-full max-w-xl"
+            className="w-full max-w-2xl"
             role="img"
             aria-label="Funil de conversão de consórcio"
           >
@@ -64,10 +67,10 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
               const w = widthFor(s.count);
               const wNext = stages[i + 1] ? widthFor(stages[i + 1].count) : w * 0.75;
               const y = i * (H + GAP);
-              const x1 = (W - w) / 2;
-              const x2 = x1 + w;
-              const xn1 = (W - wNext) / 2;
-              const xn2 = xn1 + wNext;
+              const x1 = CENTER - w / 2;
+              const x2 = CENTER + w / 2;
+              const xn1 = CENTER - wNext / 2;
+              const xn2 = CENTER + wNext / 2;
               const points = `${x1},${y} ${x2},${y} ${xn2},${y + H} ${xn1},${y + H}`;
               const prev = stages[i - 1];
               const dropPct =
@@ -83,7 +86,7 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
                   />
                   {/* Quantidade ao centro */}
                   <text
-                    x={W / 2}
+                    x={CENTER}
                     y={y + H / 2 + 6}
                     textAnchor="middle"
                     className="fill-white font-display"
