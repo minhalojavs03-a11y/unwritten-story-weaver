@@ -8,15 +8,14 @@ import type { Stage } from "@/data/mock";
 type FunnelStage = { key: Stage; stage: string; count: number };
 type LostReason = { reason: string; count: number; pct: number };
 
-// Escala monocromática profunda (slate→indigo) finalizando em esmeralda na venda.
-// Comunica progressão sem virar arco-íris — alinhado com mercado financeiro.
-const STAGE_STYLE: Record<Stage, { from: string; to: string; label: string; text: string }> = {
-  novo:        { from: "#64748b", to: "#475569", label: "Novo Lead",          text: "#ffffff" },
-  qualificado: { from: "#4f46e5", to: "#4338ca", label: "Em Atendimento",     text: "#ffffff" },
-  agendado:    { from: "#4338ca", to: "#3730a3", label: "Simulação Enviada",  text: "#ffffff" },
-  compareceu:  { from: "#3730a3", to: "#312e81", label: "Proposta Aceita",    text: "#ffffff" },
-  comprou:     { from: "#10b981", to: "#059669", label: "Cota Vendida",       text: "#ffffff" },
-  perdido:     { from: "#ef4444", to: "#dc2626", label: "Desqualificado",     text: "#ffffff" },
+// Usa os tokens de stage do design system (mesmas cores do pipeline/kanban).
+const STAGE_STYLE: Record<Stage, { token: string; label: string }> = {
+  novo:        { token: "--stage-new",       label: "Novo Lead" },
+  qualificado: { token: "--stage-service",   label: "Em Atendimento" },
+  agendado:    { token: "--stage-scheduled", label: "Simulação Enviada" },
+  compareceu:  { token: "--stage-attended",  label: "Proposta Aceita" },
+  comprou:     { token: "--success",         label: "Cota Vendida" },
+  perdido:     { token: "--destructive",     label: "Desqualificado" },
 };
 
 interface Props {
@@ -65,11 +64,11 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
           >
             <defs>
               {stages.map((s) => {
-                const st = STAGE_STYLE[s.key];
+                const color = `hsl(var(${STAGE_STYLE[s.key].token}))`;
                 return (
                   <linearGradient key={s.key} id={`funnel-grad-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={st.from} />
-                    <stop offset="100%" stopColor={st.to} />
+                    <stop offset="0%" stopColor={color} stopOpacity={1} />
+                    <stop offset="100%" stopColor={color} stopOpacity={0.82} />
                   </linearGradient>
                 );
               })}
