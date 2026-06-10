@@ -32,7 +32,7 @@ export function useResponseRateStats(
       const { data, error } = await supabase.rpc("response_rate_stats", {
         _start: start.toISOString(),
         _end: end.toISOString(),
-        _member_id: memberId ?? null,
+        _member_id: memberId ?? undefined,
       });
       if (error) throw error;
       return data as ResponseRateStats;
