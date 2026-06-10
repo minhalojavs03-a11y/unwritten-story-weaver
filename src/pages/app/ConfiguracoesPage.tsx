@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Smartphone, AlertCircle, CheckCircle2, ArrowRight, KeyRound, MessageSquareText, Video, Sparkles, History, Plug } from "lucide-react";
+import { Smartphone, AlertCircle, CheckCircle2, ArrowRight, KeyRound, MessageSquareText, Video, Sparkles, History, Plug, Users2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAiConfig, useMyTenant, useUpdateAiConfig, useWhatsAppInstance } from "@/hooks/useData";
 import { supabase } from "@/integrations/supabase/client";
