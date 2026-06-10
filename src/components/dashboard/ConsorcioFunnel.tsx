@@ -8,14 +8,15 @@ import type { Stage } from "@/data/mock";
 type FunnelStage = { key: Stage; stage: string; count: number };
 type LostReason = { reason: string; count: number; pct: number };
 
-// Paleta consórcio: do azul-escuro (volume) ao verde (venda)
-const STAGE_STYLE: Record<Stage, { fill: string; label: string }> = {
-  novo:        { fill: "#1e3a8a", label: "Novo Lead" },
-  qualificado: { fill: "#2563eb", label: "Em Atendimento" },
-  agendado:    { fill: "#7c3aed", label: "Simulação Enviada" },
-  compareceu:  { fill: "#9333ea", label: "Proposta Aceita" },
-  comprou:     { fill: "#16a34a", label: "Cota Vendida" },
-  perdido:     { fill: "#ef4444", label: "Desqualificado" },
+// Escala monocromática profunda (slate→indigo) finalizando em esmeralda na venda.
+// Comunica progressão sem virar arco-íris — alinhado com mercado financeiro.
+const STAGE_STYLE: Record<Stage, { from: string; to: string; label: string; text: string }> = {
+  novo:        { from: "#64748b", to: "#475569", label: "Novo Lead",          text: "#ffffff" },
+  qualificado: { from: "#4f46e5", to: "#4338ca", label: "Em Atendimento",     text: "#ffffff" },
+  agendado:    { from: "#4338ca", to: "#3730a3", label: "Simulação Enviada",  text: "#ffffff" },
+  compareceu:  { from: "#3730a3", to: "#312e81", label: "Proposta Aceita",    text: "#ffffff" },
+  comprou:     { from: "#10b981", to: "#059669", label: "Cota Vendida",       text: "#ffffff" },
+  perdido:     { from: "#ef4444", to: "#dc2626", label: "Desqualificado",     text: "#ffffff" },
 };
 
 interface Props {
