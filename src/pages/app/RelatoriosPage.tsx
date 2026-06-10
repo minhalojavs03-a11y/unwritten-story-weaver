@@ -142,6 +142,9 @@ function OwnerDashboard({ data }: { data: ReturnType<typeof useReportData> }) {
         <KpiCard label="Ticket médio" value={fmtBRL(data.avgTicket)} sub="por venda fechada" icon={Activity} />
       </div>
 
+      <ConsorcioFunnel funnel={data.funnel} lost={data.lost} lostReasons={data.lostReasons} />
+
+
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">
           <SectionTitle title="Receita mensal" sub="Últimos 12 meses (vendas fechadas)" />
