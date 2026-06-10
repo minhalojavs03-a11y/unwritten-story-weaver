@@ -22,6 +22,7 @@ import {
   HealthScore, InsightsPanel, PipelineIntel, WeeklyActivity, ResponseHeatmap,
 } from "@/components/dashboard/ExecutiveWidgets";
 import { ResponseRatePanel } from "@/components/dashboard/ResponseRatePanel";
+import { ConsorcioFunnel } from "@/components/dashboard/ConsorcioFunnel";
 
 
 // ─── Building blocks ────────────────────────────────────────────────────────
@@ -140,6 +141,9 @@ function OwnerDashboard({ data }: { data: ReturnType<typeof useReportData> }) {
         <KpiCard label="Conversão" value={`${data.convRate.toFixed(1)}%`} sub={`${data.won}/${data.total}`} icon={Target} tone={data.convRate >= 15 ? "success" : "warning"} />
         <KpiCard label="Ticket médio" value={fmtBRL(data.avgTicket)} sub="por venda fechada" icon={Activity} />
       </div>
+
+      <ConsorcioFunnel funnel={data.funnel} lost={data.lost} lostReasons={data.lostReasons} />
+
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">
@@ -319,6 +323,9 @@ function SupervisorDashboard({ data }: { data: ReturnType<typeof useReportData> 
         <KpiCard label="Sem contato" value={data.memberStats.reduce((s, m) => s + m.uncontacted, 0)} sub="aguardando 1º toque" tone="warning" icon={AlertTriangle} />
       </div>
 
+      <ConsorcioFunnel funnel={data.funnel} lost={data.lost} lostReasons={data.lostReasons} />
+
+
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="lg:col-span-2"><HealthScore score={data.healthScore} dims={data.healthDims} /></div>
         <div className="lg:col-span-3"><InsightsPanel insights={data.insights} /></div>
@@ -445,32 +452,14 @@ function PersonalDashboard({ data, memberName }: { data: ReturnType<typeof useRe
           </div>
         </Card>
 
-        <Card className="p-5">
-          <SectionTitle title="Meu funil" />
-          <div className="space-y-2.5">
-            {data.funnel.map((s) => {
-              const pct = Math.min(100, Math.max(0, (s.count / data.maxStage) * 100));
-              return (
-                <div key={s.stage}>
-                  <div className="mb-1 flex justify-between text-xs">
-                    <span className="inline-flex items-center gap-1.5 font-medium">
-                      <span className={cn("h-2 w-2 rounded-full", stageColorClass[s.key])} />
-                      {s.stage}
-                    </span>
-                    <span className="text-muted-foreground">{s.count}</span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div className={cn("h-full rounded-full transition-all", stageColorClass[s.key])} style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
+        <div className="lg:col-span-1">
+          <ConsorcioFunnel funnel={data.funnel} lost={data.lost} compact />
+        </div>
       </div>
     </div>
   );
 }
+
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function RelatoriosPage() {

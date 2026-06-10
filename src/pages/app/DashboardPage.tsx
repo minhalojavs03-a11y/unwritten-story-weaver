@@ -15,6 +15,7 @@ import { useSupportImpersonation } from "@/hooks/useSupportImpersonation";
 import { LeadsHourlyPanel } from "@/components/dashboard/LeadsHourlyPanel";
 import { useReportData } from "@/hooks/useReportData";
 import { HealthScore, InsightsPanel, PipelineIntel, WeeklyActivity, ResponseHeatmap } from "@/components/dashboard/ExecutiveWidgets";
+import { ConsorcioFunnel } from "@/components/dashboard/ConsorcioFunnel";
 import { WeekComparison } from "@/components/dashboard/WeekComparison";
 import { CoachingPanel } from "@/components/dashboard/CoachingPanel";
 import { MyCoachingPanel } from "@/components/dashboard/MyCoachingPanel";
@@ -251,6 +252,8 @@ export default function DashboardPage() {
               </div>
               <Link to="/relatorios" className="shrink-0 text-xs font-medium text-primary hover:underline">Abrir Relatórios & BI →</Link>
             </div>
+
+            <ConsorcioFunnel funnel={execData.funnel} lost={execData.lost} lostReasons={execData.lostReasons} />
 
             <PipelineIntel pipeline={execData.pipelineIntel} total={execData.total} />
 
