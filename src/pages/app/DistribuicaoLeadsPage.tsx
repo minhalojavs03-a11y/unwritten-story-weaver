@@ -364,7 +364,24 @@ export default function DistribuicaoLeadsPage() {
                       />
 
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-foreground">{name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-semibold text-foreground">{name}</p>
+                          {r.user_id && connectedUserIds.has(r.user_id) ? (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400"
+                              title="WhatsApp conectado — está na fila"
+                            >
+                              <SmartphoneNfc className="h-3 w-3" /> WA conectado
+                            </span>
+                          ) : (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-1.5 py-0.5 text-[10px] font-medium text-destructive"
+                              title="Sem WhatsApp conectado — não recebe leads, fila pula para o próximo"
+                            >
+                              <Smartphone className="h-3 w-3" /> Sem WA — não recebe
+                            </span>
+                          )}
+                        </div>
                         <p className="truncate text-xs text-muted-foreground">{r.role_label || "Consultor"}</p>
                       </div>
                     </div>
