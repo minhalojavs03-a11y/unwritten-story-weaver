@@ -621,7 +621,10 @@ export function useCreateAppointment() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["appointments"] }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["appointments"] });
+      await qc.refetchQueries({ queryKey: ["appointments"], type: "active" });
+    },
   });
 }
 

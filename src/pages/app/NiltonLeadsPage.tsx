@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 import { useMyProfile } from "@/hooks/useProfile";
 import { PageHeader } from "./PageHeader";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,7 @@ const PAGE_SIZE = 20;
 export default function NiltonLeadsPage() {
   const navigate = useNavigate();
   const { isSuperadmin, isOwner } = useAuth();
+  const { isSupervisor } = useEffectiveRole();
   const { data: profile } = useMyProfile();
   const qc = useQueryClient();
 
@@ -67,7 +69,7 @@ export default function NiltonLeadsPage() {
     return u === "nilton" || n.startsWith("nilton") || f.startsWith("nilton");
   }, [profile]);
 
-  const canManage = isSuperadmin || isOwner;
+  const canManage = isSuperadmin || isOwner || isSupervisor;
   const allowed = canManage || isNilton;
 
   useEffect(() => {
