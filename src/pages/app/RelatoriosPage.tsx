@@ -22,6 +22,7 @@ import {
   HealthScore, InsightsPanel, PipelineIntel, WeeklyActivity, ResponseHeatmap,
 } from "@/components/dashboard/ExecutiveWidgets";
 import { ResponseRatePanel } from "@/components/dashboard/ResponseRatePanel";
+import { ConsorcioFunnel } from "@/components/dashboard/ConsorcioFunnel";
 
 
 // ─── Building blocks ────────────────────────────────────────────────────────
