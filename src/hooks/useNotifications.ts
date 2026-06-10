@@ -99,6 +99,7 @@ export function useNotifications() {
     }
     // Não limpa os itens antes do fetch terminar — evita banner sumindo/voltando
     // toda vez que o effect re-roda (troca de rota, mudança de membro ativo, etc).
+    let cancelled = false;
     const ls = getLastSeen(key);
 
     (async () => {
