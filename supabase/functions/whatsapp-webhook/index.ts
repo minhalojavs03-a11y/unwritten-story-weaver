@@ -1315,7 +1315,7 @@ Deno.serve(async (req: Request) => {
       .eq("direction", "outbound")
       .limit(100);
     const aiTurnsSoFar = (aiMsgs ?? []).filter((m: any) => m?.metadata?.ai === true).length;
-    const MAX_AI_TURNS = 5;
+    const MAX_AI_TURNS = 3;
     if (aiTurnsSoFar >= MAX_AI_TURNS) {
       console.log("AI limit reached (5 msgs); handing off to human");
       await notifyAllSellersHandoff(admin, instance, lead, text);
