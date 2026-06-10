@@ -133,10 +133,19 @@ Deno.serve(async (req) => {
     const niltonTenantId = prof?.tenant_id ?? NILTON_TENANT_ID;
     const niltonPhone = (prof?.phone ?? NILTON_PHONE)?.toString();
 
+    // Conta quantos leads o Nilton já recebeu HOJE (status != 'overflow' e não histórico)
+    const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
+    const todayRes = await sb(
+      `/nilton_leads?select=id&assigned_to=eq.${niltonUserId}&created_time=gte.${startOfDay.toISOString()}&status=not.in.(overflow,historico)`,
+    );
+    let niltonTodayCount = Array.isArray(await todayRes.clone().json()) ? (await todayRes.json()).length : 0;
+
     for (const row of dataRows) {
       const sheet_id = (row[0] ?? "").trim();
       if (!sheet_id) { rowsSkipped++; continue; }
       if (looksLikeTest(row)) { rowsSkipped++; continue; }
+
+      const overflow = niltonTodayCount >= NILTON_DAILY_LIMIT;
 
       const payload = {
         sheet_id,
@@ -155,8 +164,9 @@ Deno.serve(async (req) => {
         nome_completo: row[13] ?? null,
         telefone: (row[14] ?? "").toString().replace(/^p:/i, "").trim() || null,
         lead_status: (row[15] ?? "CREATED OK").trim() || "CREATED OK",
-        tenant_id: niltonTenantId,
-        assigned_to: niltonUserId,
+        tenant_id: overflow ? FERACON_TENANT_ID : niltonTenantId,
+        assigned_to: overflow ? null : niltonUserId,
+        status: overflow ? "overflow" : "novo",
       };
 
       // Check existence to know if this is a NEW insert (for notifications).
@@ -176,25 +186,53 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      if (!existing) {
-        rowsInserted++;
-        // App notification
-        await sb(`/app_notifications`, {
-          method: "POST",
-          body: JSON.stringify({
-            tenant_id: niltonTenantId,
-            recipient_user_id: niltonUserId,
-            type: "nilton_lead",
-            title: "Novo lead Rio Grande do Sul!",
-            body: `👤 ${payload.nome_completo ?? "Sem nome"} · 💰 ${payload.carta_value ?? "-"}`,
-            metadata: { sheet_id, source: "nilton_sheet" },
-          }),
-        });
-        // WhatsApp queue (only if Nilton has phone)
-        if (niltonPhone) {
-          const text = `🎯 *Novo lead RS!*\n\n👤 ${payload.nome_completo ?? "Sem nome"}\n💰 Carta: ${payload.carta_value ?? "-"}\n📣 Campanha: ${payload.campaign_name ?? "-"}\n\nAcesse o CRM para atender.`;
-          await enqueueWhatsAppNotice(niltonTenantId, niltonPhone, text);
+      if (existing) continue;
+      rowsInserted++;
+
+      if (overflow) {
+        // Encaminha para distribuição geral da equipe Feracon: cria um lead
+        // normal — o trigger notify_consultant_by_tier cuida do round-robin.
+        const creditValue = parseCartaValue(payload.carta_value);
+        try {
+          await sb(`/leads`, {
+            method: "POST",
+            body: JSON.stringify({
+              tenant_id: FERACON_TENANT_ID,
+              name: payload.nome_completo ?? "Lead RS",
+              phone: payload.telefone,
+              source: "nilton_sheet_overflow",
+              credit_value: creditValue,
+              imported_from_sheet: true,
+              metadata: {
+                sheet_id,
+                origin: "nilton_overflow",
+                campaign_name: payload.campaign_name,
+                carta_value: payload.carta_value,
+              },
+            }),
+          });
+        } catch (e) {
+          console.error("overflow lead insert failed", e);
         }
+        continue;
+      }
+
+      niltonTodayCount++;
+      // App notification para Nilton
+      await sb(`/app_notifications`, {
+        method: "POST",
+        body: JSON.stringify({
+          tenant_id: niltonTenantId,
+          recipient_user_id: niltonUserId,
+          type: "nilton_lead",
+          title: "Novo lead Rio Grande do Sul!",
+          body: `👤 ${payload.nome_completo ?? "Sem nome"} · 💰 ${payload.carta_value ?? "-"}`,
+          metadata: { sheet_id, source: "nilton_sheet" },
+        }),
+      });
+      if (niltonPhone) {
+        const text = `🎯 *Novo lead RS!*\n\n👤 ${payload.nome_completo ?? "Sem nome"}\n💰 Carta: ${payload.carta_value ?? "-"}\n📣 Campanha: ${payload.campaign_name ?? "-"}\n\nAcesse o CRM para atender.`;
+        await enqueueWhatsAppNotice(niltonTenantId, niltonPhone, text);
       }
     }
   } catch (e) {
