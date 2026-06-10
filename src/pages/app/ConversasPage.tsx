@@ -99,45 +99,14 @@ export default function ConversasPage() {
   const queryClient = useQueryClient();
   const autoImportAttemptedRef = useRef(false);
 
+  // Auto-import de histórico do WhatsApp DESATIVADO.
+  // Decisão: trabalhamos apenas com leads vindos de anúncio. Conversas só são criadas
+  // quando o lead é cadastrado pelo funil e a primeira mensagem é trocada — evita
+  // contatos antigos do WhatsApp cruzando com leads reais.
   useEffect(() => {
-    if (!tenantId || isLoading || autoImportAttemptedRef.current) return;
     autoImportAttemptedRef.current = true;
-    let cancelled = false;
-    (async () => {
-      const { count: messageCount } = await supabase
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .eq("tenant_id", tenantId);
-      if (cancelled || (conversations.length > 0 && (messageCount ?? 0) > 0)) return;
-      // Só importa histórico de instâncias que ainda não passaram pelo sync inicial
-      // e que NÃO foram marcadas como "auto_history_import_disabled" (ex.: número
-      // de teste já limpo manualmente). Sem essa trava o /conversas reimportava
-      // os contatos toda vez que o tenant aparecia vazio.
-      const { data: connectedInstances } = await supabase
-        .from("whatsapp_instances")
-        .select("id, metadata")
-        .eq("tenant_id", tenantId)
-        .or("is_connected.eq.true,status.eq.connected")
-        .limit(3);
-      if (cancelled || !connectedInstances?.length) return;
-      const importable = (connectedInstances as Array<{ id: string; metadata: Record<string, unknown> | null }>).filter((inst) => {
-        const meta = (inst.metadata ?? {}) as Record<string, unknown>;
-        if (meta.auto_history_import_disabled === true) return false;
-        if (meta.history_sync_completed_at) return false;
-        return true;
-      });
-      if (cancelled || importable.length === 0) return;
-      toast({ title: "Importando conversas do WhatsApp", description: "Número conectado encontrado. As conversas vão aparecer aqui." });
-      await Promise.allSettled(importable.map((i) => supabase.functions.invoke("whatsapp-manage", {
-        body: { action: "sync-history", instance_id: i.id, maxChats: 80, msgsPerChat: 20 },
-      })));
-      if (cancelled) return;
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-      queryClient.invalidateQueries({ queryKey: ["messages"] });
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
-    })();
-    return () => { cancelled = true; };
-  }, [tenantId, isLoading, conversations.length, queryClient]);
+  }, []);
+
 
 
   // Leads atribuídos sem linha em "conversations" ainda.
