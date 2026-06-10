@@ -8,14 +8,15 @@ import type { Stage } from "@/data/mock";
 type FunnelStage = { key: Stage; stage: string; count: number };
 type LostReason = { reason: string; count: number; pct: number };
 
-// Paleta consórcio: do azul-escuro (volume) ao verde (venda)
-const STAGE_STYLE: Record<Stage, { fill: string; label: string }> = {
-  novo:        { fill: "#1e3a8a", label: "Novo Lead" },
-  qualificado: { fill: "#2563eb", label: "Em Atendimento" },
-  agendado:    { fill: "#7c3aed", label: "Simulação Enviada" },
-  compareceu:  { fill: "#9333ea", label: "Proposta Aceita" },
-  comprou:     { fill: "#16a34a", label: "Cota Vendida" },
-  perdido:     { fill: "#ef4444", label: "Desqualificado" },
+// Escala monocromática profunda (slate→indigo) finalizando em esmeralda na venda.
+// Comunica progressão sem virar arco-íris — alinhado com mercado financeiro.
+const STAGE_STYLE: Record<Stage, { from: string; to: string; label: string; text: string }> = {
+  novo:        { from: "#64748b", to: "#475569", label: "Novo Lead",          text: "#ffffff" },
+  qualificado: { from: "#4f46e5", to: "#4338ca", label: "Em Atendimento",     text: "#ffffff" },
+  agendado:    { from: "#4338ca", to: "#3730a3", label: "Simulação Enviada",  text: "#ffffff" },
+  compareceu:  { from: "#3730a3", to: "#312e81", label: "Proposta Aceita",    text: "#ffffff" },
+  comprou:     { from: "#10b981", to: "#059669", label: "Cota Vendida",       text: "#ffffff" },
+  perdido:     { from: "#ef4444", to: "#dc2626", label: "Desqualificado",     text: "#ffffff" },
 };
 
 interface Props {
@@ -62,10 +63,24 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
             role="img"
             aria-label="Funil de conversão de consórcio"
           >
+            <defs>
+              {stages.map((s) => {
+                const st = STAGE_STYLE[s.key];
+                return (
+                  <linearGradient key={s.key} id={`funnel-grad-${s.key}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={st.from} />
+                    <stop offset="100%" stopColor={st.to} />
+                  </linearGradient>
+                );
+              })}
+              <filter id="funnel-shadow" x="-5%" y="-5%" width="110%" height="120%">
+                <feDropShadow dx="0" dy="1.5" stdDeviation="2" floodOpacity="0.18" />
+              </filter>
+            </defs>
             {stages.map((s, i) => {
               const style = STAGE_STYLE[s.key];
               const w = widthFor(s.count);
-              const wNext = stages[i + 1] ? widthFor(stages[i + 1].count) : w * 0.75;
+              const wNext = stages[i + 1] ? widthFor(stages[i + 1].count) : w * 0.78;
               const y = i * (H + GAP);
               const x1 = CENTER - w / 2;
               const x2 = CENTER + w / 2;
@@ -81,9 +96,11 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
                 <g key={s.key}>
                   <polygon
                     points={points}
-                    fill={style.fill}
-                    className="transition-opacity hover:opacity-90"
+                    fill={`url(#funnel-grad-${s.key})`}
+                    filter="url(#funnel-shadow)"
+                    className="transition-opacity hover:opacity-95"
                   />
+
                   {/* Quantidade ao centro */}
                   <text
                     x={CENTER}
