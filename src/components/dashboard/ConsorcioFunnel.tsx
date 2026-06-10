@@ -8,14 +8,15 @@ import type { Stage } from "@/data/mock";
 type FunnelStage = { key: Stage; stage: string; count: number };
 type LostReason = { reason: string; count: number; pct: number };
 
-// Usa os tokens de stage do design system (mesmas cores do pipeline/kanban).
-const STAGE_STYLE: Record<Stage, { token: string; label: string }> = {
-  novo:        { token: "--stage-new",       label: "Novo Lead" },
-  qualificado: { token: "--stage-service",   label: "Em Atendimento" },
-  agendado:    { token: "--stage-scheduled", label: "Simulação Enviada" },
-  compareceu:  { token: "--stage-attended",  label: "Proposta Aceita" },
-  comprou:     { token: "--success",         label: "Cota Vendida" },
-  perdido:     { token: "--destructive",     label: "Desqualificado" },
+// Progressão coerente com o pipeline, sem repetir cor.
+// Cada etapa avança no espectro: indigo → âmbar → azul → violeta → esmeralda.
+const STAGE_STYLE: Record<Stage, { color: string; label: string }> = {
+  novo:        { color: "hsl(var(--stage-new))",     label: "Novo Lead" },        // indigo
+  qualificado: { color: "hsl(var(--stage-service))", label: "Em Atendimento" },   // âmbar
+  agendado:    { color: "hsl(var(--info))",          label: "Simulação Enviada" },// azul
+  compareceu:  { color: "hsl(262 83% 58%)",          label: "Proposta Aceita" },  // violeta
+  comprou:     { color: "hsl(var(--success))",       label: "Cota Vendida" },     // esmeralda
+  perdido:     { color: "hsl(var(--destructive))",   label: "Desqualificado" },
 };
 
 interface Props {
