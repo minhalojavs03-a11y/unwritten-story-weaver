@@ -2533,6 +2533,10 @@ export type Database = {
             Args: { _lead_id: string; _member_id?: string }
             Returns: undefined
           }
+      response_rate_stats: {
+        Args: { _end: string; _member_id?: string; _start: string }
+        Returns: Json
+      }
       set_ai_pre_attendance: {
         Args: { _enabled: boolean; _lead_id: string }
         Returns: undefined
