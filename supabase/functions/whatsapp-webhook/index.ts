@@ -1210,12 +1210,26 @@ Deno.serve(async (req: Request) => {
       return ok({ silenced: true });
     }
 
-    // === IA DESATIVADA GLOBALMENTE ===
-    // Por decisão operacional, a IA NÃO responde mais nada via webhook.
-    // A única mensagem automatizada que sai é a boas-vindas inicial (enviada
-    // pela função `send-lead-welcome`). Todo o restante da conversa fica
-    // 100% nas mãos do consultor responsável pelo lead.
-    return ok({ ai_disabled_globally: true });
+    // === REGRA POR CONSULTOR ===
+    // Para a Micaelly o pré-atendimento da IA fica restrito à mensagem de
+    // boas-vindas (já enviada pela função `send-lead-welcome`, que apresenta
+    // a consultora). Nenhuma outra resposta da IA sai no WhatsApp dela.
+    // Para os demais consultores, a IA segue o fluxo normal até o consultor
+    // assumir enviando a primeira mensagem (humanTyped check abaixo).
+    if (lead?.assigned_member_id) {
+      const { data: assignedMember } = await admin
+        .from("tenant_members")
+        .select("display_name")
+        .eq("id", lead.assigned_member_id)
+        .maybeSingle();
+      const memberName = String(assignedMember?.display_name ?? "").toLowerCase();
+      if (memberName.includes("micaelly") || memberName.includes("micaely")) {
+        console.log("AI skipped: lead atribuído à Micaelly (welcome-only)");
+        return ok({ ai_skipped: "micaelly_welcome_only" });
+      }
+    }
+
+
 
 
     // Pausa a IA assim que o consultor digitar QUALQUER mensagem na conversa,
