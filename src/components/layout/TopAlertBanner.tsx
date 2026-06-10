@@ -59,7 +59,6 @@ export function TopAlertBanner() {
       <div className="flex min-w-0 items-center gap-2.5">
         <span className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/30">
           <Icon className="h-3.5 w-3.5" />
-          <span className="absolute inset-1 animate-ping rounded-full bg-white/30" />
         </span>
         <p className="truncate text-xs font-semibold sm:text-sm">
           <span className="tabular-nums font-bold">{totalUnread > 1 ? `${totalUnread} · ` : ""}</span>
