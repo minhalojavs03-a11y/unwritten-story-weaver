@@ -436,30 +436,22 @@ export default function DistribuicaoLeadsPage() {
 
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Limite diário</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          inputMode="numeric"
-                          placeholder="Sem limite"
+                        <select
                           value={dailyLim ?? ""}
-                          onChange={(e) =>
-                            setLocal((s) => ({
-                              ...s,
-                              [k]: {
-                                ...s[k],
-                                daily_lead_limit: e.target.value === "" ? null : Math.max(0, Number(e.target.value)),
-                              },
-                            }))
-                          }
-                          onBlur={() => {
-                            if ((local[k]?.daily_lead_limit ?? null) !== r.daily_lead_limit) {
-                              saveDistribution(r, {}, "Limite diário");
-                            }
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const next = raw === "" ? null : Math.max(1, Math.min(100, Number(raw)));
+                            saveDistribution(r, { daily_lead_limit: next }, "Limite diário");
                           }}
-
-                          className="h-9"
-                        />
+                          className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                        >
+                          <option value="">Sem limite</option>
+                          {Array.from({ length: 100 }, (_, i) => i + 1).map((n) => (
+                            <option key={n} value={n}>{n} {n === 1 ? "lead/dia" : "leads/dia"}</option>
+                          ))}
+                        </select>
                       </div>
+
                     </div>
                   </div>
 
