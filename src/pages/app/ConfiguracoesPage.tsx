@@ -101,6 +101,7 @@ export default function ConfiguracoesPage() {
           <section className="rounded-xl border bg-card p-4 md:p-6">
             <h2 className="mb-3 font-display text-base font-semibold md:mb-4 md:text-lg">Mais</h2>
             <div className="grid gap-2 sm:grid-cols-2">
+              {canManageTeam && <ShortcutLink to="/equipe" icon={Users2} title="Equipe" desc="Membros, convites e metas" />}
               <ShortcutLink to="/mensagens-prontas" icon={MessageSquareText} title="Mensagens prontas" desc="Templates de WhatsApp" />
               <ShortcutLink to="/gravacoes" icon={Video} title="Gravações" desc="Vídeos de simulações" />
               {isOwner && <ShortcutLink to="/treinar-ia" icon={Sparkles} title="Treinar IA" desc="Base de conhecimento" />}
