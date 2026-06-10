@@ -87,8 +87,11 @@ const App = () => (
             <Routes>
             {MAINTENANCE_MODE ? (
               <>
-                {/* Apenas superadmin continua acessando o painel /admin */}
+                {/* Superadmin pode logar normalmente */}
                 <Route path="/admin/login" element={<AdminLoginPage />} />
+                <Route path="/login" element={<AdminLoginPage />} />
+
+                {/* Painel admin (apenas superadmin) */}
                 <Route path="/admin" element={<ProtectedRoute requireSuperadmin><AdminLayout /></ProtectedRoute>}>
                   <Route index element={<Navigate to="/admin/dashboard" replace />} />
                   <Route path="dashboard" element={<AdminDashboard />} />
@@ -102,7 +105,37 @@ const App = () => (
                   <Route path="integracoes" element={<AdminIntegracoes />} />
                   <Route path="financeiro" element={<AdminFinanceiro />} />
                 </Route>
-                {/* Tudo o mais cai na tela de manutenção, inclusive /login */}
+
+                {/* Painel do cliente (CRM) liberado SOMENTE para superadmin durante a manutenção */}
+                <Route element={<ProtectedRoute requireSuperadmin><AppLayout /></ProtectedRoute>}>
+                  <Route path="/crm" element={<DashboardPage />} />
+                  <Route path="/dashboard" element={<Navigate to="/crm" replace />} />
+                  <Route path="/conversas" element={<ConversasPage />} />
+                  <Route path="/pipeline" element={<PipelinePage />} />
+                  <Route path="/agenda" element={<AgendaPage />} />
+                  <Route path="/gravacoes" element={<RecordingsPage />} />
+                  <Route path="/clientes" element={<ClientesPage />} />
+                  <Route path="/leads" element={<LeadsPage />} />
+                  <Route path="/leads/fila" element={<FilaLeadsPage />} />
+                  <Route path="/nilton" element={<NiltonLeadsPage />} />
+                  <Route path="/whatsapp" element={<WhatsAppPage />} />
+                  <Route path="/meu-whatsapp" element={<MeuWhatsAppPage />} />
+                  <Route path="/treinar-ia" element={<TreinarIAPage />} />
+                  <Route path="/configuracoes" element={<ConfiguracoesPage />} />
+                  <Route path="/configuracoes/acessos" element={<AcessosPage />} />
+                  <Route path="/perfil" element={<MyProfilePage />} />
+                  <Route path="/equipe" element={<EquipePage />} />
+                  <Route path="/consultores" element={<ConsultoresPage />} />
+                  <Route path="/distribuicao" element={<DistribuicaoLeadsPage />} />
+                  <Route path="/mensagens-prontas" element={<MensagensProntasPage />} />
+                  <Route path="/changelog" element={<ChangelogPage />} />
+                  <Route path="/ranking" element={<RankingPage />} />
+                  <Route path="/relatorios" element={<RelatoriosPage />} />
+                  <Route path="/coaching" element={<CoachingPage />} />
+                  <Route path="/integracoes" element={<AdminIntegracoes />} />
+                </Route>
+
+                {/* Tudo o mais cai na tela de manutenção */}
                 <Route path="*" element={<MaintenancePage />} />
               </>
             ) : (
