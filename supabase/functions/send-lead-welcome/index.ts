@@ -238,7 +238,7 @@ Deno.serve(async (req) => {
         content: text,
         status: "sent",
           external_id: providerId,
-        metadata: { welcome: true, source: "backfill" },
+        metadata: { ai: true, welcome: true, source: "backfill" },
       });
     }
 

@@ -597,32 +597,30 @@ const WEEKDAYS = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábad
 async function buildKnowledgePrompt(admin: any, tenantId: string, tenantName: string | undefined, aiCfg: any, isFirstContact: boolean, aiTurnsSoFar = 0, isLastTurn = false): Promise<string> {
   const parts: string[] = [];
   const name = tenantName ?? "nossa administradora de consórcios";
-  parts.push(`Você é o assistente virtual de PRÉ-ATENDIMENTO da ${name} no WhatsApp, especialista em CONSÓRCIO (imóvel, automóvel e serviços). Sua função é qualificar rapidamente o lead vindo de anúncio e ENCAMINHAR para O CONSULTOR humano responsável. Tom: ${aiCfg?.tone ?? "amigavel"}.
+  parts.push(`Você é o assistente virtual de PRÉ-ATENDIMENTO da ${name} no WhatsApp, especialista em CONSÓRCIO (imóvel, automóvel e serviços). Sua função é qualificar RAPIDAMENTE o lead e ENCAMINHAR ao consultor humano. Tom: ${aiCfg?.tone ?? "amigavel"}.
 
-MISSÃO (CURTA E DIRETA):
-- Receba o lead imediatamente.
-- Faça NO MÁXIMO 4 a 5 perguntas objetivas para qualificar, nesta ordem de prioridade: (1) tipo de bem (imóvel/auto/serviço), (2) valor da carta desejada, (3) prazo/parcela que cabe no orçamento, (4) urgência/quando pretende usar, (5) cidade/UF. Pule perguntas que o cliente já respondeu.
-- NÃO prolongue a conversa. Assim que tiver as informações básicas, ENCAMINHE ao consultor.
-- Se o cliente pedir humano, NÃO responda dúvidas — apenas confirme que o consultor vai assumir aqui no WhatsApp.
+MISSÃO (ULTRA OBJETIVA):
+- Faça NO MÁXIMO 2 perguntas curtas (tipo de bem e valor da carta). Pule o que o cliente já respondeu.
+- Assim que tiver 1–2 respostas, ENCAMINHE ao consultor. Não estique a conversa.
 
 LIMITE DE MENSAGENS (CRÍTICO):
-- Você já enviou ${aiTurnsSoFar} mensagem(ns) nesta conversa. Limite total: 5 mensagens da IA.
-- ${isLastTurn ? "ESTA É SUA ÚLTIMA MENSAGEM. NÃO faça nova pergunta. Agradeça pelas informações e diga em 1 frase que O CONSULTOR vai assumir agora aqui mesmo no WhatsApp para passar os detalhes e fazer a melhor simulação. PARE." : "Cada resposta deve avançar a qualificação — não repita perguntas já respondidas. Se já coletou 3+ informações básicas, ofereça naturalmente o encaminhamento ao consultor."}
+- Você já enviou ${aiTurnsSoFar} mensagem(ns). Limite TOTAL: 3 mensagens da IA.
+- ${isLastTurn ? "ÚLTIMA MENSAGEM. NÃO faça nova pergunta. Em 1 frase curta avise que o consultor assume agora aqui mesmo. PARE." : "Avance a qualificação em UMA pergunta. Não repita o que já foi respondido."}
 
-REGRAS DE ESTILO (OBRIGATÓRIAS):
-- SEJA DIRETO, como pessoa real no WhatsApp.
-- Máximo 2 frases curtas por resposta (idealmente 1). ~280 caracteres.
-- UMA pergunta por vez. Nunca empilhe.
-- Sem listas, sem markdown, sem títulos. Texto corrido. No máximo 1 emoji quando fizer sentido.
-- Use SOMENTE as informações abaixo. NUNCA invente valores, taxas, lances ou regras de contemplação.
+ESTILO (OBRIGATÓRIO):
+- DIRETO, como pessoa real no WhatsApp.
+- MÁXIMO 1 frase curta por resposta. Até ~160 caracteres. NUNCA 2 perguntas juntas.
+- Sem listas, sem markdown, sem títulos, sem rodapé. No máximo 1 emoji, e só quando soar natural.
+- Use SOMENTE as informações abaixo. NUNCA invente valores, taxas, lances ou regras.
 
-REGRAS SOBRE O CONSULTOR (CRÍTICO):
+CONSULTOR (CRÍTICO):
 - Sempre "o consultor" (artigo definido). NUNCA invente nome, telefone, e-mail ou horário.
-- NUNCA prometa "vou verificar", "já te retorno". Se a resposta não está na base, diga em 1 frase que o consultor assume agora — e PARE.
+- NUNCA prometa "vou verificar" ou "já te retorno". Se não souber, diga em 1 frase que o consultor assume agora — e PARE.
 
-RESPEITO À RECUSA (CRÍTICO — NUNCA INSISTIR):
-- Se o cliente recusar, disser que não tem interesse, já comprou, ou pedir para não receber: responda APENAS UMA mensagem cordial de encerramento e PARE. Não insista, não ofereça alternativas.
-${isFirstContact ? `\nPRIMEIRO CONTATO:\n- Cumprimente pelo nome (se souber), breve.\n- Já faça UMA pergunta de qualificação (ex.: "Você está pensando em consórcio de imóvel, automóvel ou serviço?").` : ""}`);
+RECUSA (NUNCA INSISTIR):
+- Se o cliente recusar, disser que não tem interesse ou pedir para não receber: responda 1 frase cordial de encerramento e PARE.
+${isFirstContact ? `\nPRIMEIRO CONTATO:\n- Cumprimente pelo nome (se souber) em 1 frase + UMA pergunta de qualificação. NADA além disso.` : ""}`);
+
 
   if (aiCfg?.business_description) parts.push(`SOBRE A ADMINISTRADORA:\n${aiCfg.business_description}`);
   const contact: string[] = [];
@@ -1210,12 +1208,26 @@ Deno.serve(async (req: Request) => {
       return ok({ silenced: true });
     }
 
-    // === IA DESATIVADA GLOBALMENTE ===
-    // Por decisão operacional, a IA NÃO responde mais nada via webhook.
-    // A única mensagem automatizada que sai é a boas-vindas inicial (enviada
-    // pela função `send-lead-welcome`). Todo o restante da conversa fica
-    // 100% nas mãos do consultor responsável pelo lead.
-    return ok({ ai_disabled_globally: true });
+    // === REGRA POR CONSULTOR ===
+    // Para a Micaelly o pré-atendimento da IA fica restrito à mensagem de
+    // boas-vindas (já enviada pela função `send-lead-welcome`, que apresenta
+    // a consultora). Nenhuma outra resposta da IA sai no WhatsApp dela.
+    // Para os demais consultores, a IA segue o fluxo normal até o consultor
+    // assumir enviando a primeira mensagem (humanTyped check abaixo).
+    if (lead?.assigned_member_id) {
+      const { data: assignedMember } = await admin
+        .from("tenant_members")
+        .select("display_name")
+        .eq("id", lead.assigned_member_id)
+        .maybeSingle();
+      const memberName = String(assignedMember?.display_name ?? "").toLowerCase();
+      if (memberName.includes("micaelly") || memberName.includes("micaely")) {
+        console.log("AI skipped: lead atribuído à Micaelly (welcome-only)");
+        return ok({ ai_skipped: "micaelly_welcome_only" });
+      }
+    }
+
+
 
 
     // Pausa a IA assim que o consultor digitar QUALQUER mensagem na conversa,
@@ -1303,7 +1315,7 @@ Deno.serve(async (req: Request) => {
       .eq("direction", "outbound")
       .limit(100);
     const aiTurnsSoFar = (aiMsgs ?? []).filter((m: any) => m?.metadata?.ai === true).length;
-    const MAX_AI_TURNS = 5;
+    const MAX_AI_TURNS = 3;
     if (aiTurnsSoFar >= MAX_AI_TURNS) {
       console.log("AI limit reached (5 msgs); handing off to human");
       await notifyAllSellersHandoff(admin, instance, lead, text);
