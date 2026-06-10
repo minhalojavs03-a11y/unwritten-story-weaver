@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, Users2, Info, ChevronDown, ChevronUp, Bell } from "lucide-react";
+import { ShieldAlert, Users2, Info, ChevronDown, ChevronUp, Bell, Smartphone, SmartphoneNfc } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
