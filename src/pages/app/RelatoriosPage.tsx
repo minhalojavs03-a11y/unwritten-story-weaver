@@ -452,32 +452,14 @@ function PersonalDashboard({ data, memberName }: { data: ReturnType<typeof useRe
           </div>
         </Card>
 
-        <Card className="p-5">
-          <SectionTitle title="Meu funil" />
-          <div className="space-y-2.5">
-            {data.funnel.map((s) => {
-              const pct = Math.min(100, Math.max(0, (s.count / data.maxStage) * 100));
-              return (
-                <div key={s.stage}>
-                  <div className="mb-1 flex justify-between text-xs">
-                    <span className="inline-flex items-center gap-1.5 font-medium">
-                      <span className={cn("h-2 w-2 rounded-full", stageColorClass[s.key])} />
-                      {s.stage}
-                    </span>
-                    <span className="text-muted-foreground">{s.count}</span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div className={cn("h-full rounded-full transition-all", stageColorClass[s.key])} style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
+        <div className="lg:col-span-1">
+          <ConsorcioFunnel funnel={data.funnel} lost={data.lost} compact />
+        </div>
       </div>
     </div>
   );
 }
+
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function RelatoriosPage() {
