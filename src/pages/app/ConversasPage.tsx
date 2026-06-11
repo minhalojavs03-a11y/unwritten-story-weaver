@@ -218,7 +218,7 @@ export default function ConversasPage() {
         }
       }
 
-      let existingQuery = supabase
+      const existingQuery = supabase
         .from("conversations")
         .select("*, lead:leads(*)")
         .eq("lead_id", leadParam!)
