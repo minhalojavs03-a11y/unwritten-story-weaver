@@ -1179,6 +1179,14 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
             const fileName = mediaUrl ? decodeURIComponent(mediaUrl.split("/").pop() ?? "arquivo").replace(/^\d+_/, "") : "arquivo";
             const sim = (m as any).metadata?.simulation;
             const isSimulation = isOut && hasMedia && sim?.is_simulation === true;
+            // Álbum do WhatsApp chega como texto "Album: N images" sem mídia.
+            // O provedor (uazapi) não envia os bytes das fotos no evento de álbum,
+            // então não temos como renderizar as imagens — mostramos um card claro.
+            const albumMatch = !hasMedia && !mediaUrl && typeof m.body === "string"
+              ? m.body.trim().match(/^Album:\s*(\d+)\s+(image|images|photo|photos|foto|fotos)\s*$/i)
+              : null;
+            const isAlbum = !!albumMatch;
+            const albumCount = albumMatch ? Number(albumMatch[1]) : 0;
             return (
               <div key={m.id} className={cn("group flex w-full", isOut ? "justify-end" : "justify-start", grouped ? "mt-0.5" : "mt-2")}>
                 <div className={cn(
