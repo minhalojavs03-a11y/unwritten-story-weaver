@@ -87,8 +87,13 @@ export function useReportData(
 ) {
   const effectiveUser = useEffectiveUser();
   // scopeTenantId undefined = padrão; null = global (superadmin); string = tenant específico
-  const { data: allLeads = [] } = useLeads(scopeTenantId !== undefined ? { tenantId: scopeTenantId } : undefined);
+  const { data: leadsBase = [] } = useLeads(scopeTenantId !== undefined ? { tenantId: scopeTenantId } : undefined);
+  const { data: niltonLeads = [] } = useNiltonLeadsForReports(scopeTenantId);
   const { data: members = [] } = useTenantMembers(scopeTenantId === null ? null : scopeTenantId);
+  const allLeads = useMemo(
+    () => [...leadsBase, ...(niltonLeads as unknown as typeof leadsBase)],
+    [leadsBase, niltonLeads],
+  );
 
   return useMemo(() => {
     const memberUserById = new Map(members.map((m: ReportMemberScope) => [m.id, m.user_id ?? null]));
