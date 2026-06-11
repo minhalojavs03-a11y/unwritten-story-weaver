@@ -145,9 +145,11 @@ Deno.serve(async (req) => {
       if (!sheet_id) { rowsSkipped++; continue; }
       if (looksLikeTest(row)) { rowsSkipped++; continue; }
 
-      const overflow = niltonTodayCount >= NILTON_DAILY_LIMIT;
+      // Check existence first — existing leads NEVER have their tenant/assigned/status changed.
+      const existsRes = await sb(`/nilton_leads?sheet_id=eq.${encodeURIComponent(sheet_id)}&select=id&limit=1`);
+      const existing = (await existsRes.json())?.[0] ?? null;
 
-      const payload = {
+      const basePayload = {
         sheet_id,
         created_time: parseDate(row[1]),
         ad_id: row[2] ?? null,
@@ -164,29 +166,37 @@ Deno.serve(async (req) => {
         nome_completo: row[13] ?? null,
         telefone: (row[14] ?? "").toString().replace(/^p:/i, "").trim() || null,
         lead_status: (row[15] ?? "CREATED OK").trim() || "CREATED OK",
+      };
+
+      if (existing) {
+        // Update only neutral data fields — preserve assignment/status/tenant.
+        const patch = await sb(`/nilton_leads?id=eq.${existing.id}`, {
+          method: "PATCH",
+          body: JSON.stringify(basePayload),
+        });
+        if (!patch.ok) { console.error("patch failed", await patch.text()); rowsSkipped++; }
+        continue;
+      }
+
+      const overflow = niltonTodayCount >= NILTON_DAILY_LIMIT;
+      const payload = {
+        ...basePayload,
         tenant_id: overflow ? FERACON_TENANT_ID : niltonTenantId,
         assigned_to: overflow ? null : niltonUserId,
         status: overflow ? "overflow" : "novo",
       };
 
-      // Check existence to know if this is a NEW insert (for notifications).
-      const existsRes = await sb(`/nilton_leads?sheet_id=eq.${encodeURIComponent(sheet_id)}&select=id,lead_status&limit=1`);
-      const existing = (await existsRes.json())?.[0] ?? null;
-
-      const upsert = await sb(`/nilton_leads?on_conflict=sheet_id`, {
+      const insert = await sb(`/nilton_leads`, {
         method: "POST",
-        headers: { Prefer: "resolution=merge-duplicates,return=representation" },
         body: JSON.stringify(payload),
       });
 
-      if (!upsert.ok) {
-        const t = await upsert.text();
-        console.error("upsert failed", t);
+      if (!insert.ok) {
+        const t = await insert.text();
+        console.error("insert failed", t);
         rowsSkipped++;
         continue;
       }
-
-      if (existing) continue;
       rowsInserted++;
 
       if (overflow) {
