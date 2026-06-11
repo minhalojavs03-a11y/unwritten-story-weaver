@@ -41,11 +41,14 @@ const tabs: { id: "all" | "hot" | "unread" | "outros"; label: string }[] = [
 ];
 
 export default function ConversasPage() {
-  const { tenantId, isSuperadmin, isOwner, user } = useAuth();
+  const { tenantId: authTenantId, isSuperadmin, isOwner, user } = useAuth();
   const { member } = useActiveMember();
   const effective = useEffectiveUser();
   const { can } = usePermissions();
-  const canViewAll = isSuperadmin || isOwner || can("view_all_leads");
+  const tenantId = effective.isImpersonating ? effective.tenantId : authTenantId;
+  const authCanViewAll = !effective.isImpersonating && (isSuperadmin || isOwner);
+  const canViewAll = authCanViewAll || can("view_all_leads");
+  const canQueryAllTenants = isSuperadmin && !effective.isImpersonating;
   // Em modo impersonação, usa o user_id do alvo para checagens de propriedade.
   const userId = effective.isImpersonating ? (effective.id ?? null) : (user?.id ?? null);
   const [myWhatsAppInstanceIds, setMyWhatsAppInstanceIds] = useState<string[]>([]);
@@ -133,7 +136,7 @@ export default function ConversasPage() {
       if (conversationsKind !== "all") q = q.eq("kind", conversationsKind);
 
       // Superadmin: leads de TODOS os tenants. Demais: apenas o tenant ativo.
-      if (!isSuperadmin) q = q.eq("tenant_id", tenantId);
+      if (!canQueryAllTenants) q = q.eq("tenant_id", tenantId);
       if (restricted) {
         const ownershipFilters: string[] = [];
         if (member?.id) ownershipFilters.push(`assigned_member_id.eq.${member.id}`);
@@ -148,7 +151,7 @@ export default function ConversasPage() {
       if (!cancelled) setAssignedLeads(data ?? []);
     })();
     return () => { cancelled = true; };
-  }, [tenantId, member?.id, member?.role_label, canViewAll, userId, conversations, isSuperadmin, myWhatsAppInstanceKey, conversationsKind]);
+  }, [tenantId, member?.id, member?.role_label, canViewAll, userId, conversations, canQueryAllTenants, myWhatsAppInstanceKey, conversationsKind]);
 
   // Dado leadId da URL, encontra/garante uma conversa (busca direta + fallback de criação)
   const [fetchedActive, setFetchedActive] = useState<any | null>(null);
