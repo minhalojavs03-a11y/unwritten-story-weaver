@@ -1179,6 +1179,14 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
             const fileName = mediaUrl ? decodeURIComponent(mediaUrl.split("/").pop() ?? "arquivo").replace(/^\d+_/, "") : "arquivo";
             const sim = (m as any).metadata?.simulation;
             const isSimulation = isOut && hasMedia && sim?.is_simulation === true;
+            // Álbum do WhatsApp chega como texto "Album: N images" sem mídia.
+            // O provedor (uazapi) não envia os bytes das fotos no evento de álbum,
+            // então não temos como renderizar as imagens — mostramos um card claro.
+            const albumMatch = !hasMedia && !mediaUrl && typeof m.body === "string"
+              ? m.body.trim().match(/^Album:\s*(\d+)\s+(image|images|photo|photos|foto|fotos)\s*$/i)
+              : null;
+            const isAlbum = !!albumMatch;
+            const albumCount = albumMatch ? Number(albumMatch[1]) : 0;
             return (
               <div key={m.id} className={cn("group flex w-full", isOut ? "justify-end" : "justify-start", grouped ? "mt-0.5" : "mt-2")}>
                 <div className={cn(
@@ -1251,6 +1259,22 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
                       <FileText className="h-6 w-6 shrink-0 text-[#54656f]" />
                       <span className="truncate text-sm text-[#111b21]">{fileName}</span>
                     </a>
+                  ) : isAlbum ? (
+                    <div className="mb-1 flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50/70 px-2.5 py-2 pr-14">
+                      <div className="grid h-12 w-12 shrink-0 grid-cols-2 grid-rows-2 gap-0.5 overflow-hidden rounded-md bg-emerald-200/60">
+                        {Array.from({ length: Math.min(4, albumCount) }).map((_, i) => (
+                          <div key={i} className="flex items-center justify-center bg-emerald-300/60 text-[10px] text-emerald-900">
+                            📷
+                          </div>
+                        ))}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-medium text-emerald-900">Álbum com {albumCount} {albumCount === 1 ? "imagem" : "imagens"}</p>
+                        <p className="mt-0.5 text-[11px] leading-tight text-emerald-800/80">
+                          As fotos foram enviadas pelo WhatsApp. O CRM ainda não recebeu os arquivos do provedor — abra no WhatsApp do consultor para visualizar.
+                        </p>
+                      </div>
+                    </div>
                   ) : (
                     <p className="whitespace-pre-wrap break-words pr-14">{m.body}</p>
                   )}
