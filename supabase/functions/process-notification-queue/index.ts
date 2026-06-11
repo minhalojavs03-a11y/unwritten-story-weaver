@@ -87,9 +87,12 @@ async function processOne(admin: ReturnType<typeof createClient>, type: string) 
     let errText = "";
     let status = 0;
 
-    if (type === "announcement") {
-      // Send a free-text message directly to a phone via the tenant's instance.
-      const instance = await pickNotifierInstance(admin, candidate.tenant_id);
+    if (type === "announcement" || type === "nilton_lead") {
+      // Free-text message direct to a phone. For nilton_lead we accept any
+      // connected instance (the Nilton tenant may not have a dedicated notifier).
+      const instance = type === "nilton_lead"
+        ? await pickAnyConnectedInstance(admin, candidate.tenant_id)
+        : await pickNotifierInstance(admin, candidate.tenant_id);
       if (!instance?.server_url || !instance?.instance_token) {
         throw new Error("no connected whatsapp instance");
       }
@@ -109,7 +112,7 @@ async function processOne(admin: ReturnType<typeof createClient>, type: string) 
         await admin.from("lead_notifications").insert({
           tenant_id: candidate.tenant_id,
           lead_id: candidate.lead_id,
-          type: "announcement",
+          type,
           recipient_phone: phone,
           message_sent: text,
           delivered: true,
