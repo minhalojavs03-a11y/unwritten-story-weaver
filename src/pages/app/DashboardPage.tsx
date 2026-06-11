@@ -206,7 +206,7 @@ export default function DashboardPage() {
 
 
         <section className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-          <StatCard to="/clientes" icon={Users} label="Leads Hoje" value={m?.leadsToday ?? 0} iconColor="bg-emerald-500/10 text-emerald-600" />
+          <StatCard to={privileged ? "/leads-hoje" : "/clientes"} icon={Users} label="Leads Hoje" value={m?.leadsToday ?? 0} iconColor="bg-emerald-500/10 text-emerald-600" />
           <StatCard to="/conversas" icon={MessageCircle} label="Conversas Ativas" value={m?.activeConversations ?? 0} iconColor="bg-violet-500/10 text-violet-600" />
           <StatCard to="/agenda" icon={Calendar} label="Reuniões hoje" value={m?.appointmentsToday ?? 0} iconColor="bg-sky-500/10 text-sky-600" />
           <StatCard to="/conversas?tab=hot" icon={Flame} label="Leads Quentes" value={m?.hotOpportunities ?? 0} iconColor="bg-rose-500/10 text-rose-600" />

@@ -39,6 +39,7 @@ import RankingPage from "./pages/app/RankingPage";
 import RelatoriosPage from "./pages/app/RelatoriosPage";
 import CoachingPage from "./pages/app/CoachingPage";
 import NiltonLeadsPage from "./pages/app/NiltonLeadsPage";
+import LeadsHojePage from "./pages/app/LeadsHojePage";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClientes from "./pages/admin/AdminClientes";
@@ -118,6 +119,7 @@ const App = () => (
                   <Route path="/leads" element={<LeadsPage />} />
                   <Route path="/leads/fila" element={<FilaLeadsPage />} />
                   <Route path="/nilton" element={<NiltonLeadsPage />} />
+                  <Route path="/leads-hoje" element={<LeadsHojePage />} />
                   <Route path="/whatsapp" element={<WhatsAppPage />} />
                   <Route path="/meu-whatsapp" element={<MeuWhatsAppPage />} />
                   <Route path="/treinar-ia" element={<TreinarIAPage />} />
@@ -161,6 +163,7 @@ const App = () => (
               <Route path="/leads" element={<LeadsPage />} />
               <Route path="/leads/fila" element={<FilaLeadsPage />} />
               <Route path="/nilton" element={<NiltonLeadsPage />} />
+              <Route path="/leads-hoje" element={<ProtectedRoute denyConsultant><LeadsHojePage /></ProtectedRoute>} />
               <Route path="/whatsapp" element={<ProtectedRoute requireOwner allowSupervisor><WhatsAppPage /></ProtectedRoute>} />
               <Route path="/meu-whatsapp" element={<MeuWhatsAppPage />} />
               <Route path="/treinar-ia" element={<ProtectedRoute requireOwner><TreinarIAPage /></ProtectedRoute>} />
