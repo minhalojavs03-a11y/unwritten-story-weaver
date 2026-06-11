@@ -23,6 +23,7 @@ import { formatTime, timeAgo } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
+import { useEffectiveUser } from "@/hooks/useEffectiveUser";
 import { useConversations, useMessages, useSendMessage, useAssumeLead, useReleaseLead, useTenantMembers } from "@/hooks/useData";
 import { useConversationConsultants } from "@/hooks/useConversationConsultants";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -42,9 +43,11 @@ const tabs: { id: "all" | "hot" | "unread" | "outros"; label: string }[] = [
 export default function ConversasPage() {
   const { tenantId, isSuperadmin, isOwner, user } = useAuth();
   const { member } = useActiveMember();
+  const effective = useEffectiveUser();
   const { can } = usePermissions();
   const canViewAll = isSuperadmin || isOwner || can("view_all_leads");
-  const userId = user?.id ?? null;
+  // Em modo impersonação, usa o user_id do alvo para checagens de propriedade.
+  const userId = effective.isImpersonating ? (effective.id ?? null) : (user?.id ?? null);
   const [myWhatsAppInstanceIds, setMyWhatsAppInstanceIds] = useState<string[]>([]);
   const myWhatsAppInstanceKey = myWhatsAppInstanceIds.join(",");
   const [params, setParams] = useSearchParams();
