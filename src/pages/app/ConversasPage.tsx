@@ -224,7 +224,6 @@ export default function ConversasPage() {
         .eq("lead_id", leadParam!)
         .order("created_at", { ascending: false })
         .limit(1);
-      if (restricted && myWhatsAppInstanceIds.length) existingQuery = existingQuery.in("whatsapp_instance_id", myWhatsAppInstanceIds);
       const { data: existing } = await existingQuery.maybeSingle();
       if (cancelled) return;
       if (existing) { setFetchedActive(existing); return; }
