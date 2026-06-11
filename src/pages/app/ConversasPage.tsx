@@ -40,6 +40,65 @@ const tabs: { id: "all" | "hot" | "unread" | "outros"; label: string }[] = [
   { id: "outros", label: "Outros (não leads)" },
 ];
 
+function AlbumCard({ messageId, albumCount, fetched }: { messageId: string; albumCount: number; fetched: boolean }) {
+  const qc = useQueryClient();
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(fetched);
+  const handleFetch = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-album-images", {
+        body: { message_id: messageId },
+      });
+      if (error) throw error;
+      const inserted = (data as any)?.inserted ?? 0;
+      if (inserted > 0) {
+        toast({ title: "Imagens carregadas", description: `${inserted} imagem(ns) do álbum adicionada(s).` });
+      } else {
+        toast({ title: "Nenhuma imagem nova", description: "O provedor não retornou as imagens deste álbum." });
+      }
+      setDone(true);
+      qc.invalidateQueries({ queryKey: ["messages"] });
+    } catch (e: any) {
+      toast({ title: "Erro ao carregar álbum", description: e?.message ?? "Falha ao buscar imagens.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <div className="mb-1 flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50/70 px-2.5 py-2 pr-14">
+      <div className="grid h-12 w-12 shrink-0 grid-cols-2 grid-rows-2 gap-0.5 overflow-hidden rounded-md bg-emerald-200/60">
+        {Array.from({ length: Math.min(4, albumCount) || 1 }).map((_, i) => (
+          <div key={i} className="flex items-center justify-center bg-emerald-300/60 text-[10px] text-emerald-900">
+            📷
+          </div>
+        ))}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[13px] font-medium text-emerald-900">
+          Álbum com {albumCount} {albumCount === 1 ? "imagem" : "imagens"}
+        </p>
+        <p className="mt-0.5 text-[11px] leading-tight text-emerald-800/80">
+          {done
+            ? "Imagens carregadas — role para vê-las nesta conversa."
+            : "As fotos não chegaram automaticamente pelo provedor. Clique para tentar carregá-las agora."}
+        </p>
+        {!done && (
+          <button
+            type="button"
+            onClick={handleFetch}
+            disabled={loading}
+            className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+          >
+            {loading ? "Carregando…" : "Carregar imagens"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 export default function ConversasPage() {
   const { tenantId: authTenantId, isSuperadmin, isOwner, user } = useAuth();
   const { member } = useActiveMember();
@@ -1260,21 +1319,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
                       <span className="truncate text-sm text-[#111b21]">{fileName}</span>
                     </a>
                   ) : isAlbum ? (
-                    <div className="mb-1 flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50/70 px-2.5 py-2 pr-14">
-                      <div className="grid h-12 w-12 shrink-0 grid-cols-2 grid-rows-2 gap-0.5 overflow-hidden rounded-md bg-emerald-200/60">
-                        {Array.from({ length: Math.min(4, albumCount) }).map((_, i) => (
-                          <div key={i} className="flex items-center justify-center bg-emerald-300/60 text-[10px] text-emerald-900">
-                            📷
-                          </div>
-                        ))}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[13px] font-medium text-emerald-900">Álbum com {albumCount} {albumCount === 1 ? "imagem" : "imagens"}</p>
-                        <p className="mt-0.5 text-[11px] leading-tight text-emerald-800/80">
-                          As fotos foram enviadas pelo WhatsApp. O CRM ainda não recebeu os arquivos do provedor — abra no WhatsApp do consultor para visualizar.
-                        </p>
-                      </div>
-                    </div>
+                    <AlbumCard messageId={m.id} albumCount={albumCount} fetched={(m as any).metadata?.album_fetched === true} />
                   ) : (
                     <p className="whitespace-pre-wrap break-words pr-14">{m.body}</p>
                   )}
