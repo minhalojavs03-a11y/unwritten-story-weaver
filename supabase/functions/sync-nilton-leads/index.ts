@@ -17,7 +17,6 @@ const NILTON_USER_ID = "88d35577-6f4b-4d34-b29e-b5cfdd09580c";
 const FERACON_TENANT_ID = "9ecb99e2-50ee-404f-920b-81cd94cc685e";
 const NILTON_TENANT_ID = FERACON_TENANT_ID; // sistema single-tenant Feracon
 const NILTON_PHONE = "5499957-0101"; // formatted later
-const FERACON_TENANT_ID = "9ecb99e2-50ee-404f-920b-81cd94cc685e";
 const NILTON_DAILY_LIMIT = 2; // máximo de leads por dia para Nilton; o restante cai na distribuição geral
 
 function parseCartaValue(raw: string | null | undefined): number | null {
