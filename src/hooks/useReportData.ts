@@ -1,7 +1,54 @@
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLeads, useTenantMembers } from "@/hooks/useData";
 import { useEffectiveUser } from "@/hooks/useEffectiveUser";
+import { supabase } from "@/integrations/supabase/client";
+import { FERACON_TENANT_ID } from "@/lib/feracon";
 import { stageLabels, stageOrder, type Stage } from "@/data/mock";
+
+// Busca leads do Nilton (planilha) e converte para o shape mínimo usado nos relatórios,
+// para que o KPI de "Leads no período" bata com o card de "Leads Hoje" do Início (RPC).
+function useNiltonLeadsForReports(scopeTenantId?: string | null) {
+  const tenantId = scopeTenantId === undefined ? FERACON_TENANT_ID : scopeTenantId;
+  return useQuery({
+    queryKey: ["nilton_leads_for_reports", tenantId ?? "__all__"],
+    staleTime: 60_000,
+    queryFn: async () => {
+      let q = supabase
+        .from("nilton_leads")
+        .select("id, tenant_id, assigned_to, created_time, imported_at, updated_at, status, campaign_name, platform")
+        .neq("status", "historico")
+        .order("created_time", { ascending: false })
+        .limit(5000);
+      if (tenantId) q = q.eq("tenant_id", tenantId);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []).map((n: {
+        id: string; tenant_id: string | null; assigned_to: string | null;
+        created_time: string | null; imported_at: string | null; updated_at: string | null;
+        campaign_name: string | null; platform: string | null;
+      }) => ({
+        id: n.id,
+        tenant_id: n.tenant_id,
+        assigned_to: n.assigned_to,
+        assigned_member_id: null as string | null,
+        assigned_member_at: n.created_time ?? n.imported_at,
+        created_at: n.created_time ?? n.imported_at ?? new Date().toISOString(),
+        updated_at: n.updated_at ?? n.created_time ?? n.imported_at ?? new Date().toISOString(),
+        last_contact_at: null as string | null,
+        stage: "novo",
+        kind: "lead",
+        credit_value: 0,
+        source: n.platform ? `${n.platform}_ads` : "nilton_planilha",
+        disqualification_reason: null as string | null,
+        temperature: null as string | null,
+        phone: null as string | null,
+        imported_from_sheet: true,
+        __nilton: true as const,
+      }));
+    },
+  });
+}
 
 export type Period = "today" | "7d" | "30d" | "month" | "year" | "all";
 
@@ -40,8 +87,13 @@ export function useReportData(
 ) {
   const effectiveUser = useEffectiveUser();
   // scopeTenantId undefined = padrão; null = global (superadmin); string = tenant específico
-  const { data: allLeads = [] } = useLeads(scopeTenantId !== undefined ? { tenantId: scopeTenantId } : undefined);
+  const { data: leadsBase = [] } = useLeads(scopeTenantId !== undefined ? { tenantId: scopeTenantId } : undefined);
+  const { data: niltonLeads = [] } = useNiltonLeadsForReports(scopeTenantId);
   const { data: members = [] } = useTenantMembers(scopeTenantId === null ? null : scopeTenantId);
+  const allLeads = useMemo(
+    () => [...leadsBase, ...(niltonLeads as unknown as typeof leadsBase)],
+    [leadsBase, niltonLeads],
+  );
 
   return useMemo(() => {
     const memberUserById = new Map(members.map((m: ReportMemberScope) => [m.id, m.user_id ?? null]));
