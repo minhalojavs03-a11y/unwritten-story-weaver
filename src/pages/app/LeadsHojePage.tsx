@@ -81,7 +81,11 @@ export default function LeadsHojePage() {
           .or(`created_time.gte.${start},and(created_time.is.null,imported_at.gte.${start})`)
           .order("created_time", { ascending: false })
           .limit(2000),
-        supabase.rpc("list_tenant_members_public", { _tenant_id: FERACON_TENANT_ID }),
+        supabase
+          .from("tenant_members")
+          .select("id, user_id, display_name, role_label, avatar_url, avatar_color, is_active")
+          .eq("tenant_id", FERACON_TENANT_ID)
+          .eq("is_active", true),
       ]);
 
       if (cancelled) return;
@@ -115,8 +119,17 @@ export default function LeadsHojePage() {
       }));
 
       setLeads([...baseLeads, ...niltonLeads]);
-      // Filtra members usando a mesma regra do tenant (esconde donos/superadmins do bucket "Sem consultor")
-      setMembers((membersRes.data ?? []) as MemberRow[]);
+      setMembers(((membersRes.data ?? []) as Array<{
+        id: string; user_id: string | null; display_name: string;
+        role_label: string | null; avatar_url: string | null; avatar_color: string | null;
+      }>).map((r) => ({
+        id: r.id,
+        user_id: r.user_id,
+        display_name: r.display_name,
+        role_label: r.role_label,
+        avatar_url: r.avatar_url,
+        avatar_color: r.avatar_color,
+      })));
       setLoading(false);
     })();
 
