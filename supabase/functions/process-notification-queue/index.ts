@@ -167,6 +167,7 @@ Deno.serve(async (req) => {
     processOne(admin, "welcome"),
     processOne(admin, "consultant_tier_match"),
     processOne(admin, "announcement"),
+    processOne(admin, "nilton_lead"),
   ]);
   return new Response(JSON.stringify({ ok: true, results }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
