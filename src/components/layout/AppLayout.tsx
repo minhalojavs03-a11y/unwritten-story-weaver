@@ -26,6 +26,7 @@ import { NotificationsBell } from "@/components/layout/NotificationsBell";
 import { WhatsAppStatusPill } from "@/components/layout/WhatsAppStatusPill";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useNavBadges } from "@/hooks/useNavBadges";
+import { useHiddenMenus, type MenuRole } from "@/hooks/useMenuPermissions";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { TutorialVideoDialog } from "@/components/TutorialVideoDialog";
@@ -130,6 +131,23 @@ export function AppLayout() {
     return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching];
 
   }, [isOwner, isSuperadmin, isSupervisor, impersonating, isNilton]);
+
+  // Aplicar overrides do superadmin (Controle de Menus). Superadmin nunca tem
+  // itens ocultos para que possa testar e configurar; demais cargos respeitam
+  // a tabela `menu_permissions`.
+  const effectiveMenuRole: MenuRole | null = isSuperadmin
+    ? null
+    : isOwner
+      ? "owner"
+      : isSupervisor
+        ? "supervisor"
+        : "consultant";
+  const hiddenMenus = useHiddenMenus(effectiveMenuRole);
+  const visibleNavItems = useMemo(() => {
+    if (!hiddenMenus.size) return navItems;
+    return navItems.filter((it) => !hiddenMenus.has(it.to));
+  }, [navItems, hiddenMenus]);
+
 
 
   const [impersonateOpen, setImpersonateOpen] = useState(false);
@@ -254,7 +272,7 @@ export function AppLayout() {
             </div>
 
             <nav className={cn("flex-1 space-y-1 overflow-y-auto", collapsed ? "px-2" : "px-2")}>
-              {navItems.map((item) => (
+              {visibleNavItems.map((item) => (
                 item.to === "/conversas" && (isOwner || isSuperadmin || isSupervisor) ? (
                   <ConversasNavWithSubmenu
                     key={item.to}
@@ -335,7 +353,7 @@ export function AppLayout() {
                   <img src={logoCatelanWhite} alt="Consórcio Feracon" className="max-h-14 w-auto cursor-pointer object-contain" onClick={() => navigate("/crm")} />
                 </SheetHeader>
                 <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain p-3">
-                  {navItems.map((item) => (
+                  {visibleNavItems.map((item) => (
                     <MobileNavRow key={item.to} item={item} location={location} navBadges={navBadges} />
                   ))}
                 </nav>
@@ -444,7 +462,7 @@ export function AppLayout() {
 
       {/* Mobile bottom nav */}
       <nav className="fixed inset-x-0 bottom-0 z-20 flex h-16 items-stretch border-t border-black/5 !bg-white shadow-[0_-4px_16px_-8px_rgba(0,0,0,0.12)] [backdrop-filter:none] md:hidden">
-        {mobileNav.map((item) => {
+        {mobileNav.filter((it) => !hiddenMenus.has(it.to)).map((item) => {
           const active = item.to === "/leads" ? location.pathname === "/leads" : (location.pathname === item.to || location.pathname.startsWith(item.to + "/"));
           const Icon = item.icon;
           const badge = navBadges[item.to] ?? 0;

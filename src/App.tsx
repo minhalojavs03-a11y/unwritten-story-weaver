@@ -51,6 +51,7 @@ import AdminAutomacoes from "./pages/admin/AdminAutomacoes";
 import AdminCampanhas from "./pages/admin/AdminCampanhas";
 import AdminFinanceiro from "./pages/admin/AdminFinanceiro";
 import AdminIntegracoes from "./pages/admin/AdminIntegracoes";
+import AdminMenus from "./pages/admin/AdminMenus";
 
 import NotFound from "./pages/NotFound.tsx";
 import ProposalWhatsappOficial from "./pages/ProposalWhatsappOficial";
@@ -105,6 +106,7 @@ const App = () => (
                   <Route path="campanhas" element={<AdminCampanhas />} />
                   <Route path="integracoes" element={<AdminIntegracoes />} />
                   <Route path="financeiro" element={<AdminFinanceiro />} />
+                  <Route path="menus" element={<AdminMenus />} />
                 </Route>
 
                 {/* Painel do cliente (CRM) liberado SOMENTE para superadmin durante a manutenção */}
@@ -195,6 +197,7 @@ const App = () => (
               <Route path="campanhas" element={<AdminCampanhas />} />
               <Route path="integracoes" element={<AdminIntegracoes />} />
               <Route path="financeiro" element={<AdminFinanceiro />} />
+              <Route path="menus" element={<AdminMenus />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
