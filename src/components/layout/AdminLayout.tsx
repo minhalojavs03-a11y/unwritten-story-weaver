@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Building2, Smartphone, Sparkles, FileText, Workflow, Megaphone, CreditCard, LogOut, UserCircle2, Menu, Plug, Users2, Repeat } from "lucide-react";
+import { LayoutDashboard, Building2, Smartphone, Sparkles, FileText, Workflow, Megaphone, CreditCard, LogOut, UserCircle2, Menu, Plug, Users2, Repeat, ListChecks } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
@@ -19,6 +19,7 @@ const nav = [
   { to: "/admin/campanhas", label: "Campanhas", icon: Megaphone },
   { to: "/admin/integracoes", label: "Integrações", icon: Plug },
   { to: "/admin/financeiro", label: "Financeiro", icon: CreditCard },
+  { to: "/admin/menus", label: "Controle de Menus", icon: ListChecks },
 ];
 
 // 4 itens essenciais para gestão diária no rodapé mobile
