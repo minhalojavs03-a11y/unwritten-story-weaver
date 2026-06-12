@@ -26,6 +26,7 @@ import { NotificationsBell } from "@/components/layout/NotificationsBell";
 import { WhatsAppStatusPill } from "@/components/layout/WhatsAppStatusPill";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useNavBadges } from "@/hooks/useNavBadges";
+import { useHiddenMenus, type MenuRole } from "@/hooks/useMenuPermissions";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { TutorialVideoDialog } from "@/components/TutorialVideoDialog";
@@ -130,6 +131,23 @@ export function AppLayout() {
     return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching];
 
   }, [isOwner, isSuperadmin, isSupervisor, impersonating, isNilton]);
+
+  // Aplicar overrides do superadmin (Controle de Menus). Superadmin nunca tem
+  // itens ocultos para que possa testar e configurar; demais cargos respeitam
+  // a tabela `menu_permissions`.
+  const effectiveMenuRole: MenuRole | null = isSuperadmin
+    ? null
+    : isOwner
+      ? "owner"
+      : isSupervisor
+        ? "supervisor"
+        : "consultant";
+  const hiddenMenus = useHiddenMenus(effectiveMenuRole);
+  const visibleNavItems = useMemo(() => {
+    if (!hiddenMenus.size) return navItems;
+    return navItems.filter((it) => !hiddenMenus.has(it.to));
+  }, [navItems, hiddenMenus]);
+
 
 
   const [impersonateOpen, setImpersonateOpen] = useState(false);
