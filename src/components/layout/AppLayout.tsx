@@ -132,16 +132,36 @@ export function AppLayout() {
 
   }, [isOwner, isSuperadmin, isSupervisor, impersonating, isNilton]);
 
-  // Aplicar overrides do superadmin (Controle de Menus). Superadmin nunca tem
-  // itens ocultos para que possa testar e configurar; demais cargos respeitam
-  // a tabela `menu_permissions`.
-  const effectiveMenuRole: MenuRole | null = isSuperadmin
+  // Aplicar overrides do superadmin (Controle de Menus). Superadmin (real, fora
+  // de impersonation) nunca tem itens ocultos. Durante impersonation, usamos a
+  // role-alvo (target_role) para que o superadmin veja exatamente o menu do
+  // cargo impersonado. Sem impersonation, usamos o role_label do membro ativo
+  // se houver — assim Antonio (Supervisor) respeita os toggles de supervisor
+  // mesmo que `useEffectiveRole` o trate como owner para permissões.
+  const memberRoleLabel = (member?.role_label ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  const memberMenuRole: MenuRole | null = !member
     ? null
-    : isOwner
+    : /(dono|owner|proprietario)/.test(memberRoleLabel)
       ? "owner"
-      : isSupervisor
+      : /(supervisor|gerente|gestor)/.test(memberRoleLabel)
         ? "supervisor"
         : "consultant";
+  const impersonationTargetRole = (impersonating?.target_role ?? "").toLowerCase();
+  const impersonationMenuRole: MenuRole | null = !impersonating
+    ? null
+    : impersonationTargetRole === "owner"
+      ? "owner"
+      : impersonationTargetRole === "supervisor"
+        ? "supervisor"
+        : impersonationTargetRole === "consultant" || impersonationTargetRole === "attendant"
+          ? "consultant"
+          : memberMenuRole;
+  const effectiveMenuRole: MenuRole | null = impersonating
+    ? impersonationMenuRole
+    : realIsSuperadmin
+      ? null
+      : memberMenuRole
+        ?? (isOwner ? "owner" : isSupervisor ? "supervisor" : "consultant");
   const hiddenMenus = useHiddenMenus(effectiveMenuRole);
   const visibleNavItems = useMemo(() => {
     if (!hiddenMenus.size) return navItems;
