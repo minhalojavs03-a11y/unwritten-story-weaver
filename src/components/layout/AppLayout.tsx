@@ -462,7 +462,7 @@ export function AppLayout() {
 
       {/* Mobile bottom nav */}
       <nav className="fixed inset-x-0 bottom-0 z-20 flex h-16 items-stretch border-t border-black/5 !bg-white shadow-[0_-4px_16px_-8px_rgba(0,0,0,0.12)] [backdrop-filter:none] md:hidden">
-        {mobileNav.map((item) => {
+        {mobileNav.filter((it) => !hiddenMenus.has(it.to)).map((item) => {
           const active = item.to === "/leads" ? location.pathname === "/leads" : (location.pathname === item.to || location.pathname.startsWith(item.to + "/"));
           const Icon = item.icon;
           const badge = navBadges[item.to] ?? 0;
