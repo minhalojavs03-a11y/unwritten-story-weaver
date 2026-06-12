@@ -272,7 +272,7 @@ export function AppLayout() {
             </div>
 
             <nav className={cn("flex-1 space-y-1 overflow-y-auto", collapsed ? "px-2" : "px-2")}>
-              {navItems.map((item) => (
+              {visibleNavItems.map((item) => (
                 item.to === "/conversas" && (isOwner || isSuperadmin || isSupervisor) ? (
                   <ConversasNavWithSubmenu
                     key={item.to}
@@ -353,7 +353,7 @@ export function AppLayout() {
                   <img src={logoCatelanWhite} alt="Consórcio Feracon" className="max-h-14 w-auto cursor-pointer object-contain" onClick={() => navigate("/crm")} />
                 </SheetHeader>
                 <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain p-3">
-                  {navItems.map((item) => (
+                  {visibleNavItems.map((item) => (
                     <MobileNavRow key={item.to} item={item} location={location} navBadges={navBadges} />
                   ))}
                 </nav>
