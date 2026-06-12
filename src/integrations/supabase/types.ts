@@ -2587,7 +2587,24 @@ export type Database = {
         }
         Returns: undefined
       }
-      update_my_tenant_member: { Args: { _data: Json }; Returns: undefined }
+      update_my_tenant_member:
+        | { Args: { _data: Json }; Returns: undefined }
+        | {
+            Args: {
+              _avatar_color?: string
+              _avatar_url?: string
+              _bio?: string
+              _display_name?: string
+              _full_name?: string
+              _member_id: string
+              _monthly_goal?: number
+              _notification_email?: boolean
+              _notification_whatsapp?: boolean
+              _phone?: string
+              _role_label?: string
+            }
+            Returns: undefined
+          }
       user_tenant_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
