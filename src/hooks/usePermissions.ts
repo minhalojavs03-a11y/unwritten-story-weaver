@@ -18,6 +18,7 @@ import type { AppRole } from "@/components/ui/RoleBadge";
 type Permission =
   | "view_all_leads"
   | "assume_any_lead"
+  | "transfer_lead"
   | "view_team_metrics"
   | "configure_sheets"
   | "manage_team"
