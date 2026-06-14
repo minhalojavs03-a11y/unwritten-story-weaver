@@ -49,6 +49,7 @@ export default function ConsultoresPage() {
 
   const canViewTeam = can("view_team_metrics");
   const canAssume = can("assume_any_lead");
+  const canTransfer = can("transfer_lead");
 
   const consultants = useMemo(
     () => members.filter((m) => m.role === "tenant" || isConsultantLike(m.role_label, m.username)),
