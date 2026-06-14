@@ -277,7 +277,7 @@ export default function ConsultoresPage() {
                                   <UserCheck className="mr-1 h-4 w-4" /> Assumir
                                 </Button>
                               )}
-                              {canAssume && (
+                              {canTransfer && (
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button size="sm" variant="outline" disabled={assume.isPending}>
