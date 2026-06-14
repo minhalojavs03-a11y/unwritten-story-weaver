@@ -49,6 +49,7 @@ export default function ConsultoresPage() {
 
   const canViewTeam = can("view_team_metrics");
   const canAssume = can("assume_any_lead");
+  const canTransfer = can("transfer_lead");
 
   const consultants = useMemo(
     () => members.filter((m) => m.role === "tenant" || isConsultantLike(m.role_label, m.username)),
@@ -276,7 +277,7 @@ export default function ConsultoresPage() {
                                   <UserCheck className="mr-1 h-4 w-4" /> Assumir
                                 </Button>
                               )}
-                              {canAssume && (
+                              {canTransfer && (
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button size="sm" variant="outline" disabled={assume.isPending}>

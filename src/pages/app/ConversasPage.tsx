@@ -599,6 +599,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   const assume = useAssumeLead();
   const release = useReleaseLead();
   const { roles, session, isSuperadmin, user } = useAuth();
+  const { can } = usePermissions();
   const { member } = useActiveMember();
   const { data: members = [] } = useTenantMembers();
   const { data: allTemplates = [] } = useTemplates();
@@ -1120,7 +1121,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
               Liberar
             </Button>
           )}
-          {canOverride && (
+          {canOverride && can("transfer_lead") && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

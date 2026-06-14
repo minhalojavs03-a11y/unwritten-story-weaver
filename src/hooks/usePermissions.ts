@@ -18,6 +18,7 @@ import type { AppRole } from "@/components/ui/RoleBadge";
 type Permission =
   | "view_all_leads"
   | "assume_any_lead"
+  | "transfer_lead"
   | "view_team_metrics"
   | "configure_sheets"
   | "manage_team"
@@ -32,6 +33,7 @@ const MATRIX: Record<Permission, AppRole[]> = {
   // Supervisor agora tem as MESMAS permissões de dono dentro do tenant
   view_all_leads:        ["superadmin", "owner", "supervisor"],
   assume_any_lead:       ["superadmin", "owner", "supervisor"],
+  transfer_lead:         ["superadmin", "owner"],
   view_team_metrics:     ["superadmin", "owner", "supervisor"],
   view_whatsapp:         ["superadmin", "owner", "supervisor"],
 
