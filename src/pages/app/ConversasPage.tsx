@@ -1120,7 +1120,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
               Liberar
             </Button>
           )}
-          {canOverride && (
+          {canOverride && can("transfer_lead") && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
