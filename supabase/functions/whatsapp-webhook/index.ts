@@ -412,6 +412,14 @@ async function uploadMediaToStorage(
       console.warn("[drive] fallback para Supabase Storage (drive falhou)");
     }
 
+    // 🖼️ Imagens vão para o ImgBB
+    if (media.kind === "image") {
+      const imgbbUrl = await uploadImageToImgBB(bytes, ext);
+      if (imgbbUrl) return { url: imgbbUrl, mime };
+      console.warn("[imgbb] fallback para Supabase Storage (imgbb falhou)");
+    }
+
+
     const path = `${tenantId}/${conversationId}/${Date.now()}_${crypto.randomUUID()}.${ext}`;
     const { error: upErr } = await admin.storage.from("chat-media").upload(path, bytes, {
       contentType: mime ?? "application/octet-stream",
