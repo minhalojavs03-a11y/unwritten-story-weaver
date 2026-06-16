@@ -412,6 +412,14 @@ async function uploadMediaToStorage(
       console.warn("[drive] fallback para Supabase Storage (drive falhou)");
     }
 
+    // 🖼️ Imagens vão para o ImgBB
+    if (media.kind === "image") {
+      const imgbbUrl = await uploadImageToImgBB(bytes, ext);
+      if (imgbbUrl) return { url: imgbbUrl, mime };
+      console.warn("[imgbb] fallback para Supabase Storage (imgbb falhou)");
+    }
+
+
     const path = `${tenantId}/${conversationId}/${Date.now()}_${crypto.randomUUID()}.${ext}`;
     const { error: upErr } = await admin.storage.from("chat-media").upload(path, bytes, {
       contentType: mime ?? "application/octet-stream",
@@ -511,7 +519,39 @@ async function uploadAudioToGoogleDrive(
   }
 }
 
+// Upload de imagem para o ImgBB
+async function uploadImageToImgBB(bytes: Uint8Array, ext: string): Promise<string | null> {
+  try {
+    const key = Deno.env.get("IMGBB_API_KEY");
+    if (!key) {
+      console.error("[imgbb] IMGBB_API_KEY ausente");
+      return null;
+    }
+    // base64 (ImgBB aceita raw b64 via form field)
+    let b64 = "";
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      b64 += String.fromCharCode(...bytes.subarray(i, i + chunk));
+    }
+    b64 = btoa(b64);
+    const form = new FormData();
+    form.append("image", b64);
+    form.append("name", `feracon_${Date.now()}.${ext}`);
+    const r = await fetch(`https://api.imgbb.com/1/upload?key=${key}`, { method: "POST", body: form });
+    if (!r.ok) {
+      console.error("[imgbb] upload falhou", r.status, await r.text());
+      return null;
+    }
+    const j = await r.json();
+    return j?.data?.url ?? j?.data?.display_url ?? null;
+  } catch (e) {
+    console.error("[imgbb] exception", e);
+    return null;
+  }
+}
+
 function normalizeAvatar(value: any): string | null {
+
   if (!value) return null;
   const raw = typeof value === "string" ? value.trim() : (value.url ?? value.image ?? value.base64 ?? "").toString().trim();
   if (!raw) return null;
