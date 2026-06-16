@@ -403,6 +403,14 @@ async function uploadMediaToStorage(
     }
 
     const ext = extFromMime(mime, media.kind === "audio" ? "ogg" : "bin");
+
+    // 🎤 Áudios vão para o Google Drive (libera espaço do Supabase Storage)
+    if (media.kind === "audio") {
+      const driveUrl = await uploadAudioToGoogleDrive(bytes, mime ?? "audio/ogg", ext, tenantId, conversationId);
+      if (driveUrl) return { url: driveUrl, mime };
+      console.warn("[drive] fallback para Supabase Storage (drive falhou)");
+    }
+
     const path = `${tenantId}/${conversationId}/${Date.now()}_${crypto.randomUUID()}.${ext}`;
     const { error: upErr } = await admin.storage.from("chat-media").upload(path, bytes, {
       contentType: mime ?? "application/octet-stream",
@@ -417,6 +425,88 @@ async function uploadMediaToStorage(
   } catch (e) {
     console.error("uploadMediaToStorage error", e);
     return { url: null, mime: media.mime ?? null };
+  }
+}
+
+// Upload de áudio para o Google Drive via connector gateway
+async function uploadAudioToGoogleDrive(
+  bytes: Uint8Array,
+  mime: string,
+  ext: string,
+  tenantId: string,
+  conversationId: string,
+): Promise<string | null> {
+  try {
+    const LOVABLE_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const DRIVE_KEY = Deno.env.get("GOOGLE_DRIVE_API_KEY");
+    if (!LOVABLE_KEY || !DRIVE_KEY) {
+      console.error("[drive] missing LOVABLE_API_KEY or GOOGLE_DRIVE_API_KEY");
+      return null;
+    }
+
+    const filename = `feracon_${conversationId}_${Date.now()}.${ext}`;
+    const metadata = { name: filename, description: `Feracon CRM audio (tenant ${tenantId})` };
+    const boundary = `----feracon${crypto.randomUUID().replace(/-/g, "")}`;
+
+    // monta corpo multipart/related
+    const enc = new TextEncoder();
+    const head = enc.encode(
+      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
+      `--${boundary}\r\nContent-Type: ${mime}\r\n\r\n`,
+    );
+    const tail = enc.encode(`\r\n--${boundary}--\r\n`);
+    const body = new Uint8Array(head.length + bytes.length + tail.length);
+    body.set(head, 0);
+    body.set(bytes, head.length);
+    body.set(tail, head.length + bytes.length);
+
+    const uploadRes = await fetch(
+      "https://connector-gateway.lovable.dev/google_drive/upload/drive/v3/files?uploadType=multipart&fields=id",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_KEY}`,
+          "X-Connection-Api-Key": DRIVE_KEY,
+          "Content-Type": `multipart/related; boundary=${boundary}`,
+        },
+        body,
+      },
+    );
+
+    if (!uploadRes.ok) {
+      console.error("[drive] upload falhou", uploadRes.status, await uploadRes.text());
+      return null;
+    }
+    const { id: fileId } = await uploadRes.json();
+    if (!fileId) {
+      console.error("[drive] resposta sem fileId");
+      return null;
+    }
+
+    // libera leitura pública
+    const permRes = await fetch(
+      `https://connector-gateway.lovable.dev/google_drive/drive/v3/files/${fileId}/permissions`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_KEY}`,
+          "X-Connection-Api-Key": DRIVE_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ role: "reader", type: "anyone" }),
+      },
+    );
+    if (!permRes.ok) {
+      console.error("[drive] erro permission", permRes.status, await permRes.text());
+      // mesmo sem permissão pública retornamos null pra cair no fallback
+      return null;
+    }
+
+    // URL pública de download direto (funciona em <audio src=>)
+    return `https://drive.google.com/uc?export=download&id=${fileId}`;
+  } catch (e) {
+    console.error("[drive] exception", e);
+    return null;
   }
 }
 
