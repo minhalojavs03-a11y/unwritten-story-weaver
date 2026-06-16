@@ -25,8 +25,9 @@ export function useNavBadges() {
   const { data } = useQuery({
     enabled,
     queryKey,
-    staleTime: 15_000,
-    refetchInterval: 30_000,
+    staleTime: 60_000,
+    refetchInterval: 120_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       // Conversas com mensagens não lidas — sempre exclui "outros" via inner join.
       let convQuery;
