@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-const INTERVAL_MS = 5 * 60 * 1000; // 5 min
+const INTERVAL_MS = 15 * 60 * 1000; // 15 min — antes era 5 min (reduz egress)
 
 export function useUpdateLastSeen() {
   const { user } = useAuth();
