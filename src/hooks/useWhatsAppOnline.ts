@@ -11,8 +11,9 @@ export function useWhatsAppOnline() {
   return useQuery({
     queryKey: ["whatsapp-online", tenantId, isSuperadmin],
     enabled: !!tenantId,
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    staleTime: 120_000,
+    refetchInterval: 300_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const base = supabase
         .from("whatsapp_instances")
