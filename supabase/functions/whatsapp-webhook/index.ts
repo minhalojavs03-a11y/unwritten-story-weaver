@@ -438,9 +438,9 @@ async function uploadAudioToGoogleDrive(
 ): Promise<string | null> {
   try {
     const LOVABLE_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const DRIVE_KEY = Deno.env.get("GOOGLE_DRIVE_API_KEY");
+    const DRIVE_KEY = Deno.env.get("GOOGLE_DRIVE_API_KEY_1") ?? Deno.env.get("GOOGLE_DRIVE_API_KEY");
     if (!LOVABLE_KEY || !DRIVE_KEY) {
-      console.error("[drive] missing LOVABLE_API_KEY or GOOGLE_DRIVE_API_KEY");
+      console.error("[drive] missing LOVABLE_API_KEY or GOOGLE_DRIVE_API_KEY_1");
       return null;
     }
 
