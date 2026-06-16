@@ -8,3 +8,7 @@ verify_jwt = false
 
 [functions.test-consultant-notify]
 verify_jwt = false
+
+[functions.cleanup-storage]
+verify_jwt = false
+
