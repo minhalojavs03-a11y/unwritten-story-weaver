@@ -404,9 +404,10 @@ async function uploadMediaToStorage(
 
     const ext = extFromMime(mime, media.kind === "audio" ? "ogg" : "bin");
 
-    // 🎤 Áudios vão para o Google Drive (libera espaço do Supabase Storage)
-    if (media.kind === "audio") {
-      const driveUrl = await uploadAudioToGoogleDrive(bytes, mime ?? "audio/ogg", ext, tenantId, conversationId);
+    // 🎤 Áudios e 📄 documentos vão para o Google Drive (libera espaço do Supabase Storage)
+    if (media.kind === "audio" || media.kind === "document") {
+      const fallbackMime = media.kind === "audio" ? "audio/ogg" : "application/octet-stream";
+      const driveUrl = await uploadAudioToGoogleDrive(bytes, mime ?? fallbackMime, ext, tenantId, conversationId);
       if (driveUrl) return { url: driveUrl, mime };
       console.warn("[drive] fallback para Supabase Storage (drive falhou)");
     }
