@@ -367,14 +367,18 @@ Deno.serve(async (req) => {
     });
 
     // Aplica limite diário: descarta consultores que já bateram o teto de hoje.
-    const sinceToday = new Date();
-    sinceToday.setHours(0, 0, 0, 0);
+    // "Hoje" = dia corrente no fuso America/Sao_Paulo (00:00 SP), não UTC.
+    const nowSp = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const spMidnightLocal = new Date(nowSp.getFullYear(), nowSp.getMonth(), nowSp.getDate(), 0, 0, 0, 0);
+    // Converte a meia-noite SP de volta para UTC: SP = UTC-3 (sem horário de verão).
+    const sinceToday = new Date(spMidnightLocal.getTime() + 3 * 60 * 60 * 1000);
     const baseIds = baseConsultants.map((c: any) => c.id);
     let todayCountByMember = new Map<string, number>();
+    let lastTodayByMember = new Map<string, number>();
     if (baseIds.length > 0) {
       const { data: todayRows } = await admin
         .from("leads")
-        .select("assigned_member_id")
+        .select("assigned_member_id, assigned_member_at")
         .eq("tenant_id", lead.tenant_id)
         .eq("kind", "lead")
         .in("assigned_member_id", baseIds)
@@ -382,7 +386,11 @@ Deno.serve(async (req) => {
 
       for (const r of todayRows || []) {
         const mid = (r as any).assigned_member_id as string | null;
-        if (mid) todayCountByMember.set(mid, (todayCountByMember.get(mid) ?? 0) + 1);
+        if (!mid) continue;
+        todayCountByMember.set(mid, (todayCountByMember.get(mid) ?? 0) + 1);
+        const t = new Date((r as any).assigned_member_at).getTime();
+        const prev = lastTodayByMember.get(mid) ?? 0;
+        if (t > prev) lastTodayByMember.set(mid, t);
       }
     }
     const consultants = baseConsultants.filter((c: any) => {
@@ -395,41 +403,28 @@ Deno.serve(async (req) => {
       return json({ ok: true, skipped: "no consultants in tier" });
     }
 
-    // ===== Round-robin: escolhe o consultor da faixa que recebeu lead há mais tempo =====
-    // Para cada consultor da faixa, buscamos a última atribuição (assigned_member_at).
-    // Quem nunca recebeu (null) ganha prioridade máxima. Empates vão por ordem alfabética
-    // para resultado determinístico.
-    const memberIds = consultants.map((c) => c.id);
-    const { data: lastAssignRows } = await admin
-      .from("leads")
-      .select("assigned_member_id, assigned_member_at")
-      .eq("tenant_id", lead.tenant_id)
-      .eq("kind", "lead")
-      .in("assigned_member_id", memberIds)
-      .not("assigned_member_at", "is", null)
-      .order("assigned_member_at", { ascending: false });
-
-
-    const lastByMember = new Map<string, number>();
-    for (const row of lastAssignRows || []) {
-      const mid = (row as any).assigned_member_id as string;
-      if (!lastByMember.has(mid)) {
-        lastByMember.set(mid, new Date((row as any).assigned_member_at).getTime());
-      }
-    }
-
-    // Prioridade: (1) quem recebeu MENOS leads hoje vai primeiro — garante
-    // que ninguém fica zerado enquanto outros acumulam; (2) desempate pela
-    // última atribuição mais antiga (round-robin clássico); (3) alfabético.
+    // ===== Round-robin estritamente igualitário =====
+    // Prioridade:
+    //  (1) menor número de leads recebidos HOJE (janela SP);
+    //  (2) entre quem ainda não recebeu hoje: ordem alfabética determinística
+    //      (NÃO usamos histórico antigo — isso penalizava consultores que
+    //      receberam leads tarde no dia anterior);
+    //  (3) entre quem já recebeu hoje: quem recebeu há mais tempo HOJE primeiro;
+    //  (4) alfabético como desempate final.
     const ranked = [...consultants].sort((a, b) => {
       const ca = todayCountByMember.get(a.id) ?? 0;
       const cb = todayCountByMember.get(b.id) ?? 0;
       if (ca !== cb) return ca - cb;
-      const ta = lastByMember.get(a.id) ?? -1; // nunca recebeu => -1 (vai primeiro)
-      const tb = lastByMember.get(b.id) ?? -1;
-      if (ta !== tb) return ta - tb;
+      const ta = lastTodayByMember.get(a.id);
+      const tb = lastTodayByMember.get(b.id);
+      // ambos sem atribuição hoje => alfabético
+      if (ta == null && tb == null) return (a.display_name || "").localeCompare(b.display_name || "");
+      if (ta == null) return -1; // quem não recebeu hoje vem primeiro
+      if (tb == null) return 1;
+      if (ta !== tb) return ta - tb; // mais antigo hoje primeiro
       return (a.display_name || "").localeCompare(b.display_name || "");
     });
+
 
     const chosen = ranked[0];
     const chosenPhone = normalizePhone(chosen.phone);
