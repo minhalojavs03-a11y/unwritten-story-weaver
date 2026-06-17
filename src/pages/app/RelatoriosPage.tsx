@@ -142,7 +142,7 @@ function OwnerDashboard({ data }: { data: ReturnType<typeof useReportData> }) {
         <KpiCard label="Ticket médio" value={fmtBRL(data.avgTicket)} sub="por venda fechada" icon={Activity} />
       </div>
 
-      <ConsorcioFunnel funnel={data.funnel} lost={data.lost} lostReasons={data.lostReasons} />
+      <ConsorcioFunnel funnel={data.funnel} lost={data.lost} lostReasons={data.lostReasons} sales={data.sales} />
 
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -323,7 +323,7 @@ function SupervisorDashboard({ data }: { data: ReturnType<typeof useReportData> 
         <KpiCard label="Sem contato" value={data.memberStats.reduce((s, m) => s + m.uncontacted, 0)} sub="aguardando 1º toque" tone="warning" icon={AlertTriangle} />
       </div>
 
-      <ConsorcioFunnel funnel={data.funnel} lost={data.lost} lostReasons={data.lostReasons} />
+      <ConsorcioFunnel funnel={data.funnel} lost={data.lost} lostReasons={data.lostReasons} sales={data.sales} />
 
 
       <div className="grid gap-4 lg:grid-cols-5">
@@ -453,7 +453,7 @@ function PersonalDashboard({ data, memberName }: { data: ReturnType<typeof useRe
         </Card>
 
         <div className="lg:col-span-1">
-          <ConsorcioFunnel funnel={data.funnel} lost={data.lost} compact />
+          <ConsorcioFunnel funnel={data.funnel} lost={data.lost} compact sales={data.sales} />
         </div>
       </div>
     </div>
