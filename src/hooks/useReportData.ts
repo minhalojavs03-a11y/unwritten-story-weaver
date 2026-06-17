@@ -95,6 +95,30 @@ export function useReportData(
     [leadsBase, niltonLeads],
   );
 
+  // Resolve nomes "bonitos" (full_name) via profiles para as vendas — display_name no
+  // tenant_members às vezes é o username, o que fica feio nos detalhes da venda.
+  const wonUserIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const l of leadsBase) {
+      if (l.stage === "comprou" && l.assigned_to) ids.add(l.assigned_to as string);
+    }
+    return Array.from(ids);
+  }, [leadsBase]);
+
+  const { data: salesProfiles = [] } = useQuery({
+    queryKey: ["sales-profiles", wonUserIds.slice().sort().join(",")],
+    enabled: wonUserIds.length > 0,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, display_name, email")
+        .in("id", wonUserIds);
+      if (error) throw error;
+      return (data ?? []) as { id: string; full_name: string | null; display_name: string | null; email: string | null }[];
+    },
+  });
+
   return useMemo(() => {
     const memberUserById = new Map(members.map((m: ReportMemberScope) => [m.id, m.user_id ?? null]));
     const scopedUserId = effectiveUser.isImpersonating && scopeMemberId === effectiveUser.memberId ? effectiveUser.id : null;
