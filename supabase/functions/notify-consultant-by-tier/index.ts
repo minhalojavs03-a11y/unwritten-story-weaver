@@ -419,25 +419,27 @@ Deno.serve(async (req) => {
       return json({ ok: true, skipped: "no consultants in tier" });
     }
 
-    // ===== Round-robin estritamente igualitário =====
+    // ===== Distribuição equilibrada por volume =====
+    // Mesmo dentro da faixa de preço, prioriza quem tem MENOS leads acumulados
+    // no total — assim o volume fica equilibrado entre os consultores da faixa.
     // Prioridade:
-    //  (1) menor número de leads recebidos HOJE (janela SP);
-    //  (2) entre quem ainda não recebeu hoje: ordem alfabética determinística
-    //      (NÃO usamos histórico antigo — isso penalizava consultores que
-    //      receberam leads tarde no dia anterior);
+    //  (1) menor volume TOTAL de leads atribuídos historicamente;
+    //  (2) menor número de leads recebidos HOJE (janela SP);
     //  (3) entre quem já recebeu hoje: quem recebeu há mais tempo HOJE primeiro;
-    //  (4) alfabético como desempate final.
+    //  (4) alfabético como desempate final determinístico.
     const ranked = [...consultants].sort((a, b) => {
+      const ta_total = totalCountByMember.get(a.id) ?? 0;
+      const tb_total = totalCountByMember.get(b.id) ?? 0;
+      if (ta_total !== tb_total) return ta_total - tb_total;
       const ca = todayCountByMember.get(a.id) ?? 0;
       const cb = todayCountByMember.get(b.id) ?? 0;
       if (ca !== cb) return ca - cb;
       const ta = lastTodayByMember.get(a.id);
       const tb = lastTodayByMember.get(b.id);
-      // ambos sem atribuição hoje => alfabético
       if (ta == null && tb == null) return (a.display_name || "").localeCompare(b.display_name || "");
-      if (ta == null) return -1; // quem não recebeu hoje vem primeiro
+      if (ta == null) return -1;
       if (tb == null) return 1;
-      if (ta !== tb) return ta - tb; // mais antigo hoje primeiro
+      if (ta !== tb) return ta - tb;
       return (a.display_name || "").localeCompare(b.display_name || "");
     });
 
