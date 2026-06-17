@@ -95,6 +95,30 @@ export function useReportData(
     [leadsBase, niltonLeads],
   );
 
+  // Resolve nomes "bonitos" (full_name) via profiles para as vendas — display_name no
+  // tenant_members às vezes é o username, o que fica feio nos detalhes da venda.
+  const wonUserIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const l of leadsBase) {
+      if (l.stage === "comprou" && l.assigned_to) ids.add(l.assigned_to as string);
+    }
+    return Array.from(ids);
+  }, [leadsBase]);
+
+  const { data: salesProfiles = [] } = useQuery({
+    queryKey: ["sales-profiles", wonUserIds.slice().sort().join(",")],
+    enabled: wonUserIds.length > 0,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, display_name, email")
+        .in("id", wonUserIds);
+      if (error) throw error;
+      return (data ?? []) as { id: string; full_name: string | null; display_name: string | null; email: string | null }[];
+    },
+  });
+
   return useMemo(() => {
     const memberUserById = new Map(members.map((m: ReportMemberScope) => [m.id, m.user_id ?? null]));
     const scopedUserId = effectiveUser.isImpersonating && scopeMemberId === effectiveUser.memberId ? effectiveUser.id : null;
@@ -317,15 +341,24 @@ export function useReportData(
       insights.push({ level: "info", text: total === 0 ? "Nenhum lead criado no período selecionado — amplie o filtro para ver insights" : "Sem destaques relevantes no período selecionado", tag: "Geral" });
     }
 
-    const memberNameById = new Map(members.map((m) => [m.id, m.display_name] as const));
+    const memberNameById = new Map(
+      members.map((m) => [m.id, (m as { full_name?: string | null }).full_name || m.display_name] as const),
+    );
     const memberNameByUserId = new Map(
       members
-        .map((m) => [memberUserById.get(m.id), m.display_name] as const)
+        .map((m) => [memberUserById.get(m.id), (m as { full_name?: string | null }).full_name || m.display_name] as const)
         .filter(([uid]) => !!uid) as [string, string][],
+    );
+    const profileNameByUserId = new Map(
+      salesProfiles.map((p) => {
+        const pretty = p.full_name || p.display_name || (p.email ? p.email.split("@")[0] : "") || "Consultor";
+        return [p.id, pretty] as const;
+      }),
     );
     const sales = won
       .map((l) => {
         const consultantName =
+          (l.assigned_to && profileNameByUserId.get(l.assigned_to as string)) ||
           (l.assigned_member_id && memberNameById.get(l.assigned_member_id)) ||
           (l.assigned_to && memberNameByUserId.get(l.assigned_to)) ||
           "Não atribuído";
@@ -349,7 +382,7 @@ export function useReportData(
       weekly: weeklySorted, responseHeatmap, pipelineIntel, healthScore, healthDims, insights,
       sales,
     };
-  }, [allLeads, members, period, memberFilter, scopeMemberId, effectiveUser.isImpersonating, effectiveUser.memberId, effectiveUser.id]);
+  }, [allLeads, members, salesProfiles, period, memberFilter, scopeMemberId, effectiveUser.isImpersonating, effectiveUser.memberId, effectiveUser.id]);
 }
 
 export type ReportData = ReturnType<typeof useReportData>;
