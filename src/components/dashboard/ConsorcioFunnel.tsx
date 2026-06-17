@@ -116,13 +116,20 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
                 prev && prev.count > 0
                   ? Math.round(((prev.count - s.count) / prev.count) * 100)
                   : null;
+              const isSold = s.key === "comprou";
+              const clickable = isSold && !!sales;
+              const onClick = clickable ? () => setSalesOpen(true) : undefined;
               return (
-                <g key={s.key}>
+                <g
+                  key={s.key}
+                  onClick={onClick}
+                  style={clickable ? { cursor: "pointer" } : undefined}
+                >
                   <polygon
                     points={points}
                     fill={`url(#funnel-grad-${s.key})`}
                     filter="url(#funnel-shadow)"
-                    className="transition-opacity hover:opacity-95"
+                    className={cn("transition-opacity hover:opacity-95", clickable && "hover:opacity-80")}
                   />
 
                   {/* Quantidade ao centro */}
@@ -130,7 +137,7 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
                     x={CENTER}
                     y={y + H / 2 + 6}
                     textAnchor="middle"
-                    className="fill-white font-display"
+                    className="fill-white font-display pointer-events-none"
                     style={{ fontSize: 22, fontWeight: 800 }}
                   >
                     {s.count}
@@ -139,10 +146,10 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
                   <text
                     x={x2 + 10}
                     y={y + H / 2 + 4}
-                    className="fill-foreground"
+                    className={cn("fill-foreground pointer-events-none", clickable && "underline-offset-2")}
                     style={{ fontSize: 12, fontWeight: 600 }}
                   >
-                    {style.label}
+                    {style.label}{clickable ? "  ›" : ""}
                   </text>
                   {/* Queda entre etapas à esquerda */}
                   {dropPct !== null && dropPct > 0 && (
@@ -150,7 +157,7 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
                       x={x1 - 10}
                       y={y + H / 2 + 4}
                       textAnchor="end"
-                      className="fill-muted-foreground"
+                      className="fill-muted-foreground pointer-events-none"
                       style={{ fontSize: 11, fontWeight: 600 }}
                     >
                       -{dropPct}%
