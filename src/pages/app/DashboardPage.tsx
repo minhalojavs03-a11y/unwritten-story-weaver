@@ -219,6 +219,7 @@ export default function DashboardPage() {
           lost={execData.lost}
           lostReasons={privileged ? execData.lostReasons : []}
           compact={!privileged}
+          sales={execData.sales}
         />
 
         <ResponseRatePanel memberId={effectiveMemberId} compact />

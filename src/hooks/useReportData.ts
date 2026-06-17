@@ -317,11 +317,37 @@ export function useReportData(
       insights.push({ level: "info", text: total === 0 ? "Nenhum lead criado no período selecionado — amplie o filtro para ver insights" : "Sem destaques relevantes no período selecionado", tag: "Geral" });
     }
 
+    const memberNameById = new Map(members.map((m) => [m.id, m.display_name] as const));
+    const memberNameByUserId = new Map(
+      members
+        .map((m) => [memberUserById.get(m.id), m.display_name] as const)
+        .filter(([uid]) => !!uid) as [string, string][],
+    );
+    const sales = won
+      .map((l) => {
+        const consultantName =
+          (l.assigned_member_id && memberNameById.get(l.assigned_member_id)) ||
+          (l.assigned_to && memberNameByUserId.get(l.assigned_to)) ||
+          "Não atribuído";
+        return {
+          id: l.id as string,
+          name: (l.name as string) || "Sem nome",
+          phone: (l.phone as string) || "",
+          value: Number(l.credit_value) || 0,
+          consultant: consultantName,
+          source: (l.source as string) || "Direto",
+          assetType: (l.asset_type as string) || null,
+          soldAt: (l.updated_at as string) || (l.created_at as string) || null,
+        };
+      })
+      .sort((a, b) => (b.soldAt ?? "").localeCompare(a.soldAt ?? ""));
+
     return {
       total, contacted, won: won.length, lost: lost.length, inMeeting: inMeeting.length,
       revenue, avgTicket, convRate,
       funnel, maxStage, campaigns, monthly, lostReasons, memberStats,
       weekly: weeklySorted, responseHeatmap, pipelineIntel, healthScore, healthDims, insights,
+      sales,
     };
   }, [allLeads, members, period, memberFilter, scopeMemberId, effectiveUser.isImpersonating, effectiveUser.memberId, effectiveUser.id]);
 }

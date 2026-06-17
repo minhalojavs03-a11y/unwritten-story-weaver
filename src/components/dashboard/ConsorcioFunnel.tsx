@@ -1,12 +1,25 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/dashboard/ExecutiveWidgets";
-import { TrendingDown, AlertCircle } from "lucide-react";
+import { TrendingDown, AlertCircle, DollarSign, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Stage } from "@/data/mock";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Link } from "react-router-dom";
 
 type FunnelStage = { key: Stage; stage: string; count: number };
 type LostReason = { reason: string; count: number; pct: number };
+export type SaleEntry = {
+  id: string;
+  name: string;
+  phone: string;
+  value: number;
+  consultant: string;
+  source: string;
+  assetType?: string | null;
+  soldAt?: string | null;
+};
 
 // Progressão coerente com o pipeline, sem repetir cor.
 // Cada etapa avança no espectro: indigo → âmbar → azul → violeta → esmeralda.
@@ -19,15 +32,26 @@ const STAGE_STYLE: Record<Stage, { color: string; label: string }> = {
   perdido:     { color: "hsl(var(--destructive))",   label: "Desqualificado" },
 };
 
+const fmtBRL = (v: number) =>
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const fmtDate = (iso?: string | null) => {
+  if (!iso) return "—";
+  try { return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }); }
+  catch { return "—"; }
+};
+
 interface Props {
   funnel: FunnelStage[];          // sem "perdido"
   lost: number;                    // total desqualificados
   lostReasons?: LostReason[];      // opcional, mostra ao lado
   /** compact = sem coluna lateral (usado em dashboard pessoal) */
   compact?: boolean;
+  /** Lista de vendas para detalhar ao clicar na faixa verde */
+  sales?: SaleEntry[];
 }
 
-export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = false }: Props) {
+export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = false, sales }: Props) {
+  const [salesOpen, setSalesOpen] = useState(false);
   const stages = funnel.filter((s) => s.key !== "perdido");
   const top = Math.max(1, stages[0]?.count ?? 1);
   const FUNNEL_W = 360;        // largura útil do funil
@@ -92,13 +116,20 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
                 prev && prev.count > 0
                   ? Math.round(((prev.count - s.count) / prev.count) * 100)
                   : null;
+              const isSold = s.key === "comprou";
+              const clickable = isSold && !!sales;
+              const onClick = clickable ? () => setSalesOpen(true) : undefined;
               return (
-                <g key={s.key}>
+                <g
+                  key={s.key}
+                  onClick={onClick}
+                  style={clickable ? { cursor: "pointer" } : undefined}
+                >
                   <polygon
                     points={points}
                     fill={`url(#funnel-grad-${s.key})`}
                     filter="url(#funnel-shadow)"
-                    className="transition-opacity hover:opacity-95"
+                    className={cn("transition-opacity hover:opacity-95", clickable && "hover:opacity-80")}
                   />
 
                   {/* Quantidade ao centro */}
@@ -106,7 +137,7 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
                     x={CENTER}
                     y={y + H / 2 + 6}
                     textAnchor="middle"
-                    className="fill-white font-display"
+                    className="fill-white font-display pointer-events-none"
                     style={{ fontSize: 22, fontWeight: 800 }}
                   >
                     {s.count}
@@ -115,10 +146,10 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
                   <text
                     x={x2 + 10}
                     y={y + H / 2 + 4}
-                    className="fill-foreground"
+                    className={cn("fill-foreground pointer-events-none", clickable && "underline-offset-2")}
                     style={{ fontSize: 12, fontWeight: 600 }}
                   >
-                    {style.label}
+                    {style.label}{clickable ? "  ›" : ""}
                   </text>
                   {/* Queda entre etapas à esquerda */}
                   {dropPct !== null && dropPct > 0 && (
@@ -126,7 +157,7 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
                       x={x1 - 10}
                       y={y + H / 2 + 4}
                       textAnchor="end"
-                      className="fill-muted-foreground"
+                      className="fill-muted-foreground pointer-events-none"
                       style={{ fontSize: 11, fontWeight: 600 }}
                     >
                       -{dropPct}%
@@ -223,6 +254,83 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
           </div>
         )}
       </div>
+
+      <Dialog open={salesOpen} onOpenChange={setSalesOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-emerald-600" />
+              Vendas no período
+            </DialogTitle>
+            <DialogDescription>
+              {sales?.length ?? 0} cota{(sales?.length ?? 0) === 1 ? "" : "s"} vendida{(sales?.length ?? 0) === 1 ? "" : "s"} ·
+              {" "}Total {fmtBRL((sales ?? []).reduce((s, x) => s + x.value, 0))}
+            </DialogDescription>
+          </DialogHeader>
+
+          {(!sales || sales.length === 0) ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              Nenhuma venda registrada no período selecionado.
+            </p>
+          ) : (
+            <div className="max-h-[60vh] overflow-auto rounded-md border">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-muted/60 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Cliente</th>
+                    <th className="px-3 py-2 text-left">Consultor</th>
+                    <th className="px-3 py-2 text-left">Origem</th>
+                    <th className="px-3 py-2 text-right">Valor</th>
+                    <th className="px-3 py-2 text-left">Fechada em</th>
+                    <th className="px-3 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sales.map((sale) => (
+                    <tr key={sale.id} className="border-t hover:bg-muted/30">
+                      <td className="px-3 py-2">
+                        <div className="font-medium">{sale.name}</div>
+                        {sale.phone && (
+                          <div className="text-[11px] text-muted-foreground">{sale.phone}</div>
+                        )}
+                        {sale.assetType && (
+                          <div className="text-[11px] text-muted-foreground">{sale.assetType}</div>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">{sale.consultant}</td>
+                      <td className="px-3 py-2">
+                        <Badge variant="secondary" className="text-[10px]">{sale.source}</Badge>
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono font-semibold tabular-nums text-emerald-600">
+                        {fmtBRL(sale.value)}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">{fmtDate(sale.soldAt)}</td>
+                      <td className="px-3 py-2 text-right">
+                        <Link
+                          to={`/conversas?leadId=${sale.id}`}
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          onClick={() => setSalesOpen(false)}
+                        >
+                          Abrir <ExternalLink className="h-3 w-3" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-muted/30 font-semibold">
+                  <tr className="border-t">
+                    <td className="px-3 py-2" colSpan={3}>Total</td>
+                    <td className="px-3 py-2 text-right font-mono tabular-nums text-emerald-600">
+                      {fmtBRL(sales.reduce((s, x) => s + x.value, 0))}
+                    </td>
+                    <td colSpan={2}></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
