@@ -343,6 +343,111 @@ Deno.serve(async (req) => {
 
 
 
+    // ===== OVERRIDE MANUAL: forçar todos os leads para Micaelly =====
+    // Ativado a pedido do dono. Para desativar, remover este bloco.
+    const FORCE_ALL_TO_MEMBER_ID = "29fc52f9-c95c-4695-aea3-e2363e2b3cc7"; // micaellypinheiroembracon
+    if (FORCE_ALL_TO_MEMBER_ID) {
+      const { data: forced } = await admin
+        .from("tenant_members")
+        .select("id, display_name, phone, role_label, email, notify_inapp, notify_whatsapp, is_active")
+        .eq("id", FORCE_ALL_TO_MEMBER_ID)
+        .maybeSingle();
+      if (forced && forced.is_active) {
+        const chosen: any = forced;
+        const chosenPhone = normalizePhone(chosen.phone);
+        const { data: assigned, error: assignErr } = await admin
+          .from("leads")
+          .update({
+            assigned_member_id: chosen.id,
+            assigned_member_at: new Date().toISOString(),
+            stage: "atendimento",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", lead.id)
+          .is("assigned_member_id", null)
+          .select("id")
+          .maybeSingle();
+        if (assignErr) {
+          console.error("assign error (forced)", assignErr);
+          return json({ error: assignErr.message }, 500);
+        }
+        if (!assigned) {
+          return json({ ok: true, skipped: "lead was just assigned by someone else" });
+        }
+        const { data: existingConv } = await admin
+          .from("conversations").select("id")
+          .eq("tenant_id", lead.tenant_id).eq("lead_id", lead.id)
+          .limit(1).maybeSingle();
+        if (!existingConv) {
+          await admin.from("conversations").insert({
+            tenant_id: lead.tenant_id, lead_id: lead.id, channel: "whatsapp", status: "open",
+          });
+        }
+        await fanoutAppNotifications(admin, {
+          tenantId: lead.tenant_id,
+          leadId: lead.id,
+          leadName: lead.name || "(sem nome)",
+          creditValue,
+          consultantMemberId: chosen.id,
+          consultantName: chosen.display_name || "Consultor",
+          consultantEmail: chosen.email,
+          consultantNotifyInapp: chosen.notify_inapp !== false,
+        });
+        const text = buildLeadNotice(lead, creditValue);
+        let delivered = false;
+        let waStatus: "sent" | "failed" | "skipped" = "skipped";
+        let waError: string | null = null;
+        if (skipWhatsappForImported) {
+          waStatus = "skipped";
+          waError = "imported_from_sheet: whatsapp suppressed";
+        } else if (chosen.notify_whatsapp === false) {
+          waStatus = "skipped";
+          waError = "consultant has notify_whatsapp disabled";
+        } else if (!chosenPhone) {
+          waStatus = "failed";
+          waError = "invalid phone";
+        } else {
+          const sender = await pickNotifierInstance(admin, lead.tenant_id);
+          if (sender?.server_url && sender?.instance_token) {
+            try {
+              await randomSendDelay();
+              const r = await fetch(`${sender.server_url}/send/text`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", token: sender.instance_token! },
+                body: JSON.stringify({ number: chosenPhone, text }),
+              });
+              delivered = r.ok;
+              waStatus = r.ok ? "sent" : "failed";
+              if (!r.ok) waError = `http ${r.status}`;
+            } catch (e) {
+              console.error("whatsapp send error", e);
+              waStatus = "failed";
+              waError = String(e);
+            }
+          } else {
+            waStatus = "failed";
+            waError = "no connected whatsapp instance";
+          }
+        }
+        await admin.from("lead_notifications").insert({
+          tenant_id: lead.tenant_id, lead_id: lead.id,
+          type: "consultant_tier_match",
+          recipient_phone: chosenPhone, recipient_member_id: chosen.id,
+          message_sent: text, delivered,
+        });
+        await admin.from("whatsapp_notification_log").insert({
+          tenant_id: lead.tenant_id, consultant_member_id: chosen.id, lead_id: lead.id,
+          status: waStatus, error_message: waError,
+        });
+        return json({
+          ok: true,
+          credit_value: creditValue,
+          forced_override: true,
+          assigned_to: { id: chosen.id, name: chosen.display_name, delivered, wa_status: waStatus },
+        });
+      }
+    }
+
     // Busca todos os consultores que cobrem a faixa do lead.
     // Regra: (min IS NULL OR creditValue >= min) AND (max IS NULL OR creditValue <= max).
     const { data: consultantsRaw } = await admin
