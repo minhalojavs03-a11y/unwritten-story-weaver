@@ -254,6 +254,83 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
           </div>
         )}
       </div>
+
+      <Dialog open={salesOpen} onOpenChange={setSalesOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-emerald-600" />
+              Vendas no período
+            </DialogTitle>
+            <DialogDescription>
+              {sales?.length ?? 0} cota{(sales?.length ?? 0) === 1 ? "" : "s"} vendida{(sales?.length ?? 0) === 1 ? "" : "s"} ·
+              {" "}Total {fmtBRL((sales ?? []).reduce((s, x) => s + x.value, 0))}
+            </DialogDescription>
+          </DialogHeader>
+
+          {(!sales || sales.length === 0) ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              Nenhuma venda registrada no período selecionado.
+            </p>
+          ) : (
+            <div className="max-h-[60vh] overflow-auto rounded-md border">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-muted/60 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Cliente</th>
+                    <th className="px-3 py-2 text-left">Consultor</th>
+                    <th className="px-3 py-2 text-left">Origem</th>
+                    <th className="px-3 py-2 text-right">Valor</th>
+                    <th className="px-3 py-2 text-left">Fechada em</th>
+                    <th className="px-3 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sales.map((sale) => (
+                    <tr key={sale.id} className="border-t hover:bg-muted/30">
+                      <td className="px-3 py-2">
+                        <div className="font-medium">{sale.name}</div>
+                        {sale.phone && (
+                          <div className="text-[11px] text-muted-foreground">{sale.phone}</div>
+                        )}
+                        {sale.assetType && (
+                          <div className="text-[11px] text-muted-foreground">{sale.assetType}</div>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">{sale.consultant}</td>
+                      <td className="px-3 py-2">
+                        <Badge variant="secondary" className="text-[10px]">{sale.source}</Badge>
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono font-semibold tabular-nums text-emerald-600">
+                        {fmtBRL(sale.value)}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">{fmtDate(sale.soldAt)}</td>
+                      <td className="px-3 py-2 text-right">
+                        <Link
+                          to={`/leads/${sale.id}`}
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          onClick={() => setSalesOpen(false)}
+                        >
+                          Abrir <ExternalLink className="h-3 w-3" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-muted/30 font-semibold">
+                  <tr className="border-t">
+                    <td className="px-3 py-2" colSpan={3}>Total</td>
+                    <td className="px-3 py-2 text-right font-mono tabular-nums text-emerald-600">
+                      {fmtBRL(sales.reduce((s, x) => s + x.value, 0))}
+                    </td>
+                    <td colSpan={2}></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
