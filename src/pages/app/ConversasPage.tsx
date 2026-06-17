@@ -641,11 +641,13 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   const assignedUserId = (lead as any)?.assigned_to as string | null;
   const assignedMember = assignedId ? members.find((m) => m.id === assignedId) : null;
   const isMine = (!!assignedId && assignedId === member?.id) || (!!assignedUserId && assignedUserId === user?.id);
-  const canOverride = isSuperadmin || (roles ?? []).some((r) => ["superadmin", "owner", "supervisor"].includes(r as string));
+  // Supervisor NÃO pode assumir/enviar mensagem em lead de outro consultor —
+  // apenas visualiza e coacheia. Só dono/superadmin podem invadir o atendimento.
+  const canOverride = isSuperadmin || (roles ?? []).some((r) => ["superadmin", "owner"].includes(r as string));
   const isLocked = (!!assignedId || !!assignedUserId) && !isMine && !canOverride;
   // Regra: lead livre, qualquer um pode pegar. Lead já atribuído a outro consultor
-  // só pode ser assumido diretamente por owner/supervisor/superadmin. Demais devem
-  // pedir transferência ao responsável atual (evita roubo silencioso de atendimento).
+  // só pode ser assumido diretamente por owner/superadmin. Supervisor deve transferir
+  // para outro consultor (não pode pegar para si nem responder em nome dele).
   const canAssume = !!member && !isMine && (!assignedId || canOverride);
 
   // Quando o consultor já conectou o WhatsApp dele no CRM, bloqueamos o envio
