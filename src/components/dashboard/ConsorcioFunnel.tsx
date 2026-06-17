@@ -1,12 +1,25 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/dashboard/ExecutiveWidgets";
-import { TrendingDown, AlertCircle } from "lucide-react";
+import { TrendingDown, AlertCircle, DollarSign, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Stage } from "@/data/mock";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Link } from "react-router-dom";
 
 type FunnelStage = { key: Stage; stage: string; count: number };
 type LostReason = { reason: string; count: number; pct: number };
+export type SaleEntry = {
+  id: string;
+  name: string;
+  phone: string;
+  value: number;
+  consultant: string;
+  source: string;
+  assetType?: string | null;
+  soldAt?: string | null;
+};
 
 // Progressão coerente com o pipeline, sem repetir cor.
 // Cada etapa avança no espectro: indigo → âmbar → azul → violeta → esmeralda.
@@ -19,15 +32,26 @@ const STAGE_STYLE: Record<Stage, { color: string; label: string }> = {
   perdido:     { color: "hsl(var(--destructive))",   label: "Desqualificado" },
 };
 
+const fmtBRL = (v: number) =>
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const fmtDate = (iso?: string | null) => {
+  if (!iso) return "—";
+  try { return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }); }
+  catch { return "—"; }
+};
+
 interface Props {
   funnel: FunnelStage[];          // sem "perdido"
   lost: number;                    // total desqualificados
   lostReasons?: LostReason[];      // opcional, mostra ao lado
   /** compact = sem coluna lateral (usado em dashboard pessoal) */
   compact?: boolean;
+  /** Lista de vendas para detalhar ao clicar na faixa verde */
+  sales?: SaleEntry[];
 }
 
-export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = false }: Props) {
+export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = false, sales }: Props) {
+  const [salesOpen, setSalesOpen] = useState(false);
   const stages = funnel.filter((s) => s.key !== "perdido");
   const top = Math.max(1, stages[0]?.count ?? 1);
   const FUNNEL_W = 360;        // largura útil do funil
