@@ -33,7 +33,7 @@ const MATRIX: Record<Permission, AppRole[]> = {
   // Supervisor agora tem as MESMAS permissões de dono dentro do tenant
   view_all_leads:        ["superadmin", "owner", "supervisor"],
   assume_any_lead:       ["superadmin", "owner", "supervisor"],
-  transfer_lead:         ["superadmin", "owner", "supervisor"],
+  transfer_lead:         ["superadmin", "owner"],
   view_team_metrics:     ["superadmin", "owner", "supervisor"],
   view_whatsapp:         ["superadmin", "owner", "supervisor"],
 
