@@ -307,7 +307,7 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
                       <td className="px-3 py-2 text-muted-foreground">{fmtDate(sale.soldAt)}</td>
                       <td className="px-3 py-2 text-right">
                         <Link
-                          to={`/leads/${sale.id}`}
+                          to={`/conversas?leadId=${sale.id}`}
                           className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                           onClick={() => setSalesOpen(false)}
                         >
