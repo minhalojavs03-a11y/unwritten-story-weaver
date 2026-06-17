@@ -27,7 +27,7 @@ const STAGE_STYLE: Record<Stage, { color: string; label: string }> = {
   novo:        { color: "hsl(var(--stage-new))",     label: "Novo Lead" },        // indigo
   qualificado: { color: "hsl(var(--stage-service))", label: "Em Atendimento" },   // âmbar
   agendado:    { color: "hsl(var(--info))",          label: "Simulação Enviada" },// azul
-  compareceu:  { color: "hsl(262 83% 58%)",          label: "Proposta Aceita" },  // violeta
+  compareceu:  { color: "hsl(262 83% 58%)",          label: "Reunião" },  // violeta
   comprou:     { color: "hsl(var(--success))",       label: "Cota Vendida" },     // esmeralda
   perdido:     { color: "hsl(var(--destructive))",   label: "Desqualificado" },
 };

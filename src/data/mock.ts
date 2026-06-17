@@ -6,7 +6,7 @@ export const stageLabels: Record<Stage, string> = {
   novo: "Novo lead",
   qualificado: "Em qualificação",
   agendado: "Simulação enviada",
-  compareceu: "Proposta aceita",
+  compareceu: "Reunião",
   comprou: "Cota vendida",
   perdido: "Perdido",
 };
