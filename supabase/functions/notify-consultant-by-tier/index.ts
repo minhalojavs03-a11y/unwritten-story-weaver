@@ -375,6 +375,7 @@ Deno.serve(async (req) => {
     const baseIds = baseConsultants.map((c: any) => c.id);
     let todayCountByMember = new Map<string, number>();
     let lastTodayByMember = new Map<string, number>();
+    let totalCountByMember = new Map<string, number>();
     if (baseIds.length > 0) {
       const { data: todayRows } = await admin
         .from("leads")
@@ -391,6 +392,21 @@ Deno.serve(async (req) => {
         const t = new Date((r as any).assigned_member_at).getTime();
         const prev = lastTodayByMember.get(mid) ?? 0;
         if (t > prev) lastTodayByMember.set(mid, t);
+      }
+
+      // Volume TOTAL acumulado por consultor (não apenas hoje). Usado como
+      // critério principal de equilíbrio: quem tem menos leads no histórico
+      // recebe o próximo, mesmo dentro da mesma faixa de preço.
+      const { data: totalRows } = await admin
+        .from("leads")
+        .select("assigned_member_id")
+        .eq("tenant_id", lead.tenant_id)
+        .eq("kind", "lead")
+        .in("assigned_member_id", baseIds);
+      for (const r of totalRows || []) {
+        const mid = (r as any).assigned_member_id as string | null;
+        if (!mid) continue;
+        totalCountByMember.set(mid, (totalCountByMember.get(mid) ?? 0) + 1);
       }
     }
     const consultants = baseConsultants.filter((c: any) => {
