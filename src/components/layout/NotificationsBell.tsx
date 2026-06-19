@@ -61,33 +61,59 @@ export function NotificationsBell() {
             </div>
           ) : (
             <ul className="divide-y">
-              {items.map((n) => (
-                <li key={n.id}>
-                  <button
-                    onClick={() => {
-                      setOpen(false);
-                      markRead(n.id);
-                      navigate(hrefFor(n));
-                    }}
-                    className={cn(
-                      "flex w-full items-start gap-3 px-4 py-3 text-left text-sm transition-colors hover:bg-muted/60",
-                      !n.read && "border-l-2 border-primary bg-primary/5"
-                    )}
-                  >
-                    <span className={cn("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full", !n.read ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground")}>
-                      <UserPlus className="h-4 w-4" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="truncate font-medium text-foreground">{n.title}</span>
-                        <span className="shrink-0 text-[11px] text-muted-foreground">{timeAgo(n.created_at)}</span>
-                      </span>
-                      <span className="block truncate text-xs text-muted-foreground">{n.body}</span>
-                    </span>
-                    {!n.read && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />}
-                  </button>
-                </li>
-              ))}
+              {items.map((n) => {
+                const isTakeover = n.type === "lead_takeover_request" && !n.read;
+                return (
+                  <li key={n.id}>
+                    <div
+                      className={cn(
+                        "flex w-full items-start gap-3 px-4 py-3 text-left text-sm transition-colors",
+                        !n.read && "border-l-2 border-primary bg-primary/5"
+                      )}
+                    >
+                      <button
+                        onClick={() => {
+                          setOpen(false);
+                          markRead(n.id);
+                          navigate(hrefFor(n));
+                        }}
+                        className="flex flex-1 items-start gap-3 text-left hover:opacity-80"
+                      >
+                        <span className={cn("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full", !n.read ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground")}>
+                          <UserPlus className="h-4 w-4" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center justify-between gap-2">
+                            <span className="truncate font-medium text-foreground">{n.title}</span>
+                            <span className="shrink-0 text-[11px] text-muted-foreground">{timeAgo(n.created_at)}</span>
+                          </span>
+                          <span className="block text-xs text-muted-foreground">{n.body}</span>
+                          {isTakeover && (
+                            <span className="mt-2 flex gap-2">
+                              <Button
+                                size="sm"
+                                className="h-7 rounded-full px-3 text-xs"
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); approveTakeover(n); }}
+                              >
+                                Aprovar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 rounded-full px-3 text-xs"
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); denyTakeover(n); }}
+                              >
+                                Recusar
+                              </Button>
+                            </span>
+                          )}
+                        </span>
+                        {!n.read && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />}
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </ScrollArea>
