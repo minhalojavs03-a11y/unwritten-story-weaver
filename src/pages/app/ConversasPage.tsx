@@ -1121,6 +1121,25 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
               {assignedId ? "Assumir atendimento" : "Assumir"}
             </Button>
           )}
+          {!isMine && isSupervisorRole && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!isLost}
+              className="h-7 rounded-full px-3 text-xs"
+              title={isLost ? "Enviar pedido ao consultor dono" : "Disponível somente quando o consultor marcar o lead como perdido"}
+              onClick={async () => {
+                const { error } = await supabase.rpc("request_lead_takeover" as any, { _lead_id: lead.id, _message: null });
+                if (error) {
+                  toast({ title: "Não foi possível solicitar", description: error.message, variant: "destructive" });
+                } else {
+                  toast({ title: "Pedido enviado", description: "O consultor dono recebeu sua solicitação." });
+                }
+              }}
+            >
+              {isLost ? "Solicitar atendimento" : "Aguardando lead perdido"}
+            </Button>
+          )}
           {isMine && (
             <Button
               size="sm"
