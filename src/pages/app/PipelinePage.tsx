@@ -608,6 +608,8 @@ type LeadLike = {
   credit_value?: number | null;
   updated_at?: string | null;
   created_at?: string | null;
+  assigned_to?: string | null;
+  assigned_member_id?: string | null;
 };
 
 function RenderLeadCard({
