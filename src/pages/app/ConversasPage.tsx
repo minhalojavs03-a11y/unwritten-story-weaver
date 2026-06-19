@@ -641,9 +641,11 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   const assignedUserId = (lead as any)?.assigned_to as string | null;
   const assignedMember = assignedId ? members.find((m) => m.id === assignedId) : null;
   const isMine = (!!assignedId && assignedId === member?.id) || (!!assignedUserId && assignedUserId === user?.id);
-  // Supervisor NÃO pode assumir/enviar mensagem em lead de outro consultor —
-  // apenas visualiza e coacheia. Só dono/superadmin podem invadir o atendimento.
-  const canOverride = isSuperadmin || (roles ?? []).some((r) => ["superadmin", "owner"].includes(r as string));
+  // Supervisor NÃO pode assumir/enviar mensagem em lead de outro consultor a
+  // menos que o lead esteja marcado como perdido — apenas visualiza e coacheia.
+  // Só dono/superadmin podem invadir o atendimento a qualquer momento.
+  const isSupervisorRole = !isSuperadmin && (roles ?? []).some((r) => r === "supervisor");
+  const canOverride = !isSupervisorRole && (isSuperadmin || (roles ?? []).some((r) => ["superadmin", "owner"].includes(r as string)));
   const isLocked = (!!assignedId || !!assignedUserId) && !isMine && !canOverride;
   // Regra: lead livre, qualquer um pode pegar. Lead já atribuído a outro consultor
   // só pode ser assumido/transferido se estiver marcado como PERDIDO — ou por
