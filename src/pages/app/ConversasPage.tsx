@@ -1609,6 +1609,7 @@ function LeadInfoPanel({ conv, onClose }: { conv: any; onClose: () => void }) {
           <button
             onClick={() => {
               if (!lead.phone) return;
+              if (!canSeeLeadPhone) { toast({ title: "Sem permissão para copiar o telefone" }); return; }
               navigator.clipboard.writeText(lead.phone);
               toast({ title: "Telefone copiado" });
             }}
