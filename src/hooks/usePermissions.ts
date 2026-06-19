@@ -30,18 +30,19 @@ type Permission =
   | "access_superadmin";
 
 const MATRIX: Record<Permission, AppRole[]> = {
-  // Supervisor agora tem as MESMAS permissões de dono dentro do tenant
+  // Supervisor é READ-ONLY: pode ver tudo do tenant, mas não altera nada.
+  // A única exceção de escrita é "request_lead_takeover", tratado em código.
   view_all_leads:        ["superadmin", "owner", "supervisor"],
-  assume_any_lead:       ["superadmin", "owner", "supervisor"],
+  assume_any_lead:       ["superadmin", "owner"],
   transfer_lead:         ["superadmin", "owner"],
   view_team_metrics:     ["superadmin", "owner", "supervisor"],
   view_whatsapp:         ["superadmin", "owner", "supervisor"],
 
-  configure_sheets:      ["superadmin", "owner", "supervisor"],
-  manage_team:           ["superadmin", "owner", "supervisor"],
-  configure_whatsapp:    ["superadmin", "owner", "supervisor"],
-  configure_ai:          ["superadmin", "owner", "supervisor"],
-  configure_integrations:["superadmin", "owner", "supervisor"],
+  configure_sheets:      ["superadmin", "owner"],
+  manage_team:           ["superadmin", "owner"],
+  configure_whatsapp:    ["superadmin", "owner"],
+  configure_ai:          ["superadmin", "owner"],
+  configure_integrations:["superadmin", "owner"],
   view_financial:        ["superadmin", "owner", "supervisor"],
 
   access_superadmin:     ["superadmin"],
