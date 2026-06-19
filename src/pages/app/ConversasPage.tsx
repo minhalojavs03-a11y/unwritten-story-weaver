@@ -646,9 +646,11 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   const canOverride = isSuperadmin || (roles ?? []).some((r) => ["superadmin", "owner"].includes(r as string));
   const isLocked = (!!assignedId || !!assignedUserId) && !isMine && !canOverride;
   // Regra: lead livre, qualquer um pode pegar. Lead já atribuído a outro consultor
-  // só pode ser assumido diretamente por owner/superadmin. Supervisor deve transferir
-  // para outro consultor (não pode pegar para si nem responder em nome dele).
-  const canAssume = !!member && !isMine && (!assignedId || canOverride);
+  // só pode ser assumido/transferido se estiver marcado como PERDIDO — ou por
+  // owner/superadmin, que podem invadir o atendimento a qualquer momento.
+  const isLost = String((lead as any)?.stage ?? "") === "perdido"
+    || String((lead as any)?.status ?? "") === "lost";
+  const canAssume = !!member && !isMine && (!assignedId || isLost || canOverride);
 
   // Quando o consultor já conectou o WhatsApp dele no CRM, bloqueamos o envio
   // pelo chat — daí ele responde direto pelo app do WhatsApp.
@@ -1123,7 +1125,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
               Liberar
             </Button>
           )}
-          {can("transfer_lead") && !isMine && (
+          {can("transfer_lead") && !isMine && (isLost || canOverride) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -1263,45 +1265,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
                   <div className={cn("mb-0.5 text-[10px] font-mono uppercase tracking-wide", isOut ? "text-emerald-700/70" : "text-[#667781]")}>
                     {isOut ? "↗ " : "↙ "}{senderLabel}
                   </div>
-                  {/* Menu de ações (apagar) */}
-                  {m.status !== "deleted" && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          type="button"
-                          aria-label="Ações da mensagem"
-                          className={cn(
-                            "absolute -top-2 z-10 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-[#54656f] opacity-0 shadow-sm transition-opacity hover:bg-[#f5f6f6] group-hover:opacity-100 focus:opacity-100",
-                            isOut ? "-left-2" : "-right-2",
-                          )}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align={isOut ? "start" : "end"} className="w-56">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            if (!confirm("Apagar esta mensagem apenas para você no CRM?")) return;
-                            deleteMessage(m.id, false);
-                          }}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" /> Apagar para mim
-                        </DropdownMenuItem>
-                        {isOut && (m as any).external_id && (
-                          <DropdownMenuItem
-                            className="text-red-600 focus:text-red-700"
-                            onClick={() => {
-                              if (!confirm("Apagar esta mensagem para todos (também no WhatsApp do lead)?")) return;
-                              deleteMessage(m.id, true);
-                            }}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Apagar para todos
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
+                  {/* Menu de apagar mensagem removido a pedido — sem ação de exclusão no chat. */}
                   {isSimulation && m.status !== "deleted" && (
                     <div className="mb-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800">
                       ✓ Simulação enviada
