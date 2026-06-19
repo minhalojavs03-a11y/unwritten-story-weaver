@@ -770,7 +770,7 @@ export default function LeadsPage() {
                                 <div className="space-y-2 rounded-lg border bg-card p-3">
                                   <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Identificação</div>
                                   <DetailRow icon={UserIcon} label="Nome" value={l.name || "—"} />
-                                  <DetailRow icon={Phone} label="Telefone" value={l.phone || "—"} />
+                                  <DetailRow icon={Phone} label="Telefone" value={displayPhone(l.phone, canViewPhoneFn(l as any))} />
                                   <DetailRow icon={Mail} label="E-mail" value={l.email || "—"} />
                                   <DetailRow icon={Tag} label="Origem" value={l.source || "—"} />
                                 </div>
