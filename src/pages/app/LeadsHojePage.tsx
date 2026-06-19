@@ -233,6 +233,38 @@ export default function LeadsHojePage() {
 
   const total = leads.length;
 
+  const todayRange = useMemo(() => rangeFromPreset("today"), []);
+  const [todayTotal, setTodayTotal] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const startISO = todayRange.start.toISOString();
+    const endISO = todayRange.end.toISOString();
+    (async () => {
+      const [leadsRes, niltonRes] = await Promise.all([
+        supabase
+          .from("leads")
+          .select("id", { count: "exact", head: true })
+          .eq("tenant_id", FERACON_TENANT_ID)
+          .eq("kind", "lead")
+          .or(
+            `and(assigned_member_at.gte.${startISO},assigned_member_at.lt.${endISO}),` +
+            `and(assigned_member_at.is.null,created_at.gte.${startISO},created_at.lt.${endISO})`,
+          ),
+        supabase
+          .from("nilton_leads")
+          .select("id", { count: "exact", head: true })
+          .eq("tenant_id", FERACON_TENANT_ID)
+          .or(
+            `and(created_time.gte.${startISO},created_time.lt.${endISO}),` +
+            `and(created_time.is.null,imported_at.gte.${startISO},imported_at.lt.${endISO})`,
+          ),
+      ]);
+      if (cancelled) return;
+      setTodayTotal((leadsRes.count ?? 0) + (niltonRes.count ?? 0));
+    })();
+    return () => { cancelled = true; };
+  }, [todayRange.start, todayRange.end]);
+
   const presets: { key: PresetKey; label: string }[] = [
     { key: "today", label: "Hoje" },
     { key: "yesterday", label: "Ontem" },
@@ -244,8 +276,8 @@ export default function LeadsHojePage() {
   return (
     <>
       <PageHeader
-        title="Leads por período"
-        subtitle={`${range.label} • ${total} ${total === 1 ? "lead" : "leads"}`}
+        title={`Leads hoje: ${todayTotal ?? "…"}`}
+        subtitle={`Período: ${range.label} • ${total} ${total === 1 ? "lead" : "leads"}`}
         actions={
           <Link to="/crm" className="inline-flex items-center gap-2 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:bg-slate-50">
             <ArrowLeft className="h-3.5 w-3.5" /> Voltar ao Início
