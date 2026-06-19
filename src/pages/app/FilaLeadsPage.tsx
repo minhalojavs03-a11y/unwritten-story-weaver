@@ -97,12 +97,14 @@ function platformLabel(lead: Lead) {
 }
 
 export default function FilaLeadsPage() {
-  const { user, tenantId, isSuperadmin, isOwner } = useAuth();
+  const { user, tenantId, isSuperadmin, isOwner, roles } = useAuth();
   const { member: activeMember } = useActiveMember();
   const navigate = useNavigate();
   const { can } = usePermissions();
   const canViewPhoneFn = useCanViewLeadPhone();
-  const canSendToOthers = can("transfer_lead");
+  const isSupervisorRole = !isSuperadmin && !isOwner && (roles ?? []).some((r) => r === "supervisor");
+  // Supervisor não pode mover/transferir leads de consultores — apenas visualiza.
+  const canSendToOthers = can("transfer_lead") && !isSupervisorRole;
   const canSeeAll = can("view_all_leads");
   const { data: members = [] } = useTenantMembers();
   const consultants = members.filter((m) => !isHiddenFeraconPerson(m as any) && isConsultantLike(m.role_label, m.username) && m.receives_leads !== false);
@@ -789,6 +791,19 @@ export default function FilaLeadsPage() {
                       const assignedToSomeone = !!assignedMemberId || !!lead.assigned_to;
 
                       if (assignedToSomeone && !isMine) {
+                        if (isSupervisorRole) {
+                          return (
+                            <Button
+                              onClick={() => navigate(`/conversas?lead=${lead.id}`)}
+                              size="sm"
+                              variant="outline"
+                              className="rounded-full h-9 px-4 text-xs md:h-10 md:px-5 md:text-sm border-primary/40 text-primary hover:bg-primary/10"
+                            >
+                              <Eye className="mr-1.5 h-3.5 w-3.5" />
+                              Ver atendimento
+                            </Button>
+                          );
+                        }
                         const hasMyPendingReq = !!activeMember?.id && transferRequests.some(
                           (r) => r.lead_id === lead.id && r.requester_member_id === activeMember.id,
                         );
@@ -829,6 +844,15 @@ export default function FilaLeadsPage() {
                           >
                             <ArrowRightLeft className="mr-1.5 h-3.5 w-3.5" />
                             Solicitar transferência
+                          </Button>
+                        );
+                      }
+
+                      // Lead livre: supervisor também não pode "pegar".
+                      if (isSupervisorRole) {
+                        return (
+                          <Button disabled size="sm" variant="outline" className="rounded-full h-9 px-4 text-xs md:h-10 md:px-5 md:text-sm">
+                            Apenas supervisão
                           </Button>
                         );
                       }
