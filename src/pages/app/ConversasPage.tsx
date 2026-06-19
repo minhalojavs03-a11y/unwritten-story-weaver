@@ -494,6 +494,8 @@ export default function ConversasPage() {
           {filtered.map((c: any) => {
             const lead = c.lead;
             const isActive = activeConvId === c.id;
+            const canSeePhone = canViewPhoneFn(lead as any);
+            const phoneShown = lead?.phone ? (canSeePhone ? lead.phone : maskPhone(lead.phone)) : null;
             return (
               <li key={c.id}>
                 <button
@@ -511,10 +513,10 @@ export default function ConversasPage() {
                     isActive && "wa-list-item-active"
                   )}
                 >
-                  <InitialsAvatar name={lead?.name || lead?.phone || "?"} src={(lead as any)?.avatar_url} className="bg-[#dfe5e7] text-[#54656f]" />
+                  <InitialsAvatar name={lead?.name || phoneShown || "?"} src={(lead as any)?.avatar_url} className="bg-[#dfe5e7] text-[#54656f]" />
                   <div className="min-w-0 flex-1 border-b border-[#e9edef] pb-3">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-[15px] font-medium text-[#111b21]">{lead?.name || lead?.phone || "Sem identificação"}</span>
+                      <span className="truncate text-[15px] font-medium text-[#111b21]">{lead?.name || phoneShown || "Sem identificação"}</span>
                       <span className={cn("shrink-0 text-[11px]", (c.unread_count ?? 0) > 0 ? "text-[#00a884] font-medium" : "text-[#667781]")}>
                         {c.last_message_at ? timeAgo(c.last_message_at) : ""}
                       </span>
