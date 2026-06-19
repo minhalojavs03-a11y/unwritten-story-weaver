@@ -138,7 +138,8 @@ export default function PipelinePage() {
   const effectiveLayout: Layout = isMobile ? "stacked" : layout;
   const { member: activeMember } = useActiveMember();
   const { can } = usePermissions();
-  const canSeeAll = can("assume_any_lead");
+  const readOnlySupervisor = useReadOnlySupervisor();
+  const canSeeAll = can("view_all_leads");
   const leads = canSeeAll
     ? allLeads
     : allLeads.filter((l) => !!activeMember?.id && l.assigned_member_id === activeMember.id);
