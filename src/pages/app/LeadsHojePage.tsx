@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Users, ExternalLink } from "lucide-react";
+import { ArrowLeft, Users, ExternalLink, Calendar as CalendarIcon } from "lucide-react";
 import { PageHeader } from "./PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { FERACON_TENANT_ID } from "@/lib/feracon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { stageLabels } from "@/data/mock";
+import { cn } from "@/lib/utils";
 
 type LeadRow = {
   id: string;
@@ -31,14 +32,56 @@ type MemberRow = {
   avatar_color: string | null;
 };
 
-function startOfDaySaoPaulo(): Date {
+type PresetKey = "today" | "yesterday" | "week" | "month" | "custom";
+
+// Retorna o instante UTC correspondente à meia-noite (início do dia) em America/Sao_Paulo
+// para a data informada (interpretada como data civil em SP).
+function spDayStartUTC(year: number, month1to12: number, day: number): Date {
+  // SP é UTC-3 (sem horário de verão desde 2019)
+  return new Date(Date.UTC(year, month1to12 - 1, day, 3, 0, 0));
+}
+
+function nowInSP(): { y: number; m: number; d: number } {
   const now = new Date();
-  // Aproximação: usa fuso local; o RPC do Início também faz por dia local do servidor.
-  // Para coerência com a RPC (America/Sao_Paulo), calcula em UTC-3 sem horário de verão.
-  const utcMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes());
-  const sp = new Date(utcMs - 3 * 60 * 60 * 1000);
-  const spMid = new Date(Date.UTC(sp.getUTCFullYear(), sp.getUTCMonth(), sp.getUTCDate(), 3, 0, 0));
-  return spMid;
+  const spMs = now.getTime() + (now.getTimezoneOffset() - -180) * 60000 * 0; // placeholder
+  // Calcula com offset fixo -3h
+  const utc = new Date(now.getTime());
+  const sp = new Date(utc.getTime() - 3 * 60 * 60 * 1000);
+  return { y: sp.getUTCFullYear(), m: sp.getUTCMonth() + 1, d: sp.getUTCDate() };
+}
+
+function rangeFromPreset(preset: PresetKey, customStart?: string, customEnd?: string): { start: Date; end: Date; label: string } {
+  const { y, m, d } = nowInSP();
+  const todayStart = spDayStartUTC(y, m, d);
+  const tomorrowStart = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+  if (preset === "today") {
+    return { start: todayStart, end: tomorrowStart, label: "Hoje" };
+  }
+  if (preset === "yesterday") {
+    const yStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+    return { start: yStart, end: todayStart, label: "Ontem" };
+  }
+  if (preset === "week") {
+    // Últimos 7 dias incluindo hoje
+    const start = new Date(todayStart.getTime() - 6 * 24 * 60 * 60 * 1000);
+    return { start, end: tomorrowStart, label: "Últimos 7 dias" };
+  }
+  if (preset === "month") {
+    const start = spDayStartUTC(y, m, 1);
+    return { start, end: tomorrowStart, label: "Este mês" };
+  }
+  // custom
+  if (customStart && customEnd) {
+    const [sy, sm, sd] = customStart.split("-").map(Number);
+    const [ey, em, ed] = customEnd.split("-").map(Number);
+    const start = spDayStartUTC(sy, sm, sd);
+    // fim exclusivo = início do dia seguinte ao end
+    const endInclusive = spDayStartUTC(ey, em, ed);
+    const end = new Date(endInclusive.getTime() + 24 * 60 * 60 * 1000);
+    return { start, end, label: `${customStart} → ${customEnd}` };
+  }
+  return { start: todayStart, end: tomorrowStart, label: "Hoje" };
 }
 
 const fmtBRL = (n: number | null | undefined) =>
@@ -47,20 +90,34 @@ const fmtBRL = (n: number | null | undefined) =>
 const fmtHora = (iso: string | null) => {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    return new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
   } catch {
     return "—";
   }
+};
+
+const todayISO = () => {
+  const { y, m, d } = nowInSP();
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 };
 
 export default function LeadsHojePage() {
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [preset, setPreset] = useState<PresetKey>("today");
+  const [customStart, setCustomStart] = useState<string>(todayISO());
+  const [customEnd, setCustomEnd] = useState<string>(todayISO());
+
+  const range = useMemo(
+    () => rangeFromPreset(preset, customStart, customEnd),
+    [preset, customStart, customEnd],
+  );
 
   useEffect(() => {
     let cancelled = false;
-    const start = startOfDaySaoPaulo().toISOString();
+    const startISO = range.start.toISOString();
+    const endISO = range.end.toISOString();
     (async () => {
       setLoading(true);
       const [leadsRes, niltonRes, membersRes] = await Promise.all([
@@ -70,17 +127,23 @@ export default function LeadsHojePage() {
           .eq("tenant_id", FERACON_TENANT_ID)
           .eq("kind", "lead")
           .neq("stage", "historico")
-          .or(`assigned_member_at.gte.${start},and(assigned_member_at.is.null,created_at.gte.${start})`)
+          .or(
+            `and(assigned_member_at.gte.${startISO},assigned_member_at.lt.${endISO}),` +
+            `and(assigned_member_at.is.null,created_at.gte.${startISO},created_at.lt.${endISO})`,
+          )
           .order("created_at", { ascending: false })
-          .limit(2000),
+          .limit(5000),
         supabase
           .from("nilton_leads")
           .select("id, nome_completo, telefone, status, platform, campaign_name, carta_value, created_time, imported_at, assigned_to")
           .eq("tenant_id", FERACON_TENANT_ID)
           .neq("status", "historico")
-          .or(`created_time.gte.${start},and(created_time.is.null,imported_at.gte.${start})`)
+          .or(
+            `and(created_time.gte.${startISO},created_time.lt.${endISO}),` +
+            `and(created_time.is.null,imported_at.gte.${startISO},imported_at.lt.${endISO})`,
+          )
           .order("created_time", { ascending: false })
-          .limit(2000),
+          .limit(5000),
         supabase
           .from("tenant_members")
           .select("id, user_id, display_name, role_label, avatar_url, avatar_color, is_active")
@@ -136,7 +199,7 @@ export default function LeadsHojePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [range.start, range.end]);
 
   const memberById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
   const memberByUserId = useMemo(() => {
@@ -170,11 +233,19 @@ export default function LeadsHojePage() {
 
   const total = leads.length;
 
+  const presets: { key: PresetKey; label: string }[] = [
+    { key: "today", label: "Hoje" },
+    { key: "yesterday", label: "Ontem" },
+    { key: "week", label: "7 dias" },
+    { key: "month", label: "Este mês" },
+    { key: "custom", label: "Personalizado" },
+  ];
+
   return (
     <>
       <PageHeader
-        title="Leads de hoje"
-        subtitle={`Distribuição por consultor • ${total} ${total === 1 ? "lead" : "leads"} hoje`}
+        title="Leads por período"
+        subtitle={`${range.label} • ${total} ${total === 1 ? "lead" : "leads"}`}
         actions={
           <Link to="/crm" className="inline-flex items-center gap-2 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:bg-slate-50">
             <ArrowLeft className="h-3.5 w-3.5" /> Voltar ao Início
@@ -183,6 +254,44 @@ export default function LeadsHojePage() {
       />
 
       <div className="space-y-4 p-4 md:p-8">
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border bg-card p-3">
+          <CalendarIcon className="ml-1 h-4 w-4 text-muted-foreground" />
+          {presets.map((p) => (
+            <button
+              key={p.key}
+              onClick={() => setPreset(p.key)}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                preset === p.key
+                  ? "bg-foreground text-background"
+                  : "border border-black/10 bg-white text-foreground hover:bg-slate-50",
+              )}
+            >
+              {p.label}
+            </button>
+          ))}
+          {preset === "custom" && (
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <label className="text-xs text-muted-foreground">De</label>
+              <input
+                type="date"
+                value={customStart}
+                max={customEnd}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs"
+              />
+              <label className="text-xs text-muted-foreground">até</label>
+              <input
+                type="date"
+                value={customEnd}
+                min={customStart}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs"
+              />
+            </div>
+          )}
+        </div>
+
         {loading && (
           <div className="space-y-3">
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-32 w-full rounded-2xl" />)}
@@ -191,7 +300,7 @@ export default function LeadsHojePage() {
 
         {!loading && total === 0 && (
           <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">
-            Nenhum lead entrou hoje ainda.
+            Nenhum lead entrou no período selecionado.
           </div>
         )}
 
@@ -224,7 +333,7 @@ export default function LeadsHojePage() {
                     {m?.display_name ?? "Sem consultor atribuído"}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {m?.role_label ?? "Aguardando distribuição"} • {g.leads.length} {g.leads.length === 1 ? "lead" : "leads"} hoje
+                    {m?.role_label ?? "Aguardando distribuição"} • {g.leads.length} {g.leads.length === 1 ? "lead" : "leads"}
                   </div>
                 </div>
                 <div className="font-mono text-lg font-bold tabular-nums text-foreground md:text-2xl">
