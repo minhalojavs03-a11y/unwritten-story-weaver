@@ -182,24 +182,58 @@ function extractMediaFromPayload(payload: any, m: any): ExtractedMedia {
   const flatType: string | undefined =
     payload?.messageType ?? payload?.type ?? payload?.mediaType ??
     m?.messageType ?? m?.type ?? m?.mediaType;
+
+  // uazapi v2 também pode entregar a mídia em chaves nomeadas por tipo
+  // (payload.image / payload.audio / payload.video / payload.document) — tanto
+  // como string (URL/base64) quanto como objeto { url, base64, mimetype, caption }.
+  const namedContainer: any =
+    m?.image ?? m?.audio ?? m?.video ?? m?.document ?? m?.sticker ?? m?.ptt ??
+    payload?.image ?? payload?.audio ?? payload?.video ?? payload?.document ?? payload?.sticker ?? payload?.ptt ?? null;
+  const namedContainerKind: ExtractedMedia["kind"] = (() => {
+    const has = (k: string) => m?.[k] != null || payload?.[k] != null;
+    if (has("audio") || has("ptt")) return "audio";
+    if (has("image")) return "image";
+    if (has("video")) return "video";
+    if (has("document")) return "document";
+    if (has("sticker")) return "sticker";
+    return null;
+  })();
+  const containerStr = typeof namedContainer === "string" ? namedContainer : null;
+  const containerObj = namedContainer && typeof namedContainer === "object" ? namedContainer : null;
+
   const flatUrl: string | undefined =
     m?.mediaUrl ?? m?.media_url ?? m?.fileUrl ?? m?.file_url ?? m?.url ?? m?.fileURL ?? m?.directPath ??
-    payload?.mediaUrl ?? payload?.media_url ?? payload?.fileUrl ?? payload?.file_url ?? payload?.url ?? payload?.fileURL;
+    payload?.mediaUrl ?? payload?.media_url ?? payload?.fileUrl ?? payload?.file_url ?? payload?.url ?? payload?.fileURL ??
+    (containerStr && /^https?:\/\//i.test(containerStr) ? containerStr : undefined) ??
+    containerObj?.url ?? containerObj?.mediaUrl ?? containerObj?.fileUrl;
   const flatMime: string | undefined =
     m?.mimetype ?? m?.mimeType ?? m?.mime ??
-    payload?.mimetype ?? payload?.mimeType ?? payload?.mime;
+    payload?.mimetype ?? payload?.mimeType ?? payload?.mime ??
+    containerObj?.mimetype ?? containerObj?.mimeType;
+
   // uazapi sometimes embeds the raw base64 directly in `content` for media messages.
   const contentIsBase64 = typeof m?.content === "string"
     && m.content.length > 200
     && /^[A-Za-z0-9+/=\s]+$/.test(m.content)
     && !/\s/.test(m.content.trim().slice(0, 80));
+  const containerStrIsB64 = !!containerStr
+    && !/^https?:\/\//i.test(containerStr)
+    && containerStr.length > 200
+    && /^[A-Za-z0-9+/=\s]+$/.test(containerStr);
   const flatB64: string | undefined =
     m?.base64 ?? m?.fileBase64 ?? m?.file_base64 ?? m?.fileEncoded ??
     payload?.base64 ?? payload?.fileBase64 ??
+    containerObj?.base64 ?? containerObj?.fileBase64 ??
+    (containerStrIsB64 ? containerStr! : undefined) ??
     (contentIsBase64 ? m.content : undefined);
-  const flatCaption: string | undefined = m?.caption ?? m?.text ?? payload?.caption;
-  const flatFileName: string | undefined = m?.fileName ?? m?.filename ?? m?.documentName ?? payload?.fileName ?? payload?.filename;
-  const flatDuration: number | undefined = m?.seconds ?? m?.duration ?? payload?.seconds ?? payload?.duration;
+  const flatCaption: string | undefined =
+    m?.caption ?? m?.text ?? payload?.caption ?? containerObj?.caption;
+  const flatFileName: string | undefined =
+    m?.fileName ?? m?.filename ?? m?.documentName ?? payload?.fileName ?? payload?.filename ??
+    containerObj?.fileName ?? containerObj?.filename;
+  const flatDuration: number | undefined =
+    m?.seconds ?? m?.duration ?? payload?.seconds ?? payload?.duration ??
+    containerObj?.seconds ?? containerObj?.duration;
 
   // Baileys-style nested
   const inner = m?.message ?? payload?.message ?? {};
@@ -214,7 +248,7 @@ function extractMediaFromPayload(payload: any, m: any): ExtractedMedia {
     : inner?.stickerMessage ? "sticker"
     : null;
 
-  let kind: ExtractedMedia["kind"] = nestedKind;
+  let kind: ExtractedMedia["kind"] = nestedKind ?? namedContainerKind;
   if (!kind && typeof flatType === "string") {
     const t = flatType.toLowerCase();
     if (t.includes("audio") || t === "ptt" || t.includes("ptt") || t.includes("voice")) kind = "audio";
@@ -1011,20 +1045,31 @@ Deno.serve(async (req: Request) => {
     const text = rawText ?? (hasMedia ? (media.caption ?? MEDIA_PLACEHOLDER[media.kind!] ?? "📎 Mídia") : "");
 
     // Debug: se não conseguimos extrair nem texto nem mídia mas o payload tem
-    // uma mensagem (não é ack/conexão), logamos as chaves para diagnóstico.
-    if (!rawText && !hasMedia && (phone || externalId)) {
+    // uma mensagem (não é ack/conexão), ou se detectamos mídia mas sem URL/base64,
+    // logamos o payload bruto truncado para diagnosticar o formato real do uazapi.
+    const shouldDebug =
+      (!fromMe && !rawText && !hasMedia && (phone || externalId)) ||
+      (!fromMe && media.kind && !hasMedia);
+    if (shouldDebug) {
       const m = payload?.message ?? payload?.data?.message ?? payload?.data ?? payload;
-      const mKeys = m && typeof m === "object" ? Object.keys(m).slice(0, 30) : [];
-      console.log("webhook payload undetected", JSON.stringify({
+      const mKeys = m && typeof m === "object" ? Object.keys(m).slice(0, 40) : [];
+      const pKeys = payload && typeof payload === "object" ? Object.keys(payload).slice(0, 40) : [];
+      console.log("webhook payload undetected/medialess", JSON.stringify({
         event: evt,
         fromMe,
         mediaKind: media.kind,
         mediaHasUrl: !!media.url,
         mediaHasB64: !!media.base64,
+        mediaMime: media.mime,
         externalId,
+        payloadKeys: pKeys,
         messageKeys: mKeys,
-      }).slice(0, 800));
+        messageType: (m as any)?.messageType ?? (payload as any)?.messageType ?? null,
+        type: (m as any)?.type ?? (payload as any)?.type ?? null,
+        rawSnippet: JSON.stringify(payload).slice(0, 1500),
+      }).slice(0, 2500));
     }
+
 
     // Persistência "raw" exclusiva do superadmin:
     // grupos, mensagens enviadas pelo próprio número e history-sync residual NÃO
@@ -1163,8 +1208,12 @@ Deno.serve(async (req: Request) => {
     }
 
 
-    if (!phone || (!rawText && !hasMedia)) {
-      console.log("webhook ignored", JSON.stringify({ fromMe, isGroup, phone, hasText: !!rawText, hasMedia }).slice(0, 500));
+    // Se temos kind de mídia detectado mas sem bytes (fallback falhou), ainda
+    // assim seguimos para salvar a mensagem com placeholder — o consultor
+    // pelo menos enxerga que chegou um áudio/imagem e pode pedir reenvio.
+    const hasMediaKindOnly = !!media.kind && !hasMedia;
+    if (!phone || (!rawText && !hasMedia && !hasMediaKindOnly)) {
+      console.log("webhook ignored", JSON.stringify({ fromMe, isGroup, phone, hasText: !!rawText, hasMedia, mediaKind: media.kind }).slice(0, 500));
       return ok({ ignored: true });
     }
 
