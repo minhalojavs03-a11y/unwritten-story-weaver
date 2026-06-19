@@ -101,6 +101,7 @@ export default function FilaLeadsPage() {
   const { member: activeMember } = useActiveMember();
   const navigate = useNavigate();
   const { can } = usePermissions();
+  const canViewPhoneFn = useCanViewLeadPhone();
   const canSendToOthers = can("transfer_lead");
   const canSeeAll = can("view_all_leads");
   const { data: members = [] } = useTenantMembers();
