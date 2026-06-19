@@ -714,6 +714,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   }
   function copyPhone() {
     if (!lead?.phone) return;
+    if (!canSeeLeadPhone) { toast({ title: "Sem permissão para copiar o telefone" }); return; }
     navigator.clipboard.writeText(lead.phone);
     toast({ title: "Telefone copiado" });
   }
