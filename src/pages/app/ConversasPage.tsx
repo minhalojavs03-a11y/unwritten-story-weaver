@@ -658,7 +658,8 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   // owner/superadmin, que podem invadir o atendimento a qualquer momento.
   const isLost = String((lead as any)?.stage ?? "") === "perdido"
     || String((lead as any)?.status ?? "") === "lost";
-  const canAssume = !!member && !isMine && (!assignedId || isLost || canOverride);
+  // Supervisor é proibido de assumir / transferir / interferir no atendimento.
+  const canAssume = !isSupervisorRole && !!member && !isMine && (!assignedId || isLost || canOverride);
 
   // Quando o consultor já conectou o WhatsApp dele no CRM, bloqueamos o envio
   // pelo chat — daí ele responde direto pelo app do WhatsApp.
