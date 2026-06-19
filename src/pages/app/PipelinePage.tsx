@@ -238,6 +238,7 @@ export default function PipelinePage() {
   }, [effectiveLayout, leads.length]);
 
   function onDragEnd(e: DragEndEvent) {
+    if (readOnlySupervisor) return; // supervisor é read-only
     const id = String(e.active.id);
     const stage = e.over?.id as Stage | undefined;
     if (id && stage && stageOrder.includes(stage)) {
