@@ -97,12 +97,14 @@ function platformLabel(lead: Lead) {
 }
 
 export default function FilaLeadsPage() {
-  const { user, tenantId, isSuperadmin, isOwner } = useAuth();
+  const { user, tenantId, isSuperadmin, isOwner, roles } = useAuth();
   const { member: activeMember } = useActiveMember();
   const navigate = useNavigate();
   const { can } = usePermissions();
   const canViewPhoneFn = useCanViewLeadPhone();
-  const canSendToOthers = can("transfer_lead");
+  const isSupervisorRole = !isSuperadmin && !isOwner && (roles ?? []).some((r) => r === "supervisor");
+  // Supervisor não pode mover/transferir leads de consultores — apenas visualiza.
+  const canSendToOthers = can("transfer_lead") && !isSupervisorRole;
   const canSeeAll = can("view_all_leads");
   const { data: members = [] } = useTenantMembers();
   const consultants = members.filter((m) => !isHiddenFeraconPerson(m as any) && isConsultantLike(m.role_label, m.username) && m.receives_leads !== false);
