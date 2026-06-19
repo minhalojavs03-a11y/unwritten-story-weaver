@@ -104,6 +104,7 @@ const todayISO = () => {
 
 export default function LeadsHojePage() {
   const [leads, setLeads] = useState<LeadRow[]>([]);
+  const canViewPhoneFn = useCanViewLeadPhone();
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [preset, setPreset] = useState<PresetKey>("today");
