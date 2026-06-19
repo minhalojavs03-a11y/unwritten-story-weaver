@@ -1208,8 +1208,12 @@ Deno.serve(async (req: Request) => {
     }
 
 
-    if (!phone || (!rawText && !hasMedia)) {
-      console.log("webhook ignored", JSON.stringify({ fromMe, isGroup, phone, hasText: !!rawText, hasMedia }).slice(0, 500));
+    // Se temos kind de mídia detectado mas sem bytes (fallback falhou), ainda
+    // assim seguimos para salvar a mensagem com placeholder — o consultor
+    // pelo menos enxerga que chegou um áudio/imagem e pode pedir reenvio.
+    const hasMediaKindOnly = !!media.kind && !hasMedia;
+    if (!phone || (!rawText && !hasMedia && !hasMediaKindOnly)) {
+      console.log("webhook ignored", JSON.stringify({ fromMe, isGroup, phone, hasText: !!rawText, hasMedia, mediaKind: media.kind }).slice(0, 500));
       return ok({ ignored: true });
     }
 
