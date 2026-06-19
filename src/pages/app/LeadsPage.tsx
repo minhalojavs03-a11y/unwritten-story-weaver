@@ -711,7 +711,7 @@ export default function LeadsPage() {
                               <InitialsAvatar name={l.name ?? "?"} className="h-9 w-9 shrink-0 text-xs" />
                               <div className="min-w-0 flex-1">
                                 <div className="truncate font-semibold text-[13px]">{l.name ?? "Sem nome"}</div>
-                                <div className="truncate text-[11px] text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3 shrink-0" />{l.phone}</div>
+                                <div className="truncate text-[11px] text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3 shrink-0" />{displayPhone(l.phone, canViewPhoneFn(l as any))}</div>
                                 <div className="mt-1">
                                   <LeadProgressBar temperature={l.temperature} stage={l.stage} showMarker={false} showPercent />
                                 </div>
