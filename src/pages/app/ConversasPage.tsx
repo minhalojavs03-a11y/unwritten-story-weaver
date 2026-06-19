@@ -32,6 +32,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Link as RLink } from "react-router-dom";
 import { useTemplates, renderTemplate } from "@/hooks/useTemplates";
 import type { Tables } from "@/integrations/supabase/types";
+import { useCanViewLeadPhone, displayPhone, maskPhone } from "@/lib/leadPrivacy";
 
 const tabs: { id: "all" | "hot" | "unread" | "outros"; label: string }[] = [
   { id: "all", label: "Todas" },
@@ -111,6 +112,7 @@ export default function ConversasPage() {
   // Em modo impersonação, usa o user_id do alvo para checagens de propriedade.
   const userId = effective.isImpersonating ? (effective.id ?? null) : (user?.id ?? null);
   const [myWhatsAppInstanceIds, setMyWhatsAppInstanceIds] = useState<string[]>([]);
+  const canViewPhoneFn = useCanViewLeadPhone();
   const myWhatsAppInstanceKey = myWhatsAppInstanceIds.join(",");
   const [params, setParams] = useSearchParams();
   const leadParam = params.get("lead");
@@ -492,6 +494,8 @@ export default function ConversasPage() {
           {filtered.map((c: any) => {
             const lead = c.lead;
             const isActive = activeConvId === c.id;
+            const canSeePhone = canViewPhoneFn(lead as any);
+            const phoneShown = lead?.phone ? (canSeePhone ? lead.phone : maskPhone(lead.phone)) : null;
             return (
               <li key={c.id}>
                 <button
@@ -509,10 +513,10 @@ export default function ConversasPage() {
                     isActive && "wa-list-item-active"
                   )}
                 >
-                  <InitialsAvatar name={lead?.name || lead?.phone || "?"} src={(lead as any)?.avatar_url} className="bg-[#dfe5e7] text-[#54656f]" />
+                  <InitialsAvatar name={lead?.name || phoneShown || "?"} src={(lead as any)?.avatar_url} className="bg-[#dfe5e7] text-[#54656f]" />
                   <div className="min-w-0 flex-1 border-b border-[#e9edef] pb-3">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-[15px] font-medium text-[#111b21]">{lead?.name || lead?.phone || "Sem identificação"}</span>
+                      <span className="truncate text-[15px] font-medium text-[#111b21]">{lead?.name || phoneShown || "Sem identificação"}</span>
                       <span className={cn("shrink-0 text-[11px]", (c.unread_count ?? 0) > 0 ? "text-[#00a884] font-medium" : "text-[#667781]")}>
                         {c.last_message_at ? timeAgo(c.last_message_at) : ""}
                       </span>
@@ -602,6 +606,8 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   const { can } = usePermissions();
   const { member } = useActiveMember();
   const { data: members = [] } = useTenantMembers();
+  const canViewPhoneFn = useCanViewLeadPhone();
+  const canSeeLeadPhone = canViewPhoneFn(lead as any);
   const { data: allTemplates = [] } = useTemplates();
   const myShortcuts = allTemplates.filter((t) => !t.is_global);
   const [draft, setDraft] = useState("");
@@ -708,6 +714,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   }
   function copyPhone() {
     if (!lead?.phone) return;
+    if (!canSeeLeadPhone) { toast({ title: "Sem permissão para copiar o telefone" }); return; }
     navigator.clipboard.writeText(lead.phone);
     toast({ title: "Telefone copiado" });
   }
@@ -991,7 +998,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
         <InitialsAvatar name={lead?.name ?? "?"} src={(lead as any)?.avatar_url} className="shrink-0 bg-[#dfe5e7] text-[#54656f]" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="truncate text-[15px] font-medium text-[#111b21]">{lead?.name ?? lead?.phone}</span>
+            <span className="truncate text-[15px] font-medium text-[#111b21]">{lead?.name ?? displayPhone(lead?.phone, canSeeLeadPhone)}</span>
             {(lead as any)?.metadata?.imported_from_history && (
               <span className="hidden sm:inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
                 📦 Lead antigo
@@ -999,7 +1006,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
             )}
           </div>
           <div className="flex items-center gap-2 truncate text-[12px] text-[#667781]">
-            <span className="truncate">{lead?.phone}</span>
+            <span className="truncate">{displayPhone(lead?.phone, canSeeLeadPhone)}</span>
             {(lead as any)?.metadata?.imported_from_history && (
               <span className="sm:hidden inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
                 📦 antigo
@@ -1257,7 +1264,9 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
             const senderPhone = isOut
               ? (inst?.phone_number ?? null)
               : (lead?.phone ?? null);
-            const senderLabel = senderPhone ? `+${String(senderPhone).replace(/\D+/g, "")}` : (isOut ? (inst?.instance_name ?? "—") : "—");
+            const senderLabel = senderPhone
+              ? (isOut || canSeeLeadPhone ? `+${String(senderPhone).replace(/\D+/g, "")}` : maskPhone(senderPhone))
+              : (isOut ? (inst?.instance_name ?? "—") : "—");
             return (
               <div key={m.id} className={cn("group flex w-full", isOut ? "justify-end" : "justify-start", grouped ? "mt-0.5" : "mt-2")}>
                 <div className={cn(
@@ -1515,6 +1524,8 @@ function QuickMessagesButton({ leadName, onPick }: { leadName: string; onPick: (
 function LeadInfoPanel({ conv, onClose }: { conv: any; onClose: () => void }) {
   const lead = conv?.lead as Tables<"leads"> | null;
   const { data: members = [] } = useTenantMembers();
+  const canViewPhoneFn = useCanViewLeadPhone();
+  const canSeeLeadPhone = canViewPhoneFn(lead as any);
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", phone: "", email: "" });
@@ -1575,10 +1586,10 @@ function LeadInfoPanel({ conv, onClose }: { conv: any; onClose: () => void }) {
             className="h-20 w-20 bg-[#dfe5e7] text-2xl text-[#54656f]"
           />
           <h3 className="mt-3 text-[17px] font-semibold text-[#111b21]">
-            {lead.name ?? lead.phone ?? "Sem nome"}
+            {lead.name ?? displayPhone(lead.phone, canSeeLeadPhone) ?? "Sem nome"}
           </h3>
           {lead.phone && (
-            <p className="mt-0.5 text-[13px] text-[#667781]">{lead.phone}</p>
+            <p className="mt-0.5 text-[13px] text-[#667781]">{displayPhone(lead.phone, canSeeLeadPhone)}</p>
           )}
           <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
             <TempBadge temperature={lead.temperature} />
@@ -1598,6 +1609,7 @@ function LeadInfoPanel({ conv, onClose }: { conv: any; onClose: () => void }) {
           <button
             onClick={() => {
               if (!lead.phone) return;
+              if (!canSeeLeadPhone) { toast({ title: "Sem permissão para copiar o telefone" }); return; }
               navigator.clipboard.writeText(lead.phone);
               toast({ title: "Telefone copiado" });
             }}
@@ -1702,7 +1714,7 @@ function LeadInfoPanel({ conv, onClose }: { conv: any; onClose: () => void }) {
 
         {/* Informações */}
         <Section title="Informações">
-          <InfoRow icon={Phone} label="Telefone" value={lead.phone ?? "—"} />
+          <InfoRow icon={Phone} label="Telefone" value={displayPhone(lead.phone, canSeeLeadPhone)} />
           {email && <InfoRow icon={Mail} label="E-mail" value={email} />}
           {source && <InfoRow icon={Tag} label="Origem" value={source} />}
           {createdAt && (

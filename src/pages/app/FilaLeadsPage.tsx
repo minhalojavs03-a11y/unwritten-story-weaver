@@ -31,6 +31,7 @@ import { UserAvatar } from "@/components/ui/UserAvatar";
 import { canTakeLead, getMaxAllowedForName, formatBRL } from "@/lib/leadTier";
 import { LeadProgressBar } from "@/components/oticaflow/LeadProgressBar";
 import { isHiddenFeraconMemberId, isHiddenFeraconPerson } from "@/lib/feracon";
+import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
 
 function normalizeRole(value: string) {
   return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -100,6 +101,7 @@ export default function FilaLeadsPage() {
   const { member: activeMember } = useActiveMember();
   const navigate = useNavigate();
   const { can } = usePermissions();
+  const canViewPhoneFn = useCanViewLeadPhone();
   const canSendToOthers = can("transfer_lead");
   const canSeeAll = can("view_all_leads");
   const { data: members = [] } = useTenantMembers();
@@ -677,12 +679,20 @@ export default function FilaLeadsPage() {
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground md:text-sm">
-                      {lead.phone && (
-                        <a href={`tel:${lead.phone}`} className="flex items-center gap-1.5 hover:text-foreground">
-                          <Phone className="h-3.5 w-3.5 shrink-0" />
-                          <span className="truncate">{formatPhone(lead.phone)}</span>
-                        </a>
-                      )}
+                      {lead.phone && (() => {
+                        const canSee = canViewPhoneFn(lead as any);
+                        return canSee ? (
+                          <a href={`tel:${lead.phone}`} className="flex items-center gap-1.5 hover:text-foreground">
+                            <Phone className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{formatPhone(lead.phone)}</span>
+                          </a>
+                        ) : (
+                          <span className="flex items-center gap-1.5">
+                            <Phone className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{displayPhone(lead.phone, false)}</span>
+                          </span>
+                        );
+                      })()}
                       {lead.email && (
                         <span className="flex min-w-0 items-center gap-1.5">
                           <Mail className="h-3.5 w-3.5 shrink-0" />
@@ -974,7 +984,7 @@ export default function FilaLeadsPage() {
               </span>
             </DialogTitle>
             <DialogDescription className="text-xs">
-              {actionStep === "main" && (actionFor?.phone || "O que você quer fazer?")}
+              {actionStep === "main" && (actionFor?.phone ? displayPhone(actionFor.phone, canViewPhoneFn(actionFor as any)) : "O que você quer fazer?")}
               {actionStep === "done" && "Como foi o atendimento?"}
             </DialogDescription>
           </DialogHeader>

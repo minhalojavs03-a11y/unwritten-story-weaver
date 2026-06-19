@@ -4,6 +4,7 @@ import { PageHeader } from "./PageHeader";
 import { stageLabels, stageOrder, stageColorClass, type Stage, type Temperature } from "@/data/mock";
 import { timeAgo, formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { useCanViewLeadPhone } from "@/lib/leadPrivacy";
 import { useLeads, useUpdateLead } from "@/hooks/useData";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -608,6 +609,8 @@ type LeadLike = {
   credit_value?: number | null;
   updated_at?: string | null;
   created_at?: string | null;
+  assigned_to?: string | null;
+  assigned_member_id?: string | null;
 };
 
 function RenderLeadCard({
@@ -619,8 +622,10 @@ function RenderLeadCard({
   fields: CardFields;
   onOpen: () => void;
 }) {
+  const canViewPhoneFn = useCanViewLeadPhone();
+  const canSeePhone = canViewPhoneFn(l as any);
   const interest = fields.interest ? formatInterest(l.interest) : null;
-  const phone = fields.phone ? formatPhone(l.phone) : null;
+  const phone = fields.phone && canSeePhone ? formatPhone(l.phone) : null;
   const temp = (l.temperature as Temperature | null) ?? null;
   const stageTs = l.updated_at ?? l.created_at ?? l.last_interaction_at;
   const daysInStage = stageTs ? Math.floor((Date.now() - new Date(stageTs).getTime()) / 86_400_000) : null;
@@ -642,7 +647,7 @@ function RenderLeadCard({
               "truncate font-semibold leading-tight text-foreground",
               density === "compact" ? "text-xs" : "text-sm",
             )}>
-              {l.name ?? phone ?? l.phone ?? "Sem nome"}
+              {l.name ?? phone ?? (canSeePhone ? l.phone : null) ?? "Sem nome"}
             </div>
             {isHot && (
               <span className="ml-auto inline-flex shrink-0 items-center gap-0.5 rounded-md bg-hot/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-hot">
@@ -701,7 +706,7 @@ function RenderLeadCard({
                 )}
                 title={l.name ?? phone ?? ""}
               >
-                {initials(l.name, l.phone)}
+                {initials(l.name, canSeePhone ? l.phone : null)}
               </span>
             )}
           </div>

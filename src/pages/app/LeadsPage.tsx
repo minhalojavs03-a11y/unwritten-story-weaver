@@ -24,6 +24,7 @@ import { useActiveMemberLimit } from "@/hooks/useActiveMemberLimit";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffectiveUser } from "@/hooks/useEffectiveUser";
 import { cn } from "@/lib/utils";
+import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
 
 const QUALIFICATION_OPTIONS = [
   { value: "em_qualificacao", label: "Em qualificação" },
@@ -143,6 +144,7 @@ export default function LeadsPage() {
   const memberId = effective.isImpersonating ? effective.memberId : (member?.id ?? null);
   const effectiveUserId = effective.isImpersonating ? effective.id : (user?.id ?? null);
   const { maxCreditValue } = useActiveMemberLimit();
+  const canViewPhoneFn = useCanViewLeadPhone();
   void maxCreditValue;
   const leads = (() => {
     const isRealLead = (l: any) => {
@@ -558,7 +560,7 @@ export default function LeadsPage() {
                             <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", expanded && "rotate-180 text-primary")} />
                           </div>
                         </div>
-                        <div className="mt-0.5 truncate text-xs text-muted-foreground">{l.phone}</div>
+                        <div className="mt-0.5 truncate text-xs text-muted-foreground">{displayPhone(l.phone, canViewPhoneFn(l as any))}</div>
                         <div className="mt-1.5">
                           <LeadProgressBar temperature={l.temperature} stage={l.stage} showPercent />
                         </div>
@@ -599,7 +601,7 @@ export default function LeadsPage() {
                         <div className="space-y-2 rounded-lg border bg-background/60 p-2.5">
                           <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Identificação</div>
                           <DetailRow icon={UserIcon} label="Nome" value={l.name || "—"} />
-                          <DetailRow icon={Phone} label="Telefone" value={l.phone || "—"} />
+                          <DetailRow icon={Phone} label="Telefone" value={displayPhone(l.phone, canViewPhoneFn(l as any))} />
                           <DetailRow icon={Mail} label="E-mail" value={l.email || "—"} />
                           <DetailRow icon={Tag} label="Origem" value={l.source || "—"} />
                         </div>
@@ -709,7 +711,7 @@ export default function LeadsPage() {
                               <InitialsAvatar name={l.name ?? "?"} className="h-9 w-9 shrink-0 text-xs" />
                               <div className="min-w-0 flex-1">
                                 <div className="truncate font-semibold text-[13px]">{l.name ?? "Sem nome"}</div>
-                                <div className="truncate text-[11px] text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3 shrink-0" />{l.phone}</div>
+                                <div className="truncate text-[11px] text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3 shrink-0" />{displayPhone(l.phone, canViewPhoneFn(l as any))}</div>
                                 <div className="mt-1">
                                   <LeadProgressBar temperature={l.temperature} stage={l.stage} showMarker={false} showPercent />
                                 </div>
@@ -768,7 +770,7 @@ export default function LeadsPage() {
                                 <div className="space-y-2 rounded-lg border bg-card p-3">
                                   <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Identificação</div>
                                   <DetailRow icon={UserIcon} label="Nome" value={l.name || "—"} />
-                                  <DetailRow icon={Phone} label="Telefone" value={l.phone || "—"} />
+                                  <DetailRow icon={Phone} label="Telefone" value={displayPhone(l.phone, canViewPhoneFn(l as any))} />
                                   <DetailRow icon={Mail} label="E-mail" value={l.email || "—"} />
                                   <DetailRow icon={Tag} label="Origem" value={l.source || "—"} />
                                 </div>
@@ -846,7 +848,7 @@ export default function LeadsPage() {
               Anotações do atendimento
             </DialogTitle>
             <DialogDescription className="text-xs">
-              {noteFor?.name || "Lead"} {noteFor?.phone ? `· ${noteFor.phone}` : ""}
+              {noteFor?.name || "Lead"} {noteFor?.phone ? `· ${displayPhone(noteFor.phone, canViewPhoneFn(noteFor as any))}` : ""}
             </DialogDescription>
           </DialogHeader>
 
@@ -897,7 +899,7 @@ export default function LeadsPage() {
               Detalhes do lead
             </DialogTitle>
             <DialogDescription className="text-xs">
-              {detailFor?.name || "Lead"} {detailFor?.phone ? `· ${detailFor.phone}` : ""}
+              {detailFor?.name || "Lead"} {detailFor?.phone ? `· ${displayPhone(detailFor.phone, canViewPhoneFn(detailFor as any))}` : ""}
             </DialogDescription>
           </DialogHeader>
 
