@@ -706,7 +706,7 @@ function RenderLeadCard({
                 )}
                 title={l.name ?? phone ?? ""}
               >
-                {initials(l.name, l.phone)}
+                {initials(l.name, canSeePhone ? l.phone : null)}
               </span>
             )}
           </div>
