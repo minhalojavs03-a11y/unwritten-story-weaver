@@ -984,6 +984,73 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_takeover_requests: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string
+          message: string | null
+          owner_member_id: string | null
+          owner_user_id: string | null
+          requester_member_id: string | null
+          requester_user_id: string
+          responded_at: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id: string
+          message?: string | null
+          owner_member_id?: string | null
+          owner_user_id?: string | null
+          requester_member_id?: string | null
+          requester_user_id: string
+          responded_at?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string
+          message?: string | null
+          owner_member_id?: string | null
+          owner_user_id?: string | null
+          requester_member_id?: string | null
+          requester_user_id?: string
+          responded_at?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_takeover_requests_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_takeover_requests_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_takeover_requests_requester_member_id_fkey"
+            columns: ["requester_member_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_transfer_requests: {
         Row: {
           created_at: string
@@ -2363,6 +2430,10 @@ export type Database = {
         Args: { _name: string; _plan?: string; _slug?: string }
         Returns: string
       }
+      approve_lead_takeover: {
+        Args: { _request_id: string }
+        Returns: undefined
+      }
       assume_lead:
         | { Args: { _lead_id: string }; Returns: undefined }
         | { Args: { _lead_id: string; _member_id: string }; Returns: undefined }
@@ -2383,6 +2454,7 @@ export type Database = {
         Returns: string
       }
       current_tenant_id: { Args: never; Returns: string }
+      deny_lead_takeover: { Args: { _request_id: string }; Returns: undefined }
       ensure_distribution_member: {
         Args: { _tenant_id: string; _user_id: string }
         Returns: string
@@ -2560,6 +2632,10 @@ export type Database = {
             Args: { _lead_id: string; _member_id?: string }
             Returns: undefined
           }
+      request_lead_takeover: {
+        Args: { _lead_id: string; _message?: string }
+        Returns: string
+      }
       response_rate_stats: {
         Args: { _end: string; _member_id?: string; _start: string }
         Returns: Json
