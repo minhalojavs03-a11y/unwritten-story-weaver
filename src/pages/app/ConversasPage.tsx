@@ -1264,7 +1264,9 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
             const senderPhone = isOut
               ? (inst?.phone_number ?? null)
               : (lead?.phone ?? null);
-            const senderLabel = senderPhone ? `+${String(senderPhone).replace(/\D+/g, "")}` : (isOut ? (inst?.instance_name ?? "—") : "—");
+            const senderLabel = senderPhone
+              ? (isOut || canSeeLeadPhone ? `+${String(senderPhone).replace(/\D+/g, "")}` : maskPhone(senderPhone))
+              : (isOut ? (inst?.instance_name ?? "—") : "—");
             return (
               <div key={m.id} className={cn("group flex w-full", isOut ? "justify-end" : "justify-start", grouped ? "mt-0.5" : "mt-2")}>
                 <div className={cn(
