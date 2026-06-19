@@ -560,7 +560,7 @@ export default function LeadsPage() {
                             <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", expanded && "rotate-180 text-primary")} />
                           </div>
                         </div>
-                        <div className="mt-0.5 truncate text-xs text-muted-foreground">{l.phone}</div>
+                        <div className="mt-0.5 truncate text-xs text-muted-foreground">{displayPhone(l.phone, canViewPhoneFn(l as any))}</div>
                         <div className="mt-1.5">
                           <LeadProgressBar temperature={l.temperature} stage={l.stage} showPercent />
                         </div>
