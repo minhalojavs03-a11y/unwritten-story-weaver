@@ -1524,6 +1524,8 @@ function QuickMessagesButton({ leadName, onPick }: { leadName: string; onPick: (
 function LeadInfoPanel({ conv, onClose }: { conv: any; onClose: () => void }) {
   const lead = conv?.lead as Tables<"leads"> | null;
   const { data: members = [] } = useTenantMembers();
+  const canViewPhoneFn = useCanViewLeadPhone();
+  const canSeeLeadPhone = canViewPhoneFn(lead as any);
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", phone: "", email: "" });
