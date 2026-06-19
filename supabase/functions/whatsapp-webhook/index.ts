@@ -182,24 +182,58 @@ function extractMediaFromPayload(payload: any, m: any): ExtractedMedia {
   const flatType: string | undefined =
     payload?.messageType ?? payload?.type ?? payload?.mediaType ??
     m?.messageType ?? m?.type ?? m?.mediaType;
+
+  // uazapi v2 também pode entregar a mídia em chaves nomeadas por tipo
+  // (payload.image / payload.audio / payload.video / payload.document) — tanto
+  // como string (URL/base64) quanto como objeto { url, base64, mimetype, caption }.
+  const namedContainer: any =
+    m?.image ?? m?.audio ?? m?.video ?? m?.document ?? m?.sticker ?? m?.ptt ??
+    payload?.image ?? payload?.audio ?? payload?.video ?? payload?.document ?? payload?.sticker ?? payload?.ptt ?? null;
+  const namedContainerKind: ExtractedMedia["kind"] = (() => {
+    const has = (k: string) => m?.[k] != null || payload?.[k] != null;
+    if (has("audio") || has("ptt")) return "audio";
+    if (has("image")) return "image";
+    if (has("video")) return "video";
+    if (has("document")) return "document";
+    if (has("sticker")) return "sticker";
+    return null;
+  })();
+  const containerStr = typeof namedContainer === "string" ? namedContainer : null;
+  const containerObj = namedContainer && typeof namedContainer === "object" ? namedContainer : null;
+
   const flatUrl: string | undefined =
     m?.mediaUrl ?? m?.media_url ?? m?.fileUrl ?? m?.file_url ?? m?.url ?? m?.fileURL ?? m?.directPath ??
-    payload?.mediaUrl ?? payload?.media_url ?? payload?.fileUrl ?? payload?.file_url ?? payload?.url ?? payload?.fileURL;
+    payload?.mediaUrl ?? payload?.media_url ?? payload?.fileUrl ?? payload?.file_url ?? payload?.url ?? payload?.fileURL ??
+    (containerStr && /^https?:\/\//i.test(containerStr) ? containerStr : undefined) ??
+    containerObj?.url ?? containerObj?.mediaUrl ?? containerObj?.fileUrl;
   const flatMime: string | undefined =
     m?.mimetype ?? m?.mimeType ?? m?.mime ??
-    payload?.mimetype ?? payload?.mimeType ?? payload?.mime;
+    payload?.mimetype ?? payload?.mimeType ?? payload?.mime ??
+    containerObj?.mimetype ?? containerObj?.mimeType;
+
   // uazapi sometimes embeds the raw base64 directly in `content` for media messages.
   const contentIsBase64 = typeof m?.content === "string"
     && m.content.length > 200
     && /^[A-Za-z0-9+/=\s]+$/.test(m.content)
     && !/\s/.test(m.content.trim().slice(0, 80));
+  const containerStrIsB64 = !!containerStr
+    && !/^https?:\/\//i.test(containerStr)
+    && containerStr.length > 200
+    && /^[A-Za-z0-9+/=\s]+$/.test(containerStr);
   const flatB64: string | undefined =
     m?.base64 ?? m?.fileBase64 ?? m?.file_base64 ?? m?.fileEncoded ??
     payload?.base64 ?? payload?.fileBase64 ??
+    containerObj?.base64 ?? containerObj?.fileBase64 ??
+    (containerStrIsB64 ? containerStr! : undefined) ??
     (contentIsBase64 ? m.content : undefined);
-  const flatCaption: string | undefined = m?.caption ?? m?.text ?? payload?.caption;
-  const flatFileName: string | undefined = m?.fileName ?? m?.filename ?? m?.documentName ?? payload?.fileName ?? payload?.filename;
-  const flatDuration: number | undefined = m?.seconds ?? m?.duration ?? payload?.seconds ?? payload?.duration;
+  const flatCaption: string | undefined =
+    m?.caption ?? m?.text ?? payload?.caption ?? containerObj?.caption;
+  const flatFileName: string | undefined =
+    m?.fileName ?? m?.filename ?? m?.documentName ?? payload?.fileName ?? payload?.filename ??
+    containerObj?.fileName ?? containerObj?.filename;
+  const flatDuration: number | undefined =
+    m?.seconds ?? m?.duration ?? payload?.seconds ?? payload?.duration ??
+    containerObj?.seconds ?? containerObj?.duration;
 
   // Baileys-style nested
   const inner = m?.message ?? payload?.message ?? {};
@@ -214,7 +248,7 @@ function extractMediaFromPayload(payload: any, m: any): ExtractedMedia {
     : inner?.stickerMessage ? "sticker"
     : null;
 
-  let kind: ExtractedMedia["kind"] = nestedKind;
+  let kind: ExtractedMedia["kind"] = nestedKind ?? namedContainerKind;
   if (!kind && typeof flatType === "string") {
     const t = flatType.toLowerCase();
     if (t.includes("audio") || t === "ptt" || t.includes("ptt") || t.includes("voice")) kind = "audio";
