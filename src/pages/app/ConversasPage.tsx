@@ -606,6 +606,8 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   const { can } = usePermissions();
   const { member } = useActiveMember();
   const { data: members = [] } = useTenantMembers();
+  const canViewPhoneFn = useCanViewLeadPhone();
+  const canSeeLeadPhone = canViewPhoneFn(lead as any);
   const { data: allTemplates = [] } = useTemplates();
   const myShortcuts = allTemplates.filter((t) => !t.is_global);
   const [draft, setDraft] = useState("");
