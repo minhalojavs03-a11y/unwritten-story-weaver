@@ -1714,7 +1714,7 @@ function LeadInfoPanel({ conv, onClose }: { conv: any; onClose: () => void }) {
 
         {/* Informações */}
         <Section title="Informações">
-          <InfoRow icon={Phone} label="Telefone" value={lead.phone ?? "—"} />
+          <InfoRow icon={Phone} label="Telefone" value={displayPhone(lead.phone, canSeeLeadPhone)} />
           {email && <InfoRow icon={Mail} label="E-mail" value={email} />}
           {source && <InfoRow icon={Tag} label="Origem" value={source} />}
           {createdAt && (
