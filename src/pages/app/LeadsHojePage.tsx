@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { stageLabels } from "@/data/mock";
 import { cn } from "@/lib/utils";
+import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
 
 type LeadRow = {
   id: string;
