@@ -848,7 +848,7 @@ export default function LeadsPage() {
               Anotações do atendimento
             </DialogTitle>
             <DialogDescription className="text-xs">
-              {noteFor?.name || "Lead"} {noteFor?.phone ? `· ${noteFor.phone}` : ""}
+              {noteFor?.name || "Lead"} {noteFor?.phone ? `· ${displayPhone(noteFor.phone, canViewPhoneFn(noteFor as any))}` : ""}
             </DialogDescription>
           </DialogHeader>
 
