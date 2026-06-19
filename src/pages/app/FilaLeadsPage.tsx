@@ -679,12 +679,20 @@ export default function FilaLeadsPage() {
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground md:text-sm">
-                      {lead.phone && (
-                        <a href={`tel:${lead.phone}`} className="flex items-center gap-1.5 hover:text-foreground">
-                          <Phone className="h-3.5 w-3.5 shrink-0" />
-                          <span className="truncate">{formatPhone(lead.phone)}</span>
-                        </a>
-                      )}
+                      {lead.phone && (() => {
+                        const canSee = canViewPhoneFn(lead as any);
+                        return canSee ? (
+                          <a href={`tel:${lead.phone}`} className="flex items-center gap-1.5 hover:text-foreground">
+                            <Phone className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{formatPhone(lead.phone)}</span>
+                          </a>
+                        ) : (
+                          <span className="flex items-center gap-1.5">
+                            <Phone className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{displayPhone(lead.phone, false)}</span>
+                          </span>
+                        );
+                      })()}
                       {lead.email && (
                         <span className="flex min-w-0 items-center gap-1.5">
                           <Mail className="h-3.5 w-3.5 shrink-0" />
