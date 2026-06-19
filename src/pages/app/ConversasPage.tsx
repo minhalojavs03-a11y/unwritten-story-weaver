@@ -998,7 +998,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
         <InitialsAvatar name={lead?.name ?? "?"} src={(lead as any)?.avatar_url} className="shrink-0 bg-[#dfe5e7] text-[#54656f]" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="truncate text-[15px] font-medium text-[#111b21]">{lead?.name ?? lead?.phone}</span>
+            <span className="truncate text-[15px] font-medium text-[#111b21]">{lead?.name ?? displayPhone(lead?.phone, canSeeLeadPhone)}</span>
             {(lead as any)?.metadata?.imported_from_history && (
               <span className="hidden sm:inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
                 📦 Lead antigo
