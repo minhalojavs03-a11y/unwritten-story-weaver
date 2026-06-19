@@ -8,6 +8,7 @@ import { useCanViewLeadPhone } from "@/lib/leadPrivacy";
 import { useLeads, useUpdateLead } from "@/hooks/useData";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useReadOnlySupervisor } from "@/hooks/useReadOnlySupervisor";
 import { useNavigate } from "react-router-dom";
 import {
   Clock, Plus, GripVertical, Settings2, Rows3, Rows2, LayoutGrid, Columns3, StretchVertical,
@@ -138,7 +139,8 @@ export default function PipelinePage() {
   const effectiveLayout: Layout = isMobile ? "stacked" : layout;
   const { member: activeMember } = useActiveMember();
   const { can } = usePermissions();
-  const canSeeAll = can("assume_any_lead");
+  const readOnlySupervisor = useReadOnlySupervisor();
+  const canSeeAll = can("view_all_leads");
   const leads = canSeeAll
     ? allLeads
     : allLeads.filter((l) => !!activeMember?.id && l.assigned_member_id === activeMember.id);
@@ -236,6 +238,7 @@ export default function PipelinePage() {
   }, [effectiveLayout, leads.length]);
 
   function onDragEnd(e: DragEndEvent) {
+    if (readOnlySupervisor) return; // supervisor é read-only
     const id = String(e.active.id);
     const stage = e.over?.id as Stage | undefined;
     if (id && stage && stageOrder.includes(stage)) {

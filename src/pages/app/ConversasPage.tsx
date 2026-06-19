@@ -1121,6 +1121,25 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
               {assignedId ? "Assumir atendimento" : "Assumir"}
             </Button>
           )}
+          {!isMine && isSupervisorRole && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!isLost}
+              className="h-7 rounded-full px-3 text-xs"
+              title={isLost ? "Enviar pedido ao consultor dono" : "Disponível somente quando o consultor marcar o lead como perdido"}
+              onClick={async () => {
+                const { error } = await supabase.rpc("request_lead_takeover" as any, { _lead_id: lead.id, _message: null });
+                if (error) {
+                  toast({ title: "Não foi possível solicitar", description: error.message, variant: "destructive" });
+                } else {
+                  toast({ title: "Pedido enviado", description: "O consultor dono recebeu sua solicitação." });
+                }
+              }}
+            >
+              {isLost ? "Solicitar atendimento" : "Aguardando lead perdido"}
+            </Button>
+          )}
           {isMine && (
             <Button
               size="sm"
@@ -1355,8 +1374,26 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
             )}
           </div>
         ) : isSupervisorRole && !isMine ? (
-          <div className="flex flex-col items-center justify-center gap-1 rounded-2xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-900">
+          <div className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-900">
             <span>👀 Modo supervisão — apenas visualização. Você não pode enviar mensagens no atendimento de um consultor.</span>
+            {isLost ? (
+              <Button
+                size="sm"
+                className="h-7 rounded-full px-3 text-xs"
+                onClick={async () => {
+                  const { error } = await supabase.rpc("request_lead_takeover" as any, { _lead_id: lead.id, _message: null });
+                  if (error) {
+                    toast({ title: "Não foi possível solicitar", description: error.message, variant: "destructive" });
+                  } else {
+                    toast({ title: "Pedido enviado", description: "O consultor dono recebeu sua solicitação." });
+                  }
+                }}
+              >
+                Solicitar atendimento (lead perdido)
+              </Button>
+            ) : (
+              <span className="text-[11px] opacity-80">Para assumir, peça ao consultor que marque o lead como perdido — sua solicitação só fica disponível após isso.</span>
+            )}
           </div>
         ) : consultantConnected ? (
           <div className="rounded-2xl border border-emerald-300/50 bg-emerald-50 p-5 text-center text-sm text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-900/10 dark:text-emerald-200">

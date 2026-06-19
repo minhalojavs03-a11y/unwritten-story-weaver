@@ -125,5 +125,58 @@ export function useAppNotifications() {
     await supabase.from("app_notifications" as any).update({ read: true }).eq("id", id);
   }, []);
 
-  return { items, unreadCount, loading, markAllRead, markRead, hrefFor };
+  const approveTakeover = useCallback(async (notif: AppNotification) => {
+    if (!notif.lead_id) return;
+    // Encontra a request pendente para esse lead em que sou o dono.
+    const { data: req } = await supabase
+      .from("lead_takeover_requests" as any)
+      .select("id")
+      .eq("lead_id", notif.lead_id)
+      .eq("owner_user_id", userId as string)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const reqId = (req as any)?.id;
+    if (!reqId) {
+      toast.error("Pedido não encontrado ou já respondido.");
+      return;
+    }
+    const { error } = await supabase.rpc("approve_lead_takeover" as any, { _request_id: reqId });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Atendimento liberado para o supervisor.");
+    await supabase.from("app_notifications" as any).update({ read: true }).eq("id", notif.id);
+    setItems((prev) => prev.map((i) => (i.id === notif.id ? { ...i, read: true } : i)));
+  }, [userId]);
+
+  const denyTakeover = useCallback(async (notif: AppNotification) => {
+    if (!notif.lead_id) return;
+    const { data: req } = await supabase
+      .from("lead_takeover_requests" as any)
+      .select("id")
+      .eq("lead_id", notif.lead_id)
+      .eq("owner_user_id", userId as string)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const reqId = (req as any)?.id;
+    if (!reqId) {
+      toast.error("Pedido não encontrado ou já respondido.");
+      return;
+    }
+    const { error } = await supabase.rpc("deny_lead_takeover" as any, { _request_id: reqId });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Pedido recusado.");
+    await supabase.from("app_notifications" as any).update({ read: true }).eq("id", notif.id);
+    setItems((prev) => prev.map((i) => (i.id === notif.id ? { ...i, read: true } : i)));
+  }, [userId]);
+
+  return { items, unreadCount, loading, markAllRead, markRead, hrefFor, approveTakeover, denyTakeover };
 }
