@@ -1006,7 +1006,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
             )}
           </div>
           <div className="flex items-center gap-2 truncate text-[12px] text-[#667781]">
-            <span className="truncate">{lead?.phone}</span>
+            <span className="truncate">{displayPhone(lead?.phone, canSeeLeadPhone)}</span>
             {(lead as any)?.metadata?.imported_from_history && (
               <span className="sm:hidden inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
                 📦 antigo
