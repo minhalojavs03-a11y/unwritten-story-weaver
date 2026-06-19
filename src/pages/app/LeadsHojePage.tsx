@@ -126,7 +126,7 @@ export default function LeadsHojePage() {
           .select("id, name, phone, stage, source, credit_value, created_at, assigned_member_at, assigned_member_id, assigned_to, kind")
           .eq("tenant_id", FERACON_TENANT_ID)
           .eq("kind", "lead")
-          .neq("stage", "historico")
+          
           .or(
             `and(assigned_member_at.gte.${startISO},assigned_member_at.lt.${endISO}),` +
             `and(assigned_member_at.is.null,created_at.gte.${startISO},created_at.lt.${endISO})`,
@@ -137,7 +137,7 @@ export default function LeadsHojePage() {
           .from("nilton_leads")
           .select("id, nome_completo, telefone, status, platform, campaign_name, carta_value, created_time, imported_at, assigned_to")
           .eq("tenant_id", FERACON_TENANT_ID)
-          .neq("status", "historico")
+          
           .or(
             `and(created_time.gte.${startISO},created_time.lt.${endISO}),` +
             `and(created_time.is.null,imported_at.gte.${startISO},imported_at.lt.${endISO})`,
