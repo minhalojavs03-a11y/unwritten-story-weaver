@@ -32,6 +32,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Link as RLink } from "react-router-dom";
 import { useTemplates, renderTemplate } from "@/hooks/useTemplates";
 import type { Tables } from "@/integrations/supabase/types";
+import { useCanViewLeadPhone, displayPhone, maskPhone } from "@/lib/leadPrivacy";
 
 const tabs: { id: "all" | "hot" | "unread" | "outros"; label: string }[] = [
   { id: "all", label: "Todas" },
