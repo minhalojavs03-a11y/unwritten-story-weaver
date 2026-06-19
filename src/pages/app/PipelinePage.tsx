@@ -622,8 +622,10 @@ function RenderLeadCard({
   fields: CardFields;
   onOpen: () => void;
 }) {
+  const canViewPhoneFn = useCanViewLeadPhone();
+  const canSeePhone = canViewPhoneFn(l as any);
   const interest = fields.interest ? formatInterest(l.interest) : null;
-  const phone = fields.phone ? formatPhone(l.phone) : null;
+  const phone = fields.phone && canSeePhone ? formatPhone(l.phone) : null;
   const temp = (l.temperature as Temperature | null) ?? null;
   const stageTs = l.updated_at ?? l.created_at ?? l.last_interaction_at;
   const daysInStage = stageTs ? Math.floor((Date.now() - new Date(stageTs).getTime()) / 86_400_000) : null;
