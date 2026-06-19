@@ -112,6 +112,7 @@ export default function ConversasPage() {
   // Em modo impersonação, usa o user_id do alvo para checagens de propriedade.
   const userId = effective.isImpersonating ? (effective.id ?? null) : (user?.id ?? null);
   const [myWhatsAppInstanceIds, setMyWhatsAppInstanceIds] = useState<string[]>([]);
+  const canViewPhoneFn = useCanViewLeadPhone();
   const myWhatsAppInstanceKey = myWhatsAppInstanceIds.join(",");
   const [params, setParams] = useSearchParams();
   const leadParam = params.get("lead");
