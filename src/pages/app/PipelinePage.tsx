@@ -647,7 +647,7 @@ function RenderLeadCard({
               "truncate font-semibold leading-tight text-foreground",
               density === "compact" ? "text-xs" : "text-sm",
             )}>
-              {l.name ?? phone ?? l.phone ?? "Sem nome"}
+              {l.name ?? phone ?? (canSeePhone ? l.phone : null) ?? "Sem nome"}
             </div>
             {isHot && (
               <span className="ml-auto inline-flex shrink-0 items-center gap-0.5 rounded-md bg-hot/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-hot">
