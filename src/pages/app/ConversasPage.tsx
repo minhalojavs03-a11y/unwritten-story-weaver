@@ -1586,10 +1586,10 @@ function LeadInfoPanel({ conv, onClose }: { conv: any; onClose: () => void }) {
             className="h-20 w-20 bg-[#dfe5e7] text-2xl text-[#54656f]"
           />
           <h3 className="mt-3 text-[17px] font-semibold text-[#111b21]">
-            {lead.name ?? lead.phone ?? "Sem nome"}
+            {lead.name ?? displayPhone(lead.phone, canSeeLeadPhone) ?? "Sem nome"}
           </h3>
           {lead.phone && (
-            <p className="mt-0.5 text-[13px] text-[#667781]">{lead.phone}</p>
+            <p className="mt-0.5 text-[13px] text-[#667781]">{displayPhone(lead.phone, canSeeLeadPhone)}</p>
           )}
           <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
             <TempBadge temperature={lead.temperature} />
