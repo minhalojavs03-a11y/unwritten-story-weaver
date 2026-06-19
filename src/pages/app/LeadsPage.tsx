@@ -899,7 +899,7 @@ export default function LeadsPage() {
               Detalhes do lead
             </DialogTitle>
             <DialogDescription className="text-xs">
-              {detailFor?.name || "Lead"} {detailFor?.phone ? `· ${detailFor.phone}` : ""}
+              {detailFor?.name || "Lead"} {detailFor?.phone ? `· ${displayPhone(detailFor.phone, canViewPhoneFn(detailFor as any))}` : ""}
             </DialogDescription>
           </DialogHeader>
 
