@@ -19,7 +19,7 @@ function timeAgo(iso: string) {
 }
 
 export function NotificationsBell() {
-  const { items, unreadCount, markAllRead, markRead, hrefFor } = useAppNotifications();
+  const { items, unreadCount, markAllRead, markRead, hrefFor, approveTakeover, denyTakeover } = useAppNotifications();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
