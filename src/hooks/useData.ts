@@ -275,7 +275,7 @@ export function useMessages(
         }
       }
 
-      let query = supabase.from("messages").select("*, whatsapp_instance:whatsapp_instances(id, phone_number, instance_name)");
+      let query = supabase.from("messages").select("*");
       if (conversationId && leadIds.length > 0) {
         const inList = leadIds.map((id) => `lead_id.eq.${id}`).join(",");
         query = query.or(`conversation_id.eq.${conversationId},${inList}`);
@@ -286,6 +286,20 @@ export function useMessages(
       }
       const { data, error } = await query.order("created_at", { ascending: true });
       if (error) throw error;
+      // Hidrata whatsapp_instance (sem FK declarado entre messages e whatsapp_instances)
+      const instIds = Array.from(new Set(((data ?? []) as Tables<"messages">[])
+        .map((m) => m.whatsapp_instance_id).filter((x): x is string => !!x)));
+      let instMap = new Map<string, { id: string; phone_number: string | null; instance_name: string | null }>();
+      if (instIds.length > 0) {
+        const { data: insts } = await supabase
+          .from("whatsapp_instances")
+          .select("id, phone_number, instance_name")
+          .in("id", instIds);
+        for (const i of (insts ?? []) as any[]) instMap.set(i.id, i);
+      }
+      for (const m of (data ?? []) as any[]) {
+        m.whatsapp_instance = m.whatsapp_instance_id ? instMap.get(m.whatsapp_instance_id) ?? null : null;
+      }
       const seenExternal = new Set<string>();
       const unique: Tables<"messages">[] = [];
       for (const msg of (data ?? []) as Tables<"messages">[]) {
