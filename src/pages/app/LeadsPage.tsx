@@ -24,6 +24,7 @@ import { useActiveMemberLimit } from "@/hooks/useActiveMemberLimit";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffectiveUser } from "@/hooks/useEffectiveUser";
 import { cn } from "@/lib/utils";
+import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
 
 const QUALIFICATION_OPTIONS = [
   { value: "em_qualificacao", label: "Em qualificação" },
