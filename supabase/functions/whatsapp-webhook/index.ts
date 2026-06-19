@@ -1045,20 +1045,31 @@ Deno.serve(async (req: Request) => {
     const text = rawText ?? (hasMedia ? (media.caption ?? MEDIA_PLACEHOLDER[media.kind!] ?? "📎 Mídia") : "");
 
     // Debug: se não conseguimos extrair nem texto nem mídia mas o payload tem
-    // uma mensagem (não é ack/conexão), logamos as chaves para diagnóstico.
-    if (!rawText && !hasMedia && (phone || externalId)) {
+    // uma mensagem (não é ack/conexão), ou se detectamos mídia mas sem URL/base64,
+    // logamos o payload bruto truncado para diagnosticar o formato real do uazapi.
+    const shouldDebug =
+      (!fromMe && !rawText && !hasMedia && (phone || externalId)) ||
+      (!fromMe && media.kind && !hasMedia);
+    if (shouldDebug) {
       const m = payload?.message ?? payload?.data?.message ?? payload?.data ?? payload;
-      const mKeys = m && typeof m === "object" ? Object.keys(m).slice(0, 30) : [];
-      console.log("webhook payload undetected", JSON.stringify({
+      const mKeys = m && typeof m === "object" ? Object.keys(m).slice(0, 40) : [];
+      const pKeys = payload && typeof payload === "object" ? Object.keys(payload).slice(0, 40) : [];
+      console.log("webhook payload undetected/medialess", JSON.stringify({
         event: evt,
         fromMe,
         mediaKind: media.kind,
         mediaHasUrl: !!media.url,
         mediaHasB64: !!media.base64,
+        mediaMime: media.mime,
         externalId,
+        payloadKeys: pKeys,
         messageKeys: mKeys,
-      }).slice(0, 800));
+        messageType: (m as any)?.messageType ?? (payload as any)?.messageType ?? null,
+        type: (m as any)?.type ?? (payload as any)?.type ?? null,
+        rawSnippet: JSON.stringify(payload).slice(0, 1500),
+      }).slice(0, 2500));
     }
+
 
     // Persistência "raw" exclusiva do superadmin:
     // grupos, mensagens enviadas pelo próprio número e history-sync residual NÃO
