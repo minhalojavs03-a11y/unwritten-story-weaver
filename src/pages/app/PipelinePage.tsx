@@ -4,6 +4,7 @@ import { PageHeader } from "./PageHeader";
 import { stageLabels, stageOrder, stageColorClass, type Stage, type Temperature } from "@/data/mock";
 import { timeAgo, formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { useCanViewLeadPhone } from "@/lib/leadPrivacy";
 import { useLeads, useUpdateLead } from "@/hooks/useData";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { usePermissions } from "@/hooks/usePermissions";
