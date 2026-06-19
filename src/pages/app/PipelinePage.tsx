@@ -8,6 +8,7 @@ import { useCanViewLeadPhone } from "@/lib/leadPrivacy";
 import { useLeads, useUpdateLead } from "@/hooks/useData";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useReadOnlySupervisor } from "@/hooks/useReadOnlySupervisor";
 import { useNavigate } from "react-router-dom";
 import {
   Clock, Plus, GripVertical, Settings2, Rows3, Rows2, LayoutGrid, Columns3, StretchVertical,
