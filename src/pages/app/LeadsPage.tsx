@@ -144,6 +144,7 @@ export default function LeadsPage() {
   const memberId = effective.isImpersonating ? effective.memberId : (member?.id ?? null);
   const effectiveUserId = effective.isImpersonating ? effective.id : (user?.id ?? null);
   const { maxCreditValue } = useActiveMemberLimit();
+  const canViewPhoneFn = useCanViewLeadPhone();
   void maxCreditValue;
   const leads = (() => {
     const isRealLead = (l: any) => {
