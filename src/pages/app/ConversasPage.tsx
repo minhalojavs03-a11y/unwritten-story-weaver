@@ -1337,7 +1337,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
             <span>
               🔒 Atendimento atribuído a <strong>{assignedMember?.display_name ?? "outro vendedor"}</strong>.
             </span>
-            {member && (
+            {member && canAssume && (
               <Button
                 size="sm"
                 className="h-8 rounded-full px-4 text-xs"
@@ -1350,6 +1350,13 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
                 Assumir atendimento
               </Button>
             )}
+            {isSupervisorRole && (
+              <span className="text-[11px] opacity-80">Supervisores não podem assumir o atendimento de um consultor.</span>
+            )}
+          </div>
+        ) : isSupervisorRole && !isMine ? (
+          <div className="flex flex-col items-center justify-center gap-1 rounded-2xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-900">
+            <span>👀 Modo supervisão — apenas visualização. Você não pode enviar mensagens no atendimento de um consultor.</span>
           </div>
         ) : consultantConnected ? (
           <div className="rounded-2xl border border-emerald-300/50 bg-emerald-50 p-5 text-center text-sm text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-900/10 dark:text-emerald-200">
