@@ -646,9 +646,11 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   const canOverride = isSuperadmin || (roles ?? []).some((r) => ["superadmin", "owner"].includes(r as string));
   const isLocked = (!!assignedId || !!assignedUserId) && !isMine && !canOverride;
   // Regra: lead livre, qualquer um pode pegar. Lead já atribuído a outro consultor
-  // só pode ser assumido diretamente por owner/superadmin. Supervisor deve transferir
-  // para outro consultor (não pode pegar para si nem responder em nome dele).
-  const canAssume = !!member && !isMine && (!assignedId || canOverride);
+  // só pode ser assumido/transferido se estiver marcado como PERDIDO — ou por
+  // owner/superadmin, que podem invadir o atendimento a qualquer momento.
+  const isLost = String((lead as any)?.stage ?? "") === "perdido"
+    || String((lead as any)?.status ?? "") === "lost";
+  const canAssume = !!member && !isMine && (!assignedId || isLost || canOverride);
 
   // Quando o consultor já conectou o WhatsApp dele no CRM, bloqueamos o envio
   // pelo chat — daí ele responde direto pelo app do WhatsApp.
