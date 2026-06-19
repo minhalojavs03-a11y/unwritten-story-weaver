@@ -233,6 +233,38 @@ export default function LeadsHojePage() {
 
   const total = leads.length;
 
+  const todayRange = useMemo(() => rangeFromPreset("today"), []);
+  const [todayTotal, setTodayTotal] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const startISO = todayRange.start.toISOString();
+    const endISO = todayRange.end.toISOString();
+    (async () => {
+      const [leadsRes, niltonRes] = await Promise.all([
+        supabase
+          .from("leads")
+          .select("id", { count: "exact", head: true })
+          .eq("tenant_id", FERACON_TENANT_ID)
+          .eq("kind", "lead")
+          .or(
+            `and(assigned_member_at.gte.${startISO},assigned_member_at.lt.${endISO}),` +
+            `and(assigned_member_at.is.null,created_at.gte.${startISO},created_at.lt.${endISO})`,
+          ),
+        supabase
+          .from("nilton_leads")
+          .select("id", { count: "exact", head: true })
+          .eq("tenant_id", FERACON_TENANT_ID)
+          .or(
+            `and(created_time.gte.${startISO},created_time.lt.${endISO}),` +
+            `and(created_time.is.null,imported_at.gte.${startISO},imported_at.lt.${endISO})`,
+          ),
+      ]);
+      if (cancelled) return;
+      setTodayTotal((leadsRes.count ?? 0) + (niltonRes.count ?? 0));
+    })();
+    return () => { cancelled = true; };
+  }, [todayRange.start, todayRange.end]);
+
   const presets: { key: PresetKey; label: string }[] = [
     { key: "today", label: "Hoje" },
     { key: "yesterday", label: "Ontem" },
