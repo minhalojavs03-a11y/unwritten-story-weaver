@@ -380,7 +380,7 @@ export default function LeadsHojePage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="truncate text-sm font-medium text-foreground">
-                          {l.name?.trim() || l.phone || "Sem nome"}
+                          {l.name?.trim() || (l.phone ? displayPhone(l.phone, canViewPhoneFn(l as any)) : "Sem nome")}
                         </span>
                         <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-600">
                           {l.origin === "nilton" ? "Planilha" : (l.source || "direto")}
@@ -388,7 +388,7 @@ export default function LeadsHojePage() {
                       </div>
                       <div className="mt-0.5 text-xs text-muted-foreground">
                         {fmtHora(l.assigned_at ?? l.created_at)} • {stageLabels[(l.stage ?? "novo") as keyof typeof stageLabels] ?? l.stage ?? "—"}
-                        {l.phone ? ` • ${l.phone}` : ""}
+                        {l.phone ? ` • ${displayPhone(l.phone, canViewPhoneFn(l as any))}` : ""}
                       </div>
                     </div>
                     <div className="hidden text-right text-sm font-mono tabular-nums text-foreground sm:block">
