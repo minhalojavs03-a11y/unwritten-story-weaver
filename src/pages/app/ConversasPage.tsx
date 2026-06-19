@@ -1249,12 +1249,20 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
               : null;
             const isAlbum = !!albumMatch;
             const albumCount = albumMatch ? Number(albumMatch[1]) : 0;
+            const inst = (m as any).whatsapp_instance as { phone_number?: string | null; instance_name?: string | null } | null;
+            const senderPhone = isOut
+              ? (inst?.phone_number ?? null)
+              : (lead?.phone ?? null);
+            const senderLabel = senderPhone ? formatPhone(senderPhone) : (isOut ? (inst?.instance_name ?? "—") : "—");
             return (
               <div key={m.id} className={cn("group flex w-full", isOut ? "justify-end" : "justify-start", grouped ? "mt-0.5" : "mt-2")}>
                 <div className={cn(
                   "relative max-w-[80%] px-2.5 py-1.5 text-[14.2px] leading-[19px] md:max-w-[65%]",
                   isOut ? "wa-bubble-out" : "wa-bubble-in",
                 )}>
+                  <div className={cn("mb-0.5 text-[10px] font-mono uppercase tracking-wide", isOut ? "text-emerald-700/70" : "text-[#667781]")}>
+                    {isOut ? "↗ " : "↙ "}{senderLabel}
+                  </div>
                   {/* Menu de ações (apagar) */}
                   {m.status !== "deleted" && (
                     <DropdownMenu>
