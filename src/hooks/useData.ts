@@ -275,7 +275,7 @@ export function useMessages(
         }
       }
 
-      let query = supabase.from("messages").select("*");
+      let query = supabase.from("messages").select("*, whatsapp_instance:whatsapp_instances(id, phone_number, instance_name)");
       if (conversationId && leadIds.length > 0) {
         const inList = leadIds.map((id) => `lead_id.eq.${id}`).join(",");
         query = query.or(`conversation_id.eq.${conversationId},${inList}`);
