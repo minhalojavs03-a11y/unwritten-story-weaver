@@ -276,8 +276,8 @@ export default function LeadsHojePage() {
   return (
     <>
       <PageHeader
-        title={`Leads hoje: ${todayTotal ?? "…"}`}
-        subtitle={`Período: ${range.label} • ${total} ${total === 1 ? "lead" : "leads"}`}
+        title={`${range.label}: ${total} ${total === 1 ? "lead" : "leads"}`}
+        subtitle={loading ? "Carregando…" : `${total} ${total === 1 ? "lead encontrado" : "leads encontrados"} no período`}
         actions={
           <Link to="/crm" className="inline-flex items-center gap-2 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:bg-slate-50">
             <ArrowLeft className="h-3.5 w-3.5" /> Voltar ao Início
