@@ -984,7 +984,7 @@ export default function FilaLeadsPage() {
               </span>
             </DialogTitle>
             <DialogDescription className="text-xs">
-              {actionStep === "main" && (displayPhone(actionFor?.phone ?? null, canViewPhoneFn(actionFor as any)) || "O que você quer fazer?")}
+              {actionStep === "main" && (actionFor?.phone ? displayPhone(actionFor.phone, canViewPhoneFn(actionFor as any)) : "O que você quer fazer?")}
               {actionStep === "done" && "Como foi o atendimento?"}
             </DialogDescription>
           </DialogHeader>
