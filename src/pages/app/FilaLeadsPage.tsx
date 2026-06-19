@@ -31,6 +31,7 @@ import { UserAvatar } from "@/components/ui/UserAvatar";
 import { canTakeLead, getMaxAllowedForName, formatBRL } from "@/lib/leadTier";
 import { LeadProgressBar } from "@/components/oticaflow/LeadProgressBar";
 import { isHiddenFeraconMemberId, isHiddenFeraconPerson } from "@/lib/feracon";
+import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
 
 function normalizeRole(value: string) {
   return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
