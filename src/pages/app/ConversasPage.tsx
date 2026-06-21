@@ -185,7 +185,7 @@ export default function ConversasPage() {
   useEffect(() => {
     if (!tenantId) { setAssignedLeads([]); return; }
     const memberRole = (member?.role_label || "").toLowerCase();
-    const memberCanViewAll = /dono|owner|propriet|supervisor/.test(memberRole);
+    const memberCanViewAll = /dono|owner|propriet/.test(memberRole);
     const canSeeAll = member ? memberCanViewAll : canViewAll;
     const restricted = !canSeeAll;
     if (restricted && !member?.id && !userId) { setAssignedLeads([]); return; }
@@ -234,7 +234,7 @@ export default function ConversasPage() {
         if (!conv) { setFetchedActive(null); return; }
         // Trava de privacidade ainda se aplica se houver lead atribuído
         const memberRole = (member?.role_label || "").toLowerCase();
-        const memberCanViewAll = /dono|owner|propriet|supervisor/.test(memberRole);
+        const memberCanViewAll = /dono|owner|propriet/.test(memberRole);
         const restricted = member ? !memberCanViewAll : !canViewAll;
         if (restricted) {
           const l: any = (conv as any).lead;
@@ -254,7 +254,7 @@ export default function ConversasPage() {
 
       // Trava de privacidade: consultor restrito só pode abrir leads atribuídos a ele.
       const memberRole = (member?.role_label || "").toLowerCase();
-      const memberCanViewAll = /dono|owner|propriet|supervisor/.test(memberRole);
+      const memberCanViewAll = /dono|owner|propriet/.test(memberRole);
       const restricted = member ? !memberCanViewAll : !canViewAll;
       if (restricted) {
         const { data: leadCheck } = await supabase
