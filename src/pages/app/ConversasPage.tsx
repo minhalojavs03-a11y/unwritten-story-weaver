@@ -309,7 +309,7 @@ export default function ConversasPage() {
     // Dedupe por lead_id mantendo a conversa mais recente (defesa contra duplicatas legadas)
     const byLead = new Map<string, any>();
     const memberRole = (member?.role_label || "").toLowerCase();
-    const memberCanViewAll = /dono|owner|propriet|supervisor/.test(memberRole);
+    const memberCanViewAll = /dono|owner|propriet/.test(memberRole);
     const shouldRestrict = member ? !memberCanViewAll : !canViewAll;
     const isOwnedByCurrent = (c: any) => {
       const lead = c.lead;
