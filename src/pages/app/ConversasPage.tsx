@@ -107,7 +107,9 @@ export default function ConversasPage() {
   const { can } = usePermissions();
   const tenantId = effective.isImpersonating ? effective.tenantId : authTenantId;
   const authCanViewAll = !effective.isImpersonating && (isSuperadmin || isOwner);
-  const canViewAll = authCanViewAll || can("view_all_leads");
+  // Conversas: supervisor vê apenas as próprias (não mais as dos consultores).
+  // Somente superadmin e dono visualizam todas as conversas do tenant.
+  const canViewAll = authCanViewAll;
   const canQueryAllTenants = isSuperadmin && !effective.isImpersonating;
   // Em modo impersonação, usa o user_id do alvo para checagens de propriedade.
   const userId = effective.isImpersonating ? (effective.id ?? null) : (user?.id ?? null);
