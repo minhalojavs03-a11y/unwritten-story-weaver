@@ -133,7 +133,24 @@ export default function AdminIntegracoes() {
       .limit(20);
     setConfigs((cfgs as unknown as Config[]) || []);
     setLogs((lg as unknown as Log[]) || []);
+    const { data: nLog } = await supabase
+      .from("nilton_sync_log")
+      .select("status,summary,created_at")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (nLog) setNiltonLog({ at: (nLog as any).created_at, status: (nLog as any).status, summary: (nLog as any).summary });
     setLoading(false);
+  }
+
+  async function syncNilton() {
+    setSyncingNilton(true);
+    const { data, error } = await supabase.functions.invoke("sync-nilton-leads", { body: {} });
+    setSyncingNilton(false);
+    if (error) return toast.error("Falha: " + error.message);
+    const n = (data as any)?.new_leads ?? (data as any)?.imported ?? 0;
+    toast.success(`Nilton sincronizado: ${n} novo(s) lead(s)`);
+    load();
   }
 
   useEffect(() => {
