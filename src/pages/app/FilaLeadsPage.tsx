@@ -625,6 +625,31 @@ export default function FilaLeadsPage() {
       <div className="space-y-4 p-4 pb-24 md:p-8 md:pb-8">
         {/* Aba única: apenas leads atribuídos ao consultor ativo */}
 
+        {canSeeSourceFilter && !loading && sourceLeadsAll.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Origem:</span>
+            {([
+              { key: "all", label: `Todos (${sourceLeadsAll.length})` },
+              { key: "Leads 01", label: `Leads 01 (${countLeads01})` },
+              { key: "Leads 02", label: `Leads 02 (${countLeads02})` },
+            ] as const).map((opt) => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => setSourceFilter(opt.key as any)}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                  sourceFilter === opt.key
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border/60 bg-card text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+
         {!loading && (sourceLeads.length > 0 || search) && (
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
