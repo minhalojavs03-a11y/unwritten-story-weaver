@@ -391,13 +391,32 @@ export default function DistribuicaoLeadsPage() {
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-[auto_1fr_120px] md:items-end">
-                      <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background p-2 md:flex-col md:items-start md:border-0 md:bg-transparent md:p-0">
+                      <div className="flex flex-col gap-2 rounded-lg border border-border bg-background p-2 md:border-0 md:bg-transparent md:p-0">
                         <Label className="text-xs text-muted-foreground">Recebe leads</Label>
-                        <Switch
-                          checked={receives}
-                          onCheckedChange={(v) => saveDistribution(r, { receives_leads: v }, "Status de recebimento")}
-                        />
+                        <div className="flex flex-col gap-1.5">
+                          <div
+                            className="flex items-center justify-between gap-3 rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-1"
+                            title="Leads vindos da planilha principal (Leads 01)"
+                          >
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-sky-700 dark:text-sky-300">Leads 01</span>
+                            <Switch
+                              checked={receives}
+                              onCheckedChange={(v) => saveDistribution(r, { receives_leads: v }, "Recebimento Leads 01")}
+                            />
+                          </div>
+                          <div
+                            className="flex items-center justify-between gap-3 rounded-md border border-violet-500/30 bg-violet-500/10 px-2 py-1"
+                            title="Leads vindos da nova planilha (Leads 02)"
+                          >
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-violet-700 dark:text-violet-300">Leads 02</span>
+                            <Switch
+                              checked={receives02}
+                              onCheckedChange={(v) => saveDistribution(r, { receives_leads_02: v }, "Recebimento Leads 02")}
+                            />
+                          </div>
+                        </div>
                       </div>
+
 
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
