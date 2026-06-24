@@ -384,7 +384,7 @@ async function syncConfig(cfg: any, opts: { skipWelcome?: boolean } = {}) {
           assigned_to: assignedTo,
           imported_from_sheet: true,
           sheet_row_index: i,
-          metadata: { raw_row: row, distributed_from: cfg.tenant_id },
+          metadata: { raw_row: row, distributed_from: cfg.tenant_id, sheet_source_label: cfg.source_label || "Leads 01", sheet_config_id: cfg.id },
         }),
       });
       if (!leadRes.ok) {

@@ -1728,6 +1728,7 @@ export type Database = {
           notify_vendors: boolean
           sheet_id: string
           sheet_url: string
+          source_label: string
           tab_name: string
           tenant_id: string
           updated_at: string
@@ -1746,6 +1747,7 @@ export type Database = {
           notify_vendors?: boolean
           sheet_id: string
           sheet_url: string
+          source_label?: string
           tab_name?: string
           tenant_id?: string
           updated_at?: string
@@ -1764,6 +1766,7 @@ export type Database = {
           notify_vendors?: boolean
           sheet_id?: string
           sheet_url?: string
+          source_label?: string
           tab_name?: string
           tenant_id?: string
           updated_at?: string
