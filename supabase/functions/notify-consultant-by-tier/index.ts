@@ -345,14 +345,21 @@ Deno.serve(async (req) => {
 
 
 
-    // Busca todos os consultores que cobrem a faixa do lead.
+    // Determina o filtro de origem (Leads 01 = receives_leads, Leads 02 = receives_leads_02).
+    // Lê metadata.sheet_source_label gravado pelo sheets-sync.
+    const sheetSourceLabel: string | null =
+      (lead?.metadata && typeof lead.metadata === "object" && (lead.metadata as any).sheet_source_label) || null;
+    const isLeads02 = sheetSourceLabel === "Leads 02";
+    const sourceColumn = isLeads02 ? "receives_leads_02" : "receives_leads";
+
+    // Busca todos os consultores que cobrem a faixa do lead E recebem essa origem.
     // Regra: (min IS NULL OR creditValue >= min) AND (max IS NULL OR creditValue <= max).
     const { data: consultantsRaw } = await admin
       .from("tenant_members")
       .select("id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit, email, notify_inapp, notify_whatsapp")
       .eq("tenant_id", lead.tenant_id)
       .eq("is_active", true)
-      .eq("receives_leads", true)
+      .eq(sourceColumn, true)
       .not("phone", "is", null)
       .or(`min_credit_value.is.null,min_credit_value.lte.${creditValue}`)
       .or(`max_credit_value.is.null,max_credit_value.gte.${creditValue}`);

@@ -32,6 +32,7 @@ type Row = {
   avatar_color: string | null;
   is_active: boolean;
   receives_leads: boolean | null;
+  receives_leads_02: boolean | null;
   min_credit_value: number | null;
   max_credit_value: number | null;
   daily_lead_limit: number | null;
@@ -144,6 +145,7 @@ export default function DistribuicaoLeadsPage() {
         avatar_color: r.avatar_color ?? null,
         is_active: r.is_active ?? true,
         receives_leads: r.receives_leads ?? false,
+        receives_leads_02: r.receives_leads_02 ?? false,
         min_credit_value: r.min_credit_value == null ? CREDIT_MIN : Number(r.min_credit_value),
         max_credit_value: r.max_credit_value == null ? CREDIT_MAX : Number(r.max_credit_value),
         daily_lead_limit: r.daily_lead_limit ?? null,
@@ -240,9 +242,10 @@ export default function DistribuicaoLeadsPage() {
     }
     const memberId = await ensureMemberId(r);
     if (!memberId) return;
-    const { error } = await supabase.rpc("update_member_distribution" as any, {
+    const { error } = await supabase.rpc("update_member_distribution_v2" as any, {
       _member_id: memberId,
-      _receives_leads: !!next.receives_leads,
+      _receives_leads_01: !!next.receives_leads,
+      _receives_leads_02: !!next.receives_leads_02,
       _min_credit_value: minV,
       _max_credit_value: maxV,
       _daily_lead_limit: next.daily_lead_limit ?? null,
@@ -261,7 +264,7 @@ export default function DistribuicaoLeadsPage() {
     qc.setQueryData<Row[]>(distQueryKey, (prev) =>
       (prev ?? []).map((row) =>
         rowKey(row) === k
-          ? { ...row, ...patch, id: memberId, receives_leads: !!next.receives_leads, min_credit_value: minV, max_credit_value: maxV, daily_lead_limit: next.daily_lead_limit ?? null }
+          ? { ...row, ...patch, id: memberId, receives_leads: !!next.receives_leads, receives_leads_02: !!next.receives_leads_02, min_credit_value: minV, max_credit_value: maxV, daily_lead_limit: next.daily_lead_limit ?? null }
           : row,
       ),
     );
@@ -341,6 +344,7 @@ export default function DistribuicaoLeadsPage() {
               const k = rowKey(r);
               const name = r.display_name || r.username || "Consultor";
               const receives = !!valueOf(r, "receives_leads");
+              const receives02 = !!valueOf(r, "receives_leads_02");
               const minV = valueOf(r, "min_credit_value");
               const maxV = valueOf(r, "max_credit_value");
               const dailyLim = valueOf(r, "daily_lead_limit");
@@ -387,13 +391,32 @@ export default function DistribuicaoLeadsPage() {
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-[auto_1fr_120px] md:items-end">
-                      <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background p-2 md:flex-col md:items-start md:border-0 md:bg-transparent md:p-0">
+                      <div className="flex flex-col gap-2 rounded-lg border border-border bg-background p-2 md:border-0 md:bg-transparent md:p-0">
                         <Label className="text-xs text-muted-foreground">Recebe leads</Label>
-                        <Switch
-                          checked={receives}
-                          onCheckedChange={(v) => saveDistribution(r, { receives_leads: v }, "Status de recebimento")}
-                        />
+                        <div className="flex flex-col gap-1.5">
+                          <div
+                            className="flex items-center justify-between gap-3 rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-1"
+                            title="Leads vindos da planilha principal (Leads 01)"
+                          >
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-sky-700 dark:text-sky-300">Leads 01</span>
+                            <Switch
+                              checked={receives}
+                              onCheckedChange={(v) => saveDistribution(r, { receives_leads: v }, "Recebimento Leads 01")}
+                            />
+                          </div>
+                          <div
+                            className="flex items-center justify-between gap-3 rounded-md border border-violet-500/30 bg-violet-500/10 px-2 py-1"
+                            title="Leads vindos da nova planilha (Leads 02)"
+                          >
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-violet-700 dark:text-violet-300">Leads 02</span>
+                            <Switch
+                              checked={receives02}
+                              onCheckedChange={(v) => saveDistribution(r, { receives_leads_02: v }, "Recebimento Leads 02")}
+                            />
+                          </div>
+                        </div>
                       </div>
+
 
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
@@ -485,8 +508,14 @@ export default function DistribuicaoLeadsPage() {
                   </div>
 
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-2 text-xs">
-                    <Badge variant={receives ? "default" : "secondary"} className="font-normal">
-                      {receives ? "Ativo" : "Pausado"}
+                    <Badge variant={receives || receives02 ? "default" : "secondary"} className="font-normal">
+                      {receives && receives02
+                        ? "Leads 01 + 02"
+                        : receives
+                          ? "Leads 01"
+                          : receives02
+                            ? "Leads 02"
+                            : "Pausado"}
                     </Badge>
                     <span className="text-muted-foreground">
                       Faixa:{" "}

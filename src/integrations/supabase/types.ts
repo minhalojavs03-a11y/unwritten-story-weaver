@@ -2020,6 +2020,7 @@ export type Database = {
           password_hash: string
           phone: string | null
           receives_leads: boolean
+          receives_leads_02: boolean
           role_label: string | null
           tenant_id: string
           updated_at: string
@@ -2048,6 +2049,7 @@ export type Database = {
           password_hash: string
           phone?: string | null
           receives_leads?: boolean
+          receives_leads_02?: boolean
           role_label?: string | null
           tenant_id?: string
           updated_at?: string
@@ -2076,6 +2078,7 @@ export type Database = {
           password_hash?: string
           phone?: string | null
           receives_leads?: boolean
+          receives_leads_02?: boolean
           role_label?: string | null
           tenant_id?: string
           updated_at?: string
@@ -2605,6 +2608,7 @@ export type Database = {
           notify_whatsapp: boolean
           phone: string
           receives_leads: boolean
+          receives_leads_02: boolean
           role_label: string
           tenant_id: string
           user_id: string
@@ -2655,6 +2659,17 @@ export type Database = {
           _member_id: string
           _min_credit_value: number
           _receives_leads: boolean
+        }
+        Returns: undefined
+      }
+      update_member_distribution_v2: {
+        Args: {
+          _daily_lead_limit: number
+          _max_credit_value: number
+          _member_id: string
+          _min_credit_value: number
+          _receives_leads_01: boolean
+          _receives_leads_02: boolean
         }
         Returns: undefined
       }
