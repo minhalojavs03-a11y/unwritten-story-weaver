@@ -243,8 +243,18 @@ export default function FilaLeadsPage() {
   })();
   const myLeads = mergedLeads.filter(isLeadMine);
   const availableLeads: Lead[] = [];
-  const sourceLeads = myLeads;
+  const sourceLabelOf = (l: Lead): string => {
+    const lbl = l.metadata?.sheet_source_label;
+    if (lbl && typeof lbl === "string") return lbl;
+    return "Leads 01";
+  };
+  const sourceLeadsAll = myLeads;
+  const sourceLeads = canSeeSourceFilter && sourceFilter !== "all"
+    ? sourceLeadsAll.filter((l) => sourceLabelOf(l) === sourceFilter)
+    : sourceLeadsAll;
   const filteredLeads = sourceLeads.filter(searchMatch);
+  const countLeads01 = sourceLeadsAll.filter((l) => sourceLabelOf(l) === "Leads 01").length;
+  const countLeads02 = sourceLeadsAll.filter((l) => sourceLabelOf(l) === "Leads 02").length;
 
 
 
