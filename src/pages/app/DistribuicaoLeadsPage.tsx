@@ -508,8 +508,14 @@ export default function DistribuicaoLeadsPage() {
                   </div>
 
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-2 text-xs">
-                    <Badge variant={receives ? "default" : "secondary"} className="font-normal">
-                      {receives ? "Ativo" : "Pausado"}
+                    <Badge variant={receives || receives02 ? "default" : "secondary"} className="font-normal">
+                      {receives && receives02
+                        ? "Leads 01 + 02"
+                        : receives
+                          ? "Leads 01"
+                          : receives02
+                            ? "Leads 02"
+                            : "Pausado"}
                     </Badge>
                     <span className="text-muted-foreground">
                       Faixa:{" "}
