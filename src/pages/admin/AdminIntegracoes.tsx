@@ -48,6 +48,9 @@ export default function AdminIntegracoes() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [syncingNilton, setSyncingNilton] = useState(false);
+  const [niltonLog, setNiltonLog] = useState<{ at: string | null; status: string | null; summary: string | null }>({ at: null, status: null, summary: null });
+  const NILTON_SHEET_URL = "https://docs.google.com/spreadsheets/d/1mNfWIEfaqp_oZtv6i1tWzhCmFvEaKQGb4EmrX8RG5vY/edit";
   const FORM_STORAGE_KEY = "admin_integracoes_sheet_form";
   const defaultForm = {
     sheet_url: "",
