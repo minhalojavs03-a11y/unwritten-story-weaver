@@ -129,7 +129,7 @@ export default function LeadsHojePage() {
       const [leadsRes, niltonRes, membersRes] = await Promise.all([
         supabase
           .from("leads")
-          .select("id, name, phone, stage, source, credit_value, created_at, assigned_member_at, assigned_member_id, assigned_to, kind")
+          .select("id, name, phone, stage, source, credit_value, created_at, assigned_member_at, assigned_member_id, assigned_to, kind, metadata")
           .eq("tenant_id", FERACON_TENANT_ID)
           .eq("kind", "lead")
           
