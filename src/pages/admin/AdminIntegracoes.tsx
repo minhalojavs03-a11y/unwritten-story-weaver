@@ -222,6 +222,41 @@ export default function AdminIntegracoes() {
         </Button>
       </div>
 
+      <Card className="space-y-3 border-amber-500/20 bg-amber-500/5 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20 text-amber-300">
+              <Lock className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 font-semibold text-white">
+                Leads Nilton <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">especial</span>
+              </div>
+              <div className="text-xs text-white/50">
+                {niltonLog.at ? `Última: ${new Date(niltonLog.at).toLocaleString("pt-BR")}` : "Nunca sincronizado"}
+                {niltonLog.summary ? ` · ${niltonLog.summary}` : ""}
+              </div>
+            </div>
+          </div>
+          <Button size="sm" variant="outline" onClick={syncNilton} disabled={syncingNilton}>
+            {syncingNilton ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Sincronizar agora
+          </Button>
+        </div>
+        <p className="text-xs text-white/60">
+          Fluxo dedicado e isolado: leads vão para o usuário <strong>Nilton</strong> com limite diário próprio (overflow cai na distribuição geral). Configuração fixa no código — não editável aqui.
+        </p>
+        <a
+          href={NILTON_SHEET_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-amber-300 hover:underline"
+        >
+          Abrir planilha do Nilton <ExternalLink className="h-3 w-3" />
+        </a>
+      </Card>
+
+
       {configs.length === 0 && (
         <Card className="bg-white/5 p-6 text-white/70">
           Nenhuma planilha configurada. Clique em <strong>Adicionar planilha</strong> para conectar uma planilha do Google Sheets que recebe os leads do Meta Ads.
