@@ -171,6 +171,14 @@ export default function LeadsHojePage() {
         assigned_member_id: l.assigned_member_id ?? null,
         assigned_to: l.assigned_to ?? null,
         origin: "lead",
+        sheet_source_label: (() => {
+          const md = (l as { metadata?: unknown }).metadata;
+          if (md && typeof md === "object" && "sheet_source_label" in md) {
+            const v = (md as Record<string, unknown>).sheet_source_label;
+            return typeof v === "string" ? v : null;
+          }
+          return null;
+        })(),
       }));
 
       const niltonLeads: LeadRow[] = (niltonRes.data ?? []).map((n) => ({
@@ -185,6 +193,7 @@ export default function LeadsHojePage() {
         assigned_member_id: null,
         assigned_to: n.assigned_to ?? null,
         origin: "nilton",
+        sheet_source_label: "Leads Nilton",
       }));
 
       setLeads([...baseLeads, ...niltonLeads]);
