@@ -716,6 +716,18 @@ export default function FilaLeadsPage() {
                       <span className="inline-flex items-center rounded-full border border-success/20 bg-success/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-success">
                         {platformLabel(lead)}
                       </span>
+                      {canSeeSourceFilter && (
+                        <span
+                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] ${
+                            sourceLabelOf(lead) === "Leads 02"
+                              ? "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300"
+                              : "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+                          }`}
+                          title="Origem da planilha de leads"
+                        >
+                          {sourceLabelOf(lead)}
+                        </span>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground md:text-sm">
                       {lead.phone && (() => {
