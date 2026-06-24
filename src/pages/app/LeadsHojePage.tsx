@@ -398,6 +398,20 @@ export default function LeadsHojePage() {
                         <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-600">
                           {l.origin === "nilton" ? "Planilha" : (l.source || "direto")}
                         </span>
+                        {canSeeSource && l.sheet_source_label && (
+                          <span
+                            className={cn(
+                              "rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                              l.sheet_source_label === "Leads 02"
+                                ? "bg-violet-100 text-violet-700"
+                                : l.sheet_source_label === "Leads Nilton"
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-blue-100 text-blue-700",
+                            )}
+                          >
+                            {l.sheet_source_label}
+                          </span>
+                        )}
                       </div>
                       <div className="mt-0.5 text-xs text-muted-foreground">
                         {fmtHora(l.assigned_at ?? l.created_at)} • {stageLabels[(l.stage ?? "novo") as keyof typeof stageLabels] ?? l.stage ?? "—"}
