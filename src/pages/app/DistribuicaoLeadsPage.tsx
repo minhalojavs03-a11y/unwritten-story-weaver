@@ -145,6 +145,7 @@ export default function DistribuicaoLeadsPage() {
         avatar_color: r.avatar_color ?? null,
         is_active: r.is_active ?? true,
         receives_leads: r.receives_leads ?? false,
+        receives_leads_02: r.receives_leads_02 ?? false,
         min_credit_value: r.min_credit_value == null ? CREDIT_MIN : Number(r.min_credit_value),
         max_credit_value: r.max_credit_value == null ? CREDIT_MAX : Number(r.max_credit_value),
         daily_lead_limit: r.daily_lead_limit ?? null,
