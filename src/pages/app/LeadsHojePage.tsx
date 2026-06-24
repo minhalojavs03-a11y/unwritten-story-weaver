@@ -105,6 +105,8 @@ const todayISO = () => {
 };
 
 export default function LeadsHojePage() {
+  const { isSuperadmin, isOwner } = useAuth();
+  const canSeeSource = isSuperadmin || isOwner;
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const canViewPhoneFn = useCanViewLeadPhone();
   const [members, setMembers] = useState<MemberRow[]>([]);
