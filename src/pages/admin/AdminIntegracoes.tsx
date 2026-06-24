@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, FileSpreadsheet, CheckCircle2, XCircle, Plus, Trash2 } from "lucide-react";
+import { Loader2, RefreshCw, FileSpreadsheet, CheckCircle2, XCircle, Plus, Trash2, Lock, ExternalLink } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type Config = {
