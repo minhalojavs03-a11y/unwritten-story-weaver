@@ -242,9 +242,10 @@ export default function DistribuicaoLeadsPage() {
     }
     const memberId = await ensureMemberId(r);
     if (!memberId) return;
-    const { error } = await supabase.rpc("update_member_distribution" as any, {
+    const { error } = await supabase.rpc("update_member_distribution_v2" as any, {
       _member_id: memberId,
-      _receives_leads: !!next.receives_leads,
+      _receives_leads_01: !!next.receives_leads,
+      _receives_leads_02: !!next.receives_leads_02,
       _min_credit_value: minV,
       _max_credit_value: maxV,
       _daily_lead_limit: next.daily_lead_limit ?? null,
@@ -263,7 +264,7 @@ export default function DistribuicaoLeadsPage() {
     qc.setQueryData<Row[]>(distQueryKey, (prev) =>
       (prev ?? []).map((row) =>
         rowKey(row) === k
-          ? { ...row, ...patch, id: memberId, receives_leads: !!next.receives_leads, min_credit_value: minV, max_credit_value: maxV, daily_lead_limit: next.daily_lead_limit ?? null }
+          ? { ...row, ...patch, id: memberId, receives_leads: !!next.receives_leads, receives_leads_02: !!next.receives_leads_02, min_credit_value: minV, max_credit_value: maxV, daily_lead_limit: next.daily_lead_limit ?? null }
           : row,
       ),
     );
