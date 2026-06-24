@@ -1,107 +1,54 @@
 ## Objetivo
 
-Restringir o papel **Supervisor** a apenas visualização, removendo qualquer poder de alterar dados (pipeline, leads, conversas, configurações). Assumir uma conversa passa a exigir um fluxo de autorização: o consultor dono precisa marcar o lead como **perdido** E aprovar uma solicitação enviada por notificação no app. Supervisor não pode mais "invadir" conversas livremente.
+Na tela **Distribuição de Leads** (visível apenas para superadmin/dono), permitir configurar **separadamente** quais consultores recebem leads de cada planilha — **Leads 01** (a principal já existente) e **Leads 02** (a planilha nova `1kzZswK6Tn…`). Hoje existe um único toggle "Recebe leads" por consultor, que não distingue origem.
 
-## Mudanças
+## O que muda
 
-### 1. Matriz de permissões (`src/hooks/usePermissions.ts`)
-Supervisor sai de TODAS as permissões de escrita. Fica somente com leitura:
+### 1. Banco de dados (migração)
 
-```
-view_all_leads:        [superadmin, owner, supervisor]   ✓ mantém
-view_team_metrics:     [superadmin, owner, supervisor]   ✓ mantém
-view_whatsapp:         [superadmin, owner, supervisor]   ✓ mantém
-view_financial:        [superadmin, owner, supervisor]   ✓ mantém (somente leitura)
+- Adicionar coluna `receives_leads_02 boolean NOT NULL DEFAULT false` em `tenant_members`.
+  - O campo atual `receives_leads` passa a significar **Leads 01** (a planilha principal).
+  - Por padrão, ninguém recebe Leads 02 — o superadmin/dono ativa quem deve receber.
+- Atualizar a RPC `list_distribution_consultants` para retornar também `receives_leads_02`.
+- Atualizar a RPC `update_member_distribution` (ou criar `update_member_distribution_v2`) para aceitar `_receives_leads_01` e `_receives_leads_02` separados.
 
-assume_any_lead:       [superadmin, owner]               ✗ remove supervisor
-transfer_lead:         [superadmin, owner]               (já era)
-configure_sheets:      [superadmin, owner]               ✗ remove
-manage_team:           [superadmin, owner]               ✗ remove
-configure_whatsapp:    [superadmin, owner]               ✗ remove
-configure_ai:          [superadmin, owner]               ✗ remove
-configure_integrations:[superadmin, owner]               ✗ remove
-```
+### 2. Função `notify-consultant-by-tier`
 
-### 2. Fluxo de "solicitação de assumir lead perdido"
+- Ler `lead.metadata.sheet_source_label` (gravado pelo `sheets-sync` na sincronização).
+- Se origem for **Leads 02**, filtrar consultores por `receives_leads_02 = true` em vez de `receives_leads`.
+- Se origem for **Leads 01** ou ausente, manter `receives_leads = true` (comportamento atual).
+- Resto da lógica (faixa de crédito, limite diário, balanceamento) permanece igual.
 
-Nova tabela `lead_takeover_requests`:
+### 3. UI — `src/pages/app/DistribuicaoLeadsPage.tsx`
 
-```
-id uuid pk
-tenant_id uuid (Feracon)
-lead_id uuid → leads
-requester_user_id uuid (supervisor que pediu)
-requester_member_id uuid → tenant_members
-owner_user_id uuid (consultor dono)
-owner_member_id uuid → tenant_members
-status text ('pending'|'approved'|'denied'|'expired')
-message text
-created_at, responded_at timestamptz
+Substituir o switch único "Recebe leads" por **dois switches lado a lado** no card de cada consultor:
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ [avatar] Nome              │ Leads 01 [▢] │ Leads 02 [▢] │ ... │
+│          Consultor         │              │              │     │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-GRANTs + RLS:
-- Consultor dono e supervisor solicitante veem suas próprias linhas.
-- Superadmin/owner veem tudo.
-- INSERT permitido para supervisor (próprio user); UPDATE de status só pelo dono ou superadmin.
+- Etiqueta clara: "Leads 01" (azul) e "Leads 02" (violeta), mesmas cores usadas nos badges da Fila.
+- Salvamento automático ao alternar cada switch.
+- Tooltip explicando que Leads 02 vem da nova planilha.
+- Resumo no topo da página mostrando contagem: "X consultores recebem Leads 01 · Y recebem Leads 02".
 
-Funcionamento:
-1. Supervisor abre conversa de um lead que NÃO é dele.
-   - Se lead **não está perdido**: vê dados em modo leitura. Botão "Solicitar atendimento" desabilitado com tooltip "Disponível apenas quando o consultor marcar como perdido".
-   - Se lead **está perdido**: botão "Solicitar atendimento" envia INSERT em `lead_takeover_requests` (status=pending) e dispara `app_notifications` para o consultor dono.
-2. Consultor dono recebe notificação no sino (`useAppNotifications`) com ações **Aprovar / Recusar** → UPDATE em `lead_takeover_requests`.
-3. Ao aprovar: trigger/função `approve_lead_takeover(request_id)` reatribui o lead ao supervisor solicitante e marca a request como `approved`. Cria notificação de volta para o supervisor.
-4. Só após aprovação o supervisor consegue enviar mensagem / assumir oficialmente.
+Os demais campos (faixa de crédito, limite diário, canais de notificação) continuam globais — não há demanda para separá-los por origem.
 
-### 3. Bloqueios em UI (frontend)
+### 4. Tipos
 
-Arquivos afetados, sempre checando `isSupervisor` via `useEffectiveRole()` e/ou `can(...)`:
-
-- `src/pages/app/ConversasPage.tsx`
-  - Input de mensagem desabilitado para supervisor a menos que ele seja o `assigned_member_id` (após aprovação).
-  - Botão "Assumir" substituído por "Solicitar atendimento" (habilitado só se `lead.status === 'perdido'` e não existe request `pending` dele).
-  - Esconder ações destrutivas (deletar/editar mensagem) — já estão escondidas; reforçar.
-- `src/pages/app/PipelinePage.tsx`
-  - Drag-and-drop desabilitado para supervisor (cards em modo leitura).
-  - Bloquear mudanças de estágio, edição inline, ações de massa.
-- `src/pages/app/LeadsPage.tsx` / `LeadsHojePage.tsx` / `FilaLeadsPage.tsx`
-  - Esconder/desabilitar botões: editar, transferir, "Pegar", marcar status, excluir.
-  - Sidebar de detalhes vira read-only: campos como inputs com `readOnly`/`disabled`.
-- `src/pages/app/AgendaPage.tsx`, `ClientesPage.tsx`, `MensagensProntasPage.tsx`, `ConsultoresPage.tsx`, `EquipePage.tsx`, `DistribuicaoLeadsPage.tsx`, `ConfiguracoesPage.tsx`, `TreinarIAPage.tsx`, `MeuWhatsAppPage.tsx`, `WhatsAppPage.tsx`
-  - Esconder botões "Novo/Editar/Excluir/Salvar" para supervisor. Formulários renderizam em modo leitura.
-- `src/components/profile/InviteMemberModal.tsx`, `EditMemberModal.tsx`, `RoleInvitesPanel.tsx`
-  - Bloqueados para supervisor (já cobertos pela remoção de `manage_team`).
-
-Helper novo `src/hooks/useReadOnlySupervisor.ts` para um único ponto de verdade:
-
-```ts
-export function useReadOnlySupervisor() {
-  const { isSupervisor, isOwner, isSuperadmin } = useEffectiveRole();
-  return isSupervisor && !isOwner && !isSuperadmin;
-}
-```
-
-### 4. RLS no banco
-
-Reforçar policies de UPDATE/INSERT/DELETE em `leads`, `conversations`, `messages`, `appointments`, `templates`, `automations`, `whatsapp_instances`, `ai_config`, `tenant_members` para NÃO permitir mais a role `supervisor` — apenas `owner`/`superadmin` ou o próprio dono do recurso. SELECT continua liberado.
-
-Migração revisa cada policy usando `public.has_role(...)` para remover supervisor onde aplicável.
-
-### 5. Notificações
-
-- Reaproveitar `app_notifications` com novos `type`:
-  - `lead_takeover_request` (para o consultor dono)
-  - `lead_takeover_approved` / `lead_takeover_denied` (para o supervisor)
-- `useAppNotifications` ganha ações inline (Aprovar/Recusar) quando `type === 'lead_takeover_request'`.
+Após a migração rodar, `src/integrations/supabase/types.ts` será regenerado automaticamente. O código TS usa `as any` na chamada das RPCs, então não trava o build.
 
 ## Detalhes técnicos
 
-- Single-tenant Feracon mantido (`FERACON_TENANT_ID`).
-- Migração cria: tabela `lead_takeover_requests`, GRANTs, RLS, função `approve_lead_takeover(uuid)` / `deny_lead_takeover(uuid)` SECURITY DEFINER, e atualização das policies existentes para remover supervisor.
-- `useEffectiveRole` não muda — só os consumidores passam a tratar supervisor como leitura.
-- Ediane (telefone privado) continua invisível para supervisor.
+- A coluna `receives_leads_02` precisa ser **default false** para não vazar Leads 02 para consultores que historicamente recebem só Leads 01.
+- A função `notify-consultant-by-tier` é disparada a partir do `process-notification-queue` (que lê o lead) — basta consultar `lead.metadata->>'sheet_source_label'` ali dentro; não precisa propagar nada extra do `sheets-sync`.
+- `FilaLeadsPage.consultants` (linha 110) e `ConversasPage` (linha 1175) filtram por `receives_leads` para listar destinatários no menu "Enviar para…". Manter o filtro atual (Leads 01) — quando um superadmin/dono envia manualmente um lead Leads 02, ele já escolhe o consultor diretamente; não é necessário restringir a lista por origem nesse fluxo manual.
 
 ## Fora de escopo
 
-- Não mexer em superadmin/owner.
-- Não alterar lógica de privacidade de telefone já existente.
-- Não criar nova página de auditoria (pode entrar depois).
+- Faixas de crédito separadas por origem.
+- Limite diário separado por origem.
+- Alterar o fluxo de "enviar lead manualmente" para filtrar por origem.
