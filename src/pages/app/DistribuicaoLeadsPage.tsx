@@ -32,6 +32,7 @@ type Row = {
   avatar_color: string | null;
   is_active: boolean;
   receives_leads: boolean | null;
+  receives_leads_02: boolean | null;
   min_credit_value: number | null;
   max_credit_value: number | null;
   daily_lead_limit: number | null;
