@@ -344,6 +344,7 @@ export default function DistribuicaoLeadsPage() {
               const k = rowKey(r);
               const name = r.display_name || r.username || "Consultor";
               const receives = !!valueOf(r, "receives_leads");
+              const receives02 = !!valueOf(r, "receives_leads_02");
               const minV = valueOf(r, "min_credit_value");
               const maxV = valueOf(r, "max_credit_value");
               const dailyLim = valueOf(r, "daily_lead_limit");
