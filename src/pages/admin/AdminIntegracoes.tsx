@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, FileSpreadsheet, CheckCircle2, XCircle, Plus, Trash2 } from "lucide-react";
+import { Loader2, RefreshCw, FileSpreadsheet, CheckCircle2, XCircle, Plus, Trash2, Lock, ExternalLink } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type Config = {
@@ -48,6 +48,9 @@ export default function AdminIntegracoes() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [syncingNilton, setSyncingNilton] = useState(false);
+  const [niltonLog, setNiltonLog] = useState<{ at: string | null; status: string | null; summary: string | null }>({ at: null, status: null, summary: null });
+  const NILTON_SHEET_URL = "https://docs.google.com/spreadsheets/d/1mNfWIEfaqp_oZtv6i1tWzhCmFvEaKQGb4EmrX8RG5vY/edit";
   const FORM_STORAGE_KEY = "admin_integracoes_sheet_form";
   const defaultForm = {
     sheet_url: "",
@@ -130,7 +133,24 @@ export default function AdminIntegracoes() {
       .limit(20);
     setConfigs((cfgs as unknown as Config[]) || []);
     setLogs((lg as unknown as Log[]) || []);
+    const { data: nLog } = await supabase
+      .from("nilton_sync_log")
+      .select("status,summary,created_at")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (nLog) setNiltonLog({ at: (nLog as any).created_at, status: (nLog as any).status, summary: (nLog as any).summary });
     setLoading(false);
+  }
+
+  async function syncNilton() {
+    setSyncingNilton(true);
+    const { data, error } = await supabase.functions.invoke("sync-nilton-leads", { body: {} });
+    setSyncingNilton(false);
+    if (error) return toast.error("Falha: " + error.message);
+    const n = (data as any)?.new_leads ?? (data as any)?.imported ?? 0;
+    toast.success(`Nilton sincronizado: ${n} novo(s) lead(s)`);
+    load();
   }
 
   useEffect(() => {
@@ -201,6 +221,41 @@ export default function AdminIntegracoes() {
           <Plus className="mr-2 h-4 w-4" /> Adicionar planilha
         </Button>
       </div>
+
+      <Card className="space-y-3 border-amber-500/20 bg-amber-500/5 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20 text-amber-300">
+              <Lock className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 font-semibold text-white">
+                Leads Nilton <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">especial</span>
+              </div>
+              <div className="text-xs text-white/50">
+                {niltonLog.at ? `Última: ${new Date(niltonLog.at).toLocaleString("pt-BR")}` : "Nunca sincronizado"}
+                {niltonLog.summary ? ` · ${niltonLog.summary}` : ""}
+              </div>
+            </div>
+          </div>
+          <Button size="sm" variant="outline" onClick={syncNilton} disabled={syncingNilton}>
+            {syncingNilton ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Sincronizar agora
+          </Button>
+        </div>
+        <p className="text-xs text-white/60">
+          Fluxo dedicado e isolado: leads vão para o usuário <strong>Nilton</strong> com limite diário próprio (overflow cai na distribuição geral). Configuração fixa no código — não editável aqui.
+        </p>
+        <a
+          href={NILTON_SHEET_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-amber-300 hover:underline"
+        >
+          Abrir planilha do Nilton <ExternalLink className="h-3 w-3" />
+        </a>
+      </Card>
+
 
       {configs.length === 0 && (
         <Card className="bg-white/5 p-6 text-white/70">
