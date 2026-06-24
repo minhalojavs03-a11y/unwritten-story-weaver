@@ -128,6 +128,8 @@ export default function FilaLeadsPage() {
   const [transferMessage, setTransferMessage] = useState("");
   const [transferBusy, setTransferBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<"disponiveis" | "meus">("meus");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "Leads 01" | "Leads 02">("all");
+  const canSeeSourceFilter = isSuperadmin || isOwner;
 
   useEffect(() => {
     if (activeTab !== "meus") setActiveTab("meus");
