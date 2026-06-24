@@ -9,8 +9,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { stageLabels } from "@/data/mock";
 import { cn } from "@/lib/utils";
 import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
+import { useAuth } from "@/contexts/AuthContext";
 
 type LeadRow = {
+  sheet_source_label?: string | null;
   id: string;
   name: string | null;
   phone: string | null;
@@ -103,6 +105,8 @@ const todayISO = () => {
 };
 
 export default function LeadsHojePage() {
+  const { isSuperadmin, isOwner } = useAuth();
+  const canSeeSource = isSuperadmin || isOwner;
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const canViewPhoneFn = useCanViewLeadPhone();
   const [members, setMembers] = useState<MemberRow[]>([]);
@@ -125,7 +129,7 @@ export default function LeadsHojePage() {
       const [leadsRes, niltonRes, membersRes] = await Promise.all([
         supabase
           .from("leads")
-          .select("id, name, phone, stage, source, credit_value, created_at, assigned_member_at, assigned_member_id, assigned_to, kind")
+          .select("id, name, phone, stage, source, credit_value, created_at, assigned_member_at, assigned_member_id, assigned_to, kind, metadata")
           .eq("tenant_id", FERACON_TENANT_ID)
           .eq("kind", "lead")
           
@@ -167,6 +171,14 @@ export default function LeadsHojePage() {
         assigned_member_id: l.assigned_member_id ?? null,
         assigned_to: l.assigned_to ?? null,
         origin: "lead",
+        sheet_source_label: (() => {
+          const md = (l as { metadata?: unknown }).metadata;
+          if (md && typeof md === "object" && "sheet_source_label" in md) {
+            const v = (md as Record<string, unknown>).sheet_source_label;
+            return typeof v === "string" ? v : null;
+          }
+          return null;
+        })(),
       }));
 
       const niltonLeads: LeadRow[] = (niltonRes.data ?? []).map((n) => ({
@@ -181,6 +193,7 @@ export default function LeadsHojePage() {
         assigned_member_id: null,
         assigned_to: n.assigned_to ?? null,
         origin: "nilton",
+        sheet_source_label: "Leads Nilton",
       }));
 
       setLeads([...baseLeads, ...niltonLeads]);
@@ -385,6 +398,20 @@ export default function LeadsHojePage() {
                         <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-600">
                           {l.origin === "nilton" ? "Planilha" : (l.source || "direto")}
                         </span>
+                        {canSeeSource && l.sheet_source_label && (
+                          <span
+                            className={cn(
+                              "rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                              l.sheet_source_label === "Leads 02"
+                                ? "bg-violet-100 text-violet-700"
+                                : l.sheet_source_label === "Leads Nilton"
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-blue-100 text-blue-700",
+                            )}
+                          >
+                            {l.sheet_source_label}
+                          </span>
+                        )}
                       </div>
                       <div className="mt-0.5 text-xs text-muted-foreground">
                         {fmtHora(l.assigned_at ?? l.created_at)} • {stageLabels[(l.stage ?? "novo") as keyof typeof stageLabels] ?? l.stage ?? "—"}
