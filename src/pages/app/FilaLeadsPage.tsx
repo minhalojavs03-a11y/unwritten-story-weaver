@@ -128,6 +128,8 @@ export default function FilaLeadsPage() {
   const [transferMessage, setTransferMessage] = useState("");
   const [transferBusy, setTransferBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<"disponiveis" | "meus">("meus");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "Leads 01" | "Leads 02">("all");
+  const canSeeSourceFilter = isSuperadmin || isOwner;
 
   useEffect(() => {
     if (activeTab !== "meus") setActiveTab("meus");
@@ -241,8 +243,18 @@ export default function FilaLeadsPage() {
   })();
   const myLeads = mergedLeads.filter(isLeadMine);
   const availableLeads: Lead[] = [];
-  const sourceLeads = myLeads;
+  const sourceLabelOf = (l: Lead): string => {
+    const lbl = l.metadata?.sheet_source_label;
+    if (lbl && typeof lbl === "string") return lbl;
+    return "Leads 01";
+  };
+  const sourceLeadsAll = myLeads;
+  const sourceLeads = canSeeSourceFilter && sourceFilter !== "all"
+    ? sourceLeadsAll.filter((l) => sourceLabelOf(l) === sourceFilter)
+    : sourceLeadsAll;
   const filteredLeads = sourceLeads.filter(searchMatch);
+  const countLeads01 = sourceLeadsAll.filter((l) => sourceLabelOf(l) === "Leads 01").length;
+  const countLeads02 = sourceLeadsAll.filter((l) => sourceLabelOf(l) === "Leads 02").length;
 
 
 
@@ -613,6 +625,31 @@ export default function FilaLeadsPage() {
       <div className="space-y-4 p-4 pb-24 md:p-8 md:pb-8">
         {/* Aba única: apenas leads atribuídos ao consultor ativo */}
 
+        {canSeeSourceFilter && !loading && sourceLeadsAll.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Origem:</span>
+            {([
+              { key: "all", label: `Todos (${sourceLeadsAll.length})` },
+              { key: "Leads 01", label: `Leads 01 (${countLeads01})` },
+              { key: "Leads 02", label: `Leads 02 (${countLeads02})` },
+            ] as const).map((opt) => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => setSourceFilter(opt.key as any)}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                  sourceFilter === opt.key
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border/60 bg-card text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+
         {!loading && (sourceLeads.length > 0 || search) && (
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -679,6 +716,18 @@ export default function FilaLeadsPage() {
                       <span className="inline-flex items-center rounded-full border border-success/20 bg-success/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-success">
                         {platformLabel(lead)}
                       </span>
+                      {canSeeSourceFilter && (
+                        <span
+                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] ${
+                            sourceLabelOf(lead) === "Leads 02"
+                              ? "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300"
+                              : "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+                          }`}
+                          title="Origem da planilha de leads"
+                        >
+                          {sourceLabelOf(lead)}
+                        </span>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground md:text-sm">
                       {lead.phone && (() => {
