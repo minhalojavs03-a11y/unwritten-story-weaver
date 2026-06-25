@@ -412,18 +412,24 @@ Deno.serve(async (req) => {
       return json({ ok: true, skipped: "no consultants in tier" });
     }
 
-    // ===== Distribuição equilibrada por volume DIÁRIO =====
-    // Dentro da faixa de preço que o consultor cobre, prioriza quem recebeu
-    // MENOS leads HOJE — assim quem cobre faixas amplas (ex: até 2M) também
-    // recebe leads de faixas menores quando está atrás no volume do dia.
-    // Prioridade:
-    //  (1) menor número de leads recebidos HOJE (janela SP);
-    //  (2) entre quem já recebeu hoje: quem recebeu há mais tempo HOJE primeiro;
-    //  (3) alfabético como desempate final determinístico.
+    // ===== Distribuição PROPORCIONAL à cota diária (daily_lead_limit) =====
+    // O dono define manualmente quantos leads/dia cada consultor deve receber.
+    // O sistema escolhe quem está mais ATRASADO em relação à sua cota — isto é,
+    // menor (recebidos_hoje / cota). Quem tem cota maior recebe proporcionalmente
+    // mais leads ao longo do dia, sem prioridade automática a ninguém específico.
+    // Consultor sem cota definida (null) é tratado como cota = 1 (recebe apenas
+    // até bater 1 lead/dia e depois fica por último). Quem já bateu a cota foi
+    // filtrado acima.
     const ranked = [...consultants].sort((a, b) => {
       const ca = todayCountByMember.get(a.id) ?? 0;
       const cb = todayCountByMember.get(b.id) ?? 0;
-      if (ca !== cb) return ca - cb;
+      const la = (a.daily_lead_limit as number | null) ?? 1;
+      const lb = (b.daily_lead_limit as number | null) ?? 1;
+      const ra = ca / Math.max(la, 1);
+      const rb = cb / Math.max(lb, 1);
+      if (ra !== rb) return ra - rb;
+      // Mesma proporção: quem tem cota maior leva (preserva o peso definido).
+      if (la !== lb) return lb - la;
       const ta = lastTodayByMember.get(a.id);
       const tb = lastTodayByMember.get(b.id);
       if (ta == null && tb == null) return (a.display_name || "").localeCompare(b.display_name || "");
