@@ -154,8 +154,8 @@ async function sendWelcome(tenantId: string, lead: any) {
       ? `Vi aqui que você tem interesse em *${lead.interest}* — me confirma se está correto? `
       : "";
     const text =
-      `Olá, ${firstName}! 👋 Aqui é o atendimento da *${company} Consórcios*. ` +
-      `Recebemos seu contato e queremos te ajudar a realizar esse sonho. 🏡🚗\n\n` +
+      `Olá, ${firstName}! 👋 Aqui é o atendimento da *Embracon*. ` +
+      `Você entrou em contato conosco e queremos te ajudar a realizar o seu sonho🏡🚗\n\n` +
       interestLine +
       `Posso te enviar agora as opções de carta e parcela que mais se encaixam no seu perfil?`;
 
