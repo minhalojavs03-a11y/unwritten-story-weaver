@@ -106,6 +106,20 @@ Deno.serve(async (req: Request) => {
 
     const systemPrompt = await buildSystemPrompt(admin, tenantId, tenant?.name, aiCfg);
     const leadName = conv.lead?.name ?? "cliente";
+    const firstName = String(leadName).trim().split(/\s+/)[0] || "tudo bem";
+    const interest = conv.lead?.interest ? String(conv.lead.interest).trim() : "";
+
+    if (!history.length) {
+      const interestLine = interest
+        ? `Vi aqui que você tem interesse em *${interest}* — me confirma se está correto? `
+        : "";
+      const fallbackWelcome =
+        `Olá, ${firstName}! 👋 Aqui é o atendimento da *Embracon*. ` +
+        `Você entrou em contato conosco e queremos te ajudar a realizar o seu sonho🏡🚗\n\n` +
+        interestLine +
+        `Posso te enviar agora as opções de carta e parcela que mais se encaixam no seu perfil?`;
+      return json({ suggested_reply: fallbackWelcome });
+    }
 
     const chatMessages = [
       { role: "system", content: `${systemPrompt}\n\nCliente: ${leadName}` },
@@ -115,9 +129,7 @@ Deno.serve(async (req: Request) => {
       })).filter((m) => m.content),
       {
         role: "user",
-        content: history.length
-          ? "[Gere agora APENAS o texto da próxima mensagem que o vendedor deve enviar ao cliente, seguindo as regras.]"
-          : `[Não há histórico de mensagens. Gere APENAS uma primeira mensagem curta de abordagem para ${leadName}, sem afirmar atendimento anterior e sem inventar ofertas.]`,
+        content: "[Gere agora APENAS o texto da próxima mensagem que o vendedor deve enviar ao cliente, seguindo as regras.]",
       },
     ];
 
