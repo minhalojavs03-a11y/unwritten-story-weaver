@@ -1593,17 +1593,40 @@ Deno.serve(async (req: Request) => {
         if (!instance?.server_url || !instance.instance_token) {
           return json({ error: "Instância sem credenciais" }, 400);
         }
-        const r = await fetch(`${instance.server_url}/instance/connect`, {
+        let r = await fetch(`${instance.server_url}/instance/connect`, {
           method: "POST",
           headers: { "Content-Type": "application/json", token: instance.instance_token },
         });
         let { text: txt, data: d } = await parseProviderResponse(r);
         if (isAuthProviderError(r, d, txt)) {
-          console.error("provider rejected instance token on /instance/connect", txt);
-          return json({
-            error: "Token da instância foi recusado pelo provedor. Reintegre a instância informando o Token correto do painel UAZAPI.",
-            details: d,
-          }, 400);
+          console.warn("token rejected on /instance/connect — reprovisioning instance at provider", txt);
+          const reprov = await ensureProviderInstance(
+            admin,
+            tenantId,
+            tenant,
+            instance,
+            webhookUrl,
+            instance.instance_name || "Principal",
+            {
+              seller_user_id: instance.seller_user_id ?? undefined,
+              seller_name: instance.seller_name ?? undefined,
+              seller_phone: instance.seller_phone ?? undefined,
+            },
+          );
+          if (!reprov.ok) return json(reprov.body, reprov.status);
+          instance = reprov.instance;
+          r = await fetch(`${instance.server_url}/instance/connect`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", token: instance.instance_token },
+          });
+          ({ text: txt, data: d } = await parseProviderResponse(r));
+          if (isAuthProviderError(r, d, txt)) {
+            console.error("provider still rejects token after reprovision", txt);
+            return json({
+              error: "Não foi possível obter um novo QR no provedor. Tente remover o número e criar novamente.",
+              details: d,
+            }, 400);
+          }
         }
         console.log("qrcode response shape:", JSON.stringify(d).slice(0, 500));
         const qrcode = extractQrCode(d);
