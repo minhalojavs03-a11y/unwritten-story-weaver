@@ -88,6 +88,21 @@ Deno.serve(async (req: Request) => {
     }
     if (!["hot", "warm", "cold"].includes(parsed.temperature)) parsed.temperature = "warm";
 
+    // Se o chamador informou nome e interesse do lead, força o modelo de saudação exato.
+    const leadName = name && typeof name === "string" ? String(name).trim() : "";
+    const leadInterest = interest && typeof interest === "string" ? String(interest).trim() : "";
+    if (leadName) {
+      const firstName = leadName.split(/\s+/)[0] || "tudo bem";
+      const interestLine = leadInterest
+        ? `Vi aqui que você tem interesse em *${leadInterest}* — me confirma se está correto? `
+        : "";
+      parsed.suggested_reply =
+        `Olá, ${firstName}! 👋 Aqui é o atendimento da *Embracon*. ` +
+        `Você entrou em contato conosco e queremos te ajudar a realizar o seu sonho🏡🚗\n\n` +
+        interestLine +
+        `Posso te enviar agora as opções de carta e parcela que mais se encaixam no seu perfil?`;
+    }
+
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
     });
