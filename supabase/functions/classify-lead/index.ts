@@ -55,7 +55,7 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         model,
         messages: [
-          { role: "system", content: system_prompt || SYSTEM_PROMPT },
+          { role: "system", content: finalSystemPrompt },
           { role: "user", content: message },
         ],
         response_format: { type: "json_object" },
