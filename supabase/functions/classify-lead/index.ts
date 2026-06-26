@@ -32,7 +32,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { message, system_prompt } = await req.json();
+    const { message, system_prompt, name, interest } = await req.json();
     if (!message || typeof message !== "string") {
       return new Response(JSON.stringify({ error: "message é obrigatório" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -46,6 +46,8 @@ Deno.serve(async (req: Request) => {
       ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
       : "https://ai.gateway.lovable.dev/v1/chat/completions";
     const model = GEMINI_API_KEY ? "gemini-2.5-flash" : "google/gemini-2.5-flash";
+
+    const finalSystemPrompt = system_prompt || SYSTEM_PROMPT;
 
     const r = await fetch(url, {
       method: "POST",
