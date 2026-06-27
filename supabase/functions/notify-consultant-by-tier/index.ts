@@ -353,21 +353,26 @@ Deno.serve(async (req) => {
     const isLeads02 = sheetSourceLabel === "Leads 02";
     const sourceColumn = isLeads02 ? "receives_leads_02" : "receives_leads";
 
-    // Busca todos os consultores que cobrem a faixa do lead E recebem essa origem.
-    // Regra: (min IS NULL OR creditValue >= min) AND (max IS NULL OR creditValue <= max).
+    // Busca todos os consultores ativos que recebem essa origem (filtro de faixa em JS,
+    // pois encadear dois .or() no supabase-js sobrescreve o primeiro filtro).
     const { data: consultantsRaw } = await admin
       .from("tenant_members")
       .select("id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit, email, notify_inapp, notify_whatsapp")
       .eq("tenant_id", lead.tenant_id)
       .eq("is_active", true)
       .eq(sourceColumn, true)
-      .not("phone", "is", null)
-      .or(`min_credit_value.is.null,min_credit_value.lte.${creditValue}`)
-      .or(`max_credit_value.is.null,max_credit_value.gte.${creditValue}`);
+      .not("phone", "is", null);
+
+    // Filtra por faixa de crédito (min/max) — null = sem limite no lado correspondente.
+    const inTier = (consultantsRaw || []).filter((c: any) => {
+      const minOk = c.min_credit_value == null || Number(c.min_credit_value) <= creditValue;
+      const maxOk = c.max_credit_value == null || Number(c.max_credit_value) >= creditValue;
+      return minOk && maxOk;
+    });
 
     // Somente Consultores recebem leads. Exclui Vendedor, Supervisor, Dono,
     // Menor Aprendiz e contas com "teste" no nome.
-    const baseConsultants = (consultantsRaw || []).filter((c: any) => {
+    const baseConsultants = inTier.filter((c: any) => {
       const role = String(c.role_label || "").toLowerCase();
       const name = String(c.display_name || "").toLowerCase();
       if (!role.includes("consultor")) return false;
@@ -375,6 +380,9 @@ Deno.serve(async (req) => {
       if (name.includes("teste")) return false;
       return true;
     });
+    
+
+
 
     // Aplica limite diário: descarta consultores que já bateram o teto de hoje.
     // "Hoje" = dia corrente no fuso America/Sao_Paulo (00:00 SP), não UTC.
