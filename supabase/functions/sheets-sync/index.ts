@@ -407,10 +407,13 @@ async function syncConfig(cfg: any, opts: { skipWelcome?: boolean } = {}) {
       }),
     });
 
-    // Welcome via WhatsApp do tenant alvo (a IA de pré-atendimento conduz a conversa)
-    if (isNewLead && !opts.skipWelcome) {
-      await sendWelcome(targetTenant, { ...lead, name, phone, interest });
-    }
+    // NÃO enviar welcome aqui: nesse momento `lead.assigned_to` ainda é o
+    // OWNER do tenant (Ediane) — o round-robin só roda depois, via trigger
+    // `trg_notify_consultant_by_tier` → edge function `notify-consultant-by-tier`.
+    // Enviar agora faria a saudação sair pelo número da empresa (804) em vez
+    // da instância do consultor responsável. O welcome é disparado pela
+    // própria `notify-consultant-by-tier` após atribuir o consultor.
+    void isNewLead; void opts; void sendWelcome;
 
     distCursor++;
 
