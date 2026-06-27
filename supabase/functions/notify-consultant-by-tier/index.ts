@@ -411,11 +411,17 @@ Deno.serve(async (req) => {
         if (t > prev) lastTodayByMember.set(mid, t);
       }
     }
-    const consultants = baseConsultants.filter((c: any) => {
-      const lim = c.daily_lead_limit as number | null;
-      if (lim == null) return true;
-      return (todayCountByMember.get(c.id) ?? 0) < lim;
-    });
+    // Leads 01: NUNCA bloquear por cota diária — sempre escolher alguém disponível,
+    // mesmo que exceda um pouco. O ranking proporcional abaixo continua respeitando
+    // a cota como peso (quem está mais atrasado em relação à cota recebe primeiro).
+    // Leads 02: mantém o corte rígido pela cota diária.
+    const consultants = isLeads02
+      ? baseConsultants.filter((c: any) => {
+          const lim = c.daily_lead_limit as number | null;
+          if (lim == null) return true;
+          return (todayCountByMember.get(c.id) ?? 0) < lim;
+        })
+      : baseConsultants;
 
     if (!consultants || consultants.length === 0) {
       return json({ ok: true, skipped: "no consultants in tier" });
