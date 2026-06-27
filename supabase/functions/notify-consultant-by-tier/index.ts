@@ -549,6 +549,15 @@ Deno.serve(async (req) => {
       status: waStatus, error_message: waError,
     });
 
+    // Dispara a saudação da Embracon AGORA que o consultor já foi atribuído —
+    // `send-lead-welcome` usa `pickConsultantInstance` e envia pela instância
+    // do próprio consultor (cai no 804 só se ele estiver offline).
+    try {
+      await admin.functions.invoke("send-lead-welcome", { body: { lead_id: lead.id } });
+    } catch (e) {
+      console.error("send-lead-welcome invoke failed", e);
+    }
+
     return json({
       ok: true,
       credit_value: creditValue,
