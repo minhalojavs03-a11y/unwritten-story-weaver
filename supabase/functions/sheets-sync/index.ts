@@ -342,7 +342,10 @@ async function syncConfig(cfg: any, opts: { skipWelcome?: boolean } = {}) {
 
     // Escolhe tenant alvo via round-robin
     const targetTenant = distTenants[distCursor % distTenants.length];
-    const assignedTo = tenantOwners.get(targetTenant) || null;
+    // IMPORTANTE: não usar owner como fallback de assigned_to.
+    // O lead deve ficar sem dono até o notify-consultant-by-tier escolher um consultor real.
+    // Caso contrário, falhas silenciosas do trigger fazem o lead aparecer como do dono (ex: Ediane).
+    const assignedTo = null;
 
     // Merge por telefone dentro do tenant alvo
     let lead: any = null;
