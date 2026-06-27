@@ -102,6 +102,7 @@ export function AppLayout() {
   const navItems: NavItem[] = useMemo(() => {
     const home: NavItem = { to: "/crm", label: "Início", icon: Home };
     const fila: NavItem = { to: "/leads/fila", label: "Fila de leads", icon: Inbox };
+    const filaSuperadmin: NavItem = { to: "/leads/fila", label: "Fila de Leads 2", icon: Inbox };
     const nilton: NavItem = { to: "/nilton", label: "Leads Nilton RS", icon: Target };
     const conversas: NavItem = { to: "/conversas", label: "Conversas", icon: MessageCircle };
     const pipeline: NavItem = { to: "/pipeline", label: "Pipeline", icon: Kanban };
@@ -119,7 +120,10 @@ export function AppLayout() {
     if (impersonating && !isOwner && !isSupervisor) {
       return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, config];
     }
-    if (isOwner || isSuperadmin) {
+    if (isSuperadmin) {
+      return [home, filaSuperadmin, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
+    }
+    if (isOwner) {
       return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
     }
     if (isSupervisor) {
