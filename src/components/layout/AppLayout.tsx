@@ -356,7 +356,7 @@ export function AppLayout() {
         <div aria-hidden className={cn("h-4 bg-[#d11e26]", isConversasMobile ? "hidden" : "md:hidden")} />
         <header className={cn(
           "client-header sticky top-0 z-40 flex h-14 w-full items-center justify-between px-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)] [backdrop-filter:none] md:h-12 md:justify-between md:border-0 md:!bg-transparent md:px-4 md:shadow-none",
-          "mx-3 -mt-3 rounded-t-[28px] border border-black/5 bg-white md:mx-0 md:mt-0 md:rounded-none md:border-b md:border-black/5 md:!bg-white",
+          "mx-3 -mt-3 rounded-t-[28px] border border-black/5 !bg-white md:mx-0 md:mt-0 md:rounded-none md:border-b md:border-black/5 md:!bg-white",
           isConversasMobile && "hidden md:flex",
         )}>
 
