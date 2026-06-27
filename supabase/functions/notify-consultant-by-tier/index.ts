@@ -418,6 +418,9 @@ Deno.serve(async (req) => {
     });
 
     if (!consultants || consultants.length === 0) {
+      return json({ ok: true, skipped: "no consultants in tier", debug: { creditValue, sheetSourceLabel, sourceColumn, rawCount: consultantsRaw?.length || 0, inTierCount: inTier.length, baseCount: baseConsultants.length, todayCount: Object.fromEntries(todayCountByMember), raw: (consultantsRaw||[]).map((c:any)=>({n:c.display_name,r:c.role_label,min:c.min_credit_value,max:c.max_credit_value,phone:c.phone,lim:c.daily_lead_limit})) } });
+    }
+    if (false) {
       return json({ ok: true, skipped: "no consultants in tier" });
     }
 
