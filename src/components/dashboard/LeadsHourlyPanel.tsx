@@ -33,31 +33,31 @@ export function LeadsHourlyPanel({ days = 30, tenantId, memberId }: { days?: Per
       .map((l) => (l.created_at ? new Date(l.created_at) : null))
       .filter((d): d is Date => !!d && d.getTime() >= since);
 
-    // Detecta "dia de bulk import": agrupa por data e exclui qualquer dia
-    // cujo total seja >= 3x a mediana dos demais dias (típico de importação inicial da planilha).
+    // Detecta "dias de bulk import": exclui qualquer dia cujo total seja
+    // muito superior à mediana dos demais (picos de importação). Itera para
+    // pegar mais de um dia anômalo quando houver importações múltiplas.
     const byDateKey: Record<string, number> = {};
     for (const d of inWindow) {
       const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
       byDateKey[key] = (byDateKey[key] ?? 0) + 1;
     }
-    const dayCounts = Object.entries(byDateKey).sort((a, b) => b[1] - a[1]);
+    const excludedKeys = new Set<string>();
     let excludedDay: string | null = null;
     let excludedCount = 0;
-    if (dayCounts.length >= 2) {
-      const others = dayCounts.slice(1).map(([, c]) => c).sort((a, b) => a - b);
+    while (true) {
+      const remaining = Object.entries(byDateKey).filter(([k]) => !excludedKeys.has(k));
+      if (remaining.length < 2) break;
+      remaining.sort((a, b) => b[1] - a[1]);
+      const others = remaining.slice(1).map(([, c]) => c).sort((a, b) => a - b);
       const median = others[Math.floor(others.length / 2)] || 1;
-      const [topKey, topCount] = dayCounts[0];
+      const [topKey, topCount] = remaining[0];
       if (topCount >= Math.max(10, median * 3)) {
-        excludedDay = topKey;
-        excludedCount = topCount;
-      }
-    }
-
-    // Cutoff: começa a contar a partir do FIM do dia de importação em massa
-    let cutoff = 0;
-    if (excludedDay) {
-      const [y, mo, dd] = excludedDay.split("-").map(Number);
-      cutoff = new Date(y, mo, dd + 1, 0, 0, 0, 0).getTime();
+        excludedKeys.add(topKey);
+        if (!excludedDay || topCount > excludedCount) {
+          excludedDay = topKey;
+          excludedCount = topCount;
+        }
+      } else break;
     }
 
     const byHour = Array.from({ length: 24 }, (_, h) => ({ hour: h, label: `${String(h).padStart(2, "0")}h`, count: 0 }));
@@ -65,11 +65,13 @@ export function LeadsHourlyPanel({ days = 30, tenantId, memberId }: { days?: Per
     let total = leads.length; // total geral (todos os leads, sem filtro)
     let analyzed = 0;
     for (const d of inWindow) {
-      if (d.getTime() < cutoff) continue;
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      if (excludedKeys.has(key)) continue;
       byHour[d.getHours()].count += 1;
       byDay[d.getDay()].count += 1;
       analyzed += 1;
     }
+
     const peakHour = byHour.reduce((a, b) => (b.count > a.count ? b : a), byHour[0]);
     const peakDay = byDay.reduce((a, b) => (b.count > a.count ? b : a), byDay[0]);
     // Top janelas de horário (3 horas com mais leads, agrupadas em faixas contíguas)
