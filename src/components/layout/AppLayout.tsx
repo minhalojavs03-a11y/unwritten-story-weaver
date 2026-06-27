@@ -355,10 +355,10 @@ export function AppLayout() {
         <TopAlertBanner />
         <div aria-hidden className={cn("h-4 bg-[#d11e26]", isConversasMobile ? "hidden" : "md:hidden")} />
         <header className={cn(
-          "client-header sticky top-0 z-40 flex h-14 w-full items-center justify-between border-b border-black/5 !bg-white px-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)] [backdrop-filter:none] md:h-12 md:justify-between md:border-0 md:!bg-transparent md:px-4 md:shadow-none",
+          "client-header sticky top-0 z-40 flex h-14 w-full items-center justify-between px-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)] [backdrop-filter:none] md:h-12 md:justify-between md:border-0 md:!bg-transparent md:px-4 md:shadow-none",
+          "mx-3 -mt-3 rounded-t-[28px] border border-black/5 bg-white md:mx-0 md:mt-0 md:rounded-none md:border-b md:border-black/5 md:!bg-white",
           isConversasMobile && "hidden md:flex",
         )}>
-
 
           <div className="hidden md:flex min-w-0 flex-1 items-center gap-2 pr-4">
             <HeaderSearch />
@@ -400,6 +400,7 @@ export function AppLayout() {
             <img src={logoFeraconDark} alt="Consórcio Feracon" className="h-9 w-auto cursor-pointer object-contain" onClick={() => navigate("/crm")} />
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
+            <MobileSearchTrigger navigate={navigate} />
             <WhatsAppStatusPill />
             <NotificationsBell />
             <DropdownMenu>
@@ -753,6 +754,49 @@ function ConversasNavWithSubmenu({
         </div>
       )}
     </div>
+  );
+}
+
+function MobileSearchTrigger({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <button
+          type="button"
+          aria-label="Pesquisar"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
+        >
+          <Search className="h-5 w-5" />
+        </button>
+      </SheetTrigger>
+      <SheetContent side="top" className="flex h-auto flex-col gap-3 px-4 pb-6 pt-4">
+        <SheetHeader className="sr-only">
+          <SheetTitle>Buscar</SheetTitle>
+        </SheetHeader>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const term = q.trim();
+            if (!term) return;
+            setOpen(false);
+            navigate(`/leads?q=${encodeURIComponent(term)}`);
+          }}
+          className="relative flex items-center"
+        >
+          <Search className="pointer-events-none absolute left-3 h-4 w-4 text-muted-foreground" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            type="search"
+            placeholder="Buscar leads, conversas, contatos…"
+            autoFocus
+            className="h-11 w-full rounded-full border border-border/60 bg-muted/40 pl-10 pr-4 text-base outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary/40 focus:bg-background"
+          />
+        </form>
+      </SheetContent>
+    </Sheet>
   );
 }
 
