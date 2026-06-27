@@ -1401,9 +1401,12 @@ Deno.serve(async (req: Request) => {
         .eq("id", lead.assigned_member_id)
         .maybeSingle();
       const memberName = String(assignedMember?.display_name ?? "").toLowerCase();
-      if (memberName.includes("micaelly") || memberName.includes("micaely")) {
-        console.log("AI skipped: lead atribuído à Micaelly (welcome-only)");
-        return ok({ ai_skipped: "micaelly_welcome_only" });
+      if (
+        memberName.includes("micaelly") || memberName.includes("micaely") ||
+        memberName.includes("diessica") || memberName.includes("diéssica")
+      ) {
+        console.log("AI skipped: lead atribuído a consultora welcome-only", memberName);
+        return ok({ ai_skipped: "welcome_only", member: memberName });
       }
     }
 
