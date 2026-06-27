@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Home, MessageCircle, Kanban, Calendar, Users, Settings, LogOut, Shield, Smartphone, Menu, Inbox, User as UserIcon, Users2, ChevronLeft, ChevronRight, Trophy, BarChart3, Target, Repeat, Share2, ChevronDown, type LucideIcon } from "lucide-react";
+import { Home, MessageCircle, Kanban, Calendar, Users, Settings, LogOut, Shield, Smartphone, Menu, Inbox, User as UserIcon, Users2, ChevronLeft, ChevronRight, Trophy, BarChart3, Target, Repeat, Share2, ChevronDown, Search, Plus, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -360,7 +360,10 @@ export function AppLayout() {
         )}>
 
 
-          <div className="hidden md:flex min-w-0 flex-1 items-center" />
+          <div className="hidden md:flex min-w-0 flex-1 items-center gap-2 pr-4">
+            <HeaderSearch />
+            <HeaderQuickActions navigate={navigate} />
+          </div>
 
           <div className="flex items-center gap-2 md:hidden">
             <Sheet>
