@@ -757,6 +757,49 @@ function ConversasNavWithSubmenu({
   );
 }
 
+function MobileSearchTrigger({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <button
+          type="button"
+          aria-label="Pesquisar"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
+        >
+          <Search className="h-5 w-5" />
+        </button>
+      </SheetTrigger>
+      <SheetContent side="top" className="flex h-auto flex-col gap-3 px-4 pb-6 pt-4">
+        <SheetHeader className="sr-only">
+          <SheetTitle>Buscar</SheetTitle>
+        </SheetHeader>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const term = q.trim();
+            if (!term) return;
+            setOpen(false);
+            navigate(`/leads?q=${encodeURIComponent(term)}`);
+          }}
+          className="relative flex items-center"
+        >
+          <Search className="pointer-events-none absolute left-3 h-4 w-4 text-muted-foreground" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            type="search"
+            placeholder="Buscar leads, conversas, contatos…"
+            autoFocus
+            className="h-11 w-full rounded-full border border-border/60 bg-muted/40 pl-10 pr-4 text-base outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary/40 focus:bg-background"
+          />
+        </form>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 function HeaderSearch() {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
