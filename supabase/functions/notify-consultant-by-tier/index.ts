@@ -379,7 +379,7 @@ Deno.serve(async (req) => {
       if (role.includes("supervisor") || role.includes("aprendiz") || role.includes("dono")) return false;
       if (name.includes("teste")) return false;
       return true;
-    });
+    console.log("[notify-tier]", { lead_id, creditValue, sheetSourceLabel, sourceColumn, rawCount: consultantsRaw?.length, inTierCount: inTier.length, baseCount: baseConsultants.length });
 
     // Aplica limite diário: descarta consultores que já bateram o teto de hoje.
     // "Hoje" = dia corrente no fuso America/Sao_Paulo (00:00 SP), não UTC.
