@@ -380,7 +380,7 @@ Deno.serve(async (req) => {
       if (name.includes("teste")) return false;
       return true;
     });
-    console.log("[notify-tier]", { lead_id, creditValue, sheetSourceLabel, sourceColumn, rawCount: consultantsRaw?.length, inTierCount: inTier.length, baseCount: baseConsultants.length, raw: (consultantsRaw||[]).map((c:any)=>({n:c.display_name,r:c.role_label,min:c.min_credit_value,max:c.max_credit_value,p:!!c.phone})) });
+    
 
 
 
