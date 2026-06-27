@@ -400,6 +400,7 @@ export function AppLayout() {
             <img src={logoFeraconDark} alt="Consórcio Feracon" className="h-9 w-auto cursor-pointer object-contain" onClick={() => navigate("/crm")} />
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
+            <MobileSearchTrigger navigate={navigate} />
             <WhatsAppStatusPill />
             <NotificationsBell />
             <DropdownMenu>
