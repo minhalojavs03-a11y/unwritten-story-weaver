@@ -367,7 +367,7 @@ export function AppLayout() {
 
           <div className="flex items-center gap-2 md:hidden">
             <Sheet>
-              <SheetTrigger aria-label="Abrir menu" className="-ml-1 rounded-lg p-2 text-muted-foreground hover:bg-muted">
+              <SheetTrigger aria-label="Abrir menu" className="rounded-lg p-2 text-muted-foreground hover:bg-muted">
                 <Menu className="h-5 w-5" />
               </SheetTrigger>
               <SheetContent side="left" className="client-sidebar flex w-72 flex-col border-white/5 p-0 text-[hsl(210_40%_96%)]">
@@ -399,7 +399,7 @@ export function AppLayout() {
             </Sheet>
             <img src={logoFeraconDark} alt="Consórcio Feracon" className="h-9 w-auto cursor-pointer object-contain" onClick={() => navigate("/crm")} />
           </div>
-          <div className="flex shrink-0 items-center gap-1.5 -mr-1 md:mr-0">
+          <div className="flex shrink-0 items-center gap-1.5 md:mr-0">
             <MobileSearchTrigger navigate={navigate} />
             <WhatsAppStatusPill />
             <NotificationsBell />
