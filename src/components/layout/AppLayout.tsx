@@ -755,3 +755,70 @@ function ConversasNavWithSubmenu({
     </div>
   );
 }
+
+function HeaderSearch() {
+  const navigate = useNavigate();
+  const [q, setQ] = useState("");
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const term = q.trim();
+        if (!term) return;
+        navigate(`/leads?q=${encodeURIComponent(term)}`);
+      }}
+      className="relative flex max-w-xl flex-1 items-center"
+    >
+      <Search className="pointer-events-none absolute left-3 h-4 w-4 text-muted-foreground" />
+      <input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        type="search"
+        placeholder="Buscar leads, conversas, contatos…"
+        className="h-9 w-full rounded-full border border-border/60 bg-muted/40 pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary/40 focus:bg-background"
+      />
+    </form>
+  );
+}
+
+function HeaderQuickActions({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
+  const items: { to: string; label: string; icon: LucideIcon }[] = [
+    { to: "/leads/fila", label: "Fila de leads", icon: Inbox },
+    { to: "/agenda", label: "Agenda", icon: Calendar },
+    { to: "/relatorios", label: "Relatórios", icon: BarChart3 },
+    { to: "/configuracoes", label: "Configurações", icon: Settings },
+  ];
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      <TooltipProvider delayDuration={150}>
+        {items.map((it) => {
+          const Icon = it.icon;
+          return (
+            <Tooltip key={it.to}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={it.label}
+                  onClick={() => navigate(it.to)}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <Icon className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{it.label}</TooltipContent>
+            </Tooltip>
+          );
+        })}
+      </TooltipProvider>
+      <button
+        type="button"
+        onClick={() => navigate("/leads?novo=1")}
+        className="ml-1 inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+      >
+        <Plus className="h-4 w-4" />
+        <span className="hidden lg:inline">Novo lead</span>
+      </button>
+    </div>
+  );
+}
+
