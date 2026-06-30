@@ -222,12 +222,17 @@ export default function DashboardPage() {
         <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
 
         <ConsorcioFunnel
-          funnel={execData.funnel}
-          lost={execData.lost}
-          lostReasons={privileged ? execData.lostReasons : []}
+          funnel={funnelData.funnel}
+          lost={funnelData.lost}
+          lostReasons={privileged ? funnelData.lostReasons : []}
           compact={!privileged}
-          sales={execData.sales}
+          sales={funnelData.sales}
+          period={funnelPeriod}
+          onPeriodChange={setFunnelPeriod}
+          customRange={funnelCustom}
+          onCustomRangeChange={(r) => { setFunnelPeriod("custom"); setFunnelCustom(r); }}
         />
+
 
         <ResponseRatePanel memberId={effectiveMemberId} compact />
 
