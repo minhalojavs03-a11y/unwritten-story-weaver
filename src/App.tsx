@@ -147,6 +147,7 @@ const App = () => (
               <>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<ClientLoginPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />
             <Route path="/join/:token" element={<JoinPage />} />
             <Route path="/proposta-whatsapp-api-oficial" element={<ProposalWhatsappOficial />} />
