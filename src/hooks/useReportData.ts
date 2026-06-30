@@ -93,6 +93,7 @@ export function useReportData(
   memberFilter: string,
   scopeMemberId?: string | null,
   scopeTenantId?: string | null,
+  customRange?: { start: Date | null; end: Date | null } | null,
 ) {
   const effectiveUser = useEffectiveUser();
   // scopeTenantId undefined = padrão; null = global (superadmin); string = tenant específico
