@@ -10,7 +10,7 @@ import type { Stage } from "@/data/mock";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
 
-export type FunnelPeriod = "today" | "yesterday" | "7d" | "month" | "custom";
+export type FunnelPeriod = "today" | "yesterday" | "7d" | "month" | "all" | "custom";
 export type FunnelCustomRange = { start: Date | null; end: Date | null };
 
 type FunnelStage = { key: Stage; stage: string; count: number };
@@ -65,7 +65,9 @@ const PERIOD_CHIPS: { key: FunnelPeriod; label: string }[] = [
   { key: "yesterday", label: "Ontem" },
   { key: "7d", label: "Semana" },
   { key: "month", label: "Mês" },
+  { key: "all", label: "Tudo" },
   { key: "custom", label: "Personalizado" },
+
 ];
 
 const fmtRange = (r?: FunnelCustomRange) => {
