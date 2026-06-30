@@ -1,12 +1,17 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SectionTitle } from "@/components/dashboard/ExecutiveWidgets";
-import { TrendingDown, AlertCircle, DollarSign, ExternalLink } from "lucide-react";
+import { TrendingDown, AlertCircle, DollarSign, ExternalLink, CalendarRange } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Stage } from "@/data/mock";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
+
+export type FunnelPeriod = "today" | "yesterday" | "7d" | "month" | "custom";
+export type FunnelCustomRange = { start: Date | null; end: Date | null };
 
 type FunnelStage = { key: Stage; stage: string; count: number };
 type LostReason = { reason: string; count: number; pct: number };
