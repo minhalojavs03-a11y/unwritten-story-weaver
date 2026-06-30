@@ -399,7 +399,7 @@ export function useReportData(
       weekly: weeklySorted, responseHeatmap, pipelineIntel, healthScore, healthDims, insights,
       sales,
     };
-  }, [allLeads, members, salesProfiles, period, memberFilter, scopeMemberId, effectiveUser.isImpersonating, effectiveUser.memberId, effectiveUser.id]);
+  }, [allLeads, members, salesProfiles, period, memberFilter, scopeMemberId, effectiveUser.isImpersonating, effectiveUser.memberId, effectiveUser.id, customRange?.start?.getTime(), customRange?.end?.getTime()]);
 }
 
 export type ReportData = ReturnType<typeof useReportData>;
