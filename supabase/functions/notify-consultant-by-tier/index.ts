@@ -337,10 +337,9 @@ Deno.serve(async (req) => {
     const skipWhatsappForImported = false;
 
 
-    const creditValue: number | null = _creditValue;
-    if (creditValue == null) {
-      return json({ ok: true, skipped: "no credit_value" });
-    }
+    // Se não conseguimos identificar a faixa do crédito, NÃO travar o lead.
+    // Tratamos como faixa mínima (0) para que qualquer consultor habilitado pegue.
+    const creditValue: number = _creditValue ?? 0;
 
 
 
