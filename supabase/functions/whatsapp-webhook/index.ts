@@ -1388,27 +1388,13 @@ Deno.serve(async (req: Request) => {
       return ok({ silenced: true });
     }
 
-    // === REGRA POR CONSULTOR ===
-    // Para a Micaelly o pré-atendimento da IA fica restrito à mensagem de
-    // boas-vindas (já enviada pela função `send-lead-welcome`, que apresenta
-    // a consultora). Nenhuma outra resposta da IA sai no WhatsApp dela.
-    // Para os demais consultores, a IA segue o fluxo normal até o consultor
-    // assumir enviando a primeira mensagem (humanTyped check abaixo).
-    if (lead?.assigned_member_id) {
-      const { data: assignedMember } = await admin
-        .from("tenant_members")
-        .select("display_name")
-        .eq("id", lead.assigned_member_id)
-        .maybeSingle();
-      const memberName = String(assignedMember?.display_name ?? "").toLowerCase();
-      if (
-        memberName.includes("micaelly") || memberName.includes("micaely") ||
-        memberName.includes("diessica") || memberName.includes("diéssica")
-      ) {
-        console.log("AI skipped: lead atribuído a consultora welcome-only", memberName);
-        return ok({ ai_skipped: "welcome_only", member: memberName });
-      }
-    }
+    // === REGRA GLOBAL ===
+    // Pré-atendimento da IA fica restrito à mensagem de boas-vindas (já
+    // enviada por `send-lead-welcome`). Nenhuma resposta automática adicional
+    // é enviada — o consultor assume o restante da conversa manualmente.
+    console.log("AI skipped: welcome_only global (consultor assume o atendimento)");
+    return ok({ ai_skipped: "welcome_only_global" });
+
 
 
 
