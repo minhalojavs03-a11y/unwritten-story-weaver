@@ -53,10 +53,41 @@ interface Props {
   compact?: boolean;
   /** Lista de vendas para detalhar ao clicar na faixa verde */
   sales?: SaleEntry[];
+  /** Seletor de período opcional. Se fornecido, exibe os chips acima do funil. */
+  period?: FunnelPeriod;
+  onPeriodChange?: (p: FunnelPeriod) => void;
+  customRange?: FunnelCustomRange;
+  onCustomRangeChange?: (r: FunnelCustomRange) => void;
 }
 
-export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = false, sales }: Props) {
+const PERIOD_CHIPS: { key: FunnelPeriod; label: string }[] = [
+  { key: "today", label: "Hoje" },
+  { key: "yesterday", label: "Ontem" },
+  { key: "7d", label: "Semana" },
+  { key: "month", label: "Mês" },
+  { key: "custom", label: "Personalizado" },
+];
+
+const fmtRange = (r?: FunnelCustomRange) => {
+  if (!r?.start && !r?.end) return "Personalizado";
+  const f = (d: Date | null) => d ? d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) : "—";
+  return `${f(r.start)} → ${f(r.end)}`;
+};
+const toInput = (d: Date | null) => d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}` : "";
+const fromInput = (s: string, endOfDay = false): Date | null => {
+  if (!s) return null;
+  const [y, m, d] = s.split("-").map(Number);
+  const dt = new Date(y, (m ?? 1) - 1, d ?? 1);
+  if (endOfDay) dt.setHours(23, 59, 59, 999);
+  return dt;
+};
+
+export function ConsorcioFunnel({
+  funnel, lost, lostReasons = [], compact = false, sales,
+  period, onPeriodChange, customRange, onCustomRangeChange,
+}: Props) {
   const [salesOpen, setSalesOpen] = useState(false);
+  const [customOpen, setCustomOpen] = useState(false);
   const stages = funnel.filter((s) => s.key !== "perdido");
   const top = Math.max(1, stages[0]?.count ?? 1);
   const FUNNEL_W = 360;        // largura útil do funil
@@ -71,6 +102,8 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
   const widthFor = (count: number) =>
     Math.max(MIN_W, (count / top) * FUNNEL_W);
 
+  const showPeriodPicker = !!period && !!onPeriodChange;
+
   return (
     <Card className="p-5">
       <SectionTitle
@@ -82,6 +115,67 @@ export function ConsorcioFunnel({ funnel, lost, lostReasons = [], compact = fals
           </Badge>
         }
       />
+
+      {showPeriodPicker && (
+        <div className="-mt-1 mb-4 flex flex-wrap items-center gap-1.5">
+          {PERIOD_CHIPS.map((c) => {
+            const active = period === c.key;
+            if (c.key === "custom") {
+              return (
+                <Popover key="custom" open={customOpen} onOpenChange={setCustomOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={active ? "default" : "outline"}
+                      className="h-7 gap-1.5 rounded-full px-3 text-xs"
+                      onClick={() => { onPeriodChange?.("custom"); setCustomOpen(true); }}
+                    >
+                      <CalendarRange className="h-3.5 w-3.5" />
+                      {active ? fmtRange(customRange) : "Personalizado"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 space-y-3 p-3 pointer-events-auto" align="start">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">De</label>
+                      <input
+                        type="date"
+                        className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                        value={toInput(customRange?.start ?? null)}
+                        onChange={(e) => onCustomRangeChange?.({ start: fromInput(e.target.value), end: customRange?.end ?? null })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Até</label>
+                      <input
+                        type="date"
+                        className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                        value={toInput(customRange?.end ?? null)}
+                        onChange={(e) => onCustomRangeChange?.({ start: customRange?.start ?? null, end: fromInput(e.target.value, true) })}
+                      />
+                    </div>
+                    <Button size="sm" className="w-full" onClick={() => setCustomOpen(false)}>Aplicar</Button>
+                  </PopoverContent>
+                </Popover>
+              );
+            }
+            return (
+              <Button
+                key={c.key}
+                type="button"
+                size="sm"
+                variant={active ? "default" : "outline"}
+                className="h-7 rounded-full px-3 text-xs"
+                onClick={() => onPeriodChange?.(c.key)}
+              >
+                {c.label}
+              </Button>
+            );
+          })}
+        </div>
+      )}
+
+
 
       <div className={cn("grid gap-5", !compact && "lg:grid-cols-[1.4fr_1fr]")}>
         {/* COLUNA 1 — Funil visual */}
