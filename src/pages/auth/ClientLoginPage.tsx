@@ -33,6 +33,28 @@ export default function ClientLoginPage() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [resetSending, setResetSending] = useState(false);
+
+  async function handleForgotPassword() {
+    const target = email.trim().toLowerCase();
+    if (!target) {
+      toast({ title: "Informe seu e-mail", description: "Digite o e-mail no campo acima para receber o link.", variant: "destructive" });
+      return;
+    }
+    setResetSending(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(target, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast({ title: "Link enviado", description: "Verifique seu e-mail para redefinir a senha." });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Não foi possível enviar o link.";
+      toast({ title: "Ops", description: msg, variant: "destructive" });
+    } finally {
+      setResetSending(false);
+    }
+  }
 
   if (authLoading) return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Carregando…</div>;
   if (session && isSuperadmin) return <Navigate to="/admin/dashboard" replace />;
@@ -202,7 +224,19 @@ export default function ClientLoginPage() {
                   <Input id="client-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@feracon.com" required className="h-11 border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus-visible:ring-[hsl(0_84%_50%)]" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="client-password" className="text-slate-700">Senha</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="client-password" className="text-slate-700">Senha</Label>
+                    {mode === "signin" && (
+                      <button
+                        type="button"
+                        onClick={handleForgotPassword}
+                        disabled={resetSending}
+                        className="text-xs font-semibold text-[hsl(0_84%_50%)] hover:underline disabled:opacity-60"
+                      >
+                        {resetSending ? "Enviando…" : "Esqueci minha senha"}
+                      </button>
+                    )}
+                  </div>
                   <Input id="client-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required className="h-11 border-slate-200 bg-slate-50 text-slate-900 focus-visible:ring-[hsl(0_84%_50%)]" />
                 </div>
                 <Button type="submit" className="h-11 w-full bg-[hsl(0_84%_50%)] text-white shadow-md transition hover:bg-[hsl(0_84%_44%)]" disabled={loading}>

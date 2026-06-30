@@ -14,6 +14,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import ClientLoginPage from "./pages/auth/ClientLoginPage";
 import AdminLoginPage from "./pages/auth/AdminLoginPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import RootRedirect from "./pages/RootRedirect";
 import DashboardPage from "./pages/app/DashboardPage";
 import ConversasPage from "./pages/app/ConversasPage";
@@ -146,6 +147,7 @@ const App = () => (
               <>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<ClientLoginPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />
             <Route path="/join/:token" element={<JoinPage />} />
             <Route path="/proposta-whatsapp-api-oficial" element={<ProposalWhatsappOficial />} />
