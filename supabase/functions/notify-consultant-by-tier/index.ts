@@ -380,6 +380,27 @@ Deno.serve(async (req) => {
       if (name.includes("teste")) return false;
       return true;
     });
+
+    // Filtra apenas consultores com instância de WhatsApp CONECTADA agora.
+    // Sem instância conectada → não recebe lead (não cair em welcome no número 804).
+    const userIds = baseConsultants.map((c: any) => c.user_id).filter(Boolean);
+    const connectedUserIds = new Set<string>();
+    if (userIds.length > 0) {
+      const { data: insts } = await admin
+        .from("whatsapp_instances")
+        .select("seller_user_id,is_connected,status")
+        .eq("tenant_id", lead.tenant_id)
+        .in("seller_user_id", userIds)
+        .or("is_connected.eq.true,status.eq.connected");
+      for (const i of insts || []) {
+        if ((i as any).seller_user_id) connectedUserIds.add((i as any).seller_user_id);
+      }
+    }
+    const connectedConsultants = baseConsultants.filter((c: any) => c.user_id && connectedUserIds.has(c.user_id));
+    if (connectedConsultants.length === 0) {
+      return json({ ok: true, skipped: "no consultant with connected whatsapp instance" });
+    }
+
     
 
 
