@@ -357,7 +357,7 @@ Deno.serve(async (req) => {
     // pois encadear dois .or() no supabase-js sobrescreve o primeiro filtro).
     const { data: consultantsRaw } = await admin
       .from("tenant_members")
-      .select("id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit, email, notify_inapp, notify_whatsapp")
+      .select("id, user_id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit, email, notify_inapp, notify_whatsapp")
       .eq("tenant_id", lead.tenant_id)
       .eq("is_active", true)
       .eq(sourceColumn, true)
