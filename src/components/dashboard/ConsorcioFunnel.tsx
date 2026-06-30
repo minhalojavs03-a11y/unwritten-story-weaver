@@ -111,8 +111,9 @@ export function ConsorcioFunnel({
         sub="Jornada do lead até a venda da cota"
         action={
           <Badge variant="secondary" className="font-mono text-[11px]">
-            {stages.reduce((s, x) => s + x.count, 0)} leads
+            {stages.reduce((s, x) => s + x.count, 0) + (lost || 0)} leads
           </Badge>
+
         }
       />
 
