@@ -88,6 +88,13 @@ export default function DashboardPage() {
   // Executive analytics (only rendered for privileged users)
   const execData = useReportData("30d", "all", effectiveMemberId, effectiveTenantOverride);
 
+  // Período independente do funil (Hoje / Ontem / Semana / Mês / Personalizado)
+  const [funnelPeriod, setFunnelPeriod] = useState<import("@/components/dashboard/ConsorcioFunnel").FunnelPeriod>("month");
+  const [funnelCustom, setFunnelCustom] = useState<import("@/components/dashboard/ConsorcioFunnel").FunnelCustomRange>({ start: null, end: null });
+  const funnelHookPeriod = funnelPeriod === "custom" ? "all" : funnelPeriod;
+  const funnelCustomRange = funnelPeriod === "custom" ? funnelCustom : null;
+  const funnelData = useReportData(funnelHookPeriod as never, "all", effectiveMemberId, effectiveTenantOverride, funnelCustomRange);
+
   // Speed-to-assume: tempo entre criação do lead e atribuição (em minutos)
   const assignedLeads = leads.filter((l) => l.assigned_member_id && l.assigned_member_at && l.created_at);
   const minutesToAssume = (l: typeof leads[number]) =>
