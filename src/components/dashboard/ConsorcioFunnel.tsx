@@ -65,7 +65,9 @@ const PERIOD_CHIPS: { key: FunnelPeriod; label: string }[] = [
   { key: "yesterday", label: "Ontem" },
   { key: "7d", label: "Semana" },
   { key: "month", label: "Mês" },
+  { key: "all", label: "Tudo" },
   { key: "custom", label: "Personalizado" },
+
 ];
 
 const fmtRange = (r?: FunnelCustomRange) => {
