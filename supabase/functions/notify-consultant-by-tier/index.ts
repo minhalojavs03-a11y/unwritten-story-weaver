@@ -411,7 +411,7 @@ Deno.serve(async (req) => {
     const spMidnightLocal = new Date(nowSp.getFullYear(), nowSp.getMonth(), nowSp.getDate(), 0, 0, 0, 0);
     // Converte a meia-noite SP de volta para UTC: SP = UTC-3 (sem horário de verão).
     const sinceToday = new Date(spMidnightLocal.getTime() + 3 * 60 * 60 * 1000);
-    const baseIds = baseConsultants.map((c: any) => c.id);
+    const baseIds = connectedConsultants.map((c: any) => c.id);
     let todayCountByMember = new Map<string, number>();
     let lastTodayByMember = new Map<string, number>();
     if (baseIds.length > 0) {
@@ -437,12 +437,12 @@ Deno.serve(async (req) => {
     // a cota como peso (quem está mais atrasado em relação à cota recebe primeiro).
     // Leads 02: mantém o corte rígido pela cota diária.
     const consultants = isLeads02
-      ? baseConsultants.filter((c: any) => {
+      ? connectedConsultants.filter((c: any) => {
           const lim = c.daily_lead_limit as number | null;
           if (lim == null) return true;
           return (todayCountByMember.get(c.id) ?? 0) < lim;
         })
-      : baseConsultants;
+      : connectedConsultants;
 
     if (!consultants || consultants.length === 0) {
       return json({ ok: true, skipped: "no consultants in tier" });
