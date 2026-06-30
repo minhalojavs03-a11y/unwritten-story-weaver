@@ -50,21 +50,30 @@ function useNiltonLeadsForReports(scopeTenantId?: string | null) {
   });
 }
 
-export type Period = "today" | "7d" | "30d" | "month" | "year" | "all";
+export type Period = "today" | "yesterday" | "7d" | "30d" | "month" | "year" | "all";
 
 export const PERIOD_LABELS: Record<Period, string> = {
-  today: "Hoje", "7d": "7 dias", "30d": "30 dias", month: "Este mês", year: "Este ano", all: "Tudo",
+  today: "Hoje", yesterday: "Ontem", "7d": "7 dias", "30d": "30 dias", month: "Este mês", year: "Este ano", all: "Tudo",
 };
 
 export function periodStart(p: Period): Date | null {
+  return periodRange(p).start;
+}
+
+export function periodRange(p: Period): { start: Date | null; end: Date | null } {
   const now = new Date();
-  if (p === "all") return null;
-  if (p === "today") { const d = new Date(now); d.setHours(0,0,0,0); return d; }
-  if (p === "7d") { const d = new Date(now); d.setDate(d.getDate()-7); return d; }
-  if (p === "30d") { const d = new Date(now); d.setDate(d.getDate()-30); return d; }
-  if (p === "month") return new Date(now.getFullYear(), now.getMonth(), 1);
-  if (p === "year") return new Date(now.getFullYear(), 0, 1);
-  return null;
+  if (p === "all") return { start: null, end: null };
+  if (p === "today") { const d = new Date(now); d.setHours(0,0,0,0); return { start: d, end: null }; }
+  if (p === "yesterday") {
+    const s = new Date(now); s.setDate(s.getDate()-1); s.setHours(0,0,0,0);
+    const e = new Date(now); e.setHours(0,0,0,0);
+    return { start: s, end: e };
+  }
+  if (p === "7d") { const d = new Date(now); d.setDate(d.getDate()-7); return { start: d, end: null }; }
+  if (p === "30d") { const d = new Date(now); d.setDate(d.getDate()-30); return { start: d, end: null }; }
+  if (p === "month") return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: null };
+  if (p === "year") return { start: new Date(now.getFullYear(), 0, 1), end: null };
+  return { start: null, end: null };
 }
 
 export const fmtBRL = (n: number) =>
