@@ -136,8 +136,15 @@ export function useReportData(
       lead.assigned_member_id === memberId
       || (!!memberUserById.get(memberId) && lead.assigned_to === memberUserById.get(memberId))
       || (!!scopedUserId && scopeMemberId === memberId && lead.assigned_to === scopedUserId);
-    const start = periodStart(period);
-    let leads = allLeads.filter((l) => !start || (l.created_at && new Date(l.created_at) >= start));
+    const range = customRange ?? periodRange(period);
+    const { start, end } = range;
+    let leads = allLeads.filter((l) => {
+      if (!l.created_at) return !start;
+      const t = new Date(l.created_at).getTime();
+      if (start && t < start.getTime()) return false;
+      if (end && t >= end.getTime()) return false;
+      return true;
+    });
     if (scopeMemberId) leads = leads.filter((l) => belongsToMember(l, scopeMemberId));
     else if (memberFilter && memberFilter !== "all") leads = leads.filter((l) => belongsToMember(l, memberFilter));
 
