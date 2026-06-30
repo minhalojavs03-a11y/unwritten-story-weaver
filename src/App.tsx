@@ -14,6 +14,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import ClientLoginPage from "./pages/auth/ClientLoginPage";
 import AdminLoginPage from "./pages/auth/AdminLoginPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import RootRedirect from "./pages/RootRedirect";
 import DashboardPage from "./pages/app/DashboardPage";
 import ConversasPage from "./pages/app/ConversasPage";
