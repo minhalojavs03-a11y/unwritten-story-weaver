@@ -224,7 +224,19 @@ export default function ClientLoginPage() {
                   <Input id="client-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@feracon.com" required className="h-11 border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus-visible:ring-[hsl(0_84%_50%)]" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="client-password" className="text-slate-700">Senha</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="client-password" className="text-slate-700">Senha</Label>
+                    {mode === "signin" && (
+                      <button
+                        type="button"
+                        onClick={handleForgotPassword}
+                        disabled={resetSending}
+                        className="text-xs font-semibold text-[hsl(0_84%_50%)] hover:underline disabled:opacity-60"
+                      >
+                        {resetSending ? "Enviando…" : "Esqueci minha senha"}
+                      </button>
+                    )}
+                  </div>
                   <Input id="client-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required className="h-11 border-slate-200 bg-slate-50 text-slate-900 focus-visible:ring-[hsl(0_84%_50%)]" />
                 </div>
                 <Button type="submit" className="h-11 w-full bg-[hsl(0_84%_50%)] text-white shadow-md transition hover:bg-[hsl(0_84%_44%)]" disabled={loading}>
