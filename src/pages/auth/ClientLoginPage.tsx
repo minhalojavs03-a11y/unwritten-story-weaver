@@ -33,6 +33,28 @@ export default function ClientLoginPage() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [resetSending, setResetSending] = useState(false);
+
+  async function handleForgotPassword() {
+    const target = email.trim().toLowerCase();
+    if (!target) {
+      toast({ title: "Informe seu e-mail", description: "Digite o e-mail no campo acima para receber o link.", variant: "destructive" });
+      return;
+    }
+    setResetSending(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(target, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast({ title: "Link enviado", description: "Verifique seu e-mail para redefinir a senha." });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Não foi possível enviar o link.";
+      toast({ title: "Ops", description: msg, variant: "destructive" });
+    } finally {
+      setResetSending(false);
+    }
+  }
 
   if (authLoading) return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Carregando…</div>;
   if (session && isSuperadmin) return <Navigate to="/admin/dashboard" replace />;
