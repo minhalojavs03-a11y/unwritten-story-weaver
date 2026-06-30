@@ -135,16 +135,16 @@ Deno.serve(async (req) => {
       //    já cobre o caso real de "atendimento já em andamento".
     }
 
-    // SEMPRE envia pela instância do número oficial da empresa (47 9235-2804),
-    // nunca pelo número pessoal do consultor.
-    // Regra nova: enviar pela instância do CONSULTOR responsável quando ela
-    // estiver conectada; só cai no número da empresa se o consultor estiver off.
+    // Regra: SEMPRE enviar pela instância do CONSULTOR responsável. Se ele não
+    // estiver conectado, NÃO enviar pelo número da empresa (804) — pular e
+    // aguardar a instância dele voltar. Isso evita boas-vindas pelo número
+    // errado e força que apenas consultores realmente conectados atendam.
     const consultantInstance = await pickConsultantInstance(admin, lead.tenant_id, lead.assigned_member_id);
-    const principal = consultantInstance ?? await pickCompanyInstance(admin, lead.tenant_id);
+    const principal = consultantInstance;
     if (!principal?.server_url || !principal?.instance_token) {
-      return json({ error: "no connected whatsapp instance (consultant or company)" }, 400);
+      return json({ ok: true, skipped: "consultant whatsapp instance not connected" });
     }
-    console.log("[welcome] sending via", consultantInstance ? "consultant" : "company", "instance", principal.id, "phone", principal.phone_number);
+    console.log("[welcome] sending via consultant instance", principal.id, "phone", principal.phone_number);
 
 
     const { data: tenant } = await admin
