@@ -396,9 +396,19 @@ Deno.serve(async (req) => {
         if ((i as any).seller_user_id) connectedUserIds.add((i as any).seller_user_id);
       }
     }
-    const connectedConsultants = baseConsultants.filter((c: any) => c.user_id && connectedUserIds.has(c.user_id));
+    let connectedConsultants = baseConsultants.filter((c: any) => c.user_id && connectedUserIds.has(c.user_id));
+    let fallbackUsedOffline = false;
     if (connectedConsultants.length === 0) {
-      return json({ ok: true, skipped: "no consultant with connected whatsapp instance" });
+      // Fallback: ninguém conectado no WhatsApp agora. Em vez de travar o lead
+      // como "Sem consultor atribuído", sorteia entre todos os consultores
+      // habilitados na sequência (mesmo offline). A saudação fica pendente até
+      // a instância dele voltar (send-lead-welcome pula se offline).
+      if (baseConsultants.length === 0) {
+        return json({ ok: true, skipped: "no consultant available in tier" });
+      }
+      connectedConsultants = baseConsultants;
+      fallbackUsedOffline = true;
+      console.log("[notify-tier] no connected consultants — falling back to full rotation");
     }
 
     
