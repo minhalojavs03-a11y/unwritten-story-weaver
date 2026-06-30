@@ -357,7 +357,7 @@ Deno.serve(async (req) => {
     // pois encadear dois .or() no supabase-js sobrescreve o primeiro filtro).
     const { data: consultantsRaw } = await admin
       .from("tenant_members")
-      .select("id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit, email, notify_inapp, notify_whatsapp")
+      .select("id, user_id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit, email, notify_inapp, notify_whatsapp")
       .eq("tenant_id", lead.tenant_id)
       .eq("is_active", true)
       .eq(sourceColumn, true)
@@ -380,6 +380,27 @@ Deno.serve(async (req) => {
       if (name.includes("teste")) return false;
       return true;
     });
+
+    // Filtra apenas consultores com instância de WhatsApp CONECTADA agora.
+    // Sem instância conectada → não recebe lead (não cair em welcome no número 804).
+    const userIds = baseConsultants.map((c: any) => c.user_id).filter(Boolean);
+    const connectedUserIds = new Set<string>();
+    if (userIds.length > 0) {
+      const { data: insts } = await admin
+        .from("whatsapp_instances")
+        .select("seller_user_id,is_connected,status")
+        .eq("tenant_id", lead.tenant_id)
+        .in("seller_user_id", userIds)
+        .or("is_connected.eq.true,status.eq.connected");
+      for (const i of insts || []) {
+        if ((i as any).seller_user_id) connectedUserIds.add((i as any).seller_user_id);
+      }
+    }
+    const connectedConsultants = baseConsultants.filter((c: any) => c.user_id && connectedUserIds.has(c.user_id));
+    if (connectedConsultants.length === 0) {
+      return json({ ok: true, skipped: "no consultant with connected whatsapp instance" });
+    }
+
     
 
 
@@ -390,7 +411,7 @@ Deno.serve(async (req) => {
     const spMidnightLocal = new Date(nowSp.getFullYear(), nowSp.getMonth(), nowSp.getDate(), 0, 0, 0, 0);
     // Converte a meia-noite SP de volta para UTC: SP = UTC-3 (sem horário de verão).
     const sinceToday = new Date(spMidnightLocal.getTime() + 3 * 60 * 60 * 1000);
-    const baseIds = baseConsultants.map((c: any) => c.id);
+    const baseIds = connectedConsultants.map((c: any) => c.id);
     let todayCountByMember = new Map<string, number>();
     let lastTodayByMember = new Map<string, number>();
     if (baseIds.length > 0) {
@@ -416,12 +437,12 @@ Deno.serve(async (req) => {
     // a cota como peso (quem está mais atrasado em relação à cota recebe primeiro).
     // Leads 02: mantém o corte rígido pela cota diária.
     const consultants = isLeads02
-      ? baseConsultants.filter((c: any) => {
+      ? connectedConsultants.filter((c: any) => {
           const lim = c.daily_lead_limit as number | null;
           if (lim == null) return true;
           return (todayCountByMember.get(c.id) ?? 0) < lim;
         })
-      : baseConsultants;
+      : connectedConsultants;
 
     if (!consultants || consultants.length === 0) {
       return json({ ok: true, skipped: "no consultants in tier" });
