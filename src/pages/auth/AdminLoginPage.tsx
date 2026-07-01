@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import adminImage from "@/assets/feracon-login.png";
 import logoFeraconLight from "@/assets/logo-feracon-light.png";
+import { SUPERADMIN_BLOCKED } from "@/lib/loginGate";
+import { LoginGateDialog } from "@/components/LoginGateDialog";
 
 function clearSupportContext() {
   if (typeof window === "undefined") return;
@@ -37,12 +39,17 @@ export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [gateOpen, setGateOpen] = useState(false);
 
   if (authLoading) return <div className="flex min-h-screen items-center justify-center bg-admin-login text-sm text-admin-login-foreground">Carregando…</div>;
   if (session && isSuperadmin) return <Navigate to={redirectTo} replace />;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (SUPERADMIN_BLOCKED) {
+      setGateOpen(true);
+      return;
+    }
     setLoading(true);
     try {
       clearSupportContext();
@@ -60,6 +67,7 @@ export default function AdminLoginPage() {
 
   return (
     <main className="grid min-h-screen bg-[hsl(0_0%_6%)] text-white lg:grid-cols-2">
+      <LoginGateDialog open={gateOpen} onClose={() => setGateOpen(false)} />
       <aside className="relative h-56 overflow-hidden sm:h-72 lg:order-last lg:h-auto">
         <img src={adminImage} alt="Óculos premium em iluminação dramática" width={1280} height={1600} className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-[hsl(0_0%_6%)] via-[hsl(0_0%_6%)]/40 to-transparent lg:bg-gradient-to-l lg:from-transparent lg:via-transparent lg:to-[hsl(0_0%_6%)]" />

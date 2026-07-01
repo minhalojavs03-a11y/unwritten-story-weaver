@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import opticaImage from "@/assets/feracon-login.png";
 import logoFeracon from "@/assets/logo-feracon-dark.png";
+import { LOGIN_BLOCKED } from "@/lib/loginGate";
+import { LoginGateDialog } from "@/components/LoginGateDialog";
 
 const clientRoutes = ["/crm", "/conversas", "/pipeline", "/agenda", "/clientes", "/configuracoes"];
 
@@ -34,6 +36,7 @@ export default function ClientLoginPage() {
   const [loading, setLoading] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [resetSending, setResetSending] = useState(false);
+  const [gateOpen, setGateOpen] = useState(false);
 
   async function handleForgotPassword() {
     const target = email.trim().toLowerCase();
@@ -80,6 +83,10 @@ export default function ClientLoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (LOGIN_BLOCKED) {
+      setGateOpen(true);
+      return;
+    }
     setLoading(true);
     try {
       if (mode === "signup") {
@@ -138,6 +145,7 @@ export default function ClientLoginPage() {
 
   return (
     <main className="flex min-h-screen flex-col bg-white text-slate-900 lg:grid lg:grid-cols-2">
+      <LoginGateDialog open={gateOpen} onClose={() => setGateOpen(false)} />
       {/* Visual side */}
       <aside className="relative h-[42vh] min-h-[240px] max-h-[360px] overflow-hidden sm:h-80 sm:max-h-none lg:order-last lg:h-auto lg:min-h-0 lg:max-h-none">
         <img src={opticaImage} alt="Consórcio Feracon" width={1280} height={1600} className="absolute inset-0 h-full w-full object-cover object-[center_20%] lg:object-center" />
