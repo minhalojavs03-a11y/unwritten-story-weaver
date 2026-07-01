@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import opticaImage from "@/assets/feracon-login.png";
 import logoFeracon from "@/assets/logo-feracon-dark.png";
+import { LOGIN_BLOCKED } from "@/lib/loginGate";
+import { LoginGateDialog } from "@/components/LoginGateDialog";
 
 const clientRoutes = ["/crm", "/conversas", "/pipeline", "/agenda", "/clientes", "/configuracoes"];
 
@@ -34,6 +36,7 @@ export default function ClientLoginPage() {
   const [loading, setLoading] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [resetSending, setResetSending] = useState(false);
+  const [gateOpen, setGateOpen] = useState(false);
 
   async function handleForgotPassword() {
     const target = email.trim().toLowerCase();
@@ -80,6 +83,10 @@ export default function ClientLoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (LOGIN_BLOCKED) {
+      setGateOpen(true);
+      return;
+    }
     setLoading(true);
     try {
       if (mode === "signup") {
