@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { LOGIN_BLOCKED, SUPERADMIN_BLOCKED } from "@/lib/loginGate";
 
 type AppRole = "superadmin" | "owner" | "supervisor" | "consultant" | "attendant";
 
