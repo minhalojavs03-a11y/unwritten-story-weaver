@@ -1272,8 +1272,8 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
             const isDocument = !!mediaUrl && !isAudio && !isImage && !isVideo;
             const hasMedia = isAudio || isImage || isVideo || isDocument;
             const fileName = mediaUrl ? decodeURIComponent(mediaUrl.split("/").pop() ?? "arquivo").replace(/^\d+_/, "") : "arquivo";
-            const sim = (m as any).metadata?.simulation;
-            const isSimulation = isOut && hasMedia && sim?.is_simulation === true;
+            // Simulação não é mais marcada automaticamente no chat.
+            // O consultor anota manualmente no lead para contabilizar.
             // Álbum do WhatsApp chega como texto "Album: N images" sem mídia.
             // O provedor (uazapi) não envia os bytes das fotos no evento de álbum,
             // então não temos como renderizar as imagens — mostramos um card claro.
@@ -1299,12 +1299,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
                     {isOut ? "↗ " : "↙ "}{senderLabel}
                   </div>
                   {/* Menu de apagar mensagem removido a pedido — sem ação de exclusão no chat. */}
-                  {isSimulation && m.status !== "deleted" && (
-                    <div className="mb-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800">
-                      ✓ Simulação enviada
-                      {sim?.kind && sim.kind !== "outro" && <span className="font-normal normal-case text-emerald-700/80">· {String(sim.kind).replace(/_/g, " ")}</span>}
-                    </div>
-                  )}
+                  {/* Badge de "Simulação enviada" removido — o consultor anota manualmente no lead. */}
                   {m.status === "deleted" ? (
                     <p className="flex items-center gap-1 whitespace-pre-wrap break-words pr-14 italic text-[#667781]">
                       <Ban className="h-3.5 w-3.5" /> Essa mensagem foi apagada
