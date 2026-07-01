@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
           recipient_user_id: niltonUserId,
           type: "nilton_lead",
           title: "Novo lead Rio Grande do Sul!",
-          body: `👤 ${payload.nome_completo ?? "Sem nome"} · 💰 ${payload.carta_value ?? "-"}`,
+          body: `👤 ${payload.nome_completo ?? "Sem nome"} · 📱 ${payload.telefone ?? "sem telefone"} · 💰 ${payload.carta_value ?? "-"}`,
           metadata: { sheet_id, source: "nilton_sheet" },
         }),
       });
