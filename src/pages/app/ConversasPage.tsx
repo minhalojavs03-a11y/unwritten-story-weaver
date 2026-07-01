@@ -1272,8 +1272,8 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
             const isDocument = !!mediaUrl && !isAudio && !isImage && !isVideo;
             const hasMedia = isAudio || isImage || isVideo || isDocument;
             const fileName = mediaUrl ? decodeURIComponent(mediaUrl.split("/").pop() ?? "arquivo").replace(/^\d+_/, "") : "arquivo";
-            const sim = (m as any).metadata?.simulation;
-            const isSimulation = isOut && hasMedia && sim?.is_simulation === true;
+            // Simulação não é mais marcada automaticamente no chat.
+            // O consultor anota manualmente no lead para contabilizar.
             // Álbum do WhatsApp chega como texto "Album: N images" sem mídia.
             // O provedor (uazapi) não envia os bytes das fotos no evento de álbum,
             // então não temos como renderizar as imagens — mostramos um card claro.
