@@ -152,6 +152,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { active = false; };
   }, [authReady, session, loadProfile]);
 
+  // Bloqueio temporário: força logout de todos os usuários enquanto LOGIN_BLOCKED.
+  // Superadmin só permanece logado se SUPERADMIN_BLOCKED for false.
+  useEffect(() => {
+    if (!authReady || !profileReady || !session?.user) return;
+    if (!LOGIN_BLOCKED) return;
+    const isSuper = roles.includes("superadmin");
+    if (isSuper && !SUPERADMIN_BLOCKED) return;
+    supabase.auth.signOut().catch(() => {});
+  }, [authReady, profileReady, session, roles]);
+
   async function refreshProfile() {
     if (!session?.user) return;
     setProfileReady(false);
