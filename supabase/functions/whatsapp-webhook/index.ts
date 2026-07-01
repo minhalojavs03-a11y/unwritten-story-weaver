@@ -1388,6 +1388,49 @@ Deno.serve(async (req: Request) => {
       return ok({ silenced: true });
     }
 
+    // === EXCEÇÃO NILTON ===
+    // Leads do Nilton (RS) recebem uma segunda mensagem da IA perguntando a
+    // cidade do lead — depois disso a IA para e o consultor assume.
+    const NILTON_USER_ID = "88d35577-6f4b-4d34-b29e-b5cfdd09580c";
+    if (lead?.assigned_to === NILTON_USER_ID) {
+      const { data: outMsgs } = await admin
+        .from("messages")
+        .select("id, metadata, body")
+        .eq("conversation_id", conv!.id)
+        .eq("direction", "outbound")
+        .limit(50);
+      const alreadyAskedCity = (outMsgs ?? []).some((m: any) =>
+        m?.metadata?.nilton_city_ask === true ||
+        /qual(?:\s+é)?\s+(?:a\s+)?(?:sua\s+)?cidade/i.test(String(m?.body ?? ""))
+      );
+      if (alreadyAskedCity) {
+        console.log("Nilton AI: city already asked, handing off to consultant");
+        return ok({ ai_skipped: "nilton_city_already_asked" });
+      }
+      const firstName = String(lead?.name ?? "").trim().split(/\s+/)[0] || "";
+      const greet = firstName ? `Perfeito, ${firstName}! ` : "Perfeito! ";
+      const cityMsg = `${greet}Só pra eu direcionar seu atendimento certinho, em qual *cidade* você mora? 🏙️`;
+      const typingMs = Math.min(9000, Math.max(2500, 800 + cityMsg.length * 40));
+      await new Promise((r) => setTimeout(r, typingMs));
+      try {
+        const providerId = await sendText(instance.server_url, instance.instance_token, phone, cityMsg);
+        await admin.from("messages").insert({
+          tenant_id: instance.tenant_id,
+          conversation_id: conv!.id,
+          lead_id: lead!.id,
+          whatsapp_instance_id: instance.id,
+          direction: "outbound",
+          body: cityMsg,
+          external_id: providerId,
+          metadata: { ai: true, nilton_city_ask: true },
+        });
+        return ok({ nilton_city_asked: true });
+      } catch (e) {
+        console.error("Nilton city ask send failed", e);
+        return ok({ ai_error: "nilton_city_send_failed" });
+      }
+    }
+
     // === REGRA GLOBAL ===
     // Pré-atendimento da IA fica restrito à mensagem de boas-vindas (já
     // enviada por `send-lead-welcome`). Nenhuma resposta automática adicional
