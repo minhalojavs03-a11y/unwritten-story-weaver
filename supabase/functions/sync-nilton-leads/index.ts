@@ -241,7 +241,7 @@ Deno.serve(async (req) => {
         }),
       });
       if (niltonPhone) {
-        const text = `🎯 *Novo lead RS!*\n\n👤 ${payload.nome_completo ?? "Sem nome"}\n💰 Carta: ${payload.carta_value ?? "-"}\n📣 Campanha: ${payload.campaign_name ?? "-"}\n\nAcesse o CRM para atender.`;
+        const text = `🎯 *Novo lead RS!*\n\n👤 ${payload.nome_completo ?? "Sem nome"}\n📱 ${payload.telefone ?? "sem telefone"}\n💰 Carta: ${payload.carta_value ?? "-"}\n📣 Campanha: ${payload.campaign_name ?? "-"}\n\nAcesse o CRM para atender.`;
         await enqueueWhatsAppNotice(niltonTenantId, niltonPhone, text);
       }
     }
