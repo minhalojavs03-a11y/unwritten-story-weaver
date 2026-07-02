@@ -3,8 +3,8 @@
 //
 // LOGIN_BLOCKED: bloqueia login de consultores/owner/supervisor.
 // SUPERADMIN_BLOCKED: bloqueia também o login do superadmin (apenas para teste).
-export const LOGIN_BLOCKED = true;
-export const SUPERADMIN_BLOCKED = true;
+export const LOGIN_BLOCKED = false;
+export const SUPERADMIN_BLOCKED = false;
 
 export const LOGIN_GATE_TITLE = "Serviço temporariamente indisponível";
 export const LOGIN_GATE_CODE = "ERR_WA_BAL_0345";
