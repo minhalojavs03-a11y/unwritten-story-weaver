@@ -6,10 +6,14 @@ export const FERACON_TENANT_ID = "9ecb99e2-50ee-404f-920b-81cd94cc685e";
 // distribuição, coaching ou seletores operacionais da Feracon.
 export const HIDDEN_FERACON_USER_IDS = new Set([
   "6216d5c1-5b32-4660-acc5-66f844f77f11",
+  // Kauana Lorensetti — desligada da equipe
+  "d04f1f89-23f4-425b-9a17-64fc858ce4ae",
 ]);
 
 export const HIDDEN_FERACON_MEMBER_IDS = new Set([
   "f966c55d-ba6f-4d01-9bb0-532cc903667a",
+  // Kauana Lorensetti — desligada da equipe
+  "5d5ea7ab-b080-4e4f-8a09-88f419d47cc0",
 ]);
 
 export function normalizeHiddenFeraconText(value: unknown) {
@@ -21,7 +25,7 @@ export function normalizeHiddenFeraconText(value: unknown) {
 
 export function isHiddenFeraconIdentity(value: unknown) {
   const text = normalizeHiddenFeraconText(value);
-  return text.includes("arley") || text.includes("sparckonmeta");
+  return text.includes("arley") || text.includes("sparckonmeta") || text.includes("kauana");
 }
 
 export function isHiddenFeraconUserId(id: unknown) {
