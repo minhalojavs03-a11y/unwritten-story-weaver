@@ -21,13 +21,21 @@ const NILTON_DAILY_LIMIT = 2; // máximo de leads por dia para Nilton; o restant
 
 function parseCartaValue(raw: string | null | undefined): number | null {
   if (!raw) return null;
-  const cleaned = String(raw).replace(/[^0-9,\.]/g, "").trim();
+  const s = String(raw).toLowerCase().trim();
+  // Detecta multiplicadores "mil" / "milhão" / "milhões" / "bi".
+  let multiplier = 1;
+  if (/milh(ã|a)o|milh(õ|o)es|\bmi\b|\bmm\b/.test(s)) multiplier = 1_000_000;
+  else if (/\bmil\b|\bk\b/.test(s)) multiplier = 1_000;
+  else if (/\bbi\b|bilh/.test(s)) multiplier = 1_000_000_000;
+  const cleaned = s.replace(/[^0-9,\.]/g, "").trim();
   if (!cleaned) return null;
-  // Formato BR: "50.000,00" -> remove pontos de milhar, troca vírgula por ponto
   const normalized = cleaned.includes(",")
     ? cleaned.replace(/\./g, "").replace(",", ".")
     : cleaned.replace(/\.(?=\d{3}(\D|$))/g, "");
-  const n = Number(normalized);
+  const base = Number(normalized);
+  if (!isFinite(base) || base <= 0) return null;
+  // Se já é grande (>= 1000), não multiplica de novo (valor bruto já em reais).
+  const n = base >= 1000 ? base : base * multiplier;
   return isFinite(n) && n > 0 ? n : null;
 }
 
