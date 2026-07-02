@@ -186,12 +186,12 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const overflow = niltonTodayCount >= NILTON_DAILY_LIMIT;
+      // Nilton não tem mais teto (nem valor nem quantidade): todo lead da planilha fica com ele.
       const payload = {
         ...basePayload,
-        tenant_id: overflow ? FERACON_TENANT_ID : niltonTenantId,
-        assigned_to: overflow ? null : niltonUserId,
-        status: overflow ? "overflow" : "novo",
+        tenant_id: niltonTenantId,
+        assigned_to: niltonUserId,
+        status: "novo",
       };
 
       const insert = await sb(`/nilton_leads`, {
@@ -207,33 +207,6 @@ Deno.serve(async (req) => {
       }
       rowsInserted++;
 
-      if (overflow) {
-        // Encaminha para distribuição geral da equipe Feracon: cria um lead
-        // normal — o trigger notify_consultant_by_tier cuida do round-robin.
-        const creditValue = parseCartaValue(payload.carta_value);
-        try {
-          await sb(`/leads`, {
-            method: "POST",
-            body: JSON.stringify({
-              tenant_id: FERACON_TENANT_ID,
-              name: payload.nome_completo ?? "Lead RS",
-              phone: payload.telefone,
-              source: "nilton_sheet_overflow",
-              credit_value: creditValue,
-              imported_from_sheet: true,
-              metadata: {
-                sheet_id,
-                origin: "nilton_overflow",
-                campaign_name: payload.campaign_name,
-                carta_value: payload.carta_value,
-              },
-            }),
-          });
-        } catch (e) {
-          console.error("overflow lead insert failed", e);
-        }
-        continue;
-      }
 
       niltonTodayCount++;
       // App notification para Nilton
