@@ -343,14 +343,27 @@ export default function LeadsPage() {
   }
 
   async function submit() {
+    const cleanPhone = normalizePhone(phone);
+    if (!cleanPhone) {
+      toast({ title: "Informe o telefone", variant: "destructive" });
+      return;
+    }
     try {
-      await create.mutateAsync({ name: name || null, phone, email: email || null });
-      toast({ title: "Lead criado" });
+      await create.mutateAsync({
+        name: name || null,
+        phone: cleanPhone,
+        email: email || null,
+        assigned_member_id: memberId ?? null,
+        assigned_to: effectiveUserId ?? null,
+        source: "manual",
+      } as any);
+      toast({ title: "Lead criado", description: "Adicionado à sua lista." });
       setOpen(false); setName(""); setPhone(""); setEmail("");
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
     }
   }
+
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -374,7 +387,14 @@ export default function LeadsPage() {
         const name = pick(row, ["name", "nome", "cliente", "contato"]) || null;
         const email = pick(row, ["email", "e-mail", "mail"]) || null;
         try {
-          await create.mutateAsync({ name, phone, email });
+          await create.mutateAsync({
+            name,
+            phone,
+            email,
+            assigned_member_id: memberId ?? null,
+            assigned_to: effectiveUserId ?? null,
+            source: "import",
+          } as any);
           existing.add(phone);
           ok++;
         } catch { fail++; }
