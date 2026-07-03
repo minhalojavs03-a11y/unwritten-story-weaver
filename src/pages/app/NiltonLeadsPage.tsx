@@ -240,6 +240,14 @@ export default function NiltonLeadsPage() {
               {STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Select value={periodFilter} onValueChange={(v) => { setPage(0); setPeriodFilter(v as any); }}>
+            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="week">Esta semana</SelectItem>
+              <SelectItem value="month">Este mês</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Table */}
