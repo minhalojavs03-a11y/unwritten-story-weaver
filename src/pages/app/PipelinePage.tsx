@@ -6,6 +6,8 @@ import { timeAgo, formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useCanViewLeadPhone } from "@/lib/leadPrivacy";
 import { useLeads, useUpdateLead, useCreateLead } from "@/hooks/useData";
+import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
