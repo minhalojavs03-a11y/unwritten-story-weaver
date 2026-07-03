@@ -411,7 +411,7 @@ export default function PipelinePage() {
           ) : (
             <div className="space-y-3">
               {grouped.map(({ stage, leads }) => (
-                <StageSection key={stage} stage={stage} count={leads.length} metrics={stageMetrics[stage]}>
+                <StageSection key={stage} stage={stage} count={leads.length} metrics={stageMetrics[stage]} onAdd={readOnlySupervisor ? undefined : () => setAddStage(stage)}>
                   {leads.length === 0 ? (
                     <EmptyStage />
                   ) : (
