@@ -135,11 +135,18 @@ export default function AdminIntegracoes() {
     setLogs((lg as unknown as Log[]) || []);
     const { data: nLog } = await supabase
       .from("nilton_sync_log")
-      .select("status,summary,created_at")
-      .order("created_at", { ascending: false })
+      .select("ran_at,rows_inserted,rows_fetched,error_message")
+      .order("ran_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (nLog) setNiltonLog({ at: (nLog as any).created_at, status: (nLog as any).status, summary: (nLog as any).summary });
+    if (nLog) {
+      const row = nLog as any;
+      const status = row.error_message ? "error" : "success";
+      const summary = row.error_message
+        ? row.error_message
+        : `${row.rows_inserted ?? 0} novo(s) de ${row.rows_fetched ?? 0} linha(s)`;
+      setNiltonLog({ at: row.ran_at, status, summary });
+    }
     setLoading(false);
   }
 
