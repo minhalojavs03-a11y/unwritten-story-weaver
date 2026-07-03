@@ -348,6 +348,14 @@ export default function LeadsPage() {
       toast({ title: "Informe o telefone", variant: "destructive" });
       return;
     }
+    if (!memberId && !effectiveUserId) {
+      toast({
+        title: "Sessão não identificada",
+        description: "Não foi possível vincular o lead a você. Recarregue a página e tente novamente.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       await create.mutateAsync({
         name: name || null,
@@ -363,6 +371,7 @@ export default function LeadsPage() {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
     }
   }
+
 
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
