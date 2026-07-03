@@ -149,23 +149,49 @@ export default function PipelinePage() {
       toast({ title: "Informe o telefone", variant: "destructive" });
       return;
     }
+    if (!activeMember?.id && !user?.id) {
+      toast({ title: "Sessão não identificada", description: "Recarregue a página e tente novamente.", variant: "destructive" });
+      return;
+    }
     try {
-      await createLead.mutateAsync({
-        name: newLead.name.trim() || null,
-        phone,
-        email: newLead.email.trim() || null,
-        stage: addStage ?? "novo",
-        assigned_member_id: activeMember?.id ?? null,
-        assigned_to: user?.id ?? null,
-        source: "manual",
-      } as any);
-      toast({ title: "Lead criado", description: addStage ? `Adicionado em "${stageLabels[addStage]}"` : undefined });
+      const { data, error } = await supabase.rpc("claim_manual_lead", {
+        _phone: phone,
+        _name: newLead.name.trim() || undefined,
+        _email: newLead.email.trim() || undefined,
+        _member_id: activeMember?.id ?? undefined,
+        _user_id: user?.id ?? undefined,
+      });
+      if (error) {
+        if (error.message?.includes("already_in_service_by_other")) {
+          toast({
+            title: "Já existe atendimento",
+            description: "Esse número já está sendo atendido por outro consultor com conversas em andamento.",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (error.message?.includes("invalid_phone")) {
+          toast({ title: "Telefone inválido", variant: "destructive" });
+          return;
+        }
+        throw error;
+      }
+      const created = (data as any)?.[0];
+      // Se caiu em estágio diferente do "novo" e o pedido veio de outra coluna, ajusta o stage
+      if (created?.lead_id && addStage && addStage !== "novo" && created.action !== "already_yours") {
+        await supabase.from("leads").update({ stage: addStage }).eq("id", created.lead_id);
+      }
+      toast({
+        title: created?.action === "reassigned" ? "Lead transferido para você" : created?.action === "already_yours" ? "Lead já é seu" : "Lead criado",
+        description: addStage ? `Em "${stageLabels[addStage]}"` : undefined,
+      });
       setAddStage(null);
       setNewLead({ name: "", phone: "", email: "" });
     } catch (e: any) {
       toast({ title: "Erro ao criar lead", description: e.message, variant: "destructive" });
     }
   }
+
 
   const navigate = useNavigate();
   const { density, setDensity, layout, setLayout, fields, setFields } = useViewSettings();
