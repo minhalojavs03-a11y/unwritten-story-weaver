@@ -380,8 +380,18 @@ Deno.serve(async (req) => {
       return true;
     });
 
-    // Filtra apenas consultores com instância de WhatsApp CONECTADA agora.
-    // Sem instância conectada → não recebe lead (não cair em welcome no número 804).
+    // Consultoras que atendem MANUALMENTE — recebem leads mesmo sem instância
+    // de WhatsApp conectada (o aviso vai pelo número 804 e elas respondem no
+    // celular pessoal). Não é enviado welcome automático (send-lead-welcome
+    // pula quando a instância delas está offline).
+    const MANUAL_DELIVERY_USER_IDS = new Set<string>([
+      "ef21cb76-531a-480f-97ce-c6ba5a993741", // Flavia Caroline Paulus
+      "a452f69e-c5bb-4012-ae5f-b16eddb05051", // Renata Sobral
+    ]);
+
+    // Filtra apenas consultores com instância de WhatsApp CONECTADA agora,
+    // EXCETO as consultoras de entrega manual (Flavia/Renata), que entram
+    // sempre no rateio.
     const userIds = baseConsultants.map((c: any) => c.user_id).filter(Boolean);
     const connectedUserIds = new Set<string>();
     if (userIds.length > 0) {
@@ -395,7 +405,9 @@ Deno.serve(async (req) => {
         if ((i as any).seller_user_id) connectedUserIds.add((i as any).seller_user_id);
       }
     }
-    let connectedConsultants = baseConsultants.filter((c: any) => c.user_id && connectedUserIds.has(c.user_id));
+    let connectedConsultants = baseConsultants.filter(
+      (c: any) => c.user_id && (connectedUserIds.has(c.user_id) || MANUAL_DELIVERY_USER_IDS.has(c.user_id)),
+    );
     let fallbackUsedOffline = false;
     if (connectedConsultants.length === 0) {
       // Fallback: ninguém conectado no WhatsApp agora. Em vez de travar o lead
