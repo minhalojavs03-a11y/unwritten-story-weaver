@@ -290,7 +290,15 @@ export default function PipelinePage() {
           O pipeline é otimizado para o modo retrato no celular. Vire o aparelho na vertical para continuar.
         </p>
       </div>
-      <PageHeader title="Pipeline de consórcios" subtitle="Arraste as cotas para mudar de estágio na jornada de venda" />
+      <PageHeader
+        title="Pipeline de consórcios"
+        subtitle="Arraste as cotas para mudar de estágio na jornada de venda"
+        actions={!readOnlySupervisor ? (
+          <Button size="sm" onClick={() => setAddStage("novo")}>
+            <Plus className="mr-1 h-4 w-4" /> Novo lead
+          </Button>
+        ) : undefined}
+      />
       <div className="flex w-full min-w-0 max-w-full flex-col gap-4 overflow-x-hidden p-3 md:p-6">
         <div className="grid w-full min-w-0 max-w-full gap-3 lg:grid-cols-2">
           <OverviewBar overview={overview} />
