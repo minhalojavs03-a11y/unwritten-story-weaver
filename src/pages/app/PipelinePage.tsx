@@ -455,6 +455,37 @@ export default function PipelinePage() {
       >
         <div style={{ width: scrollWidth, height: 1 }} />
       </div>
+
+      <Dialog open={addStage !== null} onOpenChange={(o) => !o && setAddStage(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo lead {addStage ? `em "${stageLabels[addStage]}"` : ""}</DialogTitle>
+            <DialogDescription>
+              Adicione um lead manualmente. Ele já entra atribuído a você.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="new-lead-name">Nome</Label>
+              <Input id="new-lead-name" value={newLead.name} onChange={(e) => setNewLead({ ...newLead, name: e.target.value })} placeholder="Nome do cliente" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-lead-phone">Telefone (com DDD)</Label>
+              <Input id="new-lead-phone" value={newLead.phone} onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })} placeholder="45999998888" inputMode="tel" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-lead-email">E-mail (opcional)</Label>
+              <Input id="new-lead-email" type="email" value={newLead.email} onChange={(e) => setNewLead({ ...newLead, email: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddStage(null)}>Cancelar</Button>
+            <Button onClick={submitNewLead} disabled={createLead.isPending || !newLead.phone.trim()}>
+              {createLead.isPending ? "Salvando…" : "Criar lead"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
