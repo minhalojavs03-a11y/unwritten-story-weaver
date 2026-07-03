@@ -387,7 +387,14 @@ export default function LeadsPage() {
         const name = pick(row, ["name", "nome", "cliente", "contato"]) || null;
         const email = pick(row, ["email", "e-mail", "mail"]) || null;
         try {
-          await create.mutateAsync({ name, phone, email });
+          await create.mutateAsync({
+            name,
+            phone,
+            email,
+            assigned_member_id: memberId ?? null,
+            assigned_to: effectiveUserId ?? null,
+            source: "import",
+          } as any);
           existing.add(phone);
           ok++;
         } catch { fail++; }
