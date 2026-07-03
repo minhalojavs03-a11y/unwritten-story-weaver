@@ -359,11 +359,12 @@ export default function LeadsPage() {
     try {
       const { data, error } = await supabase.rpc("claim_manual_lead", {
         _phone: cleanPhone,
-        _name: name || null,
-        _email: email || null,
-        _member_id: memberId ?? null,
-        _user_id: effectiveUserId ?? null,
+        _name: name || undefined,
+        _email: email || undefined,
+        _member_id: memberId ?? undefined,
+        _user_id: effectiveUserId ?? undefined,
       });
+
       if (error) {
         if (error.message?.includes("already_in_service_by_other")) {
           toast({
