@@ -904,6 +904,17 @@ export default function LeadsPage() {
                                       </Button>
                                     </>
                                   )}
+                                  {isManualLead(l as any) && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-destructive border-destructive/40 hover:bg-destructive/10"
+                                      onClick={() => deleteManualLead(l.id, l.name)}
+                                    >
+                                      <Trash2 className="mr-1.5 h-3.5 w-3.5" />Excluir lead
+                                    </Button>
+                                  )}
+
                                 </div>
                               </div>
                             </td>
