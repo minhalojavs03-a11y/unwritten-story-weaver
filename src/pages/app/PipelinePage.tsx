@@ -137,6 +137,36 @@ function useViewSettings() {
 export default function PipelinePage() {
   const { data: allLeads = [], isLoading } = useLeads();
   const update = useUpdateLead();
+  const createLead = useCreateLead();
+  const { user } = useAuth();
+  const [addStage, setAddStage] = useState<Stage | null>(null);
+  const [newLead, setNewLead] = useState({ name: "", phone: "", email: "" });
+
+  async function submitNewLead() {
+    if (readOnlySupervisor) return;
+    const phone = newLead.phone.replace(/\D/g, "");
+    if (!phone) {
+      toast({ title: "Informe o telefone", variant: "destructive" });
+      return;
+    }
+    try {
+      await createLead.mutateAsync({
+        name: newLead.name.trim() || null,
+        phone,
+        email: newLead.email.trim() || null,
+        stage: addStage ?? "novo",
+        assigned_member_id: activeMember?.id ?? null,
+        assigned_to: user?.id ?? null,
+        source: "manual",
+      } as any);
+      toast({ title: "Lead criado", description: addStage ? `Adicionado em "${stageLabels[addStage]}"` : undefined });
+      setAddStage(null);
+      setNewLead({ name: "", phone: "", email: "" });
+    } catch (e: any) {
+      toast({ title: "Erro ao criar lead", description: e.message, variant: "destructive" });
+    }
+  }
+
   const navigate = useNavigate();
   const { density, setDensity, layout, setLayout, fields, setFields } = useViewSettings();
   const isMobile = useIsMobile();
