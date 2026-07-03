@@ -105,16 +105,22 @@ export default function NiltonLeadsPage() {
   const kpiQuery = useQuery({
     queryKey: ["nilton_leads_kpi"],
     queryFn: async () => {
-      const start = new Date(); start.setHours(0, 0, 0, 0);
+      // Início do dia em America/Sao_Paulo (UTC-3, sem DST) para bater com backend
+      const now = new Date();
+      const spNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+      const startSp = new Date(spNow.getFullYear(), spNow.getMonth(), spNow.getDate(), 0, 0, 0);
+      const offsetMs = now.getTime() - spNow.getTime();
+      const startUtcIso = new Date(startSp.getTime() + offsetMs).toISOString();
       const [tot, hoje, atd, conv] = await Promise.all([
         supabase.from("nilton_leads" as any).select("id", { count: "exact", head: true }),
-        supabase.from("nilton_leads" as any).select("id", { count: "exact", head: true }).gte("imported_at", start.toISOString()),
+        supabase.from("nilton_leads" as any).select("id", { count: "exact", head: true }).gte("imported_at", startUtcIso),
         supabase.from("nilton_leads" as any).select("id", { count: "exact", head: true }).eq("status", "em_atendimento"),
         supabase.from("nilton_leads" as any).select("id", { count: "exact", head: true }).eq("status", "convertido"),
       ]);
       return { total: tot.count ?? 0, hoje: hoje.count ?? 0, em_atendimento: atd.count ?? 0, convertido: conv.count ?? 0 };
     },
     enabled: !!profile && allowed,
+    refetchInterval: 60_000,
   });
 
   const lastSyncQuery = useQuery({
@@ -124,7 +130,23 @@ export default function NiltonLeadsPage() {
       return data ?? [];
     },
     enabled: !!profile && allowed,
+    refetchInterval: 60_000,
   });
+
+  // Realtime: novos leads e updates aparecem sem F5.
+  useEffect(() => {
+    if (!allowed) return;
+    const channel = supabase
+      .channel("nilton_leads_live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "nilton_leads" }, () => {
+        qc.invalidateQueries({ queryKey: ["nilton_leads"] });
+        qc.invalidateQueries({ queryKey: ["nilton_leads_kpi"] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [allowed, qc]);
 
   const updateMut = useMutation({
     mutationFn: async (vars: { id: string; patch: Partial<NiltonLead> }) => {
