@@ -472,8 +472,8 @@ type StageMetric = {
 };
 
 function StageColumn({
-  stage, count, metrics, children,
-}: { stage: Stage; count: number; metrics?: StageMetric; children: React.ReactNode }) {
+  stage, count, metrics, children, onAdd,
+}: { stage: Stage; count: number; metrics?: StageMetric; children: React.ReactNode; onAdd?: () => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage });
   return (
     <div
@@ -496,13 +496,17 @@ function StageColumn({
             {count} {count === 1 ? "lead" : "leads"}
           </div>
         </div>
-        <button
-          type="button"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          aria-label="Adicionar lead"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
+        {onAdd && (
+          <button
+            type="button"
+            onClick={onAdd}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+            aria-label="Adicionar lead"
+            title="Adicionar lead nesta etapa"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        )}
       </div>
       {metrics && <StageMetricsStrip metrics={metrics} stage={stage} />}
       <div className="flex flex-1 flex-col gap-2 p-2">{children}</div>
