@@ -81,12 +81,31 @@ export default function NiltonLeadsPage() {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [periodFilter, setPeriodFilter] = useState<"week" | "month" | "all">("week");
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<NiltonLead | null>(null);
   const [syncing, setSyncing] = useState(false);
 
+  // Início do período em America/Sao_Paulo -> ISO UTC.
+  const periodStartIso = useMemo(() => {
+    if (periodFilter === "all") return null;
+    const now = new Date();
+    const spNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const start = new Date(spNow.getFullYear(), spNow.getMonth(), spNow.getDate(), 0, 0, 0);
+    if (periodFilter === "week") {
+      // Semana começando na segunda-feira
+      const dow = start.getDay(); // 0 dom .. 6 sab
+      const diff = dow === 0 ? 6 : dow - 1;
+      start.setDate(start.getDate() - diff);
+    } else if (periodFilter === "month") {
+      start.setDate(1);
+    }
+    const offsetMs = now.getTime() - spNow.getTime();
+    return new Date(start.getTime() + offsetMs).toISOString();
+  }, [periodFilter]);
+
   const leadsQuery = useQuery({
-    queryKey: ["nilton_leads", search, statusFilter, page],
+    queryKey: ["nilton_leads", search, statusFilter, periodFilter, page],
     queryFn: async () => {
       let q = supabase
         .from("nilton_leads" as any)
@@ -95,6 +114,7 @@ export default function NiltonLeadsPage() {
         .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
       if (statusFilter !== "all") q = q.eq("status", statusFilter);
       if (search.trim()) q = q.ilike("nome_completo", `%${search.trim()}%`);
+      if (periodStartIso) q = q.gte("imported_at", periodStartIso);
       const { data, count, error } = await q;
       if (error) throw error;
       return { rows: (data ?? []) as unknown as NiltonLead[], count: count ?? 0 };
