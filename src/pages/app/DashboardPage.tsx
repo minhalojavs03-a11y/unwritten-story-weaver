@@ -89,7 +89,7 @@ export default function DashboardPage() {
   const execData = useReportData("30d", "all", effectiveMemberId, effectiveTenantOverride);
 
   // Período independente do funil (Hoje / Ontem / Semana / Mês / Personalizado)
-  const [funnelPeriod, setFunnelPeriod] = useState<import("@/components/dashboard/ConsorcioFunnel").FunnelPeriod>("all");
+  const [funnelPeriod, setFunnelPeriod] = useState<import("@/components/dashboard/ConsorcioFunnel").FunnelPeriod>("month");
   const [funnelCustom, setFunnelCustom] = useState<import("@/components/dashboard/ConsorcioFunnel").FunnelCustomRange>({ start: null, end: null });
   const funnelHookPeriod = funnelPeriod === "custom" ? "all" : funnelPeriod;
   const funnelCustomRange = funnelPeriod === "custom" ? funnelCustom : null;
