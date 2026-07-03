@@ -5,7 +5,11 @@ import { stageLabels, stageOrder, stageColorClass, type Stage, type Temperature 
 import { timeAgo, formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useCanViewLeadPhone } from "@/lib/leadPrivacy";
-import { useLeads, useUpdateLead } from "@/hooks/useData";
+import { useLeads, useUpdateLead, useCreateLead } from "@/hooks/useData";
+import { useAuth } from "@/contexts/AuthContext";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useReadOnlySupervisor } from "@/hooks/useReadOnlySupervisor";
