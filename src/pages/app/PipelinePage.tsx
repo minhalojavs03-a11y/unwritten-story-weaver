@@ -585,8 +585,8 @@ function EmptyStage() {
 }
 
 function StageSection({
-  stage, count, metrics, children,
-}: { stage: Stage; count: number; metrics?: StageMetric; children: React.ReactNode }) {
+  stage, count, metrics, children, onAdd,
+}: { stage: Stage; count: number; metrics?: StageMetric; children: React.ReactNode; onAdd?: () => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage });
   const [open, setOpen] = useState(true);
   return (
@@ -631,6 +631,17 @@ function StageSection({
               </div>
             </button>
           </CollapsibleTrigger>
+          {onAdd && (
+            <button
+              type="button"
+              onClick={onAdd}
+              className="mr-2 my-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+              aria-label="Adicionar lead"
+              title="Adicionar lead nesta etapa"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <CollapsibleContent>
           <div className="border-t bg-muted/20 p-3">{children}</div>
