@@ -155,7 +155,7 @@ export default function AdminIntegracoes() {
     const { data, error } = await supabase.functions.invoke("sync-nilton-leads", { body: {} });
     setSyncingNilton(false);
     if (error) return toast.error("Falha: " + error.message);
-    const n = (data as any)?.new_leads ?? (data as any)?.imported ?? 0;
+    const n = (data as any)?.rowsInserted ?? (data as any)?.new_leads ?? (data as any)?.imported ?? 0;
     toast.success(`Nilton sincronizado: ${n} novo(s) lead(s)`);
     load();
   }
