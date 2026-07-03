@@ -145,6 +145,24 @@ export default function LeadsPage() {
   // membro/usuário alvo, não pelo do superadmin logado.
   const memberId = effective.isImpersonating ? effective.memberId : (member?.id ?? null);
   const effectiveUserId = effective.isImpersonating ? effective.id : (user?.id ?? null);
+  const qc = useQueryClient();
+
+  function isManualLead(l: { source?: string | null; imported_from_sheet?: boolean | null }) {
+    return !l.imported_from_sheet && (l.source ?? "").toLowerCase() === "manual";
+  }
+
+  async function deleteManualLead(leadId: string, leadName?: string | null) {
+    if (!window.confirm(`Excluir o lead ${leadName ? `"${leadName}"` : "selecionado"}? Esta ação não pode ser desfeita.`)) return;
+    const { error } = await supabase.rpc("delete_manual_lead", { _lead_id: leadId });
+    if (error) {
+      const desc = error.message?.includes("only_manual") ? "Só é possível excluir leads criados manualmente." : error.message;
+      toast({ title: "Erro ao excluir", description: desc, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Lead excluído" });
+    qc.invalidateQueries({ queryKey: ["leads"] });
+  }
+
   const { maxCreditValue } = useActiveMemberLimit();
   const canViewPhoneFn = useCanViewLeadPhone();
   void maxCreditValue;
