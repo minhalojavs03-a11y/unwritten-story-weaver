@@ -357,20 +357,40 @@ export default function LeadsPage() {
       return;
     }
     try {
-      await create.mutateAsync({
-        name: name || null,
-        phone: cleanPhone,
-        email: email || null,
-        assigned_member_id: memberId ?? null,
-        assigned_to: effectiveUserId ?? null,
-        source: "manual",
-      } as any);
-      toast({ title: "Lead criado", description: "Adicionado à sua lista." });
+      const { data, error } = await supabase.rpc("claim_manual_lead", {
+        _phone: cleanPhone,
+        _name: name || undefined,
+        _email: email || undefined,
+        _member_id: memberId ?? undefined,
+        _user_id: effectiveUserId ?? undefined,
+      });
+
+      if (error) {
+        if (error.message?.includes("already_in_service_by_other")) {
+          toast({
+            title: "Já existe atendimento",
+            description: "Esse número já está sendo atendido por outro consultor com conversas em andamento.",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (error.message?.includes("invalid_phone")) {
+          toast({ title: "Telefone inválido", variant: "destructive" });
+          return;
+        }
+        throw error;
+      }
+      const action = (data as any)?.[0]?.action;
+      toast({
+        title: action === "reassigned" ? "Lead transferido para você" : action === "already_yours" ? "Lead já é seu" : "Lead criado",
+        description: "Adicionado à sua lista.",
+      });
       setOpen(false); setName(""); setPhone(""); setEmail("");
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
     }
   }
+
 
 
 

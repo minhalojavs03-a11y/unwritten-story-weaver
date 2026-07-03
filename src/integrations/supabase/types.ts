@@ -2447,6 +2447,20 @@ export type Database = {
         Args: { _username: string }
         Returns: boolean
       }
+      claim_manual_lead: {
+        Args: {
+          _email?: string
+          _member_id?: string
+          _name?: string
+          _phone: string
+          _user_id?: string
+        }
+        Returns: {
+          action: string
+          lead_id: string
+          previous_member_id: string
+        }[]
+      }
       classify_lead_kind: {
         Args: { _phone: string; _tenant: string }
         Returns: string
