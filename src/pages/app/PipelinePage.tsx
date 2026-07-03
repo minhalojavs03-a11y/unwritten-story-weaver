@@ -5,7 +5,11 @@ import { stageLabels, stageOrder, stageColorClass, type Stage, type Temperature 
 import { timeAgo, formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useCanViewLeadPhone } from "@/lib/leadPrivacy";
-import { useLeads, useUpdateLead } from "@/hooks/useData";
+import { useLeads, useUpdateLead, useCreateLead } from "@/hooks/useData";
+import { useAuth } from "@/contexts/AuthContext";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useReadOnlySupervisor } from "@/hooks/useReadOnlySupervisor";
@@ -133,6 +137,36 @@ function useViewSettings() {
 export default function PipelinePage() {
   const { data: allLeads = [], isLoading } = useLeads();
   const update = useUpdateLead();
+  const createLead = useCreateLead();
+  const { user } = useAuth();
+  const [addStage, setAddStage] = useState<Stage | null>(null);
+  const [newLead, setNewLead] = useState({ name: "", phone: "", email: "" });
+
+  async function submitNewLead() {
+    if (readOnlySupervisor) return;
+    const phone = newLead.phone.replace(/\D/g, "");
+    if (!phone) {
+      toast({ title: "Informe o telefone", variant: "destructive" });
+      return;
+    }
+    try {
+      await createLead.mutateAsync({
+        name: newLead.name.trim() || null,
+        phone,
+        email: newLead.email.trim() || null,
+        stage: addStage ?? "novo",
+        assigned_member_id: activeMember?.id ?? null,
+        assigned_to: user?.id ?? null,
+        source: "manual",
+      } as any);
+      toast({ title: "Lead criado", description: addStage ? `Adicionado em "${stageLabels[addStage]}"` : undefined });
+      setAddStage(null);
+      setNewLead({ name: "", phone: "", email: "" });
+    } catch (e: any) {
+      toast({ title: "Erro ao criar lead", description: e.message, variant: "destructive" });
+    }
+  }
+
   const navigate = useNavigate();
   const { density, setDensity, layout, setLayout, fields, setFields } = useViewSettings();
   const isMobile = useIsMobile();
@@ -256,7 +290,15 @@ export default function PipelinePage() {
           O pipeline é otimizado para o modo retrato no celular. Vire o aparelho na vertical para continuar.
         </p>
       </div>
-      <PageHeader title="Pipeline de consórcios" subtitle="Arraste as cotas para mudar de estágio na jornada de venda" />
+      <PageHeader
+        title="Pipeline de consórcios"
+        subtitle="Arraste as cotas para mudar de estágio na jornada de venda"
+        actions={!readOnlySupervisor ? (
+          <Button size="sm" onClick={() => setAddStage("novo")}>
+            <Plus className="mr-1 h-4 w-4" /> Novo lead
+          </Button>
+        ) : undefined}
+      />
       <div className="flex w-full min-w-0 max-w-full flex-col gap-4 overflow-x-hidden p-3 md:p-6">
         <div className="grid w-full min-w-0 max-w-full gap-3 lg:grid-cols-2">
           <OverviewBar overview={overview} />
@@ -356,7 +398,7 @@ export default function PipelinePage() {
           {effectiveLayout === "kanban" ? (
             <div ref={kanbanRef} className="pipeline-scroll -mx-3 flex w-[calc(100%+1.5rem)] min-w-0 max-w-[calc(100%+1.5rem)] items-start gap-3 overflow-x-scroll px-3 pb-2 md:mx-0 md:w-full md:max-w-full md:px-0">
               {grouped.map(({ stage, leads }) => (
-                <StageColumn key={stage} stage={stage} count={leads.length} metrics={stageMetrics[stage]}>
+                <StageColumn key={stage} stage={stage} count={leads.length} metrics={stageMetrics[stage]} onAdd={readOnlySupervisor ? undefined : () => setAddStage(stage)}>
                   {leads.length === 0 ? (
                     <EmptyStage />
                   ) : (
@@ -377,7 +419,7 @@ export default function PipelinePage() {
           ) : (
             <div className="space-y-3">
               {grouped.map(({ stage, leads }) => (
-                <StageSection key={stage} stage={stage} count={leads.length} metrics={stageMetrics[stage]}>
+                <StageSection key={stage} stage={stage} count={leads.length} metrics={stageMetrics[stage]} onAdd={readOnlySupervisor ? undefined : () => setAddStage(stage)}>
                   {leads.length === 0 ? (
                     <EmptyStage />
                   ) : (
@@ -413,6 +455,37 @@ export default function PipelinePage() {
       >
         <div style={{ width: scrollWidth, height: 1 }} />
       </div>
+
+      <Dialog open={addStage !== null} onOpenChange={(o) => !o && setAddStage(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo lead {addStage ? `em "${stageLabels[addStage]}"` : ""}</DialogTitle>
+            <DialogDescription>
+              Adicione um lead manualmente. Ele já entra atribuído a você.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="new-lead-name">Nome</Label>
+              <Input id="new-lead-name" value={newLead.name} onChange={(e) => setNewLead({ ...newLead, name: e.target.value })} placeholder="Nome do cliente" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-lead-phone">Telefone (com DDD)</Label>
+              <Input id="new-lead-phone" value={newLead.phone} onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })} placeholder="45999998888" inputMode="tel" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-lead-email">E-mail (opcional)</Label>
+              <Input id="new-lead-email" type="email" value={newLead.email} onChange={(e) => setNewLead({ ...newLead, email: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddStage(null)}>Cancelar</Button>
+            <Button onClick={submitNewLead} disabled={createLead.isPending || !newLead.phone.trim()}>
+              {createLead.isPending ? "Salvando…" : "Criar lead"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -438,8 +511,8 @@ type StageMetric = {
 };
 
 function StageColumn({
-  stage, count, metrics, children,
-}: { stage: Stage; count: number; metrics?: StageMetric; children: React.ReactNode }) {
+  stage, count, metrics, children, onAdd,
+}: { stage: Stage; count: number; metrics?: StageMetric; children: React.ReactNode; onAdd?: () => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage });
   return (
     <div
@@ -462,13 +535,17 @@ function StageColumn({
             {count} {count === 1 ? "lead" : "leads"}
           </div>
         </div>
-        <button
-          type="button"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          aria-label="Adicionar lead"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
+        {onAdd && (
+          <button
+            type="button"
+            onClick={onAdd}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+            aria-label="Adicionar lead"
+            title="Adicionar lead nesta etapa"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        )}
       </div>
       {metrics && <StageMetricsStrip metrics={metrics} stage={stage} />}
       <div className="flex flex-1 flex-col gap-2 p-2">{children}</div>
@@ -547,8 +624,8 @@ function EmptyStage() {
 }
 
 function StageSection({
-  stage, count, metrics, children,
-}: { stage: Stage; count: number; metrics?: StageMetric; children: React.ReactNode }) {
+  stage, count, metrics, children, onAdd,
+}: { stage: Stage; count: number; metrics?: StageMetric; children: React.ReactNode; onAdd?: () => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage });
   const [open, setOpen] = useState(true);
   return (
@@ -593,6 +670,17 @@ function StageSection({
               </div>
             </button>
           </CollapsibleTrigger>
+          {onAdd && (
+            <button
+              type="button"
+              onClick={onAdd}
+              className="mr-2 my-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+              aria-label="Adicionar lead"
+              title="Adicionar lead nesta etapa"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <CollapsibleContent>
           <div className="border-t bg-muted/20 p-3">{children}</div>
