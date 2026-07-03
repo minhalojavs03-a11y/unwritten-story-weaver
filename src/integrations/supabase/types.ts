@@ -2474,6 +2474,7 @@ export type Database = {
         Returns: string
       }
       current_tenant_id: { Args: never; Returns: string }
+      delete_manual_lead: { Args: { _lead_id: string }; Returns: undefined }
       deny_lead_takeover: { Args: { _request_id: string }; Returns: undefined }
       ensure_distribution_member: {
         Args: { _tenant_id: string; _user_id: string }

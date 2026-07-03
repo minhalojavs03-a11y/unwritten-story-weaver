@@ -8,6 +8,8 @@ import { InitialsAvatar } from "@/components/oticaflow/Avatar";
 import { timeAgo } from "@/lib/format";
 import { useLeads, useCreateLead, useUpdateLead, useTenantMembers } from "@/hooks/useData";
 import { useRef, useState, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Upload, StickyNote, MessageCircle, Phone, Trophy, XCircle, Clock, Sparkles, Pencil, ListChecks, Target, ChevronDown, Calendar as CalendarIcon, User as UserIcon, Mail, Hash, Flame, FileText, Tag, Search, X } from "lucide-react";
+import { Upload, StickyNote, MessageCircle, Phone, Trophy, XCircle, Clock, Sparkles, Pencil, ListChecks, Target, ChevronDown, Calendar as CalendarIcon, User as UserIcon, Mail, Hash, Flame, FileText, Tag, Search, X, Trash2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -143,6 +145,24 @@ export default function LeadsPage() {
   // membro/usuário alvo, não pelo do superadmin logado.
   const memberId = effective.isImpersonating ? effective.memberId : (member?.id ?? null);
   const effectiveUserId = effective.isImpersonating ? effective.id : (user?.id ?? null);
+  const qc = useQueryClient();
+
+  function isManualLead(l: { source?: string | null; imported_from_sheet?: boolean | null }) {
+    return !l.imported_from_sheet && (l.source ?? "").toLowerCase() === "manual";
+  }
+
+  async function deleteManualLead(leadId: string, leadName?: string | null) {
+    if (!window.confirm(`Excluir o lead ${leadName ? `"${leadName}"` : "selecionado"}? Esta ação não pode ser desfeita.`)) return;
+    const { error } = await supabase.rpc("delete_manual_lead", { _lead_id: leadId });
+    if (error) {
+      const desc = error.message?.includes("only_manual") ? "Só é possível excluir leads criados manualmente." : error.message;
+      toast({ title: "Erro ao excluir", description: desc, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Lead excluído" });
+    qc.invalidateQueries({ queryKey: ["leads"] });
+  }
+
   const { maxCreditValue } = useActiveMemberLimit();
   const canViewPhoneFn = useCanViewLeadPhone();
   void maxCreditValue;
@@ -702,6 +722,17 @@ export default function LeadsPage() {
                             <Target className="mr-1 h-3.5 w-3.5" />Detalhes
                           </Button>
                         </div>
+                        {isManualLead(l as any) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 w-full rounded-full text-xs text-destructive border-destructive/40 hover:bg-destructive/10"
+                            onClick={() => deleteManualLead(l.id, l.name)}
+                          >
+                            <Trash2 className="mr-1 h-3.5 w-3.5" />Excluir lead manual
+                          </Button>
+                        )}
+
                       </div>
                     )}
                   </li>
@@ -873,6 +904,17 @@ export default function LeadsPage() {
                                       </Button>
                                     </>
                                   )}
+                                  {isManualLead(l as any) && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-destructive border-destructive/40 hover:bg-destructive/10"
+                                      onClick={() => deleteManualLead(l.id, l.name)}
+                                    >
+                                      <Trash2 className="mr-1.5 h-3.5 w-3.5" />Excluir lead
+                                    </Button>
+                                  )}
+
                                 </div>
                               </div>
                             </td>
