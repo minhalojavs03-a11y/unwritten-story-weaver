@@ -90,6 +90,7 @@ const fromInput = (s: string, endOfDay = false): Date | null => {
 
 export function ConsorcioFunnel({
   funnel, lost, lostReasons = [], compact = false, sales,
+  showSalesInline = false, hideContact = false,
   period, onPeriodChange, customRange, onCustomRangeChange,
 }: Props) {
   const [salesOpen, setSalesOpen] = useState(false);
