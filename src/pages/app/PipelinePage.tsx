@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PageHeader } from "./PageHeader";
 import { stageLabels, stageOrder, stageColorClass, type Stage, type Temperature } from "@/data/mock";
@@ -252,57 +252,91 @@ export default function PipelinePage() {
 
   // Barra de rolagem horizontal externa (fixa na base da viewport), sincronizada com o kanban
   const kanbanRef = useRef<HTMLDivElement | null>(null);
-  const proxyRef = useRef<HTMLDivElement | null>(null);
-  const [scrollWidth, setScrollWidth] = useState(0);
+  const [scrollMetrics, setScrollMetrics] = useState({
+    scrollWidth: 0,
+    clientWidth: 0,
+    scrollLeft: 0,
+    left: 0,
+    width: 0,
+  });
   const [showProxy, setShowProxy] = useState(false);
 
   useLayoutEffect(() => {
     if (effectiveLayout !== "kanban") { setShowProxy(false); return; }
     const el = kanbanRef.current;
-    const proxy = proxyRef.current;
-    if (!el || !proxy) return;
+    if (!el) return;
 
-    let syncing = false;
     let raf: number | null = null;
+    const timers: number[] = [];
+
     const updateSize = () => {
       if (raf) cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        setScrollWidth(el.scrollWidth);
-        // Sempre mostrar a barra externa quando houver overflow horizontal, já
-        // aberta ao carregar a página — não só ao chegar no final do scroll.
-        setShowProxy(el.scrollWidth > el.clientWidth + 1);
+        const rect = el.getBoundingClientRect();
+        const next = {
+          // Garante largura maior que o viewport do kanban para a barra aparecer
+          // imediatamente, mesmo em medições iniciais apertadas do navegador.
+          scrollWidth: Math.max(el.scrollWidth, el.clientWidth + 2),
+          clientWidth: Math.max(1, el.clientWidth),
+          scrollLeft: el.scrollLeft,
+          left: Math.max(0, Math.round(rect.left)),
+          width: Math.max(1, Math.round(rect.width)),
+        };
+        setScrollMetrics((prev) => (
+          prev.scrollWidth === next.scrollWidth
+          && prev.clientWidth === next.clientWidth
+          && prev.scrollLeft === next.scrollLeft
+          && prev.left === next.left
+          && prev.width === next.width
+            ? prev
+            : next
+        ));
+        // No modo kanban a rolagem inferior precisa estar aberta ao carregar.
+        setShowProxy(true);
       });
     };
+
     const onElScroll = () => {
-      if (syncing) return;
-      syncing = true;
-      proxy.scrollLeft = el.scrollLeft;
-      syncing = false;
-    };
-    const onProxyScroll = () => {
-      if (syncing) return;
-      syncing = true;
-      el.scrollLeft = proxy.scrollLeft;
-      syncing = false;
+      setScrollMetrics((prev) => (
+        prev.scrollLeft === el.scrollLeft ? prev : { ...prev, scrollLeft: el.scrollLeft }
+      ));
     };
 
     updateSize();
+    timers.push(window.setTimeout(updateSize, 80));
+    timers.push(window.setTimeout(updateSize, 250));
+    timers.push(window.setTimeout(updateSize, 700));
     const ro = new ResizeObserver(updateSize);
     ro.observe(el);
+    if (el.parentElement) ro.observe(el.parentElement);
     // Observa também o conteúdo interno (colunas) para detectar mudanças de largura
     Array.from(el.children).forEach((child) => ro.observe(child as Element));
     el.addEventListener("scroll", onElScroll, { passive: true });
-    proxy.addEventListener("scroll", onProxyScroll, { passive: true });
     window.addEventListener("resize", updateSize);
+    window.addEventListener("orientationchange", updateSize);
 
     return () => {
       if (raf) cancelAnimationFrame(raf);
+      timers.forEach((timer) => window.clearTimeout(timer));
       ro.disconnect();
       el.removeEventListener("scroll", onElScroll);
-      proxy.removeEventListener("scroll", onProxyScroll);
       window.removeEventListener("resize", updateSize);
+      window.removeEventListener("orientationchange", updateSize);
     };
   }, [effectiveLayout, leads.length]);
+
+  const maxPipelineScroll = Math.max(1, scrollMetrics.scrollWidth - scrollMetrics.clientWidth);
+  const pipelineThumbWidth = scrollMetrics.scrollWidth > 0
+    ? Math.max(56, Math.min(scrollMetrics.width || scrollMetrics.clientWidth, (scrollMetrics.clientWidth / scrollMetrics.scrollWidth) * (scrollMetrics.width || scrollMetrics.clientWidth)))
+    : 80;
+
+  function scrollPipelineTo(value: number) {
+    const el = kanbanRef.current;
+    if (!el) return;
+    const next = Math.max(0, Math.min(maxPipelineScroll, value));
+    el.scrollLeft = next;
+    setScrollMetrics((prev) => ({ ...prev, scrollLeft: next }));
+  }
 
   function onDragEnd(e: DragEndEvent) {
     if (readOnlySupervisor) return; // supervisor é read-only
@@ -429,7 +463,7 @@ export default function PipelinePage() {
           {isLoading && <div className="text-sm text-muted-foreground">Carregando…</div>}
 
           {effectiveLayout === "kanban" ? (
-            <div ref={kanbanRef} className={cn("pipeline-scroll -mx-3 flex w-[calc(100%+1.5rem)] min-w-0 max-w-[calc(100%+1.5rem)] items-start gap-3 overflow-x-scroll px-3 md:mx-0 md:w-full md:max-w-full md:px-0", showProxy ? "pb-8" : "pb-2")}>
+            <div ref={kanbanRef} className={cn("pipeline-scroll -mx-3 flex w-[calc(100%+1.5rem)] min-w-0 max-w-[calc(100%+1.5rem)] items-start gap-3 overflow-x-scroll px-3 md:mx-0 md:w-full md:max-w-full md:px-0", showProxy ? "pb-10" : "pb-2")}>
               {grouped.map(({ stage, leads }) => (
                 <StageColumn key={stage} stage={stage} count={leads.length} metrics={stageMetrics[stage]} onAdd={readOnlySupervisor ? undefined : () => setAddStage(stage)}>
                   {leads.length === 0 ? (
@@ -476,18 +510,30 @@ export default function PipelinePage() {
         </DndContext>
       </div>
 
-      {/* Barra de rolagem horizontal externa, fixa na base, sincronizada com o kanban.
-          Mantida sempre visível quando há overflow para não depender de rolar até o final. */}
+      {/* Barra de rolagem horizontal externa, fixa na base e visível desde o carregamento. */}
       <div
-        ref={proxyRef}
-        aria-hidden
         className={cn(
-          "pipeline-scroll pointer-events-auto fixed bottom-0 left-0 right-0 z-40 overflow-x-scroll overflow-y-hidden border-t border-border/60 bg-background/95 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] backdrop-blur",
+          "pointer-events-auto fixed bottom-0 z-[70] border-t border-border/60 bg-background/95 px-2 py-1 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] backdrop-blur",
           !showProxy && "hidden",
         )}
-        style={{ height: 18 }}
+        style={{ left: scrollMetrics.left, width: scrollMetrics.width || "100vw" }}
+        onWheel={(event) => {
+          event.preventDefault();
+          const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+          scrollPipelineTo(scrollMetrics.scrollLeft + delta);
+        }}
       >
-        <div style={{ width: scrollWidth, height: 1 }} />
+        <input
+          type="range"
+          aria-label="Rolagem horizontal do pipeline"
+          min={0}
+          max={maxPipelineScroll}
+          step={1}
+          value={Math.min(scrollMetrics.scrollLeft, maxPipelineScroll)}
+          onChange={(event) => scrollPipelineTo(Number(event.currentTarget.value))}
+          className="pipeline-range-scroll"
+          style={{ "--pipeline-thumb-width": `${Math.round(pipelineThumbWidth)}px` } as CSSProperties}
+        />
       </div>
 
       <Dialog open={addStage !== null} onOpenChange={(o) => !o && setAddStage(null)}>
