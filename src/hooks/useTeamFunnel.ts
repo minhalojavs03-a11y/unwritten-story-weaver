@@ -37,8 +37,8 @@ export function useTeamFunnel(
     queryFn: async (): Promise<TeamFunnelData> => {
       const { data, error } = await supabase.rpc("get_team_funnel", {
         p_tenant_id: tenant,
-        p_start: start,
-        p_end: end,
+        p_start: start ?? undefined,
+        p_end: end ?? undefined,
       });
       if (error) throw error;
       const raw = (data ?? {}) as {
