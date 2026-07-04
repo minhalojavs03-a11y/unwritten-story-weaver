@@ -57,6 +57,10 @@ interface Props {
   showSalesInline?: boolean;
   /** Oculta o telefone do lead nas listas de vendas (privacidade p/ consultores). */
   hideContact?: boolean;
+  /** Título do card (padrão: "Funil de Consórcio"). */
+  title?: string;
+  /** Subtítulo do card. */
+  subtitle?: string;
   /** Seletor de período opcional. Se fornecido, exibe os chips acima do funil. */
   period?: FunnelPeriod;
   onPeriodChange?: (p: FunnelPeriod) => void;
