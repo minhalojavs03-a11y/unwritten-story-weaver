@@ -93,7 +93,7 @@ export default function DashboardPage() {
   type FC = import("@/components/dashboard/ConsorcioFunnel").FunnelCustomRange;
   const [funnelPeriod, setFunnelPeriod] = useState<FP>("month");
   const [funnelCustom, setFunnelCustom] = useState<FC>({ start: null, end: null });
-  const [teamPeriod, setTeamPeriod] = useState<FP>("last_month");
+  const [teamPeriod, setTeamPeriod] = useState<FP>("all");
   const [teamCustom, setTeamCustom] = useState<FC>({ start: null, end: null });
   // Converte "last_month" em custom range (mês calendário anterior) já que o hook não conhece esse período.
   const lastMonthRange = (() => {
