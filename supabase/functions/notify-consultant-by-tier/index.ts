@@ -352,8 +352,9 @@ Deno.serve(async (req) => {
     const isLeads02 = sheetSourceLabel === "Leads 02";
     const sourceColumn = isLeads02 ? "receives_leads_02" : "receives_leads";
 
-    // Busca todos os consultores ativos que recebem essa origem (filtro de faixa em JS,
-    // pois encadear dois .or() no supabase-js sobrescreve o primeiro filtro).
+    // Busca todos os consultores ativos que recebem essa origem. A faixa de crédito
+    // é preferência, não bloqueio: se ninguém bater a faixa, caímos para a rotação
+    // da origem para nunca deixar lead travado sem consultor.
     const { data: consultantsRaw } = await admin
       .from("tenant_members")
       .select("id, user_id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit, email, notify_inapp, notify_whatsapp")
@@ -371,7 +372,7 @@ Deno.serve(async (req) => {
 
     // Somente Consultores recebem leads. Exclui Vendedor, Supervisor, Dono,
     // Menor Aprendiz e contas com "teste" no nome.
-    const baseConsultants = inTier.filter((c: any) => {
+    const eligibleByOrigin = (consultantsRaw || []).filter((c: any) => {
       const role = String(c.role_label || "").toLowerCase();
       const name = String(c.display_name || "").toLowerCase();
       if (!role.includes("consultor")) return false;
@@ -379,6 +380,17 @@ Deno.serve(async (req) => {
       if (name.includes("teste")) return false;
       return true;
     });
+    let baseConsultants = inTier.filter((c: any) => eligibleByOrigin.some((e: any) => e.id === c.id));
+    let fallbackUsedOutOfTier = false;
+    if (baseConsultants.length === 0 && eligibleByOrigin.length > 0) {
+      baseConsultants = eligibleByOrigin;
+      fallbackUsedOutOfTier = true;
+      console.log("[notify-tier] no consultant in credit tier — falling back to source rotation", {
+        lead_id: lead.id,
+        sheet_source_label: sheetSourceLabel,
+        credit_value: creditValue,
+      });
+    }
 
     // Consultoras que atendem MANUALMENTE — recebem leads mesmo sem instância
     // de WhatsApp conectada (o aviso vai pelo número 804 e elas respondem no
@@ -415,7 +427,25 @@ Deno.serve(async (req) => {
       // habilitados na sequência (mesmo offline). A saudação fica pendente até
       // a instância dele voltar (send-lead-welcome pula se offline).
       if (baseConsultants.length === 0) {
-        return json({ ok: true, skipped: "no consultant available in tier" });
+        // Último recurso operacional: se a origem não tiver ninguém habilitado,
+        // usa qualquer consultor ativo da Feracon. Nunca retorna sem atribuir.
+        const { data: allConsultantsRaw } = await admin
+          .from("tenant_members")
+          .select("id, user_id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit, email, notify_inapp, notify_whatsapp")
+          .eq("tenant_id", lead.tenant_id)
+          .eq("is_active", true)
+          .not("phone", "is", null);
+        baseConsultants = (allConsultantsRaw || []).filter((c: any) => {
+          const role = String(c.role_label || "").toLowerCase();
+          const name = String(c.display_name || "").toLowerCase();
+          if (!role.includes("consultor")) return false;
+          if (role.includes("supervisor") || role.includes("aprendiz") || role.includes("dono")) return false;
+          if (name.includes("teste")) return false;
+          return true;
+        });
+        if (baseConsultants.length === 0) {
+          return json({ error: "no active consultant found for forced assignment" }, 500);
+        }
       }
       connectedConsultants = baseConsultants;
       fallbackUsedOffline = true;
@@ -611,6 +641,8 @@ Deno.serve(async (req) => {
     return json({
       ok: true,
       credit_value: creditValue,
+      fallback_used_out_of_tier: fallbackUsedOutOfTier,
+      fallback_used_offline: fallbackUsedOffline,
       assigned_to: { id: chosen.id, name: chosen.display_name, delivered, wa_status: waStatus },
     });
   } catch (e) {
