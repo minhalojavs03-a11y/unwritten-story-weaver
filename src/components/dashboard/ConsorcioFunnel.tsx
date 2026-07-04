@@ -96,6 +96,8 @@ const fromInput = (s: string, endOfDay = false): Date | null => {
 export function ConsorcioFunnel({
   funnel, lost, lostReasons = [], compact = false, sales,
   showSalesInline = false, hideContact = false,
+  title = "Funil de Consórcio",
+  subtitle = "Jornada do lead até a venda da cota",
   period, onPeriodChange, customRange, onCustomRangeChange,
 }: Props) {
   const [salesOpen, setSalesOpen] = useState(false);
