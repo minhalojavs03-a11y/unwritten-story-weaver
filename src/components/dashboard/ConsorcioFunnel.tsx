@@ -362,6 +362,56 @@ export function ConsorcioFunnel({
         )}
       </div>
 
+      {showSalesInline && sales && sales.length > 0 && (
+        <div className="mt-5 rounded-lg border">
+          <div className="flex items-center justify-between gap-2 border-b bg-emerald-500/5 px-3 py-2">
+            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700">
+              <DollarSign className="h-4 w-4" />
+              Vendas do time no período
+            </div>
+            <Badge variant="secondary" className="font-mono text-[11px]">
+              {sales.length} · {fmtBRL(sales.reduce((s, x) => s + x.value, 0))}
+            </Badge>
+          </div>
+          <div className="max-h-72 overflow-auto">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-muted/60 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 text-left">Cliente</th>
+                  <th className="px-3 py-2 text-left">Consultor</th>
+                  <th className="px-3 py-2 text-left">Origem</th>
+                  <th className="px-3 py-2 text-right">Valor</th>
+                  <th className="px-3 py-2 text-left">Fechada em</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sales.map((sale) => (
+                  <tr key={sale.id} className="border-t">
+                    <td className="px-3 py-2">
+                      <div className="font-medium">{sale.name}</div>
+                      {sale.assetType && (
+                        <div className="text-[11px] text-muted-foreground">{sale.assetType}</div>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">{sale.consultant}</td>
+                    <td className="px-3 py-2">
+                      <Badge variant="secondary" className="text-[10px]">{sale.source}</Badge>
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono font-semibold tabular-nums text-emerald-600">
+                      {fmtBRL(sale.value)}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">{fmtDate(sale.soldAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="border-t bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground">
+            Cada cota fechada aqui é motivação: bora somar a sua? 🚀
+          </div>
+        </div>
+      )}
+
       <Dialog open={salesOpen} onOpenChange={setSalesOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
