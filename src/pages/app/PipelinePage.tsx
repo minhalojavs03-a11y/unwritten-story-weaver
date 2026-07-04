@@ -476,15 +476,16 @@ export default function PipelinePage() {
         </DndContext>
       </div>
 
-      {/* Barra de rolagem horizontal externa, fixa na base, sincronizada com o kanban */}
+      {/* Barra de rolagem horizontal externa, fixa na base, sincronizada com o kanban.
+          Mantida sempre visível quando há overflow para não depender de rolar até o final. */}
       <div
         ref={proxyRef}
         aria-hidden
         className={cn(
-          "pipeline-scroll pointer-events-auto fixed bottom-0 left-0 right-0 z-40 overflow-x-scroll overflow-y-hidden border-t bg-background/95 backdrop-blur",
+          "pipeline-scroll pointer-events-auto fixed bottom-0 left-0 right-0 z-40 overflow-x-scroll overflow-y-hidden border-t border-border/60 bg-background/95 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] backdrop-blur",
           !showProxy && "hidden",
         )}
-        style={{ height: 16 }}
+        style={{ height: 18 }}
       >
         <div style={{ width: scrollWidth, height: 1 }} />
       </div>
