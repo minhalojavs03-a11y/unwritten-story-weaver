@@ -10,7 +10,7 @@ import type { Stage } from "@/data/mock";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
 
-export type FunnelPeriod = "today" | "yesterday" | "7d" | "month" | "all" | "custom";
+export type FunnelPeriod = "today" | "yesterday" | "7d" | "month" | "last_month" | "all" | "custom";
 export type FunnelCustomRange = { start: Date | null; end: Date | null };
 
 type FunnelStage = { key: Stage; stage: string; count: number };
@@ -57,6 +57,10 @@ interface Props {
   showSalesInline?: boolean;
   /** Oculta o telefone do lead nas listas de vendas (privacidade p/ consultores). */
   hideContact?: boolean;
+  /** Título do card (padrão: "Funil de Consórcio"). */
+  title?: string;
+  /** Subtítulo do card. */
+  subtitle?: string;
   /** Seletor de período opcional. Se fornecido, exibe os chips acima do funil. */
   period?: FunnelPeriod;
   onPeriodChange?: (p: FunnelPeriod) => void;
@@ -69,6 +73,7 @@ const PERIOD_CHIPS: { key: FunnelPeriod; label: string }[] = [
   { key: "yesterday", label: "Ontem" },
   { key: "7d", label: "Semana" },
   { key: "month", label: "Mês" },
+  { key: "last_month", label: "Mês anterior" },
   { key: "all", label: "Tudo" },
   { key: "custom", label: "Personalizado" },
 
@@ -91,6 +96,8 @@ const fromInput = (s: string, endOfDay = false): Date | null => {
 export function ConsorcioFunnel({
   funnel, lost, lostReasons = [], compact = false, sales,
   showSalesInline = false, hideContact = false,
+  title = "Funil de Consórcio",
+  subtitle = "Jornada do lead até a venda da cota",
   period, onPeriodChange, customRange, onCustomRangeChange,
 }: Props) {
   const [salesOpen, setSalesOpen] = useState(false);
@@ -114,8 +121,8 @@ export function ConsorcioFunnel({
   return (
     <Card className="p-5">
       <SectionTitle
-        title="Funil de Consórcio"
-        sub="Jornada do lead até a venda da cota"
+        title={title}
+        sub={subtitle}
         action={
           <Badge variant="secondary" className="font-mono text-[11px]">
             {stages.reduce((s, x) => s + x.count, 0) + (lost || 0)} leads
