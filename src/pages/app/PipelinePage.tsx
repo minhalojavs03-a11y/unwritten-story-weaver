@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PageHeader } from "./PageHeader";
 import { stageLabels, stageOrder, stageColorClass, type Stage, type Temperature } from "@/data/mock";
@@ -256,18 +256,22 @@ export default function PipelinePage() {
   const [scrollWidth, setScrollWidth] = useState(0);
   const [showProxy, setShowProxy] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (effectiveLayout !== "kanban") { setShowProxy(false); return; }
     const el = kanbanRef.current;
     const proxy = proxyRef.current;
     if (!el || !proxy) return;
 
     let syncing = false;
+    let raf: number | null = null;
     const updateSize = () => {
-      setScrollWidth(el.scrollWidth);
-      const overflows = el.scrollWidth > el.clientWidth + 1;
-      // sempre mostrar a barra externa quando houver overflow horizontal
-      setShowProxy(overflows);
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        setScrollWidth(el.scrollWidth);
+        // Sempre mostrar a barra externa quando houver overflow horizontal, já
+        // aberta ao carregar a página — não só ao chegar no final do scroll.
+        setShowProxy(el.scrollWidth > el.clientWidth + 1);
+      });
     };
     const onElScroll = () => {
       if (syncing) return;
@@ -285,17 +289,18 @@ export default function PipelinePage() {
     updateSize();
     const ro = new ResizeObserver(updateSize);
     ro.observe(el);
+    // Observa também o conteúdo interno (colunas) para detectar mudanças de largura
+    Array.from(el.children).forEach((child) => ro.observe(child as Element));
     el.addEventListener("scroll", onElScroll, { passive: true });
     proxy.addEventListener("scroll", onProxyScroll, { passive: true });
     window.addEventListener("resize", updateSize);
-    window.addEventListener("scroll", updateSize, { passive: true });
 
     return () => {
+      if (raf) cancelAnimationFrame(raf);
       ro.disconnect();
       el.removeEventListener("scroll", onElScroll);
       proxy.removeEventListener("scroll", onProxyScroll);
       window.removeEventListener("resize", updateSize);
-      window.removeEventListener("scroll", updateSize);
     };
   }, [effectiveLayout, leads.length]);
 
@@ -424,7 +429,7 @@ export default function PipelinePage() {
           {isLoading && <div className="text-sm text-muted-foreground">Carregando…</div>}
 
           {effectiveLayout === "kanban" ? (
-            <div ref={kanbanRef} className="pipeline-scroll -mx-3 flex w-[calc(100%+1.5rem)] min-w-0 max-w-[calc(100%+1.5rem)] items-start gap-3 overflow-x-scroll px-3 pb-2 md:mx-0 md:w-full md:max-w-full md:px-0">
+            <div ref={kanbanRef} className={cn("pipeline-scroll -mx-3 flex w-[calc(100%+1.5rem)] min-w-0 max-w-[calc(100%+1.5rem)] items-start gap-3 overflow-x-scroll px-3 md:mx-0 md:w-full md:max-w-full md:px-0", showProxy ? "pb-8" : "pb-2")}>
               {grouped.map(({ stage, leads }) => (
                 <StageColumn key={stage} stage={stage} count={leads.length} metrics={stageMetrics[stage]} onAdd={readOnlySupervisor ? undefined : () => setAddStage(stage)}>
                   {leads.length === 0 ? (
@@ -471,15 +476,16 @@ export default function PipelinePage() {
         </DndContext>
       </div>
 
-      {/* Barra de rolagem horizontal externa, fixa na base, sincronizada com o kanban */}
+      {/* Barra de rolagem horizontal externa, fixa na base, sincronizada com o kanban.
+          Mantida sempre visível quando há overflow para não depender de rolar até o final. */}
       <div
         ref={proxyRef}
         aria-hidden
         className={cn(
-          "pipeline-scroll pointer-events-auto fixed bottom-0 left-0 right-0 z-40 overflow-x-scroll overflow-y-hidden border-t bg-background/95 backdrop-blur",
+          "pipeline-scroll pointer-events-auto fixed bottom-0 left-0 right-0 z-40 overflow-x-scroll overflow-y-hidden border-t border-border/60 bg-background/95 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] backdrop-blur",
           !showProxy && "hidden",
         )}
-        style={{ height: 16 }}
+        style={{ height: 18 }}
       >
         <div style={{ width: scrollWidth, height: 1 }} />
       </div>
