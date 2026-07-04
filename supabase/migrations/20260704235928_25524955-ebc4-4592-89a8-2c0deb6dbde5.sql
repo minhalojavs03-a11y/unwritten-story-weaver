@@ -1,0 +1,1 @@
+UPDATE public.tenant_members SET receives_leads = true WHERE id = 'd4394ed8-4480-47f6-94bf-5b11ff11e315';
