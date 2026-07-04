@@ -53,6 +53,10 @@ interface Props {
   compact?: boolean;
   /** Lista de vendas para detalhar ao clicar na faixa verde */
   sales?: SaleEntry[];
+  /** Renderiza uma tabela de vendas inline abaixo do funil (motivacional p/ consultores). */
+  showSalesInline?: boolean;
+  /** Oculta o telefone do lead nas listas de vendas (privacidade p/ consultores). */
+  hideContact?: boolean;
   /** Seletor de período opcional. Se fornecido, exibe os chips acima do funil. */
   period?: FunnelPeriod;
   onPeriodChange?: (p: FunnelPeriod) => void;
