@@ -88,14 +88,29 @@ export default function DashboardPage() {
   // Executive analytics (only rendered for privileged users)
   const execData = useReportData("30d", "all", effectiveMemberId, effectiveTenantOverride);
 
-  // Período independente do funil (Hoje / Ontem / Semana / Mês / Personalizado)
-  const [funnelPeriod, setFunnelPeriod] = useState<import("@/components/dashboard/ConsorcioFunnel").FunnelPeriod>("month");
+  // Período independente do funil (Hoje / Ontem / Semana / Mês / Mês anterior / Personalizado)
+  // Consultor abre por padrão em "Mês anterior" para ver as vendas fechadas do time.
+  const [funnelPeriod, setFunnelPeriod] = useState<import("@/components/dashboard/ConsorcioFunnel").FunnelPeriod>(
+    privileged ? "month" : "last_month",
+  );
   const [funnelCustom, setFunnelCustom] = useState<import("@/components/dashboard/ConsorcioFunnel").FunnelCustomRange>({ start: null, end: null });
-  const funnelHookPeriod = funnelPeriod === "custom" ? "all" : funnelPeriod;
-  const funnelCustomRange = funnelPeriod === "custom" ? funnelCustom : null;
-  // Consultores veem o funil do TIME inteiro (motivacional: ver vendas dos colegas).
-  // Owner/supervisor/superadmin veem conforme o escopo selecionado.
-  const funnelScopeMemberId = privileged ? effectiveMemberId : null;
+  // Converte "last_month" em custom range (mês calendário anterior) já que o hook não conhece esse período.
+  const lastMonthRange = (() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+    const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    return { start, end };
+  })();
+  const funnelHookPeriod =
+    funnelPeriod === "custom" || funnelPeriod === "last_month" ? "all" : funnelPeriod;
+  const funnelCustomRange =
+    funnelPeriod === "custom" ? funnelCustom
+    : funnelPeriod === "last_month" ? lastMonthRange
+    : null;
+  // Team funnel data (para consultor mostrar ao lado do pessoal).
+  const teamFunnelData = useReportData(funnelHookPeriod as never, "all", null, effectiveTenantOverride, funnelCustomRange);
+  // Funil pessoal / com escopo selecionado.
+  const funnelScopeMemberId = privileged ? effectiveMemberId : (member?.id ?? null);
   const funnelData = useReportData(funnelHookPeriod as never, "all", funnelScopeMemberId, effectiveTenantOverride, funnelCustomRange);
 
   // Speed-to-assume: tempo entre criação do lead e atribuição (em minutos)
