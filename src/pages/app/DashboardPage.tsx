@@ -14,6 +14,7 @@ import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 import { useSupportImpersonation } from "@/hooks/useSupportImpersonation";
 import { LeadsHourlyPanel } from "@/components/dashboard/LeadsHourlyPanel";
 import { useReportData } from "@/hooks/useReportData";
+import { useTeamFunnel } from "@/hooks/useTeamFunnel";
 import { HealthScore, InsightsPanel, PipelineIntel, WeeklyActivity, ResponseHeatmap } from "@/components/dashboard/ExecutiveWidgets";
 import { ConsorcioFunnel } from "@/components/dashboard/ConsorcioFunnel";
 import { WeekComparison } from "@/components/dashboard/WeekComparison";
