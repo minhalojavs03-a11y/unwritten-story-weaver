@@ -429,7 +429,7 @@ export default function PipelinePage() {
           {isLoading && <div className="text-sm text-muted-foreground">Carregando…</div>}
 
           {effectiveLayout === "kanban" ? (
-            <div ref={kanbanRef} className="pipeline-scroll -mx-3 flex w-[calc(100%+1.5rem)] min-w-0 max-w-[calc(100%+1.5rem)] items-start gap-3 overflow-x-scroll px-3 pb-2 md:mx-0 md:w-full md:max-w-full md:px-0">
+            <div ref={kanbanRef} className={cn("pipeline-scroll -mx-3 flex w-[calc(100%+1.5rem)] min-w-0 max-w-[calc(100%+1.5rem)] items-start gap-3 overflow-x-scroll px-3 md:mx-0 md:w-full md:max-w-full md:px-0", showProxy ? "pb-8" : "pb-2")}>
               {grouped.map(({ stage, leads }) => (
                 <StageColumn key={stage} stage={stage} count={leads.length} metrics={stageMetrics[stage]} onAdd={readOnlySupervisor ? undefined : () => setAddStage(stage)}>
                   {leads.length === 0 ? (
