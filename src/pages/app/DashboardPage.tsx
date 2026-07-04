@@ -93,7 +93,10 @@ export default function DashboardPage() {
   const [funnelCustom, setFunnelCustom] = useState<import("@/components/dashboard/ConsorcioFunnel").FunnelCustomRange>({ start: null, end: null });
   const funnelHookPeriod = funnelPeriod === "custom" ? "all" : funnelPeriod;
   const funnelCustomRange = funnelPeriod === "custom" ? funnelCustom : null;
-  const funnelData = useReportData(funnelHookPeriod as never, "all", effectiveMemberId, effectiveTenantOverride, funnelCustomRange);
+  // Consultores veem o funil do TIME inteiro (motivacional: ver vendas dos colegas).
+  // Owner/supervisor/superadmin veem conforme o escopo selecionado.
+  const funnelScopeMemberId = privileged ? effectiveMemberId : null;
+  const funnelData = useReportData(funnelHookPeriod as never, "all", funnelScopeMemberId, effectiveTenantOverride, funnelCustomRange);
 
   // Speed-to-assume: tempo entre criação do lead e atribuição (em minutos)
   const assignedLeads = leads.filter((l) => l.assigned_member_id && l.assigned_member_at && l.created_at);
