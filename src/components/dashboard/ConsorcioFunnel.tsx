@@ -250,19 +250,19 @@ export function ConsorcioFunnel({
                   {/* Quantidade ao centro */}
                   <text
                     x={CENTER}
-                    y={y + H / 2 + 6}
+                    y={y + H / 2 + 7}
                     textAnchor="middle"
                     className="fill-white font-display pointer-events-none"
-                    style={{ fontSize: 22, fontWeight: 800 }}
+                    style={{ fontSize: 26, fontWeight: 800 }}
                   >
                     {s.count}
                   </text>
                   {/* Label à direita */}
                   <text
                     x={x2 + 10}
-                    y={y + H / 2 + 4}
+                    y={y + H / 2 + 5}
                     className={cn("fill-foreground pointer-events-none", clickable && "underline-offset-2")}
-                    style={{ fontSize: 12, fontWeight: 600 }}
+                    style={{ fontSize: 15, fontWeight: 600 }}
                   >
                     {style.label}{clickable ? "  ›" : ""}
                   </text>
@@ -270,10 +270,10 @@ export function ConsorcioFunnel({
                   {dropPct !== null && dropPct > 0 && (
                     <text
                       x={x1 - 10}
-                      y={y + H / 2 + 4}
+                      y={y + H / 2 + 5}
                       textAnchor="end"
                       className="fill-muted-foreground pointer-events-none"
-                      style={{ fontSize: 11, fontWeight: 600 }}
+                      style={{ fontSize: 13, fontWeight: 600 }}
                     >
                       -{dropPct}%
                     </text>
