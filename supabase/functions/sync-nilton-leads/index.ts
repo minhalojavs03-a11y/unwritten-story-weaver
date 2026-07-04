@@ -220,6 +220,14 @@ Deno.serve(async (req) => {
     const niltonTenantId = prof?.tenant_id ?? NILTON_TENANT_ID;
     const niltonPhone = (prof?.phone ?? NILTON_PHONE)?.toString();
 
+    // Busca tenant_member do Nilton (necessário para atribuir corretamente e
+    // disparar boas-vindas via `send-lead-welcome`, que usa a instância
+    // WhatsApp do consultor atribuído — o número do Nilton).
+    const memberRes = await sb(
+      `/tenant_members?select=id&user_id=eq.${niltonUserId}&tenant_id=eq.${niltonTenantId}&is_active=eq.true&limit=1`,
+    );
+    const niltonMemberId: string | null = ((await memberRes.json())?.[0]?.id) ?? null;
+
     // Conta quantos leads o Nilton já recebeu HOJE (status != 'overflow' e não histórico)
     const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
     const todayRes = await sb(
