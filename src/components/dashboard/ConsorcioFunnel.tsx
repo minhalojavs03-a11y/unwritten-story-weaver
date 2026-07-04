@@ -53,6 +53,10 @@ interface Props {
   compact?: boolean;
   /** Lista de vendas para detalhar ao clicar na faixa verde */
   sales?: SaleEntry[];
+  /** Renderiza uma tabela de vendas inline abaixo do funil (motivacional p/ consultores). */
+  showSalesInline?: boolean;
+  /** Oculta o telefone do lead nas listas de vendas (privacidade p/ consultores). */
+  hideContact?: boolean;
   /** Seletor de período opcional. Se fornecido, exibe os chips acima do funil. */
   period?: FunnelPeriod;
   onPeriodChange?: (p: FunnelPeriod) => void;
@@ -86,6 +90,7 @@ const fromInput = (s: string, endOfDay = false): Date | null => {
 
 export function ConsorcioFunnel({
   funnel, lost, lostReasons = [], compact = false, sales,
+  showSalesInline = false, hideContact = false,
   period, onPeriodChange, customRange, onCustomRangeChange,
 }: Props) {
   const [salesOpen, setSalesOpen] = useState(false);
@@ -357,6 +362,56 @@ export function ConsorcioFunnel({
         )}
       </div>
 
+      {showSalesInline && sales && sales.length > 0 && (
+        <div className="mt-5 rounded-lg border">
+          <div className="flex items-center justify-between gap-2 border-b bg-emerald-500/5 px-3 py-2">
+            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700">
+              <DollarSign className="h-4 w-4" />
+              Vendas do time no período
+            </div>
+            <Badge variant="secondary" className="font-mono text-[11px]">
+              {sales.length} · {fmtBRL(sales.reduce((s, x) => s + x.value, 0))}
+            </Badge>
+          </div>
+          <div className="max-h-72 overflow-auto">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-muted/60 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 text-left">Cliente</th>
+                  <th className="px-3 py-2 text-left">Consultor</th>
+                  <th className="px-3 py-2 text-left">Origem</th>
+                  <th className="px-3 py-2 text-right">Valor</th>
+                  <th className="px-3 py-2 text-left">Fechada em</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sales.map((sale) => (
+                  <tr key={sale.id} className="border-t">
+                    <td className="px-3 py-2">
+                      <div className="font-medium">{sale.name}</div>
+                      {sale.assetType && (
+                        <div className="text-[11px] text-muted-foreground">{sale.assetType}</div>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">{sale.consultant}</td>
+                    <td className="px-3 py-2">
+                      <Badge variant="secondary" className="text-[10px]">{sale.source}</Badge>
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono font-semibold tabular-nums text-emerald-600">
+                      {fmtBRL(sale.value)}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">{fmtDate(sale.soldAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="border-t bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground">
+            Cada cota fechada aqui é motivação: bora somar a sua? 🚀
+          </div>
+        </div>
+      )}
+
       <Dialog open={salesOpen} onOpenChange={setSalesOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -392,7 +447,7 @@ export function ConsorcioFunnel({
                     <tr key={sale.id} className="border-t hover:bg-muted/30">
                       <td className="px-3 py-2">
                         <div className="font-medium">{sale.name}</div>
-                        {sale.phone && (
+                        {sale.phone && !hideContact && (
                           <div className="text-[11px] text-muted-foreground">{sale.phone}</div>
                         )}
                         {sale.assetType && (
@@ -408,13 +463,15 @@ export function ConsorcioFunnel({
                       </td>
                       <td className="px-3 py-2 text-muted-foreground">{fmtDate(sale.soldAt)}</td>
                       <td className="px-3 py-2 text-right">
-                        <Link
-                          to={`/conversas?leadId=${sale.id}`}
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                          onClick={() => setSalesOpen(false)}
-                        >
-                          Abrir <ExternalLink className="h-3 w-3" />
-                        </Link>
+                        {!hideContact && (
+                          <Link
+                            to={`/conversas?leadId=${sale.id}`}
+                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                            onClick={() => setSalesOpen(false)}
+                          >
+                            Abrir <ExternalLink className="h-3 w-3" />
+                          </Link>
+                        )}
                       </td>
                     </tr>
                   ))}
