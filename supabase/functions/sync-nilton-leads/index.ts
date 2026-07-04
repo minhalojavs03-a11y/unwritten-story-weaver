@@ -118,6 +118,85 @@ async function enqueueWhatsAppNotice(tenantId: string, phone: string, text: stri
   }
 }
 
+// Cria um espelho em `public.leads` para que os leads exclusivos do Nilton
+// entrem no pipeline padrão de boas-vindas (`send-lead-welcome` usa a
+// instância WhatsApp do consultor atribuído). Sem isso, os leads dele só
+// existiam em `nilton_leads` e o número do Nilton nunca enviava boas-vindas.
+async function mirrorNiltonLeadToLeadsAndWelcome(params: {
+  tenantId: string;
+  niltonMemberId: string | null;
+  niltonUserId: string;
+  nome: string | null;
+  telefone: string | null;
+  cartaValue: string | null;
+  campaignName: string | null;
+  sheetId: string;
+}) {
+  const { tenantId, niltonMemberId, niltonUserId, nome, telefone, cartaValue, campaignName, sheetId } = params;
+  if (!telefone || !niltonMemberId) return;
+  const phoneDigits = String(telefone).replace(/\D/g, "");
+  if (!phoneDigits) return;
+
+  // Dedup: se já existe lead com esse telefone nesse tenant, só garante
+  // atribuição ao Nilton e enfileira welcome se ainda não foi enviado.
+  const existsRes = await sb(
+    `/leads?tenant_id=eq.${tenantId}&phone=ilike.*${phoneDigits.slice(-8)}*&select=id,assigned_member_id&limit=1`,
+  );
+  const existing = (await existsRes.json())?.[0] ?? null;
+
+  let leadId: string | null = existing?.id ?? null;
+  if (!leadId) {
+    const payload: Record<string, unknown> = {
+      tenant_id: tenantId,
+      name: nome,
+      phone: telefone,
+      source: "nilton_sheet_overflow",
+      imported_from_sheet: true,
+      stage: "novo",
+      interest: cartaValue,
+      campaign_name: campaignName,
+      assigned_to: niltonUserId,
+      assigned_member_id: niltonMemberId,
+      assigned_member_at: new Date().toISOString(),
+      metadata: { nilton_sheet_id: sheetId },
+    };
+    const insert = await sb(`/leads`, { method: "POST", body: JSON.stringify(payload) });
+    if (!insert.ok) {
+      console.error("mirror lead insert failed", await insert.text());
+      return;
+    }
+    const created = (await insert.json())?.[0] ?? null;
+    leadId = created?.id ?? null;
+  } else if (existing?.assigned_member_id !== niltonMemberId) {
+    await sb(`/leads?id=eq.${leadId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        assigned_to: niltonUserId,
+        assigned_member_id: niltonMemberId,
+        assigned_member_at: new Date().toISOString(),
+      }),
+    });
+  }
+  if (!leadId) return;
+
+  const notedRes = await sb(
+    `/lead_notifications?lead_id=eq.${leadId}&type=eq.welcome&select=id&limit=1`,
+  );
+  if ((await notedRes.json())?.[0]) return;
+
+  await sb(`/notification_queue`, {
+    method: "POST",
+    body: JSON.stringify({
+      tenant_id: tenantId,
+      lead_id: leadId,
+      type: "welcome",
+      recipient_phone: phoneDigits,
+      status: "pending",
+      due_at: new Date(Date.now() + 15_000).toISOString(),
+    }),
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const startedAt = Date.now();
@@ -140,6 +219,14 @@ Deno.serve(async (req) => {
     const niltonUserId = prof?.id ?? NILTON_USER_ID;
     const niltonTenantId = prof?.tenant_id ?? NILTON_TENANT_ID;
     const niltonPhone = (prof?.phone ?? NILTON_PHONE)?.toString();
+
+    // Busca tenant_member do Nilton (necessário para atribuir corretamente e
+    // disparar boas-vindas via `send-lead-welcome`, que usa a instância
+    // WhatsApp do consultor atribuído — o número do Nilton).
+    const memberRes = await sb(
+      `/tenant_members?select=id&user_id=eq.${niltonUserId}&tenant_id=eq.${niltonTenantId}&is_active=eq.true&limit=1`,
+    );
+    const niltonMemberId: string | null = ((await memberRes.json())?.[0]?.id) ?? null;
 
     // Conta quantos leads o Nilton já recebeu HOJE (status != 'overflow' e não histórico)
     const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
@@ -225,6 +312,19 @@ Deno.serve(async (req) => {
         const text = `🎯 *Novo lead RS!*\n\n👤 ${payload.nome_completo ?? "Sem nome"}\n📱 ${payload.telefone ?? "sem telefone"}\n💰 Carta: ${payload.carta_value ?? "-"}\n📣 Campanha: ${payload.campaign_name ?? "-"}\n\nAcesse o CRM para atender.`;
         await enqueueWhatsAppNotice(niltonTenantId, niltonPhone, text);
       }
+
+      // Espelha em `leads` + enfileira welcome para que o próprio número do
+      // Nilton envie a mensagem de boas-vindas ao lead da planilha.
+      await mirrorNiltonLeadToLeadsAndWelcome({
+        tenantId: niltonTenantId,
+        niltonMemberId,
+        niltonUserId,
+        nome: payload.nome_completo,
+        telefone: payload.telefone,
+        cartaValue: payload.carta_value,
+        campaignName: payload.campaign_name,
+        sheetId: sheet_id,
+      });
     }
   } catch (e) {
     errorMessage = (e as Error).message ?? String(e);
