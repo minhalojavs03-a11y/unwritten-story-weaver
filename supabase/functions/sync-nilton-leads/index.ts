@@ -312,6 +312,19 @@ Deno.serve(async (req) => {
         const text = `🎯 *Novo lead RS!*\n\n👤 ${payload.nome_completo ?? "Sem nome"}\n📱 ${payload.telefone ?? "sem telefone"}\n💰 Carta: ${payload.carta_value ?? "-"}\n📣 Campanha: ${payload.campaign_name ?? "-"}\n\nAcesse o CRM para atender.`;
         await enqueueWhatsAppNotice(niltonTenantId, niltonPhone, text);
       }
+
+      // Espelha em `leads` + enfileira welcome para que o próprio número do
+      // Nilton envie a mensagem de boas-vindas ao lead da planilha.
+      await mirrorNiltonLeadToLeadsAndWelcome({
+        tenantId: niltonTenantId,
+        niltonMemberId,
+        niltonUserId,
+        nome: payload.nome_completo,
+        telefone: payload.telefone,
+        cartaValue: payload.carta_value,
+        campaignName: payload.campaign_name,
+        sheetId: sheet_id,
+      });
     }
   } catch (e) {
     errorMessage = (e as Error).message ?? String(e);
