@@ -397,7 +397,7 @@ export function ConsorcioFunnel({
                     <tr key={sale.id} className="border-t hover:bg-muted/30">
                       <td className="px-3 py-2">
                         <div className="font-medium">{sale.name}</div>
-                        {sale.phone && (
+                        {sale.phone && !hideContact && (
                           <div className="text-[11px] text-muted-foreground">{sale.phone}</div>
                         )}
                         {sale.assetType && (
