@@ -239,19 +239,42 @@ export default function DashboardPage() {
 
         <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
 
-        <ConsorcioFunnel
-          funnel={funnelData.funnel}
-          lost={funnelData.lost}
-          lostReasons={privileged ? funnelData.lostReasons : []}
-          compact={!privileged}
-          sales={funnelData.sales}
-          showSalesInline={!privileged}
-          hideContact={!privileged}
-          period={funnelPeriod}
-          onPeriodChange={setFunnelPeriod}
-          customRange={funnelCustom}
-          onCustomRangeChange={(r) => { setFunnelPeriod("custom"); setFunnelCustom(r); }}
-        />
+        {privileged ? (
+          <ConsorcioFunnel
+            funnel={funnelData.funnel}
+            lost={funnelData.lost}
+            lostReasons={funnelData.lostReasons}
+            sales={funnelData.sales}
+            period={funnelPeriod}
+            onPeriodChange={setFunnelPeriod}
+            customRange={funnelCustom}
+            onCustomRangeChange={(r) => { setFunnelPeriod("custom"); setFunnelCustom(r); }}
+          />
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <ConsorcioFunnel
+              title="Meu funil"
+              subtitle="Sua jornada de vendas no período"
+              funnel={funnelData.funnel}
+              lost={funnelData.lost}
+              compact
+              period={funnelPeriod}
+              onPeriodChange={setFunnelPeriod}
+              customRange={funnelCustom}
+              onCustomRangeChange={(r) => { setFunnelPeriod("custom"); setFunnelCustom(r); }}
+            />
+            <ConsorcioFunnel
+              title="Funil do time"
+              subtitle="Vendas de todos os consultores"
+              funnel={teamFunnelData.funnel}
+              lost={teamFunnelData.lost}
+              compact
+              sales={teamFunnelData.sales}
+              showSalesInline
+              hideContact
+            />
+          </div>
+        )}
 
 
         <ResponseRatePanel memberId={effectiveMemberId} compact />
