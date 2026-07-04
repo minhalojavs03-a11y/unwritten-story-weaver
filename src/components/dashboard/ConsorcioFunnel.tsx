@@ -104,9 +104,9 @@ export function ConsorcioFunnel({
   const [customOpen, setCustomOpen] = useState(false);
   const stages = funnel.filter((s) => s.key !== "perdido");
   const top = Math.max(1, stages[0]?.count ?? 1);
-  const FUNNEL_W = 360;        // largura útil do funil
-  const PAD_L = 60;            // espaço à esquerda p/ "-x%"
-  const PAD_R = 170;           // espaço à direita p/ rótulos longos ("Simulação Enviada")
+  const FUNNEL_W = 320;        // largura útil do funil
+  const PAD_L = 54;            // espaço à esquerda p/ "-x%"
+  const PAD_R = 150;           // espaço à direita p/ rótulos longos ("Simulação Enviada")
   const W = FUNNEL_W + PAD_L + PAD_R;
   const CENTER = PAD_L + FUNNEL_W / 2;
   const H = 60;
@@ -119,7 +119,7 @@ export function ConsorcioFunnel({
   const showPeriodPicker = !!period && !!onPeriodChange;
 
   return (
-    <Card className="p-5">
+    <Card className="overflow-hidden p-3 md:p-5">
       <SectionTitle
         title={title}
         sub={subtitle}
@@ -197,7 +197,8 @@ export function ConsorcioFunnel({
         <div className="flex flex-col items-center">
           <svg
             viewBox={`0 0 ${W} ${(H + GAP) * stages.length}`}
-            className="w-full max-w-2xl"
+            className="block w-full max-w-2xl"
+            preserveAspectRatio="xMidYMid meet"
             role="img"
             aria-label="Funil de conversão de consórcio"
           >
@@ -249,19 +250,19 @@ export function ConsorcioFunnel({
                   {/* Quantidade ao centro */}
                   <text
                     x={CENTER}
-                    y={y + H / 2 + 6}
+                    y={y + H / 2 + 7}
                     textAnchor="middle"
                     className="fill-white font-display pointer-events-none"
-                    style={{ fontSize: 22, fontWeight: 800 }}
+                    style={{ fontSize: 26, fontWeight: 800 }}
                   >
                     {s.count}
                   </text>
                   {/* Label à direita */}
                   <text
                     x={x2 + 10}
-                    y={y + H / 2 + 4}
+                    y={y + H / 2 + 5}
                     className={cn("fill-foreground pointer-events-none", clickable && "underline-offset-2")}
-                    style={{ fontSize: 12, fontWeight: 600 }}
+                    style={{ fontSize: 15, fontWeight: 600 }}
                   >
                     {style.label}{clickable ? "  ›" : ""}
                   </text>
@@ -269,10 +270,10 @@ export function ConsorcioFunnel({
                   {dropPct !== null && dropPct > 0 && (
                     <text
                       x={x1 - 10}
-                      y={y + H / 2 + 4}
+                      y={y + H / 2 + 5}
                       textAnchor="end"
                       className="fill-muted-foreground pointer-events-none"
-                      style={{ fontSize: 11, fontWeight: 600 }}
+                      style={{ fontSize: 13, fontWeight: 600 }}
                     >
                       -{dropPct}%
                     </text>
