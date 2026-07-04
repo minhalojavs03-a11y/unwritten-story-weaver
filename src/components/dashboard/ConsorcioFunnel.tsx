@@ -121,8 +121,8 @@ export function ConsorcioFunnel({
   return (
     <Card className="p-5">
       <SectionTitle
-        title="Funil de Consórcio"
-        sub="Jornada do lead até a venda da cota"
+        title={title}
+        sub={subtitle}
         action={
           <Badge variant="secondary" className="font-mono text-[11px]">
             {stages.reduce((s, x) => s + x.count, 0) + (lost || 0)} leads
