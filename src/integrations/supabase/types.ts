@@ -2583,6 +2583,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_team_funnel: {
+        Args: { p_end?: string; p_start?: string; p_tenant_id: string }
+        Returns: Json
+      }
       get_tenant_role: {
         Args: { _tenant_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["tenant_role"]

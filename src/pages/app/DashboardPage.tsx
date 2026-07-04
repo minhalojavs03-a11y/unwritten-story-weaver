@@ -14,6 +14,7 @@ import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 import { useSupportImpersonation } from "@/hooks/useSupportImpersonation";
 import { LeadsHourlyPanel } from "@/components/dashboard/LeadsHourlyPanel";
 import { useReportData } from "@/hooks/useReportData";
+import { useTeamFunnel } from "@/hooks/useTeamFunnel";
 import { HealthScore, InsightsPanel, PipelineIntel, WeeklyActivity, ResponseHeatmap } from "@/components/dashboard/ExecutiveWidgets";
 import { ConsorcioFunnel } from "@/components/dashboard/ConsorcioFunnel";
 import { WeekComparison } from "@/components/dashboard/WeekComparison";
@@ -112,7 +113,16 @@ export default function DashboardPage() {
   const funnelScopeMemberId = privileged ? effectiveMemberId : (member?.id ?? null);
   const funnelData = useReportData(personalHook.period, "all", funnelScopeMemberId, effectiveTenantOverride, personalHook.range);
   // Team funnel data (para consultor mostrar ao lado do pessoal).
-  const teamFunnelData = useReportData(teamHook.period, "all", null, effectiveTenantOverride, teamHook.range);
+  // Consultores não têm RLS pra ver leads dos colegas → RPC security definer com dados agregados
+  // (sem telefone) para exibir o funil e a lista de vendas de TODO o time.
+  const teamRpcTenantId = effectiveTenantOverride === undefined ? null : effectiveTenantOverride;
+  const teamRpc = useTeamFunnel(teamRpcTenantId, teamHook.range);
+  const teamFunnelData = teamRpc.data ?? {
+    funnel: [] as { key: import("@/data/mock").Stage; stage: string; count: number }[],
+    lost: 0,
+    lostReasons: [] as { reason: string; count: number; pct: number }[],
+    sales: [] as import("@/components/dashboard/ConsorcioFunnel").SaleEntry[],
+  };
 
   // Speed-to-assume: tempo entre criação do lead e atribuição (em minutos)
   const assignedLeads = leads.filter((l) => l.assigned_member_id && l.assigned_member_at && l.created_at);
