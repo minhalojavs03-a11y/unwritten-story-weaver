@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PageHeader } from "./PageHeader";
 import { stageLabels, stageOrder, stageColorClass, type Stage, type Temperature } from "@/data/mock";
@@ -256,18 +256,22 @@ export default function PipelinePage() {
   const [scrollWidth, setScrollWidth] = useState(0);
   const [showProxy, setShowProxy] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (effectiveLayout !== "kanban") { setShowProxy(false); return; }
     const el = kanbanRef.current;
     const proxy = proxyRef.current;
     if (!el || !proxy) return;
 
     let syncing = false;
+    let raf: number | null = null;
     const updateSize = () => {
-      setScrollWidth(el.scrollWidth);
-      const overflows = el.scrollWidth > el.clientWidth + 1;
-      // sempre mostrar a barra externa quando houver overflow horizontal
-      setShowProxy(overflows);
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        setScrollWidth(el.scrollWidth);
+        // Sempre mostrar a barra externa quando houver overflow horizontal, já
+        // aberta ao carregar a página — não só ao chegar no final do scroll.
+        setShowProxy(el.scrollWidth > el.clientWidth + 1);
+      });
     };
     const onElScroll = () => {
       if (syncing) return;
@@ -285,17 +289,18 @@ export default function PipelinePage() {
     updateSize();
     const ro = new ResizeObserver(updateSize);
     ro.observe(el);
+    // Observa também o conteúdo interno (colunas) para detectar mudanças de largura
+    Array.from(el.children).forEach((child) => ro.observe(child as Element));
     el.addEventListener("scroll", onElScroll, { passive: true });
     proxy.addEventListener("scroll", onProxyScroll, { passive: true });
     window.addEventListener("resize", updateSize);
-    window.addEventListener("scroll", updateSize, { passive: true });
 
     return () => {
+      if (raf) cancelAnimationFrame(raf);
       ro.disconnect();
       el.removeEventListener("scroll", onElScroll);
       proxy.removeEventListener("scroll", onProxyScroll);
       window.removeEventListener("resize", updateSize);
-      window.removeEventListener("scroll", updateSize);
     };
   }, [effectiveLayout, leads.length]);
 
