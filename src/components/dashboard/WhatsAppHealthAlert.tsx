@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, XCircle, Send, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { FERACON_TENANT_ID, isHiddenFeraconPerson } from "@/lib/feracon";
@@ -54,6 +54,38 @@ function consultantName(r: InstanceRow) {
 export function WhatsAppHealthAlert() {
   const { data: instances = [], isLoading } = useFeraconInstances();
   const [sending, setSending] = useState(false);
+  const queryClient = useQueryClient();
+  const refreshedRef = useRef<Set<string>>(new Set());
+
+  // Auto-refresh phone_number para instâncias conectadas que ainda estão sem número (ex.: Lucas)
+  useEffect(() => {
+    const missing = instances.filter(
+      (i) => (i.is_connected === true || i.status === "connected") && !i.phone_number,
+    );
+    if (missing.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      let didRefresh = false;
+      for (const i of missing) {
+        if (refreshedRef.current.has(i.id)) continue;
+        refreshedRef.current.add(i.id);
+        try {
+          await supabase.functions.invoke("whatsapp-manage", {
+            body: { action: "status", instance_id: i.id },
+          });
+          didRefresh = true;
+        } catch (e) {
+          console.warn("failed to refresh instance phone", i.id, e);
+        }
+      }
+      if (didRefresh && !cancelled) {
+        queryClient.invalidateQueries({ queryKey: ["feracon-instances-health"] });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [instances, queryClient]);
 
   const { connected, disconnected } = useMemo(() => {
     const connected: InstanceRow[] = [];
