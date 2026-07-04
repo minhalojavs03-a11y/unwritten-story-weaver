@@ -230,6 +230,8 @@ export default function DashboardPage() {
           lostReasons={privileged ? funnelData.lostReasons : []}
           compact={!privileged}
           sales={funnelData.sales}
+          showSalesInline={!privileged}
+          hideContact={!privileged}
           period={funnelPeriod}
           onPeriodChange={setFunnelPeriod}
           customRange={funnelCustom}
