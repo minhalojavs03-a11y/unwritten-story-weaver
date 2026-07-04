@@ -269,10 +269,14 @@ export default function DashboardPage() {
               subtitle="Vendas de todos os consultores"
               funnel={teamFunnelData.funnel}
               lost={teamFunnelData.lost}
-              compact
+              lostReasons={teamFunnelData.lostReasons}
               sales={teamFunnelData.sales}
               showSalesInline
               hideContact
+              period={teamPeriod}
+              onPeriodChange={setTeamPeriod}
+              customRange={teamCustom}
+              onCustomRangeChange={(r) => { setTeamPeriod("custom"); setTeamCustom(r); }}
             />
           </div>
         )}
