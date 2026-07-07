@@ -330,6 +330,15 @@ Deno.serve(async (req) => {
         status: waStatus, error_message: waError,
       });
 
+      // Dispara boas-vindas também no caminho "consultor já pré-atribuído"
+      // (ex.: lead veio da planilha já com dono). Sem isso a saudação da
+      // Embracon nunca era enviada para esses leads.
+      try {
+        await admin.functions.invoke("send-lead-welcome", { body: { lead_id: lead.id } });
+      } catch (e) {
+        console.error("send-lead-welcome invoke failed (existing-assignee path)", e);
+      }
+
       return json({ ok: true, notified_existing_assignee: { id: member.id, name: member.display_name, delivered, wa_status: waStatus } });
     }
     // Notificação por WhatsApp é enviada também para leads importados de planilha
