@@ -401,18 +401,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Consultoras que atendem MANUALMENTE — recebem leads mesmo sem instância
-    // de WhatsApp conectada (o aviso vai pelo número 804 e elas respondem no
-    // celular pessoal). Não é enviado welcome automático (send-lead-welcome
-    // pula quando a instância delas está offline).
-    const MANUAL_DELIVERY_USER_IDS = new Set<string>([
-      "ef21cb76-531a-480f-97ce-c6ba5a993741", // Flavia Caroline Paulus
-      "a452f69e-c5bb-4012-ae5f-b16eddb05051", // Renata Sobral
-    ]);
-
-    // Filtra apenas consultores com instância de WhatsApp CONECTADA agora,
-    // EXCETO as consultoras de entrega manual (Flavia/Renata), que entram
-    // sempre no rateio.
+    // Regra do dono: a saudação SEMPRE sai da instância do próprio consultor.
+    // Se o consultor não está com WhatsApp conectado agora, ele NÃO entra na
+    // rotação — o lead passa para o próximo consultor que estiver online.
+    // (Sem exceções manuais: Flavia/Renata também só recebem quando conectadas.)
     const userIds = baseConsultants.map((c: any) => c.user_id).filter(Boolean);
     const connectedUserIds = new Set<string>();
     if (userIds.length > 0) {
@@ -426,39 +418,23 @@ Deno.serve(async (req) => {
         if ((i as any).seller_user_id) connectedUserIds.add((i as any).seller_user_id);
       }
     }
-    let connectedConsultants = baseConsultants.filter(
-      (c: any) => c.user_id && (connectedUserIds.has(c.user_id) || MANUAL_DELIVERY_USER_IDS.has(c.user_id)),
+    const connectedConsultants = baseConsultants.filter(
+      (c: any) => c.user_id && connectedUserIds.has(c.user_id),
     );
-    let fallbackUsedOffline = false;
+    const fallbackUsedOffline = false;
     if (connectedConsultants.length === 0) {
-      // Fallback: ninguém conectado no WhatsApp agora. Em vez de travar o lead
-      // como "Sem consultor atribuído", sorteia entre todos os consultores
-      // habilitados na sequência (mesmo offline). A saudação fica pendente até
-      // a instância dele voltar (send-lead-welcome pula se offline).
-      if (baseConsultants.length === 0) {
-        // Último recurso operacional: se a origem não tiver ninguém habilitado,
-        // usa qualquer consultor ativo da Feracon. Nunca retorna sem atribuir.
-        const { data: allConsultantsRaw } = await admin
-          .from("tenant_members")
-          .select("id, user_id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit, email, notify_inapp, notify_whatsapp")
-          .eq("tenant_id", lead.tenant_id)
-          .eq("is_active", true)
-          .not("phone", "is", null);
-        baseConsultants = (allConsultantsRaw || []).filter((c: any) => {
-          const role = String(c.role_label || "").toLowerCase();
-          const name = String(c.display_name || "").toLowerCase();
-          if (!role.includes("consultor")) return false;
-          if (role.includes("supervisor") || role.includes("aprendiz") || role.includes("dono")) return false;
-          if (name.includes("teste")) return false;
-          return true;
-        });
-        if (baseConsultants.length === 0) {
-          return json({ error: "no active consultant found for forced assignment" }, 500);
-        }
-      }
-      connectedConsultants = baseConsultants;
-      fallbackUsedOffline = true;
-      console.log("[notify-tier] no connected consultants — falling back to full rotation");
+      // Ninguém conectado no momento — NÃO atribui a offline. Deixa o lead
+      // livre para uma nova tentativa quando alguém reconectar. O reprocesso
+      // é acionado por: (a) webhook de status "connected" do WhatsApp,
+      // (b) próxima chegada de lead, (c) botão manual de redistribuir.
+      console.log("[notify-tier] no connected consultants — leaving lead unassigned for retry", {
+        lead_id: lead.id,
+        sheet_source_label: sheetSourceLabel,
+      });
+      return json({
+        ok: true,
+        skipped: "no connected consultant available — lead left unassigned for retry",
+      });
     }
 
     
