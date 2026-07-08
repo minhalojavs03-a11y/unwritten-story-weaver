@@ -20,6 +20,12 @@ async function randomSendDelay(): Promise<void> {
 // "47 9235-2804" → dígitos com DDI: 554792352804.
 const NOTIFIER_PHONE_DIGITS = "4792352804";
 
+// Exceção determinada pela operação: Renata está com problema no WhatsApp dela,
+// mas deve continuar entrando na rotação e receber aviso pelo número 804 + sistema.
+const MANUAL_DELIVERY_USER_IDS = new Set<string>([
+  "a452f69e-c5bb-4012-ae5f-b16eddb05051", // Renata Sobral
+]);
+
 async function pickNotifierInstance(admin: any, tenantId: string) {
   const { data: sup } = await admin
     .from("whatsapp_instances")
@@ -401,10 +407,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Regra do dono: a saudação SEMPRE sai da instância do próprio consultor.
-    // Se o consultor não está com WhatsApp conectado agora, ele NÃO entra na
-    // rotação — o lead passa para o próximo consultor que estiver online.
-    // (Sem exceções manuais: Flavia/Renata também só recebem quando conectadas.)
+    // Regra padrão: consultor sem WhatsApp conectado não entra na rotação.
+    // Exceção explícita da operação: Renata continua recebendo leads/avisos
+    // mesmo offline, via número 804 e notificação no sistema.
     const userIds = baseConsultants.map((c: any) => c.user_id).filter(Boolean);
     const connectedUserIds = new Set<string>();
     if (userIds.length > 0) {
@@ -418,9 +423,10 @@ Deno.serve(async (req) => {
         if ((i as any).seller_user_id) connectedUserIds.add((i as any).seller_user_id);
       }
     }
-    const connectedConsultants = baseConsultants.filter(
-      (c: any) => c.user_id && connectedUserIds.has(c.user_id),
-    );
+    const connectedConsultants = baseConsultants.filter((c: any) => {
+      if (!c.user_id) return false;
+      return connectedUserIds.has(c.user_id) || MANUAL_DELIVERY_USER_IDS.has(c.user_id);
+    });
     const fallbackUsedOffline = false;
     if (connectedConsultants.length === 0) {
       // Ninguém conectado no momento — NÃO atribui a offline. Deixa o lead
