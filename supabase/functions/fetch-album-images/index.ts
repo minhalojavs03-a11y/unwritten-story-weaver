@@ -209,9 +209,11 @@ Deno.serve(async (req: Request) => {
     }
 
     const albumTimeMs = new Date(albumMsg.created_at as any).getTime();
-    const windowMs = 5 * 60 * 1000; // 5 minutes around album text
+    // Janela ampla: uazapi pode devolver timestamps em segundos e álbuns antigos
+    // podem estar deslocados. 6h cobre folga de fuso/atraso sem misturar dias.
+    const windowMs = 6 * 60 * 60 * 1000;
 
-    // Filter image items close in time to the album text and inbound
+    // Filter image items close in time to the album text
     const candidates = items
       .filter((it) => isImageItem(it))
       .filter((it) => {
@@ -274,23 +276,32 @@ Deno.serve(async (req: Request) => {
       inserted = count ?? inserts.length;
     }
 
-    // Mark album as fetched
+    // Só marca como concluído quando REALMENTE inserimos imagens.
+    // Se veio 0, mantemos album_fetched=false para permitir novas tentativas
+    // (a UI mostra "Tentar novamente" nesse caso).
+    const newMeta: Record<string, unknown> = {
+      ...(albumMsg.metadata as any || {}),
+      album_last_attempt_at: new Date().toISOString(),
+      album_fetched_count: ((albumMsg.metadata as any)?.album_fetched_count ?? 0) + inserted,
+      album_candidates_last: candidates.length,
+      album_items_last: items.length,
+    };
+    if (inserted > 0) {
+      newMeta.album_fetched = true;
+      newMeta.album_fetched_at = new Date().toISOString();
+    } else {
+      newMeta.album_fetched = false;
+    }
     await admin
       .from("messages")
-      .update({
-        metadata: {
-          ...(albumMsg.metadata as any || {}),
-          album_fetched: true,
-          album_fetched_at: new Date().toISOString(),
-          album_fetched_count: inserted,
-        },
-      })
+      .update({ metadata: newMeta })
       .eq("id", albumMsg.id);
 
     return json({
       ok: true,
       inserted,
       candidates: candidates.length,
+      items: items.length,
       already_fetched: alreadyFetched,
     });
   } catch (e: any) {
