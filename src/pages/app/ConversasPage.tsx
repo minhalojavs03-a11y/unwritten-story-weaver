@@ -375,6 +375,15 @@ export default function ConversasPage() {
 
   const active = conversations.find((c: any) => c.id === activeConvId) ?? fetchedActive;
 
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!lightboxUrl) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setLightboxUrl(null); };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prevOverflow; };
+  }, [lightboxUrl]);
   const [showInfo, setShowInfo] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     return window.localStorage.getItem("conv_show_info") !== "0";
