@@ -474,10 +474,11 @@ Deno.serve(async (req) => {
         if (t > prev) lastTodayByMember.set(mid, t);
       }
     }
-    // ===== Cota diária como TETO SUAVE =====
-    // Regra do dono: antes de sobrecarregar alguém acima da cota, distribuir para
-    // quem ainda está abaixo. Só ultrapassa a cota se TODOS os elegíveis já bateram.
-    // Consultor sem cota definida (null) é tratado como cota = 1.
+    // ===== Cota diária como TETO RÍGIDO =====
+    // Regra do dono: se você configurou 5, são exatamente 5 — nem mais, nem menos.
+    // O excedente é distribuído para quem ainda está abaixo da cota. Se TODOS
+    // já bateram, o lead fica sem atribuir e é retentado depois (novo dia /
+    // reprocesso manual). Consultor sem cota definida (null) é tratado como 1.
     const consultants = connectedConsultants;
     if (!consultants || consultants.length === 0) {
       return json({ ok: true, skipped: "no consultants in tier" });
@@ -488,20 +489,32 @@ Deno.serve(async (req) => {
       const lim = (c.daily_lead_limit as number | null) ?? 1;
       return cnt < lim;
     });
-    // Se existe alguém abaixo da cota, escolhe SÓ entre eles. Senão, todo mundo
-    // já bateu — cai no ranking proporcional entre todos (excede o mínimo possível).
-    const pool = underCota.length > 0 ? underCota : consultants;
 
-    // Ranking dentro do pool: quem tem menor progresso (recebidos/cota) vem primeiro.
-    // Empate: quem tem cota maior leva. Depois: quem recebeu por último mais cedo.
+    // TETO RÍGIDO: se ninguém está abaixo da cota, NÃO estoura. Deixa o lead
+    // livre para ser retomado quando alguém liberar espaço (novo dia SP ou
+    // redistribuição manual). Antes: caía em `consultants` e sobrecarregava.
+    if (underCota.length === 0) {
+      console.log("[notify-tier] all eligible consultants hit daily cap — leaving lead unassigned", {
+        lead_id: lead.id,
+        sheet_source_label: sheetSourceLabel,
+        counts: Object.fromEntries(todayCountByMember),
+      });
+      return json({
+        ok: true,
+        skipped: "all consultants reached daily lead limit — lead left unassigned for later retry",
+      });
+    }
+    const pool = underCota;
+
+    // Ranking: quem tem MENOS leads absolutos hoje vem primeiro (nivelar antes
+    // de encher). Empate: quem tem cota maior leva. Depois: quem recebeu por
+    // último mais cedo.
     const ranked = [...pool].sort((a, b) => {
       const ca = todayCountByMember.get(a.id) ?? 0;
       const cb = todayCountByMember.get(b.id) ?? 0;
       const la = (a.daily_lead_limit as number | null) ?? 1;
       const lb = (b.daily_lead_limit as number | null) ?? 1;
-      // Prioriza quem tem MENOS leads em números absolutos quando ambos estão
-      // abaixo da cota — é o que "justo" significa aqui: nivelar antes de encher.
-      if (underCota.length > 0 && ca !== cb) return ca - cb;
+      if (ca !== cb) return ca - cb;
       const ra = ca / Math.max(la, 1);
       const rb = cb / Math.max(lb, 1);
       if (ra !== rb) return ra - rb;
