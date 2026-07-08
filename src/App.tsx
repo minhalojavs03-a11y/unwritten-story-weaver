@@ -11,6 +11,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AuthCacheGuard } from "@/components/AuthCacheGuard";
 
 import ClientLoginPage from "./pages/auth/ClientLoginPage";
 import AdminLoginPage from "./pages/auth/AdminLoginPage";
