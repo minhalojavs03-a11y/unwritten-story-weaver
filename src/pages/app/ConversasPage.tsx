@@ -1316,10 +1316,22 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
                   ) : isAudio && mediaUrl ? (
                     <audio controls src={mediaUrl} className="mb-1 h-10 w-[240px] max-w-full" />
                   ) : isImage && mediaUrl ? (
-                    <a href={mediaUrl} target="_blank" rel="noreferrer" className="block">
-                      <img src={mediaUrl} alt="" className="mb-1 max-h-80 w-full max-w-[280px] rounded object-cover" />
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setLightboxUrl(mediaUrl)}
+                        className="block cursor-zoom-in"
+                        title="Clique para ampliar"
+                      >
+                        <img
+                          src={mediaUrl}
+                          alt=""
+                          loading="lazy"
+                          className="mb-1 max-h-80 w-full max-w-[280px] rounded object-cover"
+                        />
+                      </button>
                       {m.body && m.body !== "📷 Imagem" && <p className="whitespace-pre-wrap break-words pr-14">{m.body}</p>}
-                    </a>
+                    </>
                   ) : isVideo && mediaUrl ? (
                     <>
                       <video controls src={mediaUrl} className="mb-1 max-h-80 w-full max-w-[280px] rounded" />
