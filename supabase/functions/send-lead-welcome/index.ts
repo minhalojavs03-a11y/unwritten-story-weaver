@@ -15,6 +15,12 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // consultor responsável pelo lead — assim a conversa nasce já no WhatsApp dele.
 const COMPANY_PHONE_DIGITS = "4792352804";
 
+// Exceção determinada pela operação: Renata recebe boas-vindas pelo número 804
+// enquanto o WhatsApp dela estiver com problema/desconectado.
+const MANUAL_DELIVERY_USER_IDS = new Set<string>([
+  "a452f69e-c5bb-4012-ae5f-b16eddb05051", // Renata Sobral
+]);
+
 async function pickConsultantInstance(admin: any, tenantId: string, assignedMemberId: string | null) {
   if (!assignedMemberId) return null;
   const { data: member } = await admin
@@ -135,16 +141,26 @@ Deno.serve(async (req) => {
       //    já cobre o caso real de "atendimento já em andamento".
     }
 
-    // Regra: SEMPRE enviar pela instância do CONSULTOR responsável. Se ele não
-    // estiver conectado, NÃO enviar pelo número da empresa (804) — pular e
-    // aguardar a instância dele voltar. Isso evita boas-vindas pelo número
-    // errado e força que apenas consultores realmente conectados atendam.
+    // Regra padrão: enviar pela instância do CONSULTOR responsável. Exceção
+    // explícita da operação: Renata pode enviar pelo 804 enquanto estiver offline.
     const consultantInstance = await pickConsultantInstance(admin, lead.tenant_id, lead.assigned_member_id);
-    const principal = consultantInstance;
+    let principal = consultantInstance;
     if (!principal?.server_url || !principal?.instance_token) {
-      return json({ ok: true, skipped: "consultant whatsapp instance not connected" });
+      const { data: assignedMember } = await admin
+        .from("tenant_members")
+        .select("user_id")
+        .eq("id", lead.assigned_member_id)
+        .maybeSingle();
+
+      if (assignedMember?.user_id && MANUAL_DELIVERY_USER_IDS.has(assignedMember.user_id)) {
+        principal = await pickCompanyInstance(admin, lead.tenant_id);
+      }
+
+      if (!principal?.server_url || !principal?.instance_token) {
+        return json({ ok: true, skipped: "consultant whatsapp instance not connected" });
+      }
     }
-    console.log("[welcome] sending via consultant instance", principal.id, "phone", principal.phone_number);
+    console.log("[welcome] sending via instance", principal.id, "phone", principal.phone_number);
 
 
     const { data: tenant } = await admin
