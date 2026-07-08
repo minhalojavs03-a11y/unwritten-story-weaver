@@ -41,10 +41,12 @@ const tabs: { id: "all" | "hot" | "unread" | "outros"; label: string }[] = [
   { id: "outros", label: "Outros (não leads)" },
 ];
 
-function AlbumCard({ messageId, albumCount, fetched }: { messageId: string; albumCount: number; fetched: boolean }) {
+function AlbumCard({ messageId, albumCount, fetched, fetchedCount }: { messageId: string; albumCount: number; fetched: boolean; fetchedCount: number }) {
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(fetched);
+  // Considera "concluído" apenas quando de fato inserimos imagens.
+  const [done, setDone] = useState(fetched && fetchedCount > 0);
+  const [attempted, setAttempted] = useState(fetched || fetchedCount > 0);
   const handleFetch = async () => {
     setLoading(true);
     try {
@@ -53,12 +55,23 @@ function AlbumCard({ messageId, albumCount, fetched }: { messageId: string; albu
       });
       if (error) throw error;
       const inserted = (data as any)?.inserted ?? 0;
+      const candidates = (data as any)?.candidates ?? 0;
+      const itemsSeen = (data as any)?.items ?? 0;
       if (inserted > 0) {
         toast({ title: "Imagens carregadas", description: `${inserted} imagem(ns) do álbum adicionada(s).` });
+        setDone(true);
       } else {
-        toast({ title: "Nenhuma imagem nova", description: "O provedor não retornou as imagens deste álbum." });
+        toast({
+          title: "Nenhuma imagem encontrada",
+          description: candidates > 0
+            ? "O provedor listou imagens, mas não devolveu os bytes. Tente novamente em instantes."
+            : itemsSeen > 0
+              ? "O provedor não tem mais essas fotos em histórico (álbum antigo). Se possível, peça para o cliente reenviar."
+              : "O provedor não retornou mensagens desta conversa. Verifique se o WhatsApp está conectado.",
+          variant: "destructive",
+        });
       }
-      setDone(true);
+      setAttempted(true);
       qc.invalidateQueries({ queryKey: ["messages"] });
     } catch (e: any) {
       toast({ title: "Erro ao carregar álbum", description: e?.message ?? "Falha ao buscar imagens.", variant: "destructive" });
@@ -66,6 +79,7 @@ function AlbumCard({ messageId, albumCount, fetched }: { messageId: string; albu
       setLoading(false);
     }
   };
+  const canRetry = !done;
   return (
     <div className="mb-1 flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50/70 px-2.5 py-2 pr-14">
       <div className="grid h-12 w-12 shrink-0 grid-cols-2 grid-rows-2 gap-0.5 overflow-hidden rounded-md bg-emerald-200/60">
@@ -82,16 +96,18 @@ function AlbumCard({ messageId, albumCount, fetched }: { messageId: string; albu
         <p className="mt-0.5 text-[11px] leading-tight text-emerald-800/80">
           {done
             ? "Imagens carregadas — role para vê-las nesta conversa."
-            : "As fotos não chegaram automaticamente pelo provedor. Clique para tentar carregá-las agora."}
+            : attempted
+              ? "Não foi possível recuperar as imagens desse álbum. Você pode tentar novamente."
+              : "As fotos não chegaram automaticamente pelo provedor. Clique para tentar carregá-las agora."}
         </p>
-        {!done && (
+        {canRetry && (
           <button
             type="button"
             onClick={handleFetch}
             disabled={loading}
             className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
           >
-            {loading ? "Carregando…" : "Carregar imagens"}
+            {loading ? "Carregando…" : attempted ? "Tentar novamente" : "Carregar imagens"}
           </button>
         )}
       </div>
