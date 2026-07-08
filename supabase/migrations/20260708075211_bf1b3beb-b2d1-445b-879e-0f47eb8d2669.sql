@@ -1,0 +1,1 @@
+UPDATE messages SET metadata = (metadata - 'album_fetched') || jsonb_build_object('album_fetched', false) WHERE metadata->>'album_fetched' = 'true' AND COALESCE((metadata->>'album_fetched_count')::int, 0) = 0 AND body ~* '^Album:\s*\d+\s+(image|images|photo|photos|foto|fotos)\s*$';
