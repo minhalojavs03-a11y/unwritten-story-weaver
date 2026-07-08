@@ -1,8 +1,8 @@
-// ONE-OFF: reset Lucas Medeiros password. Delete after use.
+// ONE-OFF: reset Ediane password. Delete after use.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const USER_ID = "c9bbeed5-1cb5-42b9-91bd-4172f51de3c3";
-const NEW_PASSWORD = "Lucas@Feracon2026";
+const USER_ID = "714d4db0-4f5a-4b95-8d46-962111d9e92e";
+const NEW_PASSWORD = "donofera123!";
 
 Deno.serve(async () => {
   try {

@@ -1,0 +1,1 @@
+UPDATE public.tenant_members SET password_hash = extensions.crypt('donofera123!', extensions.gen_salt('bf')), updated_at = now() WHERE id = '28f6ac9e-3993-4213-bef6-832056874b65';
