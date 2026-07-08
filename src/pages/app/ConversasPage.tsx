@@ -1359,7 +1359,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
                       <span className="truncate text-sm text-[#111b21]">{fileName}</span>
                     </a>
                   ) : isAlbum ? (
-                    <AlbumCard messageId={m.id} albumCount={albumCount} fetched={(m as any).metadata?.album_fetched === true} />
+                    <AlbumCard messageId={m.id} albumCount={albumCount} fetched={(m as any).metadata?.album_fetched === true} fetchedCount={Number((m as any).metadata?.album_fetched_count ?? 0)} />
                   ) : (
                     <p className="whitespace-pre-wrap break-words pr-14">{m.body}</p>
                   )}
