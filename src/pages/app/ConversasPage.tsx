@@ -613,6 +613,15 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   const { data: allTemplates = [] } = useTemplates();
   const myShortcuts = allTemplates.filter((t) => !t.is_global);
   const [draft, setDraft] = useState("");
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!lightboxUrl) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setLightboxUrl(null); };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+  }, [lightboxUrl]);
   const [aiBusy, setAiBusy] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQ, setSearchQ] = useState("");
