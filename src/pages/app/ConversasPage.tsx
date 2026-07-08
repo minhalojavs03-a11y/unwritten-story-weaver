@@ -1529,6 +1529,37 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
       </div>
 
 
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setLightboxUrl(null); }}
+            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+            title="Fechar (Esc)"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <a
+            href={lightboxUrl}
+            target="_blank"
+            rel="noreferrer"
+            download
+            onClick={(e) => e.stopPropagation()}
+            className="absolute left-4 top-4 rounded-full bg-white/10 px-3 py-2 text-xs text-white hover:bg-white/20"
+          >
+            Abrir em nova aba
+          </a>
+          <img
+            src={lightboxUrl}
+            alt=""
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[90vh] max-w-[95vw] rounded object-contain"
+          />
+        </div>
+      )}
     </div>
   );
 }
