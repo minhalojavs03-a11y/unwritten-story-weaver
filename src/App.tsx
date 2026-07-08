@@ -86,6 +86,7 @@ const App = () => (
       <BrowserRouter>
         <ScrollToTop />
         <AuthProvider>
+          <AuthCacheGuard />
           <ActiveMemberProvider>
             <ErrorBoundary>
             <Routes>
