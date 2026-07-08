@@ -613,6 +613,15 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   const { data: allTemplates = [] } = useTemplates();
   const myShortcuts = allTemplates.filter((t) => !t.is_global);
   const [draft, setDraft] = useState("");
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!lightboxUrl) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setLightboxUrl(null); };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+  }, [lightboxUrl]);
   const [aiBusy, setAiBusy] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQ, setSearchQ] = useState("");
@@ -1307,10 +1316,22 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
                   ) : isAudio && mediaUrl ? (
                     <audio controls src={mediaUrl} className="mb-1 h-10 w-[240px] max-w-full" />
                   ) : isImage && mediaUrl ? (
-                    <a href={mediaUrl} target="_blank" rel="noreferrer" className="block">
-                      <img src={mediaUrl} alt="" className="mb-1 max-h-80 w-full max-w-[280px] rounded object-cover" />
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setLightboxUrl(mediaUrl)}
+                        className="block cursor-zoom-in"
+                        title="Clique para ampliar"
+                      >
+                        <img
+                          src={mediaUrl}
+                          alt=""
+                          loading="lazy"
+                          className="mb-1 max-h-80 w-full max-w-[280px] rounded object-cover"
+                        />
+                      </button>
                       {m.body && m.body !== "📷 Imagem" && <p className="whitespace-pre-wrap break-words pr-14">{m.body}</p>}
-                    </a>
+                    </>
                   ) : isVideo && mediaUrl ? (
                     <>
                       <video controls src={mediaUrl} className="mb-1 max-h-80 w-full max-w-[280px] rounded" />
@@ -1508,6 +1529,37 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
       </div>
 
 
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setLightboxUrl(null); }}
+            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+            title="Fechar (Esc)"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <a
+            href={lightboxUrl}
+            target="_blank"
+            rel="noreferrer"
+            download
+            onClick={(e) => e.stopPropagation()}
+            className="absolute left-4 top-4 rounded-full bg-white/10 px-3 py-2 text-xs text-white hover:bg-white/20"
+          >
+            Abrir em nova aba
+          </a>
+          <img
+            src={lightboxUrl}
+            alt=""
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[90vh] max-w-[95vw] rounded object-contain"
+          />
+        </div>
+      )}
     </div>
   );
 }
