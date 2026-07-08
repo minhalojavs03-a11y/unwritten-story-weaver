@@ -90,11 +90,16 @@ function itemExternalId(item: any): string | null {
 }
 
 async function uazapiFind(serverUrl: string, token: string, chatid: string): Promise<any[]> {
+  // uazapi frequentemente exige limit alto para alcançar álbuns antigos.
+  // Alguns deployments filtram por `messageType: "image"`. Agregamos por id.
   const attempts: Array<{ url: string; body: Record<string, unknown> }> = [
-    { url: `${serverUrl}/message/find`, body: { chatid, limit: 50 } },
-    { url: `${serverUrl}/message/find`, body: { chatId: chatid, limit: 50 } },
-    { url: `${serverUrl}/chat/findMessages`, body: { chatid, limit: 50 } },
+    { url: `${serverUrl}/message/find`, body: { chatid, limit: 1000, messageType: "image" } },
+    { url: `${serverUrl}/message/find`, body: { chatid, limit: 1000 } },
+    { url: `${serverUrl}/message/find`, body: { chatId: chatid, limit: 1000 } },
+    { url: `${serverUrl}/message/find`, body: { number: chatid, limit: 1000 } },
+    { url: `${serverUrl}/chat/findMessages`, body: { chatid, limit: 1000 } },
   ];
+  const acc = new Map<string, any>();
   for (const a of attempts) {
     try {
       const r = await fetch(a.url, {
@@ -111,10 +116,15 @@ async function uazapiFind(serverUrl: string, token: string, chatid: string): Pro
         data?.result ||
         data?.data ||
         [];
-      if (Array.isArray(arr) && arr.length) return arr;
+      if (Array.isArray(arr)) {
+        for (const it of arr) {
+          const key = itemExternalId(it) ?? JSON.stringify(it).slice(0, 80);
+          if (!acc.has(key)) acc.set(key, it);
+        }
+      }
     } catch (_e) { /* try next */ }
   }
-  return [];
+  return Array.from(acc.values());
 }
 
 async function uazapiDownload(serverUrl: string, token: string, externalId: string): Promise<{ base64: string | null; mime: string | null }> {
