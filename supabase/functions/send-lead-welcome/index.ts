@@ -123,6 +123,35 @@ Deno.serve(async (req) => {
     if (!lead) return json({ error: "lead not found" }, 404);
     if (!lead.phone) return json({ ok: true, skipped: "no phone" });
 
+    // Consultores que optaram por não enviar boas-vindas automáticas.
+    if (lead.assigned_member_id && SKIP_WELCOME_MEMBER_IDS.has(lead.assigned_member_id)) {
+      await admin.from("lead_notifications").insert({
+        tenant_id: lead.tenant_id,
+        lead_id: lead.id,
+        type: "welcome",
+        recipient_phone: String(lead.phone || "").replace(/\D/g, "") || null,
+        message_sent: "[skipped: consultor optou por desativar boas-vindas automáticas]",
+        delivered: true,
+      });
+      return json({ ok: true, skipped: "consultant opted out of welcome" });
+    }
+    if (lead.assigned_member_id) {
+      const { data: m } = await admin
+        .from("tenant_members").select("user_id").eq("id", lead.assigned_member_id).maybeSingle();
+      if (m?.user_id && SKIP_WELCOME_USER_IDS.has(m.user_id)) {
+        await admin.from("lead_notifications").insert({
+          tenant_id: lead.tenant_id,
+          lead_id: lead.id,
+          type: "welcome",
+          recipient_phone: String(lead.phone || "").replace(/\D/g, "") || null,
+          message_sent: "[skipped: consultor optou por desativar boas-vindas automáticas]",
+          delivered: true,
+        });
+        return json({ ok: true, skipped: "consultant opted out of welcome" });
+      }
+    }
+
+
     if (!force) {
       // 1) Já existe mensagem confirmada no provedor? pula.
       //    (evita repetir abordagem quando a instância caiu e voltou — continuar de onde parou).
