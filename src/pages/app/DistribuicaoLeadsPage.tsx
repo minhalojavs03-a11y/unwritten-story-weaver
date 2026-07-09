@@ -520,8 +520,25 @@ export default function DistribuicaoLeadsPage() {
                     </div>
                   </div>
 
+                  {/* Fallback WhatsApp desconectado */}
+                  <div className="mt-3 border-t border-border pt-3">
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+                      <div className="min-w-0">
+                        <Label className="text-xs font-medium text-foreground">📵 Receber leads mesmo com WhatsApp desconectado</Label>
+                        <p className="text-[11px] text-muted-foreground">
+                          Quando ligado, o consultor continua na rotação mesmo sem WA conectado. O aviso do lead é enviado pelo número da empresa (804) e pelo painel.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={r.id ? !!offlineFlagMap[r.id] : false}
+                        onCheckedChange={(v) => saveOfflineFlag(r, v)}
+                      />
+                    </div>
+                  </div>
+
                   {/* Canais de aviso */}
                   <div className="mt-3 grid grid-cols-1 gap-2 border-t border-border pt-3 sm:grid-cols-2">
+
                     <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/60 px-3 py-2">
                       <div className="min-w-0">
                         <Label className="text-xs font-medium text-foreground">🔔 Aviso no painel</Label>
