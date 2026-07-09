@@ -39,6 +39,7 @@ type Row = {
   notify_inapp: boolean | null;
   notify_whatsapp: boolean | null;
   phone: string | null;
+  receive_leads_when_offline: boolean | null;
 };
 
 function rowKey(r: { id: string | null; user_id: string | null }) {
