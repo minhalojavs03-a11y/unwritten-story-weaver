@@ -153,6 +153,7 @@ export default function DistribuicaoLeadsPage() {
         notify_inapp: r.notify_inapp ?? true,
         notify_whatsapp: r.notify_whatsapp ?? true,
         phone: r.phone ?? null,
+        receive_leads_when_offline: r.receive_leads_when_offline ?? false,
       }));
     },
   });
