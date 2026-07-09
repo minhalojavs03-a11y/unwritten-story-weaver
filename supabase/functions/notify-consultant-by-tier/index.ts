@@ -425,7 +425,8 @@ Deno.serve(async (req) => {
     }
     const connectedConsultants = baseConsultants.filter((c: any) => {
       if (!c.user_id) return false;
-      return connectedUserIds.has(c.user_id) || MANUAL_DELIVERY_USER_IDS.has(c.user_id);
+      if (c.receive_leads_when_offline === true) return true;
+      return connectedUserIds.has(c.user_id);
     });
     const fallbackUsedOffline = false;
     if (connectedConsultants.length === 0) {
