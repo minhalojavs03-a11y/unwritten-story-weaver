@@ -206,6 +206,27 @@ export default function DistribuicaoLeadsPage() {
     refetchInterval: 30_000,
   });
 
+  // Complementa a lista com a flag `receive_leads_when_offline` (RPC não devolve).
+  const { data: offlineFlagMap = {} } = useQuery({
+    queryKey: ["dist-offline-flag", effectiveTenant, rows.map((r) => r.id).join(",")],
+    enabled: rows.length > 0,
+    queryFn: async (): Promise<Record<string, boolean>> => {
+      const ids = rows.map((r) => r.id).filter((x): x is string => !!x);
+      if (ids.length === 0) return {};
+      const { data, error } = await supabase
+        .from("tenant_members")
+        .select("id, receive_leads_when_offline")
+        .in("id", ids);
+      if (error) throw error;
+      const map: Record<string, boolean> = {};
+      for (const r of (data ?? []) as any[]) {
+        map[r.id] = r.receive_leads_when_offline === true;
+      }
+      return map;
+    },
+  });
+
+
   const [local, setLocal] = useState<Record<string, Partial<Row>>>({});
   useEffect(() => setLocal({}), [rows.length, effectiveTenant]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
