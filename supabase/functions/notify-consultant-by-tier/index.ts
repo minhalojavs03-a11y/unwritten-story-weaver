@@ -504,7 +504,20 @@ Deno.serve(async (req) => {
         skipped: "all consultants reached daily lead limit — lead left unassigned for later retry",
       });
     }
-    const pool = underCota;
+    // ===== Prioridade operacional: Micaelly e Diéssica primeiro =====
+    // Enquanto qualquer uma delas ainda estiver abaixo da cota diária, TODOS os
+    // leads novos vão para elas. Os demais consultores só entram na rotação
+    // depois que ambas baterem o teto configurado.
+    const PRIORITY_NAMES = ["micaelly", "diessica", "diéssica"];
+    const isPriority = (c: any) => {
+      const n = String(c.display_name || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      return PRIORITY_NAMES.some((p) => n.includes(p));
+    };
+    const priorityUnderCota = underCota.filter(isPriority);
+    const pool = priorityUnderCota.length > 0 ? priorityUnderCota : underCota;
 
     // Ranking: quem tem MENOS leads absolutos hoje vem primeiro (nivelar antes
     // de encher). Empate: quem tem cota maior leva. Depois: quem recebeu por
