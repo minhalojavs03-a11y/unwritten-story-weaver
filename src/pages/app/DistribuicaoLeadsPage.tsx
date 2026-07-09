@@ -39,6 +39,7 @@ type Row = {
   notify_inapp: boolean | null;
   notify_whatsapp: boolean | null;
   phone: string | null;
+  receive_leads_when_offline: boolean | null;
 };
 
 function rowKey(r: { id: string | null; user_id: string | null }) {
@@ -152,6 +153,7 @@ export default function DistribuicaoLeadsPage() {
         notify_inapp: r.notify_inapp ?? true,
         notify_whatsapp: r.notify_whatsapp ?? true,
         phone: r.phone ?? null,
+        receive_leads_when_offline: r.receive_leads_when_offline ?? false,
       }));
     },
   });
@@ -203,6 +205,27 @@ export default function DistribuicaoLeadsPage() {
     },
     refetchInterval: 30_000,
   });
+
+  // Complementa a lista com a flag `receive_leads_when_offline` (RPC não devolve).
+  const { data: offlineFlagMap = {} } = useQuery({
+    queryKey: ["dist-offline-flag", effectiveTenant, rows.map((r) => r.id).join(",")],
+    enabled: rows.length > 0,
+    queryFn: async (): Promise<Record<string, boolean>> => {
+      const ids = rows.map((r) => r.id).filter((x): x is string => !!x);
+      if (ids.length === 0) return {};
+      const { data, error } = await supabase
+        .from("tenant_members")
+        .select("id, receive_leads_when_offline")
+        .in("id", ids);
+      if (error) throw error;
+      const map: Record<string, boolean> = {};
+      for (const r of (data ?? []) as any[]) {
+        map[r.id] = r.receive_leads_when_offline === true;
+      }
+      return map;
+    },
+  });
+
 
   const [local, setLocal] = useState<Record<string, Partial<Row>>>({});
   useEffect(() => setLocal({}), [rows.length, effectiveTenant]);
@@ -297,6 +320,25 @@ export default function DistribuicaoLeadsPage() {
     );
     setLocal((s) => { const c = { ...s }; delete c[k]; return c; });
     qc.invalidateQueries({ queryKey: distQueryKey });
+  }
+
+  async function saveOfflineFlag(r: Row, value: boolean) {
+    const memberId = await ensureMemberId(r);
+    if (!memberId) return;
+    const { error } = await supabase
+      .from("tenant_members")
+      .update({ receive_leads_when_offline: value } as any)
+      .eq("id", memberId);
+    if (error) {
+      toast.error(`Falha ao salvar: ${error.message}`);
+      return;
+    }
+    toast.success(
+      value
+        ? "Consultor continua na rotação mesmo com WhatsApp desconectado."
+        : "Consultor só recebe leads com WhatsApp conectado.",
+    );
+    qc.invalidateQueries({ queryKey: ["dist-offline-flag", effectiveTenant] });
   }
 
 
@@ -478,8 +520,25 @@ export default function DistribuicaoLeadsPage() {
                     </div>
                   </div>
 
+                  {/* Fallback WhatsApp desconectado */}
+                  <div className="mt-3 border-t border-border pt-3">
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+                      <div className="min-w-0">
+                        <Label className="text-xs font-medium text-foreground">📵 Receber leads mesmo com WhatsApp desconectado</Label>
+                        <p className="text-[11px] text-muted-foreground">
+                          Quando ligado, o consultor continua na rotação mesmo sem WA conectado. O aviso do lead é enviado pelo número da empresa (804) e pelo painel.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={r.id ? !!offlineFlagMap[r.id] : false}
+                        onCheckedChange={(v) => saveOfflineFlag(r, v)}
+                      />
+                    </div>
+                  </div>
+
                   {/* Canais de aviso */}
                   <div className="mt-3 grid grid-cols-1 gap-2 border-t border-border pt-3 sm:grid-cols-2">
+
                     <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/60 px-3 py-2">
                       <div className="min-w-0">
                         <Label className="text-xs font-medium text-foreground">🔔 Aviso no painel</Label>
