@@ -372,7 +372,7 @@ Deno.serve(async (req) => {
     // da origem para nunca deixar lead travado sem consultor.
     const { data: consultantsRaw } = await admin
       .from("tenant_members")
-      .select("id, user_id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit, email, notify_inapp, notify_whatsapp")
+      .select("id, user_id, display_name, phone, min_credit_value, max_credit_value, role_label, daily_lead_limit, email, notify_inapp, notify_whatsapp, receive_leads_when_offline")
       .eq("tenant_id", lead.tenant_id)
       .eq("is_active", true)
       .eq(sourceColumn, true)
