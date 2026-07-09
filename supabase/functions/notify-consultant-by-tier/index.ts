@@ -20,11 +20,11 @@ async function randomSendDelay(): Promise<void> {
 // "47 9235-2804" → dígitos com DDI: 554792352804.
 const NOTIFIER_PHONE_DIGITS = "4792352804";
 
-// Exceção determinada pela operação: Renata está com problema no WhatsApp dela,
-// mas deve continuar entrando na rotação e receber aviso pelo número 804 + sistema.
-const MANUAL_DELIVERY_USER_IDS = new Set<string>([
-  "a452f69e-c5bb-4012-ae5f-b16eddb05051", // Renata Sobral
-]);
+// Consultores marcados em `tenant_members.receive_leads_when_offline = true` continuam
+// entrando na rotação mesmo com o WhatsApp deles desconectado — recebem o aviso pelo
+// número 804 e pela notificação no sistema. Este set é preenchido em runtime a partir
+// do banco (config por consultor na página de Distribuição de Leads).
+
 
 async function pickNotifierInstance(admin: any, tenantId: string) {
   const { data: sup } = await admin
