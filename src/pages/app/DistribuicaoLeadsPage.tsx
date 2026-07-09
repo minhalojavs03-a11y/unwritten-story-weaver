@@ -322,6 +322,25 @@ export default function DistribuicaoLeadsPage() {
     qc.invalidateQueries({ queryKey: distQueryKey });
   }
 
+  async function saveOfflineFlag(r: Row, value: boolean) {
+    const memberId = await ensureMemberId(r);
+    if (!memberId) return;
+    const { error } = await supabase
+      .from("tenant_members")
+      .update({ receive_leads_when_offline: value } as any)
+      .eq("id", memberId);
+    if (error) {
+      toast.error(`Falha ao salvar: ${error.message}`);
+      return;
+    }
+    toast.success(
+      value
+        ? "Consultor continua na rotação mesmo com WhatsApp desconectado."
+        : "Consultor só recebe leads com WhatsApp conectado.",
+    );
+    qc.invalidateQueries({ queryKey: ["dist-offline-flag", effectiveTenant] });
+  }
+
 
 
 
