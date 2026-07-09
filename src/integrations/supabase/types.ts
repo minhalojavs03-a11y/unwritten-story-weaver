@@ -2019,6 +2019,7 @@ export type Database = {
           notify_whatsapp: boolean
           password_hash: string
           phone: string | null
+          receive_leads_when_offline: boolean
           receives_leads: boolean
           receives_leads_02: boolean
           role_label: string | null
@@ -2048,6 +2049,7 @@ export type Database = {
           notify_whatsapp?: boolean
           password_hash: string
           phone?: string | null
+          receive_leads_when_offline?: boolean
           receives_leads?: boolean
           receives_leads_02?: boolean
           role_label?: string | null
@@ -2077,6 +2079,7 @@ export type Database = {
           notify_whatsapp?: boolean
           password_hash?: string
           phone?: string | null
+          receive_leads_when_offline?: boolean
           receives_leads?: boolean
           receives_leads_02?: boolean
           role_label?: string | null
