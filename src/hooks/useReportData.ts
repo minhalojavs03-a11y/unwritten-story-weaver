@@ -103,10 +103,10 @@ export function useReportData(
   customRange?: { start: Date | null; end: Date | null } | null,
 ) {
   const effectiveUser = useEffectiveUser();
-  // scopeTenantId undefined = padrão; null = global (superadmin); string = tenant específico
-  const { data: leadsBase = [] } = useLeads(scopeTenantId !== undefined ? { tenantId: scopeTenantId } : undefined);
-  const { data: niltonLeads = [] } = useNiltonLeadsForReports(scopeTenantId);
-  const { data: members = [] } = useTenantMembers(scopeTenantId === null ? null : scopeTenantId);
+  const reportTenantId = scopeTenantId ?? FERACON_TENANT_ID;
+  const { data: leadsBase = [] } = useLeads({ tenantId: reportTenantId });
+  const { data: niltonLeads = [] } = useNiltonLeadsForReports(reportTenantId);
+  const { data: members = [] } = useTenantMembers(reportTenantId);
   const allLeads = useMemo(
     () => [...leadsBase, ...(niltonLeads as unknown as typeof leadsBase)],
     [leadsBase, niltonLeads],
