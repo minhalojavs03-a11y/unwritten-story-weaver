@@ -54,6 +54,7 @@ function consultantName(r: InstanceRow) {
 export function WhatsAppHealthAlert() {
   const { data: instances = [], isLoading } = useFeraconInstances();
   const [sending, setSending] = useState(false);
+  const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const refreshedRef = useRef<Set<string>>(new Set());
 
