@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import type { AppRole } from "@/components/ui/RoleBadge";
+
 
 export type SupportImpersonationContext = {
   tenant_id: string;
@@ -38,10 +40,11 @@ function normalizeRole(value?: string | null): AppRole | null {
 }
 
 export function useSupportImpersonation() {
-  const [ctx, setCtx] = useState<SupportImpersonationContext | null>(() => readContext());
+  const { isSuperadmin, loading: authLoading } = useAuth();
+  const [rawCtx, setRawCtx] = useState<SupportImpersonationContext | null>(() => readContext());
 
   useEffect(() => {
-    const read = () => setCtx(readContext());
+    const read = () => setRawCtx(readContext());
     window.addEventListener("storage", read);
     window.addEventListener("feracon:impersonation", read);
     return () => {
@@ -49,6 +52,23 @@ export function useSupportImpersonation() {
       window.removeEventListener("feracon:impersonation", read);
     };
   }, []);
+
+  // Modo suporte só existe para superadmin. Se um contexto legado ficou no
+  // localStorage de um usuário não-superadmin (ex.: dono logando depois),
+  // ignoramos e limpamos — senão o dashboard fica preso no consultor alvo
+  // e mostra tudo zerado para o dono/consultor real.
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isSuperadmin && rawCtx) {
+      try { window.localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+      setRawCtx(null);
+      try { window.dispatchEvent(new Event("feracon:impersonation")); } catch { /* ignore */ }
+    }
+  }, [authLoading, isSuperadmin, rawCtx]);
+
+  const ctx = isSuperadmin ? rawCtx : null;
+
+
 
   const roleQuery = useQuery({
     queryKey: ["support-impersonation-role", ctx?.tenant_id, ctx?.target_role ?? null],

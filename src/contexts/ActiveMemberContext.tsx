@@ -47,9 +47,11 @@ function readImpersonation(): ImpersonationCtx | null {
 }
 
 export function ActiveMemberProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, isSuperadmin } = useAuth();
   const [member, setMemberState] = useState<ActiveMember | null>(null);
   const [impersonationTick, setImpersonationTick] = useState(0);
+
+
 
   // Reage a mudanças no impersonation_context para refazer o auto-bind.
   useEffect(() => {
@@ -77,8 +79,13 @@ export function ActiveMemberProvider({ children }: { children: ReactNode }) {
       // do superadmin armazenado no localStorage. Isso garante que qualquer
       // página que use `useActiveMember()` (Dashboard, Conversas, Relatórios,
       // etc.) enxergue o consultor que está sendo visualizado, não o admin.
-      const imp = readImpersonation();
+      // Impersonação de suporte só vale para superadmin. Se um contexto
+      // legado sobrou no localStorage e o usuário atual não é superadmin,
+      // ignoramos — senão o dono/consultor real vê a Início presa no alvo
+      // impersonado (tudo zerado).
+      const imp = isSuperadmin ? readImpersonation() : null;
       if (imp?.target_member_id) {
+
         const { data } = await supabase
           .from("tenant_members")
           .select("id,username,display_name,role_label,avatar_color")
