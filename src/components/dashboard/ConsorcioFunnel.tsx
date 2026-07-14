@@ -103,7 +103,9 @@ export function ConsorcioFunnel({
   const [salesOpen, setSalesOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
   const stages = funnel.filter((s) => s.key !== "perdido");
-  const top = Math.max(1, stages[0]?.count ?? 1);
+  // Usar o MAIOR valor entre todas as etapas como referência de 100% de largura.
+  // (antes usava stages[0], que é "Novo Lead" — muitas vezes 0 — quebrando o formato de funil.)
+  const top = Math.max(1, ...stages.map((s) => s.count));
   const FUNNEL_W = 320;        // largura útil do funil
   const PAD_L = 54;            // espaço à esquerda p/ "-x%"
   const PAD_R = 150;           // espaço à direita p/ rótulos longos ("Simulação Enviada")
@@ -114,7 +116,7 @@ export function ConsorcioFunnel({
   const MIN_W = 80;
 
   const widthFor = (count: number) =>
-    Math.max(MIN_W, (count / top) * FUNNEL_W);
+    Math.min(FUNNEL_W, Math.max(MIN_W, (count / top) * FUNNEL_W));
 
   const showPeriodPicker = !!period && !!onPeriodChange;
 
