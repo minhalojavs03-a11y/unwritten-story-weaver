@@ -26,7 +26,10 @@ export default function MyProfilePage() {
   const { data: tenant } = useMyTenant();
   const { roles } = useAuth();
 
-  const activeProfileMember = isImpersonating ? null : member;
+  // Em modo suporte (superadmin impersonando), `member` já é o alvo
+  // (dono/consultor). Se ignorássemos, cairíamos no baseProfile do superadmin
+  // — que não tem row em `profiles` — e a página ficaria em branco/carregando.
+  const activeProfileMember = member;
   const isLoading = activeProfileMember ? loadingMember : loadingBase;
 
   // Quando há membro interno ativo: o "perfil" é o do tenant_member.
