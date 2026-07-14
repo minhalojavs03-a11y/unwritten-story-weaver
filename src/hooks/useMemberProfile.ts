@@ -26,8 +26,10 @@ export function useMyMemberProfile() {
   const { member } = useActiveMember();
   const { tenantId } = useAuth();
   return useQuery({
+    // tenantId pode ser null para o superadmin logado (sem tenant próprio).
+    // Como consultamos por `member.id`, basta o membro ativo para habilitar.
     queryKey: ["my-member-profile", member?.id, tenantId],
-    enabled: !!member?.id && !!tenantId,
+    enabled: !!member?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tenant_members")
