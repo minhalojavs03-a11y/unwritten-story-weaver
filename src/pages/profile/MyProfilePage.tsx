@@ -19,7 +19,7 @@ import { Loader2 } from "lucide-react";
 export default function MyProfilePage() {
   const { data: baseProfile, isLoading: loadingBase } = useMyProfile();
   const { member } = useActiveMember();
-  useSupportImpersonation();
+  
   const { data: memberProfile, isLoading: loadingMember } = useMyMemberProfile();
   const updateMember = useUpdateMyMemberProfile();
   const uploadMemberAvatar = useUploadMemberAvatar();
