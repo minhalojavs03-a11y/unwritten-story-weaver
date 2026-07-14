@@ -18,6 +18,15 @@ const EMPTY: TeamFunnelData = {
   sales: [],
 };
 
+const normalizeFunnelStage = (stage?: string | null): Stage | null => {
+  const value = (stage ?? "").toLowerCase().trim();
+  if (value === "atendimento") return "qualificado";
+  if (["novo", "qualificado", "agendado", "compareceu", "comprou", "perdido"].includes(value)) {
+    return value as Stage;
+  }
+  return null;
+};
+
 /**
  * Busca funil + vendas do TIME INTEIRO via RPC security definer.
  * Necessário para consultores, que via RLS enxergam apenas seus próprios leads.
@@ -48,7 +57,11 @@ export function useTeamFunnel(
         sales?: SaleEntry[];
       };
       const byStage = new Map<string, number>();
-      (raw.funnel ?? []).forEach((r) => byStage.set(r.stage, Number(r.count) || 0));
+      (raw.funnel ?? []).forEach((r) => {
+        const stage = normalizeFunnelStage(r.stage);
+        if (!stage) return;
+        byStage.set(stage, (byStage.get(stage) ?? 0) + (Number(r.count) || 0));
+      });
       const funnel = stageOrder
         .filter((s) => s !== "perdido")
         .map((s) => ({ key: s as Stage, stage: stageLabels[s], count: byStage.get(s) ?? 0 }));

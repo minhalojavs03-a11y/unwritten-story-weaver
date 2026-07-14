@@ -119,6 +119,10 @@ export default function DashboardPage() {
     const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
     return { start, end };
   })();
+  const currentMonthRange = (() => {
+    const now = new Date();
+    return { start: new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0), end: null };
+  })();
   const resolveHook = (p: FP, custom: FC) => ({
     period: (p === "custom" || p === "last_month" ? "all" : p) as never,
     range: p === "custom" ? custom : p === "last_month" ? lastMonthRange : null,
@@ -133,14 +137,17 @@ export default function DashboardPage() {
   // (sem telefone) para exibir o funil e a lista de vendas de TODO o time.
   const teamRpcTenantId = effectiveTenantOverride === undefined ? null : effectiveTenantOverride;
   const teamRpc = useTeamFunnel(teamRpcTenantId, teamHook.range);
-  const teamFunnelData = teamRpc.data ?? {
+  const teamAllRpc = useTeamFunnel(teamRpcTenantId, null);
+  const teamMonthRpc = useTeamFunnel(teamRpcTenantId, currentMonthRange);
+  const emptyFunnelData = {
     funnel: [] as { key: import("@/data/mock").Stage; stage: string; count: number }[],
     lost: 0,
     lostReasons: [] as { reason: string; count: number; pct: number }[],
     sales: [] as import("@/components/dashboard/ConsorcioFunnel").SaleEntry[],
   };
-  const allFunnelData = useReportData("all", "all", effectiveMemberId, effectiveTenantOverride);
-  const monthFunnelData = useReportData("month", "all", effectiveMemberId, effectiveTenantOverride);
+  const teamFunnelData = teamRpc.data ?? emptyFunnelData;
+  const allFunnelData = teamAllRpc.data ?? emptyFunnelData;
+  const monthFunnelData = teamMonthRpc.data ?? emptyFunnelData;
 
   // Speed-to-assume: tempo entre criação do lead e atribuição (em minutos)
   const assignedLeads = leads.filter((l) => l.assigned_member_id && l.assigned_member_at && l.created_at);
