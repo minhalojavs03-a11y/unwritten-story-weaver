@@ -29,6 +29,7 @@ import { MvpOfMonth } from "@/components/gamification/MvpOfMonth";
 import { useRanking, useGamificationConfig } from "@/hooks/useGamification";
 import { WhatsAppHealthAlert } from "@/components/dashboard/WhatsAppHealthAlert";
 import { ResponseRatePanel } from "@/components/dashboard/ResponseRatePanel";
+import { FERACON_TENANT_ID } from "@/lib/feracon";
 
 export default function DashboardPage() {
   const { data: profile } = useMyProfile();
@@ -68,7 +69,7 @@ export default function DashboardPage() {
   const effectiveTenantOverride: string | null | undefined = supportContext?.tenant_id
     ? supportContext.tenant_id
     : isSuperadmin
-      ? scope.tenantId // null = todos os tenants, string = tenant selecionado
+      ? (scope.tenantId ?? FERACON_TENANT_ID)
       : undefined;
 
   const metricsScope = {
