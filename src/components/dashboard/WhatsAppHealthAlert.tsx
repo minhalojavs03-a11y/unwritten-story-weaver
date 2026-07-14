@@ -154,17 +154,6 @@ export function WhatsAppHealthAlert() {
             className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
           />
         </button>
-        {hasIssues && (
-          <button
-            type="button"
-            onClick={handleNotify}
-            disabled={sending}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:opacity-60"
-          >
-            {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-            Avisar Ediane e Antonio
-          </button>
-        )}
       </div>
 
       {open && (
