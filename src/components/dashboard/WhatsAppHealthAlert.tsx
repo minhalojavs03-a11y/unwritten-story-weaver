@@ -123,14 +123,19 @@ export function WhatsAppHealthAlert() {
 
   return (
     <section
-      className={`rounded-xl border px-3 py-2.5 md:px-4 md:py-3 ${
+      className={`rounded-xl border ${
         hasIssues
           ? "border-rose-500/30 bg-rose-500/5"
           : "border-emerald-500/30 bg-emerald-500/5"
       }`}
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 md:px-4">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+          aria-expanded={open}
+        >
           <div
             className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
               hasIssues ? "bg-rose-500/15 text-rose-600" : "bg-emerald-500/15 text-emerald-600"
@@ -145,84 +150,83 @@ export function WhatsAppHealthAlert() {
                 } · ${connected.length} ok`
               : `Todos os ${connected.length} WhatsApp conectados`}
           </h2>
-        </div>
-        <div className="flex items-center gap-2">
-          {hasIssues && (
-            <details className="group text-xs">
-              <summary className="cursor-pointer list-none text-muted-foreground hover:text-foreground">
-                por que importa?
-              </summary>
-              <p className="mt-2 max-w-3xl text-xs leading-relaxed text-muted-foreground">
-                O CRM opera com o WhatsApp de cada consultor conectado. Quando um número cai, o sistema
-                não recebe respostas, distribui leads ou registra conversas.{" "}
-                <strong>Boa parte dos "falha no sistema" é instância desconectada</strong> — reconectar é prioridade.
-              </p>
-            </details>
-          )}
-          {hasIssues && (
-            <button
-              type="button"
-              onClick={handleNotify}
-              disabled={sending}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:opacity-60"
-            >
-              {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-              Avisar Ediane e Antonio
-            </button>
-          )}
-        </div>
+          <ChevronDown
+            className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+          />
+        </button>
+        {hasIssues && (
+          <button
+            type="button"
+            onClick={handleNotify}
+            disabled={sending}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:opacity-60"
+          >
+            {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+            Avisar Ediane e Antonio
+          </button>
+        )}
       </div>
 
-      {hasIssues && (
-        <div className="mt-2.5 grid gap-2 md:grid-cols-2">
-          <div className="rounded-lg border border-rose-500/20 bg-background/40 px-2.5 py-2">
-            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-rose-600">
-              <XCircle className="h-3 w-3" /> Desconectados ({disconnected.length})
-            </div>
-            <ul className="space-y-0.5">
-              {disconnected.map((i) => (
-                <li key={i.id} className="flex items-center justify-between gap-2 text-xs">
-                  <span className="truncate font-medium">{consultantName(i)}</span>
-                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-                    {i.phone_number || "sem número"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-lg border border-emerald-500/20 bg-background/40 px-2.5 py-2">
-            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-600">
-              <CheckCircle2 className="h-3 w-3" /> Conectados ({connected.length})
-            </div>
-            <ul className="grid grid-cols-1 gap-x-3 gap-y-0.5 sm:grid-cols-2">
-              {connected.map((i) => (
-                <li key={i.id} className="flex items-center justify-between gap-2 text-xs">
-                  <span className="truncate font-medium">{consultantName(i)}</span>
-                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-                    {i.phone_number || "—"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
+      {open && (
+        <div className="border-t border-current/10 px-3 py-2.5 md:px-4 md:py-3">
+          {hasIssues && (
+            <p className="mb-2.5 text-xs leading-relaxed text-muted-foreground">
+              O CRM opera com o WhatsApp de cada consultor conectado. Quando um número cai, o sistema
+              não recebe respostas, distribui leads ou registra conversas.{" "}
+              <strong>Boa parte dos "falha no sistema" é instância desconectada</strong> — reconectar é prioridade.
+            </p>
+          )}
 
-      {!hasIssues && (
-        <div className="mt-2.5 rounded-lg border border-emerald-500/20 bg-background/40 px-2.5 py-2">
-          <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-600">
-            <CheckCircle2 className="h-3 w-3" /> Tudo conectado — equipe operando 100%
-          </div>
-          <ul className="grid grid-cols-1 gap-x-3 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-3">
-            {connected.map((i) => (
-              <li key={i.id} className="flex items-center justify-between gap-2 text-xs">
-                <span className="truncate font-medium">{consultantName(i)}</span>
-                <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-                  {i.phone_number || "—"}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {hasIssues ? (
+            <div className="grid gap-2 md:grid-cols-2">
+              <div className="rounded-lg border border-rose-500/20 bg-background/40 px-2.5 py-2">
+                <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-rose-600">
+                  <XCircle className="h-3 w-3" /> Desconectados ({disconnected.length})
+                </div>
+                <ul className="space-y-0.5">
+                  {disconnected.map((i) => (
+                    <li key={i.id} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="truncate font-medium">{consultantName(i)}</span>
+                      <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                        {i.phone_number || "sem número"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rounded-lg border border-emerald-500/20 bg-background/40 px-2.5 py-2">
+                <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-600">
+                  <CheckCircle2 className="h-3 w-3" /> Conectados ({connected.length})
+                </div>
+                <ul className="grid grid-cols-1 gap-x-3 gap-y-0.5 sm:grid-cols-2">
+                  {connected.map((i) => (
+                    <li key={i.id} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="truncate font-medium">{consultantName(i)}</span>
+                      <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                        {i.phone_number || "—"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-emerald-500/20 bg-background/40 px-2.5 py-2">
+              <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-600">
+                <CheckCircle2 className="h-3 w-3" /> Tudo conectado — equipe operando 100%
+              </div>
+              <ul className="grid grid-cols-1 gap-x-3 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-3">
+                {connected.map((i) => (
+                  <li key={i.id} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="truncate font-medium">{consultantName(i)}</span>
+                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                      {i.phone_number || "—"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </section>
