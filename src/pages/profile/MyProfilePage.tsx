@@ -7,7 +7,7 @@ import {
   useUpdateMyMemberProfile,
   useUploadMemberAvatar,
 } from "@/hooks/useMemberProfile";
-import { useSupportImpersonation } from "@/hooks/useSupportImpersonation";
+
 import { ProfileCoverBanner } from "@/components/profile/ProfileCoverBanner";
 import { ProfileHeroCard } from "@/components/profile/ProfileHeroCard";
 import { PerformanceStats } from "@/components/profile/PerformanceStats";
