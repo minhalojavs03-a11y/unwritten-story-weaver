@@ -47,9 +47,11 @@ function readImpersonation(): ImpersonationCtx | null {
 }
 
 export function ActiveMemberProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, isSuperadmin } = useAuth();
   const [member, setMemberState] = useState<ActiveMember | null>(null);
   const [impersonationTick, setImpersonationTick] = useState(0);
+
+
 
   // Reage a mudanças no impersonation_context para refazer o auto-bind.
   useEffect(() => {
