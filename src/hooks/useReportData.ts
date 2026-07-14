@@ -88,6 +88,13 @@ function data_lost_pct(lost: number, total: number) { return total > 0 ? (lost /
 type ReportLeadScope = { assigned_member_id?: string | null; assigned_to?: string | null };
 type ReportMemberScope = { id: string; user_id?: string | null };
 
+const metricTimestamp = (lead: { stage?: string | null; created_at?: string | null; updated_at?: string | null; last_interaction_at?: string | null }) => {
+  if (lead.stage === "comprou" || lead.stage === "perdido") {
+    return lead.updated_at ?? lead.last_interaction_at ?? lead.created_at ?? null;
+  }
+  return lead.created_at ?? null;
+};
+
 export function useReportData(
   period: Period,
   memberFilter: string,
@@ -96,10 +103,10 @@ export function useReportData(
   customRange?: { start: Date | null; end: Date | null } | null,
 ) {
   const effectiveUser = useEffectiveUser();
-  // scopeTenantId undefined = padrão; null = global (superadmin); string = tenant específico
-  const { data: leadsBase = [] } = useLeads(scopeTenantId !== undefined ? { tenantId: scopeTenantId } : undefined);
-  const { data: niltonLeads = [] } = useNiltonLeadsForReports(scopeTenantId);
-  const { data: members = [] } = useTenantMembers(scopeTenantId === null ? null : scopeTenantId);
+  const reportTenantId = scopeTenantId ?? FERACON_TENANT_ID;
+  const { data: leadsBase = [] } = useLeads({ tenantId: reportTenantId });
+  const { data: niltonLeads = [] } = useNiltonLeadsForReports(reportTenantId);
+  const { data: members = [] } = useTenantMembers(reportTenantId);
   const allLeads = useMemo(
     () => [...leadsBase, ...(niltonLeads as unknown as typeof leadsBase)],
     [leadsBase, niltonLeads],
@@ -136,17 +143,22 @@ export function useReportData(
       lead.assigned_member_id === memberId
       || (!!memberUserById.get(memberId) && lead.assigned_to === memberUserById.get(memberId))
       || (!!scopedUserId && scopeMemberId === memberId && lead.assigned_to === scopedUserId);
+    const applyMemberScope = <T extends ReportLeadScope>(input: T[]) => {
+      if (scopeMemberId) return input.filter((l) => belongsToMember(l, scopeMemberId));
+      if (memberFilter && memberFilter !== "all") return input.filter((l) => belongsToMember(l, memberFilter));
+      return input;
+    };
+    const scopedAllLeads = applyMemberScope(allLeads);
     const range = customRange ?? periodRange(period);
     const { start, end } = range;
-    let leads = allLeads.filter((l) => {
-      if (!l.created_at) return !start;
-      const t = new Date(l.created_at).getTime();
+    const leads = scopedAllLeads.filter((l) => {
+      const date = metricTimestamp(l);
+      if (!date) return !start;
+      const t = new Date(date).getTime();
       if (start && t < start.getTime()) return false;
       if (end && t >= end.getTime()) return false;
       return true;
     });
-    if (scopeMemberId) leads = leads.filter((l) => belongsToMember(l, scopeMemberId));
-    else if (memberFilter && memberFilter !== "all") leads = leads.filter((l) => belongsToMember(l, memberFilter));
 
     const total = leads.length;
     const contacted = leads.filter((l) => l.last_contact_at).length;
@@ -182,8 +194,14 @@ export function useReportData(
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const next = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
       const label = d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
-      const monthLeads = allLeads.filter((l) => l.created_at && new Date(l.created_at) >= d && new Date(l.created_at) < next);
-      const monthRev = monthLeads.filter((l) => l.stage === "comprou").reduce((s, l) => s + (Number(l.credit_value) || 0), 0);
+      const monthLeads = scopedAllLeads.filter((l) => l.created_at && new Date(l.created_at) >= d && new Date(l.created_at) < next);
+      const monthRev = scopedAllLeads
+        .filter((l) => l.stage === "comprou")
+        .filter((l) => {
+          const soldAt = metricTimestamp(l);
+          return soldAt && new Date(soldAt) >= d && new Date(soldAt) < next;
+        })
+        .reduce((s, l) => s + (Number(l.credit_value) || 0), 0);
       monthly.push({ month: label.charAt(0).toUpperCase() + label.slice(1), revenue: monthRev, leads: monthLeads.length });
     }
 
@@ -223,7 +241,7 @@ export function useReportData(
     const weekly = weekdayLabels.map((d) => ({ d, contatos: 0, reunioes: 0, fechados: 0 }));
     const weekOrder = [1,2,3,4,5,6,0];
     const weeklySorted = weekOrder.map((i) => weekly[i]);
-    allLeads.forEach((l) => {
+    scopedAllLeads.forEach((l) => {
       if (l.last_contact_at) {
         const dt = new Date(l.last_contact_at);
         if (dt >= weekStart) weeklySorted[(dt.getDay() + 6) % 7].contatos += 1;

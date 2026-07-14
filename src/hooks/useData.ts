@@ -10,6 +10,11 @@ import { isHiddenFeraconPerson } from "@/lib/feracon";
 const realtimeChannelName = (scope: string, id: string) =>
   `${scope}-${id}-${Math.random().toString(36).slice(2, 10)}`;
 
+const isTeamWideRole = (role?: string | null) => {
+  const r = (role ?? "").toLowerCase();
+  return /superadmin|owner|dono|propriet|supervisor|gerente|gestor/.test(r);
+};
+
 function phoneDigitVariants(phone: string | null | undefined): string[] {
   const digits = (phone ?? "").replace(/\D/g, "");
   const set = new Set<string>();
@@ -129,7 +134,7 @@ export function useLeads(opts?: { kind?: "lead" | "outros" | "all"; tenantId?: s
     ? (effectiveUser.isImpersonating ? effectiveUser.tenantId : (isSuperadmin ? null : authTenantId))
     : overrideTenant;
   const globalScope = effectiveTenant === null;
-  const memberId = opts?.memberId ?? (effectiveUser.isImpersonating ? effectiveUser.memberId : null);
+  const memberId = opts?.memberId ?? (effectiveUser.isImpersonating && !isTeamWideRole(effectiveUser.role) ? effectiveUser.memberId : null);
   const targetUserId = effectiveUser.isImpersonating ? effectiveUser.id : null;
 
   const q = useQuery({
@@ -223,7 +228,7 @@ export function useConversations(opts?: { kind?: "lead" | "outros" | "all" }) {
       if (kind !== "all") query = query.eq("lead.kind", kind);
       const { data, error } = await query;
       if (error) throw error;
-      if (effectiveUser.isImpersonating && effectiveUser.memberId) {
+      if (effectiveUser.isImpersonating && effectiveUser.memberId && !isTeamWideRole(effectiveUser.role)) {
         type ConversationWithLead = { lead?: { assigned_member_id?: string | null; assigned_to?: string | null } | null };
         return ((data ?? []) as ConversationWithLead[]).filter((c) => c.lead?.assigned_member_id === effectiveUser.memberId || c.lead?.assigned_to === effectiveUser.id);
       }
@@ -580,8 +585,7 @@ export function useTenantMembers(overrideTenantId?: string | null) {
       const rows = ((data ?? []) as Row[]).filter((r) => !isHiddenFeraconPerson(r));
       const memberRole = (member?.role_label || "").toLowerCase();
       const memberPrivileged = /dono|owner|propriet|supervisor/.test(memberRole);
-      const supportRole = (effectiveUser.role ?? "").toLowerCase();
-      const supportPrivileged = ["owner", "supervisor", "superadmin"].includes(supportRole);
+      const supportPrivileged = isTeamWideRole(effectiveUser.role);
       const canSeeAll = effectiveUser.isImpersonating
         ? supportPrivileged
         : isSuperadmin || (isOwner && memberPrivileged) || memberPrivileged;
@@ -604,7 +608,7 @@ export function useAppointments(rangeStart?: Date, rangeEnd?: Date, scope?: { te
     ? (effectiveUser.isImpersonating ? effectiveUser.tenantId : (isSuperadmin ? null : authTenantId))
     : overrideTenant;
   const globalScope = effectiveTenant === null;
-  const memberId = scope?.memberId ?? (effectiveUser.isImpersonating ? effectiveUser.memberId : null);
+  const memberId = scope?.memberId ?? (effectiveUser.isImpersonating && !isTeamWideRole(effectiveUser.role) ? effectiveUser.memberId : null);
   return useQuery({
     queryKey: ["appointments", globalScope ? "__all__" : effectiveTenant, memberId ?? "all", rangeStart?.toISOString(), rangeEnd?.toISOString()],
     enabled: globalScope || !!effectiveTenant,
@@ -841,7 +845,7 @@ export function useDashboardMetrics(
     : { memberId: (scopeOrMember as string | null | undefined) ?? null };
   const overrideTenant = "tenantId" in scope ? scope.tenantId : undefined;
   const tenantId = (overrideTenant ?? (effectiveUser.isImpersonating ? effectiveUser.tenantId : authTenantId)) ?? null;
-  const memberId = scope.memberId ?? (effectiveUser.isImpersonating ? effectiveUser.memberId : null);
+  const memberId = scope.memberId ?? (effectiveUser.isImpersonating && !isTeamWideRole(effectiveUser.role) ? effectiveUser.memberId : null);
 
   return useQuery({
     queryKey: ["dashboard_metrics_v3", tenantId ?? "auto", memberId ?? "all"],

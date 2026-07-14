@@ -29,6 +29,7 @@ import { MvpOfMonth } from "@/components/gamification/MvpOfMonth";
 import { useRanking, useGamificationConfig } from "@/hooks/useGamification";
 import { WhatsAppHealthAlert } from "@/components/dashboard/WhatsAppHealthAlert";
 import { ResponseRatePanel } from "@/components/dashboard/ResponseRatePanel";
+import { FERACON_TENANT_ID } from "@/lib/feracon";
 
 export default function DashboardPage() {
   const { data: profile } = useMyProfile();
@@ -68,7 +69,7 @@ export default function DashboardPage() {
   const effectiveTenantOverride: string | null | undefined = supportContext?.tenant_id
     ? supportContext.tenant_id
     : isSuperadmin
-      ? scope.tenantId // null = todos os tenants, string = tenant selecionado
+      ? (scope.tenantId ?? FERACON_TENANT_ID)
       : undefined;
 
   const metricsScope = {
@@ -138,6 +139,8 @@ export default function DashboardPage() {
     lostReasons: [] as { reason: string; count: number; pct: number }[],
     sales: [] as import("@/components/dashboard/ConsorcioFunnel").SaleEntry[],
   };
+  const allFunnelData = useReportData("all", "all", effectiveMemberId, effectiveTenantOverride);
+  const monthFunnelData = useReportData("month", "all", effectiveMemberId, effectiveTenantOverride);
 
   // Speed-to-assume: tempo entre criação do lead e atribuição (em minutos)
   const assignedLeads = leads.filter((l) => l.assigned_member_id && l.assigned_member_at && l.created_at);
@@ -266,16 +269,26 @@ export default function DashboardPage() {
         <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
 
         {privileged ? (
-          <ConsorcioFunnel
-            funnel={funnelData.funnel}
-            lost={funnelData.lost}
-            lostReasons={funnelData.lostReasons}
-            sales={funnelData.sales}
-            period={funnelPeriod}
-            onPeriodChange={setFunnelPeriod}
-            customRange={funnelCustom}
-            onCustomRangeChange={(r) => { setFunnelPeriod("custom"); setFunnelCustom(r); }}
-          />
+          <div className="grid gap-4 xl:grid-cols-2">
+            <ConsorcioFunnel
+              title="Funil do time · Tudo"
+              subtitle="Histórico completo de leads, perdas e cotas vendidas"
+              funnel={allFunnelData.funnel}
+              lost={allFunnelData.lost}
+              lostReasons={allFunnelData.lostReasons}
+              sales={allFunnelData.sales}
+              showSalesInline
+            />
+            <ConsorcioFunnel
+              title="Funil do time · Mês"
+              subtitle="Vendas fechadas e movimentações do mês atual"
+              funnel={monthFunnelData.funnel}
+              lost={monthFunnelData.lost}
+              lostReasons={monthFunnelData.lostReasons}
+              sales={monthFunnelData.sales}
+              showSalesInline
+            />
+          </div>
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             <ConsorcioFunnel
