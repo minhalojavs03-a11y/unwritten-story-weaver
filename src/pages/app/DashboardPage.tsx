@@ -44,7 +44,22 @@ export default function DashboardPage() {
   // Em modo suporte, o superadmin "vira" o consultor visualizado: escopo do
   // dashboard fica preso ao tenant_member alvo (ex.: Micaelly), do contrário
   // o painel apareceria zerado porque o filtro global some no superadmin.
-  const impersonatedMemberId = supportContext?.target_member_id ?? null;
+  // Só faz sentido "prender" o dashboard ao membro alvo quando o alvo é
+  // consultor/atendente. Se o superadmin está impersonando o dono/supervisor,
+  // o painel deve ficar team-wide (é isso que o dono enxerga normalmente) —
+  // caso contrário o funil mostra só os leads/vendas do próprio membro dono
+  // (praticamente vazio) em vez do time todo.
+  const impersonatedRole = (supportContext?.target_role ?? "").toString().toLowerCase();
+  const impersonationIsTeamWide =
+    impersonatedRole.includes("owner") ||
+    impersonatedRole.includes("dono") ||
+    impersonatedRole.includes("supervisor") ||
+    impersonatedRole.includes("gerente") ||
+    impersonatedRole.includes("gestor") ||
+    impersonatedRole.includes("superadmin");
+  const impersonatedMemberId = impersonationIsTeamWide
+    ? null
+    : (supportContext?.target_member_id ?? null);
   // Em modo suporte, o alvo da impersonação SEMPRE vence (evita que um
   // member ativo legado — ex.: o próprio superadmin Arley — vaze para o RPC).
   // Para consultor comum, o escopo é fixo nele mesmo.
