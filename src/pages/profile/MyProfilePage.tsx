@@ -7,7 +7,7 @@ import {
   useUpdateMyMemberProfile,
   useUploadMemberAvatar,
 } from "@/hooks/useMemberProfile";
-import { useSupportImpersonation } from "@/hooks/useSupportImpersonation";
+
 import { ProfileCoverBanner } from "@/components/profile/ProfileCoverBanner";
 import { ProfileHeroCard } from "@/components/profile/ProfileHeroCard";
 import { PerformanceStats } from "@/components/profile/PerformanceStats";
@@ -19,14 +19,17 @@ import { Loader2 } from "lucide-react";
 export default function MyProfilePage() {
   const { data: baseProfile, isLoading: loadingBase } = useMyProfile();
   const { member } = useActiveMember();
-  const { isImpersonating } = useSupportImpersonation();
+  
   const { data: memberProfile, isLoading: loadingMember } = useMyMemberProfile();
   const updateMember = useUpdateMyMemberProfile();
   const uploadMemberAvatar = useUploadMemberAvatar();
   const { data: tenant } = useMyTenant();
   const { roles } = useAuth();
 
-  const activeProfileMember = isImpersonating ? null : member;
+  // Em modo suporte (superadmin impersonando), `member` já é o alvo
+  // (dono/consultor). Se ignorássemos, cairíamos no baseProfile do superadmin
+  // — que não tem row em `profiles` — e a página ficaria em branco/carregando.
+  const activeProfileMember = member;
   const isLoading = activeProfileMember ? loadingMember : loadingBase;
 
   // Quando há membro interno ativo: o "perfil" é o do tenant_member.
