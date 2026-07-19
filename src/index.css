@@ -112,6 +112,21 @@
   }
 }
 
+/* Mobile-only typography optimization (native app feel) */
+@media (min-width: 1024px) {
+  html { font-size: 18.4px; }
+}
+@media (max-width: 1023px) {
+  html { font-size: 17.6px; }
+  body { font-family: 'Montserrat', system-ui, -apple-system, sans-serif; }
+  h1 { font-size: 2.25rem; line-height: 1.15; }
+  h2 { font-size: 1.75rem; line-height: 1.2; }
+  h3 { font-size: 1.375rem; line-height: 1.25; }
+  input, textarea, select { min-height: 3.5rem; font-size: 1rem; }
+  button { min-height: 2.75rem; }
+}
+
+
 @layer components {
   .stat-number {
     @apply font-display font-bold text-4xl tracking-tight;
