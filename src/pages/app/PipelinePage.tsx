@@ -5,8 +5,11 @@ import { stageLabels, stageOrder, stageColorClass, type Stage, type Temperature 
 import { timeAgo, formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useCanViewLeadPhone } from "@/lib/leadPrivacy";
-import { useLeads, useUpdateLead, useCreateLead } from "@/hooks/useData";
+import { useLeads, useUpdateLead, useCreateLead, useTenantMembers } from "@/hooks/useData";
 import { supabase } from "@/integrations/supabase/client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FERACON_TENANT_ID } from "@/lib/feracon";
+import { X as XIcon, Users2, CalendarRange } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
