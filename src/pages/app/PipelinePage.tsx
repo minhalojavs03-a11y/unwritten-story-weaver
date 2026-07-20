@@ -206,9 +206,34 @@ export default function PipelinePage() {
   const { can } = usePermissions();
   const readOnlySupervisor = useReadOnlySupervisor();
   const canSeeAll = can("view_all_leads");
-  const leads = canSeeAll
+
+  // Filtros para superadmin/dono/supervisor: consultor + período (por data de criação).
+  const { tenantId: authTenantId } = useAuth();
+  const { data: teamMembers = [] } = useTenantMembers(canSeeAll ? (authTenantId ?? FERACON_TENANT_ID) : null);
+  const [filterMemberId, setFilterMemberId] = useState<string | null>(null);
+  const [filterStart, setFilterStart] = useState<string>(""); // yyyy-mm-dd
+  const [filterEnd, setFilterEnd] = useState<string>("");
+  const hasAnyFilter = !!filterMemberId || !!filterStart || !!filterEnd;
+
+  const scopedLeads = canSeeAll
     ? allLeads
     : allLeads.filter((l) => !!activeMember?.id && l.assigned_member_id === activeMember.id);
+
+  const leads = useMemo(() => {
+    if (!canSeeAll) return scopedLeads;
+    const startMs = filterStart ? new Date(`${filterStart}T00:00:00`).getTime() : null;
+    const endMs = filterEnd ? new Date(`${filterEnd}T23:59:59.999`).getTime() : null;
+    return scopedLeads.filter((l) => {
+      if (filterMemberId && l.assigned_member_id !== filterMemberId) return false;
+      if (startMs || endMs) {
+        const ts = new Date(l.created_at).getTime();
+        if (startMs && ts < startMs) return false;
+        if (endMs && ts > endMs) return false;
+      }
+      return true;
+    });
+  }, [canSeeAll, scopedLeads, filterMemberId, filterStart, filterEnd]);
+
   const grouped = stageOrder.map((s) => ({ stage: s, leads: leads.filter((l) => l.stage === s) }));
 
   // Métricas por etapa (gargalo, conversão, valor total, dias médios)
