@@ -545,8 +545,27 @@ export function useAssumeLead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ leadId, memberId }: { leadId: string; memberId: string }) => {
+      // Captura o consultor anterior ANTES de reatribuir — se existir e for
+      // diferente do novo, dispara aviso de transferência via 804 depois.
+      const { data: prev } = await supabase
+        .from("leads")
+        .select("assigned_member_id")
+        .eq("id", leadId)
+        .maybeSingle();
+      const previousMemberId = (prev as { assigned_member_id?: string | null } | null)?.assigned_member_id ?? null;
+
       const { error } = await supabase.rpc("assume_lead", { _lead_id: leadId, _member_id: memberId });
       if (error) throw new Error(error.message || "Não foi possível assumir o lead.");
+
+      if (previousMemberId && previousMemberId !== memberId) {
+        try {
+          await supabase.functions.invoke("notify-consultant-transfer", {
+            body: { lead_id: leadId, from_member_id: previousMemberId, to_member_id: memberId },
+          });
+        } catch (e) {
+          console.error("notify-consultant-transfer failed", e);
+        }
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["leads"] });
