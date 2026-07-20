@@ -688,22 +688,35 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   // Supervisor é proibido de assumir / transferir / interferir no atendimento.
   const canAssume = !isSupervisorRole && !!member && !isMine && (!assignedId || isLost || canOverride);
 
-  // Quando o consultor já conectou o WhatsApp dele no CRM, bloqueamos o envio
-  // pelo chat — daí ele responde direto pelo app do WhatsApp.
-  const [convInstance, setConvInstance] = useState<{ seller_user_id: string | null; is_connected: boolean } | null>(null);
+  // Quando o consultor responsável já conectou o WhatsApp dele no CRM,
+  // bloqueamos o envio pelo chat — daí ele responde direto pelo app do WhatsApp.
+  // Verificamos por qualquer instância conectada do consultor atribuído (não só
+  // pela instância vinculada à conversa, que pode ser a do 804 nas primeiras msgs).
+  const [assignedHasConnectedWa, setAssignedHasConnectedWa] = useState(false);
+  const assignedMemberIdForWa = (lead as any)?.assigned_member_id as string | null | undefined;
+  const assignedUserIdForWa = (lead as any)?.assigned_to as string | null | undefined;
   useEffect(() => {
-    const instanceId = (conv as any)?.whatsapp_instance_id as string | null | undefined;
-    if (!instanceId) { setConvInstance(null); return; }
     let cancelled = false;
-    supabase
-      .from("whatsapp_instances")
-      .select("seller_user_id,is_connected")
-      .eq("id", instanceId)
-      .maybeSingle()
-      .then(({ data }) => { if (!cancelled) setConvInstance((data as any) ?? null); });
+    (async () => {
+      if (!assignedMemberIdForWa && !assignedUserIdForWa) {
+        if (!cancelled) setAssignedHasConnectedWa(false);
+        return;
+      }
+      let q = supabase
+        .from("whatsapp_instances")
+        .select("id,is_connected,status,seller_user_id,seller_member_id")
+        .or("is_connected.eq.true,status.eq.connected")
+        .limit(1);
+      const filters: string[] = [];
+      if (assignedMemberIdForWa) filters.push(`seller_member_id.eq.${assignedMemberIdForWa}`);
+      if (assignedUserIdForWa) filters.push(`seller_user_id.eq.${assignedUserIdForWa}`);
+      if (filters.length) q = q.or(filters.join(","));
+      const { data } = await q;
+      if (!cancelled) setAssignedHasConnectedWa((data?.length ?? 0) > 0);
+    })();
     return () => { cancelled = true; };
-  }, [(conv as any)?.whatsapp_instance_id]);
-  const consultantConnected = !!convInstance?.is_connected;
+  }, [assignedMemberIdForWa, assignedUserIdForWa]);
+  const consultantConnected = assignedHasConnectedWa;
 
 
 
