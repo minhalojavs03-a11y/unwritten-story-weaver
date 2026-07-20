@@ -112,10 +112,20 @@
   }
 }
 
-/* Mobile-only typography optimization (native app feel) */
+/* Typography optimization (native app feel) */
+@media (min-width: 1024px) {
+  html { font-size: 18.4px; } /* +15% desktop */
+}
 @media (max-width: 1023px) {
+  html { font-size: 17.6px; } /* +10% mobile */
   body { font-family: 'Montserrat', system-ui, -apple-system, sans-serif; }
   input, textarea, select { font-size: 16px; } /* prevent iOS zoom */
+  h1 { font-size: 2.25rem; line-height: 1.15; }
+  h2 { font-size: 1.75rem; line-height: 1.2; }
+  h3 { font-size: 1.375rem; line-height: 1.25; }
+  button:not([role="switch"]):not([role="tab"]):not([data-slot="switch-thumb"]):not(.no-mobile-minh) {
+    min-height: 2.75rem;
+  }
   [role="switch"] { min-height: 0 !important; }
 }
 
