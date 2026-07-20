@@ -5,8 +5,11 @@ import { stageLabels, stageOrder, stageColorClass, type Stage, type Temperature 
 import { timeAgo, formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useCanViewLeadPhone } from "@/lib/leadPrivacy";
-import { useLeads, useUpdateLead, useCreateLead } from "@/hooks/useData";
+import { useLeads, useUpdateLead, useCreateLead, useTenantMembers } from "@/hooks/useData";
 import { supabase } from "@/integrations/supabase/client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FERACON_TENANT_ID } from "@/lib/feracon";
+import { X as XIcon, Users2, CalendarRange } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
@@ -203,9 +206,34 @@ export default function PipelinePage() {
   const { can } = usePermissions();
   const readOnlySupervisor = useReadOnlySupervisor();
   const canSeeAll = can("view_all_leads");
-  const leads = canSeeAll
+
+  // Filtros para superadmin/dono/supervisor: consultor + período (por data de criação).
+  const { tenantId: authTenantId } = useAuth();
+  const { data: teamMembers = [] } = useTenantMembers(canSeeAll ? (authTenantId ?? FERACON_TENANT_ID) : null);
+  const [filterMemberId, setFilterMemberId] = useState<string | null>(null);
+  const [filterStart, setFilterStart] = useState<string>(""); // yyyy-mm-dd
+  const [filterEnd, setFilterEnd] = useState<string>("");
+  const hasAnyFilter = !!filterMemberId || !!filterStart || !!filterEnd;
+
+  const scopedLeads = canSeeAll
     ? allLeads
     : allLeads.filter((l) => !!activeMember?.id && l.assigned_member_id === activeMember.id);
+
+  const leads = useMemo(() => {
+    if (!canSeeAll) return scopedLeads;
+    const startMs = filterStart ? new Date(`${filterStart}T00:00:00`).getTime() : null;
+    const endMs = filterEnd ? new Date(`${filterEnd}T23:59:59.999`).getTime() : null;
+    return scopedLeads.filter((l) => {
+      if (filterMemberId && l.assigned_member_id !== filterMemberId) return false;
+      if (startMs || endMs) {
+        const ts = new Date(l.created_at).getTime();
+        if (startMs && ts < startMs) return false;
+        if (endMs && ts > endMs) return false;
+      }
+      return true;
+    });
+  }, [canSeeAll, scopedLeads, filterMemberId, filterStart, filterEnd]);
+
   const grouped = stageOrder.map((s) => ({ stage: s, leads: leads.filter((l) => l.stage === s) }));
 
   // Métricas por etapa (gargalo, conversão, valor total, dias médios)
@@ -371,6 +399,71 @@ export default function PipelinePage() {
           <OverviewBar overview={overview} />
           <FunnelOverview grouped={grouped} />
         </div>
+
+        {canSeeAll && (
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-card px-3 py-2.5 text-sm">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Filtros da gestão
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Users2 className="h-3.5 w-3.5 text-muted-foreground" />
+              <Select
+                value={filterMemberId ?? "__all__"}
+                onValueChange={(v) => setFilterMemberId(v === "__all__" ? null : v)}
+              >
+                <SelectTrigger className="h-8 min-w-[200px] text-xs">
+                  <SelectValue placeholder="Todos os consultores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Todos os consultores</SelectItem>
+                  {teamMembers.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.display_name}
+                      {m.role_label ? ` · ${m.role_label}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CalendarRange className="h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                type="date"
+                value={filterStart}
+                onChange={(e) => setFilterStart(e.target.value)}
+                className="h-8 w-[150px] text-xs"
+                aria-label="Data inicial"
+              />
+              <span className="text-xs text-muted-foreground">até</span>
+              <Input
+                type="date"
+                value={filterEnd}
+                onChange={(e) => setFilterEnd(e.target.value)}
+                className="h-8 w-[150px] text-xs"
+                aria-label="Data final"
+              />
+            </div>
+            {hasAnyFilter && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 px-2 text-xs"
+                onClick={() => {
+                  setFilterMemberId(null);
+                  setFilterStart("");
+                  setFilterEnd("");
+                }}
+              >
+                <XIcon className="mr-1 h-3 w-3" /> Limpar
+              </Button>
+            )}
+            <span className="ml-auto text-xs text-muted-foreground">
+              Exibindo <strong className="text-foreground">{leads.length}</strong> de {scopedLeads.length} leads
+            </span>
+          </div>
+        )}
+
+
 
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-2.5 text-sm">
 
