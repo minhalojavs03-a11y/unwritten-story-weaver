@@ -1421,8 +1421,11 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
             )}
           </div>
         ) : isSupervisorRole && !isMine ? (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-900">
-            <span>👀 Modo supervisão — apenas visualização. Você não pode enviar mensagens no atendimento de um consultor.</span>
+          <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-xs text-amber-900">
+            <span className="font-medium">👀 Modo supervisão — somente leitura</span>
+            <span className="text-[11px] opacity-90">
+              Você acompanha esta conversa para orientar a equipe, mas o envio de mensagens é exclusivo do consultor responsável pelo lead. Assim o cliente mantém um único ponto de contato e nenhuma resposta é duplicada.
+            </span>
             {isLost ? (
               <Button
                 size="sm"
