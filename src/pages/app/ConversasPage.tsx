@@ -683,7 +683,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   // superadmin entra como supervisor, precisamos travar o envio exatamente
   // como travamos para o supervisor real.
   const isSupervisorRole = effectiveRole.isSupervisor
-    || (!isSuperadmin && !effectiveRole.isImpersonating && (roles ?? []).some((r) => r === "supervisor"));
+    || (!isSuperadmin && (roles ?? []).some((r) => r === "supervisor"));
   const canOverride = !isSupervisorRole && (effectiveRole.isSuperadmin || effectiveRole.isOwner);
   const isLocked = (!!assignedId || !!assignedUserId) && !isMine && !canOverride;
   // Regra: lead livre, qualquer um pode pegar. Lead já atribuído a outro consultor
