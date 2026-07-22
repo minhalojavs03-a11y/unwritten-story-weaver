@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { useEffectiveUser } from "@/hooks/useEffectiveUser";
+import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 import { useConversations, useMessages, useSendMessage, useAssumeLead, useReleaseLead, useTenantMembers } from "@/hooks/useData";
 import { useConversationConsultants } from "@/hooks/useConversationConsultants";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -621,6 +622,7 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   const assume = useAssumeLead();
   const release = useReleaseLead();
   const { roles, session, isSuperadmin, user } = useAuth();
+  const effectiveRole = useEffectiveRole();
   const { can } = usePermissions();
   const { member } = useActiveMember();
   const { data: members = [] } = useTenantMembers();
@@ -677,8 +679,12 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
   // Supervisor NÃO pode assumir/enviar mensagem em lead de outro consultor a
   // menos que o lead esteja marcado como perdido — apenas visualiza e coacheia.
   // Só dono/superadmin podem invadir o atendimento a qualquer momento.
-  const isSupervisorRole = !isSuperadmin && (roles ?? []).some((r) => r === "supervisor");
-  const canOverride = !isSupervisorRole && (isSuperadmin || (roles ?? []).some((r) => ["superadmin", "owner"].includes(r as string)));
+  // Considera role efetivo (impersonação de suporte também cai aqui): quando
+  // superadmin entra como supervisor, precisamos travar o envio exatamente
+  // como travamos para o supervisor real.
+  const isSupervisorRole = effectiveRole.isSupervisor
+    || (!isSuperadmin && (roles ?? []).some((r) => r === "supervisor"));
+  const canOverride = !isSupervisorRole && (effectiveRole.isSuperadmin || effectiveRole.isOwner);
   const isLocked = (!!assignedId || !!assignedUserId) && !isMine && !canOverride;
   // Regra: lead livre, qualquer um pode pegar. Lead já atribuído a outro consultor
   // só pode ser assumido/transferido se estiver marcado como PERDIDO — ou por
