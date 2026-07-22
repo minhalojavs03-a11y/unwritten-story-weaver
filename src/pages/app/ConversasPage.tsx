@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { useEffectiveUser } from "@/hooks/useEffectiveUser";
+import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 import { useConversations, useMessages, useSendMessage, useAssumeLead, useReleaseLead, useTenantMembers } from "@/hooks/useData";
 import { useConversationConsultants } from "@/hooks/useConversationConsultants";
 import { usePermissions } from "@/hooks/usePermissions";
