@@ -123,10 +123,11 @@ export default function ConversasPage() {
   const effective = useEffectiveUser();
   const { can } = usePermissions();
   const tenantId = effective.isImpersonating ? effective.tenantId : authTenantId;
-  const authCanViewAll = !effective.isImpersonating && (isSuperadmin || isOwner);
-  // Conversas: supervisor vê apenas as próprias (não mais as dos consultores).
-  // Somente superadmin e dono visualizam todas as conversas do tenant.
-  const canViewAll = authCanViewAll;
+  const effectiveRolePre = useEffectiveRole();
+  const authCanViewAll = !effective.isImpersonating && (isSuperadmin || isOwner || effectiveRolePre.isSupervisor);
+  // Conversas: supervisor volta a visualizar as conversas dos consultores
+  // (somente leitura — o envio de mensagens continua bloqueado abaixo).
+  const canViewAll = authCanViewAll || effectiveRolePre.isSupervisor || can("view_whatsapp");
   const canQueryAllTenants = isSuperadmin && !effective.isImpersonating;
   // Em modo impersonação, usa o user_id do alvo para checagens de propriedade.
   const userId = effective.isImpersonating ? (effective.id ?? null) : (user?.id ?? null);
