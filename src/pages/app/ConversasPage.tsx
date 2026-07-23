@@ -203,8 +203,8 @@ export default function ConversasPage() {
   useEffect(() => {
     if (!tenantId) { setAssignedLeads([]); return; }
     const memberRole = (member?.role_label || "").toLowerCase();
-    const memberCanViewAll = /dono|owner|propriet/.test(memberRole);
-    const canSeeAll = member ? memberCanViewAll : canViewAll;
+    const memberCanViewAll = /dono|owner|propriet|supervisor|gerente|gestor/.test(memberRole);
+    const canSeeAll = member ? (memberCanViewAll || canViewAll) : canViewAll;
     const restricted = !canSeeAll;
     if (restricted && !member?.id && !userId) { setAssignedLeads([]); return; }
     let cancelled = false;
