@@ -1326,7 +1326,10 @@ Deno.serve(async (req: Request) => {
       await notifySellerRoundRobin(admin, instance, lead, text);
     }
 
-    // Auto-classify lead (temperature + phase + qualification + stage) from full conversation context
+    // Auto-classify: apenas TEMPERATURA (quente/morno/frio).
+    // Fase/estágio/qualificação do lead avançam SOMENTE via anotação manual do consultor
+    // no /leads (Simulação 1-4, Reunião, Fechou, Não fechou). Imagem/áudio/mídia no chat
+    // NUNCA disparam progressão automática — regra pedida pelos consultores.
     try {
       const { data: msgsForCls } = await admin
         .from("messages")
@@ -1339,42 +1342,16 @@ Deno.serve(async (req: Request) => {
         text: m.body ?? "",
       })).filter((m) => m.text);
       const cls = await classifyLead(clsHistory);
-      if (cls && lead) {
-        const patch: Record<string, any> = {
+      if (cls && lead && cls.temperature) {
+        await admin.from("leads").update({
           temperature: cls.temperature,
           last_interaction_at: new Date().toISOString(),
-        };
-        if (cls.lead_phase) patch.lead_phase = cls.lead_phase;
-        if (cls.qualification_status) patch.qualification_status = cls.qualification_status;
-
-        // Deriva stage da fase/qualificação (espelha a lógica do front em LeadsPage)
-        const phase = cls.lead_phase;
-        const qual = cls.qualification_status;
-        let derived: string | null = null;
-        if (qual === "desqualificado") derived = "perdido";
-        else if (phase === "pos_venda") derived = "comprou";
-        else if (phase === "fechamento" || phase === "negociacao") derived = "compareceu";
-        else if (phase === "simulacao" || phase === "apresentacao") derived = "agendado";
-        else if (qual === "qualificado" || qual === "oportunidade_futura") derived = "qualificado";
-        else if (qual === "em_qualificacao" || phase === "primeiro_contato") derived = "qualificado";
-        else if (cls.stage) derived = cls.stage;
-
-        const currentRank = STAGE_RANK[lead.stage ?? "novo"] ?? 0;
-        const newRank = STAGE_RANK[derived ?? "novo"] ?? 0;
-        // Permite avançar; só permite regressão para "perdido" se IA detectou desqualificação
-        if (derived && (newRank > currentRank || derived === "perdido")) {
-          patch.stage = derived;
-          if (derived === "comprou") patch.status = "won";
-          else if (derived === "perdido") patch.status = "lost";
-        }
-        if (cls.reasoning) {
-          patch.notes = `[IA ${new Date().toLocaleDateString("pt-BR")}] ${cls.reasoning}`;
-        }
-        await admin.from("leads").update(patch).eq("id", lead.id);
+        }).eq("id", lead.id);
       }
     } catch (e) {
       console.error("auto-classify error", e);
     }
+
 
     // Check silence
     const { data: silence } = await admin
