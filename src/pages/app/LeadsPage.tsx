@@ -993,93 +993,33 @@ export default function LeadsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Status de qualificação</Label>
-              <Select value={detail.qualification_status} onValueChange={(v) => setDetail((d) => ({ ...d, qualification_status: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+              <Label className="text-xs">Status do atendimento</Label>
+              <Select value={annotation} onValueChange={setAnnotation}>
+                <SelectTrigger><SelectValue placeholder="Selecione uma opção…" /></SelectTrigger>
                 <SelectContent>
-                  {QUALIFICATION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                  {ANNOTATION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Marque conforme avançar. O sistema atualiza o pipeline automaticamente.
+              </p>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs">Fase do lead</Label>
-              <Select value={detail.lead_phase} onValueChange={(v) => setDetail((d) => ({ ...d, lead_phase: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
-                <SelectContent>
-                  {PHASE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Tipo de oportunidade</Label>
-              <Select value={detail.opportunity_type} onValueChange={(v) => setDetail((d) => ({ ...d, opportunity_type: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
-                <SelectContent>
-                  {OPPORTUNITY_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Tipo de bem (consórcio)</Label>
-              <Select value={detail.asset_type} onValueChange={(v) => setDetail((d) => ({ ...d, asset_type: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
-                <SelectContent>
-                  {ASSET_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Tentativas de contato (0–7)</Label>
-              <Select
-                value={String(detail.contact_attempts)}
-                onValueChange={(v) => setDetail((d) => ({ ...d, contact_attempts: Number(v) }))}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 8 }, (_, i) => i).map((n) => (
-                    <SelectItem key={n} value={String(n)}>{n} {n === 0 ? "(nenhuma)" : n === 1 ? "tentativa" : "tentativas"}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Valor de crédito (R$)</Label>
-              <Input
-                inputMode="decimal"
-                value={detail.credit_value}
-                onChange={(e) => setDetail((d) => ({ ...d, credit_value: e.target.value }))}
-                placeholder="Ex.: 120000"
-              />
-            </div>
-
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">Próximo follow-up</Label>
-              <Input
-                type="datetime-local"
-                value={detail.next_followup_at}
-                onChange={(e) => setDetail((d) => ({ ...d, next_followup_at: e.target.value }))}
-              />
-            </div>
-
-            {detail.qualification_status === "desqualificado" && (
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label className="text-xs">Motivo da desqualificação</Label>
-                <Select value={detail.disqualification_reason} onValueChange={(v) => setDetail((d) => ({ ...d, disqualification_reason: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecione um motivo…" /></SelectTrigger>
-                  <SelectContent>
-                    {DISQUALIFY_REASONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+            {annotation === "nao_fechou" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Por que não fechou?</Label>
+                <Textarea
+                  value={notFechouReason}
+                  onChange={(e) => setNotFechouReason(e.target.value)}
+                  placeholder="Explique brevemente o motivo…"
+                  rows={3}
+                />
               </div>
             )}
           </div>
+
 
           <DialogFooter className="flex-row gap-2 sm:gap-2">
             <Button variant="outline" className="flex-1 sm:flex-none" onClick={() => setDetailFor(null)}>
