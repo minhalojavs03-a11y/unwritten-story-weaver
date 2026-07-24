@@ -1,54 +1,47 @@
-## Objetivo
+# Plano de mudanças
 
-Na tela **Distribuição de Leads** (visível apenas para superadmin/dono), permitir configurar **separadamente** quais consultores recebem leads de cada planilha — **Leads 01** (a principal já existente) e **Leads 02** (a planilha nova `1kzZswK6Tn…`). Hoje existe um único toggle "Recebe leads" por consultor, que não distingue origem.
+## 1. Unificar "Leads" e "Fila de Leads"
+- Manter a rota `/crm/leads` como página única. Mover as funções relevantes de `FilaLeadsPage.tsx` (fila/pendências, priorização) para dentro de `LeadsPage.tsx` como uma aba/toggle no topo: **Todos** · **Aguardando atendimento** (fila).
+- Remover a entrada "Fila de Leads" do menu (`src/lib/menuCatalog.ts`) e redirecionar `/crm/fila` → `/crm/leads?view=fila` em `App.tsx`.
+- Preservar filtros existentes (período, origem, busca, consultor para gestores).
 
-## O que muda
+## 2. Anotação simplificada em todos os leads
+Ao clicar em qualquer lead (drawer/detalhe), mostrar apenas um bloco compacto:
+- **Select "Status do atendimento"** com opções:
+  1. Simulação enviada 1
+  2. Simulação enviada 2
+  3. Simulação enviada 3
+  4. Simulação enviada 4
+  5. Reunião
+  6. Fechou
+  7. Não fechou
+- Se selecionar **Não fechou** → abrir campo de texto obrigatório "Por que não fechou?"
+- Se **Fechou** → move lead para `stage=comprou`, `status=won`.
+- Se **Reunião** → `stage=compareceu`.
+- Simulação 1-4 → `stage=agendado` e registra contador em campo `simulation_count` (1..4).
+- Não fechou → `stage=perdido`, `status=lost`, grava motivo em `disqualification_reason`/`notes`.
+- Remover do drawer os selects complexos atuais (qualificação, fase, oportunidade, tipo de bem, valor da carta, tentativas de contato, próximo follow-up). Manter só o card simplificado + botão salvar.
 
-### 1. Banco de dados (migração)
+Backend:
+- Migration adiciona coluna `simulation_count int default 0` em `leads` (se não existir) + grants padrão já presentes.
+- Atualiza `computeStageFromDetails` e a lógica de salvamento para consumir o novo select.
 
-- Adicionar coluna `receives_leads_02 boolean NOT NULL DEFAULT false` em `tenant_members`.
-  - O campo atual `receives_leads` passa a significar **Leads 01** (a planilha principal).
-  - Por padrão, ninguém recebe Leads 02 — o superadmin/dono ativa quem deve receber.
-- Atualizar a RPC `list_distribution_consultants` para retornar também `receives_leads_02`.
-- Atualizar a RPC `update_member_distribution` (ou criar `update_member_distribution_v2`) para aceitar `_receives_leads_01` e `_receives_leads_02` separados.
+## 3. Métricas só via anotação — remover "imagem = simulação enviada"
+- Auditar e desativar qualquer heurística que marque simulação enviada automaticamente ao detectar imagem/mídia:
+  - `supabase/functions/whatsapp-webhook/index.ts` — quando `messageType === 'image'` não incrementa nem marca `simulation_sent`/`points_simulation_sent`.
+  - `supabase/functions/classify-lead/index.ts` — remover regra que promove fase para `simulacao` só por imagem.
+  - `coaching_insights` do tipo `simulation_sent` passam a ser gerados **somente** quando o consultor salva o novo select de Simulação 1-4 (via trigger/insert no `saveDetail`).
+- Confirmar que dashboards/ranking (`useTeamFunnel`, `useReportData`, `MyCoachingPanel`) continuam lendo `coaching_insights.insight_type='simulation_sent'` — a origem muda, o consumo permanece.
 
-### 2. Função `notify-consultant-by-tier`
-
-- Ler `lead.metadata.sheet_source_label` (gravado pelo `sheets-sync` na sincronização).
-- Se origem for **Leads 02**, filtrar consultores por `receives_leads_02 = true` em vez de `receives_leads`.
-- Se origem for **Leads 01** ou ausente, manter `receives_leads = true` (comportamento atual).
-- Resto da lógica (faixa de crédito, limite diário, balanceamento) permanece igual.
-
-### 3. UI — `src/pages/app/DistribuicaoLeadsPage.tsx`
-
-Substituir o switch único "Recebe leads" por **dois switches lado a lado** no card de cada consultor:
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│ [avatar] Nome              │ Leads 01 [▢] │ Leads 02 [▢] │ ... │
-│          Consultor         │              │              │     │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-- Etiqueta clara: "Leads 01" (azul) e "Leads 02" (violeta), mesmas cores usadas nos badges da Fila.
-- Salvamento automático ao alternar cada switch.
-- Tooltip explicando que Leads 02 vem da nova planilha.
-- Resumo no topo da página mostrando contagem: "X consultores recebem Leads 01 · Y recebem Leads 02".
-
-Os demais campos (faixa de crédito, limite diário, canais de notificação) continuam globais — não há demanda para separá-los por origem.
-
-### 4. Tipos
-
-Após a migração rodar, `src/integrations/supabase/types.ts` será regenerado automaticamente. O código TS usa `as any` na chamada das RPCs, então não trava o build.
+## 4. Supervisor vê chat dos consultores (somente leitura) — corrigir de vez
+Situação atual: em `ConversasPage.tsx`, `useEffectiveRole` já torna o input somente leitura para supervisores, mas ao clicar em um consultor na lateral a conversa não abre / lista fica vazia.
+- Auditar filtro de `conversations` para supervisor: garantir que `canViewAll` inclua `isSupervisor` em todos os pontos (lista lateral por consultor + fetch de mensagens).
+- Ao selecionar consultor no painel de gestão, aplicar filtro `assigned_member_id=<consultor>` e permitir abrir mesmo que a conversa não pertença ao supervisor.
+- Melhorar o card "Modo supervisão — somente leitura" para deixar claro que é possível ler tudo, mas não enviar.
+- Testar em preview com Playwright impersonando Antonio (supervisor) e clicando em consultores diferentes.
 
 ## Detalhes técnicos
-
-- A coluna `receives_leads_02` precisa ser **default false** para não vazar Leads 02 para consultores que historicamente recebem só Leads 01.
-- A função `notify-consultant-by-tier` é disparada a partir do `process-notification-queue` (que lê o lead) — basta consultar `lead.metadata->>'sheet_source_label'` ali dentro; não precisa propagar nada extra do `sheets-sync`.
-- `FilaLeadsPage.consultants` (linha 110) e `ConversasPage` (linha 1175) filtram por `receives_leads` para listar destinatários no menu "Enviar para…". Manter o filtro atual (Leads 01) — quando um superadmin/dono envia manualmente um lead Leads 02, ele já escolhe o consultor diretamente; não é necessário restringir a lista por origem nesse fluxo manual.
-
-## Fora de escopo
-
-- Faixas de crédito separadas por origem.
-- Limite diário separado por origem.
-- Alterar o fluxo de "enviar lead manualmente" para filtrar por origem.
+- **Arquivos principais**: `src/pages/app/LeadsPage.tsx`, `src/pages/app/FilaLeadsPage.tsx` (remover/re-export), `src/pages/app/ConversasPage.tsx`, `src/lib/menuCatalog.ts`, `src/App.tsx`, `src/hooks/useData.ts` (conversations filter), `supabase/functions/whatsapp-webhook/index.ts`, `supabase/functions/classify-lead/index.ts`.
+- **Migration**: `ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS simulation_count int NOT NULL DEFAULT 0;` (sem novos GRANTs — tabela já existe).
+- **Não altera** distribuição de leads, regras da Renata, prioridade Micaelly/Diéssica/David.
+- **Verificação**: build + typecheck + Playwright headless para o fluxo do supervisor.
