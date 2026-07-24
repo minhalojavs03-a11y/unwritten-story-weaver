@@ -203,7 +203,7 @@ export default function ConversasPage() {
   useEffect(() => {
     if (!tenantId) { setAssignedLeads([]); return; }
     const memberRole = (member?.role_label || "").toLowerCase();
-    const memberCanViewAll = /dono|owner|propriet|supervisor|gerente|gestor/.test(memberRole);
+    const memberCanViewAll = /dono|owner|propriet|supervisor|gerente|gestor/.test(memberRole) || effectiveRolePre.isSupervisor || effectiveRolePre.isOwner;
     const canSeeAll = member ? (memberCanViewAll || canViewAll) : canViewAll;
     const restricted = !canSeeAll;
     if (restricted && !member?.id && !userId) { setAssignedLeads([]); return; }
@@ -252,7 +252,7 @@ export default function ConversasPage() {
         if (!conv) { setFetchedActive(null); return; }
         // Trava de privacidade ainda se aplica se houver lead atribuído
         const memberRole = (member?.role_label || "").toLowerCase();
-        const memberCanViewAll = /dono|owner|propriet/.test(memberRole);
+        const memberCanViewAll = /dono|owner|propriet|supervisor|gerente|gestor/.test(memberRole) || effectiveRolePre.isSupervisor || effectiveRolePre.isOwner;
         const restricted = member ? !memberCanViewAll : !canViewAll;
         if (restricted) {
           const l: any = (conv as any).lead;
@@ -272,7 +272,7 @@ export default function ConversasPage() {
 
       // Trava de privacidade: consultor restrito só pode abrir leads atribuídos a ele.
       const memberRole = (member?.role_label || "").toLowerCase();
-      const memberCanViewAll = /dono|owner|propriet/.test(memberRole);
+      const memberCanViewAll = /dono|owner|propriet|supervisor|gerente|gestor/.test(memberRole) || effectiveRolePre.isSupervisor || effectiveRolePre.isOwner;
       const restricted = member ? !memberCanViewAll : !canViewAll;
       if (restricted) {
         const { data: leadCheck } = await supabase
@@ -327,7 +327,7 @@ export default function ConversasPage() {
     // Dedupe por lead_id mantendo a conversa mais recente (defesa contra duplicatas legadas)
     const byLead = new Map<string, any>();
     const memberRole = (member?.role_label || "").toLowerCase();
-    const memberCanViewAll = /dono|owner|propriet/.test(memberRole);
+    const memberCanViewAll = /dono|owner|propriet|supervisor|gerente|gestor/.test(memberRole) || effectiveRolePre.isSupervisor || effectiveRolePre.isOwner;
     const shouldRestrict = member ? !memberCanViewAll : !canViewAll;
     const isOwnedByCurrent = (c: any) => {
       const lead = c.lead;

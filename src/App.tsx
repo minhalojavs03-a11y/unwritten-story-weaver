@@ -24,7 +24,7 @@ import AgendaPage from "./pages/app/AgendaPage";
 import RecordingsPage from "./pages/app/RecordingsPage";
 import ClientesPage from "./pages/app/ClientesPage";
 import LeadsPage from "./pages/app/LeadsPage";
-import FilaLeadsPage from "./pages/app/FilaLeadsPage";
+// FilaLeadsPage removido — unificado em /leads
 import ConfiguracoesPage from "./pages/app/ConfiguracoesPage";
 import WhatsAppPage from "./pages/app/WhatsAppPage";
 import MeuWhatsAppPage from "./pages/app/MeuWhatsAppPage";
@@ -122,7 +122,7 @@ const App = () => (
                   <Route path="/gravacoes" element={<RecordingsPage />} />
                   <Route path="/clientes" element={<ClientesPage />} />
                   <Route path="/leads" element={<LeadsPage />} />
-                  <Route path="/leads/fila" element={<FilaLeadsPage />} />
+                  <Route path="/leads/fila" element={<Navigate to="/leads" replace />} />
                   <Route path="/nilton" element={<NiltonLeadsPage />} />
                   <Route path="/leads-hoje" element={<LeadsHojePage />} />
                   <Route path="/whatsapp" element={<WhatsAppPage />} />
@@ -167,7 +167,7 @@ const App = () => (
 
               <Route path="/clientes" element={<ClientesPage />} />
               <Route path="/leads" element={<LeadsPage />} />
-              <Route path="/leads/fila" element={<FilaLeadsPage />} />
+              <Route path="/leads/fila" element={<Navigate to="/leads" replace />} />
               <Route path="/nilton" element={<NiltonLeadsPage />} />
               <Route path="/leads-hoje" element={<ProtectedRoute denyConsultant><LeadsHojePage /></ProtectedRoute>} />
               <Route path="/whatsapp" element={<ProtectedRoute requireOwner allowSupervisor><WhatsAppPage /></ProtectedRoute>} />

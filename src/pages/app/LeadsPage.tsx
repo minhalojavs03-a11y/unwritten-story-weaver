@@ -267,25 +267,18 @@ export default function LeadsPage() {
     });
   }, [leads, period, customFrom, customTo, sourceFilter, search]);
 
-  const [detail, setDetail] = useState<{
-    contact_attempts: number;
-    qualification_status: string;
-    lead_phase: string;
-    opportunity_type: string;
-    disqualification_reason: string;
-    asset_type: string;
-    credit_value: string;
-    next_followup_at: string;
-  }>({
-    contact_attempts: 0,
-    qualification_status: "",
-    lead_phase: "",
-    opportunity_type: "",
-    disqualification_reason: "",
-    asset_type: "",
-    credit_value: "",
-    next_followup_at: "",
-  });
+  // Anotação simplificada — os únicos status que o consultor precisa marcar.
+  const ANNOTATION_OPTIONS = [
+    { value: "simulacao_1", label: "Simulação enviada 1" },
+    { value: "simulacao_2", label: "Simulação enviada 2" },
+    { value: "simulacao_3", label: "Simulação enviada 3" },
+    { value: "simulacao_4", label: "Simulação enviada 4" },
+    { value: "reuniao", label: "Reunião" },
+    { value: "fechou", label: "Fechou" },
+    { value: "nao_fechou", label: "Não fechou" },
+  ] as const;
+  const [annotation, setAnnotation] = useState<string>("");
+  const [notFechouReason, setNotFechouReason] = useState<string>("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -294,50 +287,56 @@ export default function LeadsPage() {
 
   useEffect(() => {
     if (detailFor) {
-      const l = detailFor as any;
-      setDetail({
-        contact_attempts: l.contact_attempts ?? 0,
-        qualification_status: l.qualification_status ?? "",
-        lead_phase: l.lead_phase ?? "",
-        opportunity_type: l.opportunity_type ?? "",
-        disqualification_reason: l.disqualification_reason ?? "",
-        asset_type: l.asset_type ?? "",
-        credit_value: l.credit_value != null ? String(l.credit_value) : "",
-        next_followup_at: l.next_followup_at ? new Date(l.next_followup_at).toISOString().slice(0, 16) : "",
-      });
+      setAnnotation("");
+      setNotFechouReason("");
     }
   }, [detailFor]);
 
   async function saveDetail() {
     if (!detailFor) return;
+    if (!annotation) {
+      toast({ title: "Selecione uma opção", variant: "destructive" });
+      return;
+    }
+    if (annotation === "nao_fechou" && !notFechouReason.trim()) {
+      toast({ title: "Informe o motivo", description: "Explique brevemente por que não fechou.", variant: "destructive" });
+      return;
+    }
     try {
       const patch: any = {
-        contact_attempts: Math.max(0, Math.min(7, Number(detail.contact_attempts) || 0)),
-        qualification_status: detail.qualification_status || null,
-        lead_phase: detail.lead_phase || null,
-        opportunity_type: detail.opportunity_type || null,
-        disqualification_reason: detail.qualification_status === "desqualificado" ? (detail.disqualification_reason || null) : null,
-        asset_type: detail.asset_type || null,
-        credit_value: detail.credit_value ? Number(detail.credit_value.replace(",", ".")) : null,
-        next_followup_at: detail.next_followup_at ? new Date(detail.next_followup_at).toISOString() : null,
         last_interaction_at: new Date().toISOString(),
       };
-      const autoStage = computeStageFromDetails(patch.qualification_status, patch.lead_phase);
-      if (autoStage) {
-        patch.stage = autoStage;
-        if (autoStage === "comprou") patch.status = "won";
-        else if (autoStage === "perdido") patch.status = "lost";
+      const nowStamp = new Date().toLocaleString("pt-BR");
+      const prevNotes = detailFor.notes ? `${detailFor.notes}\n` : "";
+      if (annotation.startsWith("simulacao_")) {
+        const n = annotation.split("_")[1];
+        patch.stage = "agendado";
+        patch.lead_phase = "simulacao";
+        patch.notes = `${prevNotes}[${nowStamp}] Simulação enviada #${n}`;
+      } else if (annotation === "reuniao") {
+        patch.stage = "compareceu";
+        patch.lead_phase = "negociacao";
+        patch.notes = `${prevNotes}[${nowStamp}] Reunião realizada`;
+      } else if (annotation === "fechou") {
+        patch.stage = "comprou";
+        patch.status = "won";
+        patch.lead_phase = "pos_venda";
+        patch.notes = `${prevNotes}[${nowStamp}] Fechou negócio`;
+      } else if (annotation === "nao_fechou") {
+        patch.stage = "perdido";
+        patch.status = "lost";
+        patch.qualification_status = "desqualificado";
+        patch.disqualification_reason = notFechouReason.trim();
+        patch.notes = `${prevNotes}[${nowStamp}] Não fechou: ${notFechouReason.trim()}`;
       }
       await update.mutateAsync({ id: detailFor.id, patch });
-      toast({
-        title: "Detalhes salvos",
-        description: patch.stage ? `Lead movido para "${patch.stage}" no pipeline.` : undefined,
-      });
+      toast({ title: "Status atualizado" });
       setDetailFor(null);
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
     }
   }
+
 
   async function saveNote() {
     if (!noteFor) return;
@@ -994,93 +993,33 @@ export default function LeadsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Status de qualificação</Label>
-              <Select value={detail.qualification_status} onValueChange={(v) => setDetail((d) => ({ ...d, qualification_status: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+              <Label className="text-xs">Status do atendimento</Label>
+              <Select value={annotation} onValueChange={setAnnotation}>
+                <SelectTrigger><SelectValue placeholder="Selecione uma opção…" /></SelectTrigger>
                 <SelectContent>
-                  {QUALIFICATION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                  {ANNOTATION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Marque conforme avançar. O sistema atualiza o pipeline automaticamente.
+              </p>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs">Fase do lead</Label>
-              <Select value={detail.lead_phase} onValueChange={(v) => setDetail((d) => ({ ...d, lead_phase: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
-                <SelectContent>
-                  {PHASE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Tipo de oportunidade</Label>
-              <Select value={detail.opportunity_type} onValueChange={(v) => setDetail((d) => ({ ...d, opportunity_type: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
-                <SelectContent>
-                  {OPPORTUNITY_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Tipo de bem (consórcio)</Label>
-              <Select value={detail.asset_type} onValueChange={(v) => setDetail((d) => ({ ...d, asset_type: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
-                <SelectContent>
-                  {ASSET_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Tentativas de contato (0–7)</Label>
-              <Select
-                value={String(detail.contact_attempts)}
-                onValueChange={(v) => setDetail((d) => ({ ...d, contact_attempts: Number(v) }))}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 8 }, (_, i) => i).map((n) => (
-                    <SelectItem key={n} value={String(n)}>{n} {n === 0 ? "(nenhuma)" : n === 1 ? "tentativa" : "tentativas"}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Valor de crédito (R$)</Label>
-              <Input
-                inputMode="decimal"
-                value={detail.credit_value}
-                onChange={(e) => setDetail((d) => ({ ...d, credit_value: e.target.value }))}
-                placeholder="Ex.: 120000"
-              />
-            </div>
-
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">Próximo follow-up</Label>
-              <Input
-                type="datetime-local"
-                value={detail.next_followup_at}
-                onChange={(e) => setDetail((d) => ({ ...d, next_followup_at: e.target.value }))}
-              />
-            </div>
-
-            {detail.qualification_status === "desqualificado" && (
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label className="text-xs">Motivo da desqualificação</Label>
-                <Select value={detail.disqualification_reason} onValueChange={(v) => setDetail((d) => ({ ...d, disqualification_reason: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecione um motivo…" /></SelectTrigger>
-                  <SelectContent>
-                    {DISQUALIFY_REASONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+            {annotation === "nao_fechou" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Por que não fechou?</Label>
+                <Textarea
+                  value={notFechouReason}
+                  onChange={(e) => setNotFechouReason(e.target.value)}
+                  placeholder="Explique brevemente o motivo…"
+                  rows={3}
+                />
               </div>
             )}
           </div>
+
 
           <DialogFooter className="flex-row gap-2 sm:gap-2">
             <Button variant="outline" className="flex-1 sm:flex-none" onClick={() => setDetailFor(null)}>
