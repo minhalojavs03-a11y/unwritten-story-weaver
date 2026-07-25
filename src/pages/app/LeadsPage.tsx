@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Upload, StickyNote, MessageCircle, Phone, Trophy, XCircle, Clock, Sparkles, Pencil, ListChecks, Target, ChevronDown, Calendar as CalendarIcon, User as UserIcon, Mail, Hash, Flame, FileText, Tag, Search, X, Trash2 } from "lucide-react";
+import { Upload, StickyNote, MessageCircle, Phone, Trophy, XCircle, Clock, Sparkles, Pencil, ListChecks, Target, ChevronDown, Calendar as CalendarIcon, User as UserIcon, Mail, Hash, Flame, FileText, Tag, Search, X, Trash2, Check } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -810,14 +810,34 @@ export default function LeadsPage() {
           </DialogHeader>
 
           <div className="space-y-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-xs">Status do atendimento</Label>
-              <Select value={annotation} onValueChange={setAnnotation}>
-                <SelectTrigger><SelectValue placeholder="Selecione uma opção…" /></SelectTrigger>
-                <SelectContent>
-                  {ANNOTATION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <div className="grid gap-1.5">
+                {ANNOTATION_OPTIONS.map((o) => {
+                  const active = annotation === o.value;
+                  return (
+                    <button
+                      key={o.value}
+                      type="button"
+                      onClick={() => setAnnotation(o.value)}
+                      className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors ${
+                        active
+                          ? "border-primary bg-primary/10 text-foreground"
+                          : "border-border bg-card hover:bg-muted/40"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                          active ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"
+                        }`}
+                      >
+                        {active && <Check className="h-3 w-3" />}
+                      </span>
+                      <span className="flex-1">{o.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
               <p className="text-[11px] text-muted-foreground">
                 Marque conforme avançar. O sistema atualiza o pipeline automaticamente.
               </p>
@@ -835,6 +855,7 @@ export default function LeadsPage() {
               </div>
             )}
           </div>
+
 
 
           <DialogFooter className="flex-row gap-2 sm:gap-2">
