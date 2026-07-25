@@ -41,7 +41,6 @@ type NavItem = { to: string; label: string; icon: LucideIcon };
 const mobileNav: NavItem[] = [
   { to: "/crm", label: "Início", icon: Home },
   { to: "/leads", label: "Leads", icon: Users },
-  { to: "/leads/fila", label: "Fila", icon: Inbox },
   { to: "/conversas", label: "Conversas", icon: MessageCircle },
 ];
 
@@ -101,8 +100,6 @@ export function AppLayout() {
 
   const navItems: NavItem[] = useMemo(() => {
     const home: NavItem = { to: "/crm", label: "Início", icon: Home };
-    const fila: NavItem = { to: "/leads/fila", label: "Fila de leads", icon: Inbox };
-    const filaSuperadmin: NavItem = { to: "/leads/fila", label: "Fila de Leads 2", icon: Inbox };
     const nilton: NavItem = { to: "/nilton", label: "Leads Nilton RS", icon: Target };
     const conversas: NavItem = { to: "/conversas", label: "Conversas", icon: MessageCircle };
     const pipeline: NavItem = { to: "/pipeline", label: "Pipeline", icon: Kanban };
@@ -118,21 +115,21 @@ export function AppLayout() {
     const config: NavItem = { to: "/configuracoes", label: "Configurações", icon: Settings };
 
     if (impersonating && !isOwner && !isSupervisor) {
-      return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, config];
+      return [home, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, config];
     }
     if (isSuperadmin) {
-      return [home, filaSuperadmin, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
+      return [home, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
     }
     if (isOwner) {
-      return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
+      return [home, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
     }
     if (isSupervisor) {
-      return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
+      return [home, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
     }
     if (isNilton) {
-      return [home, fila, nilton, conversas, pipeline, leads, agenda, meuWa, ranking];
+      return [home, nilton, conversas, pipeline, leads, agenda, meuWa, ranking];
     }
-    return [home, fila, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching];
+    return [home, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching];
 
   }, [isOwner, isSuperadmin, isSupervisor, impersonating, isNilton]);
 
