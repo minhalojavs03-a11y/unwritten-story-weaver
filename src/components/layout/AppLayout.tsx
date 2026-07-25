@@ -118,16 +118,16 @@ export function AppLayout() {
       return [home, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, config];
     }
     if (isSuperadmin) {
-      return [home, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
+      return [home, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
     }
     if (isOwner) {
-      return [home, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
+      return [home, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
     }
     if (isSupervisor) {
-      return [home, nilton, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
+      return [home, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
     }
     if (isNilton) {
-      return [home, nilton, conversas, pipeline, leads, agenda, meuWa, ranking];
+      return [home, conversas, pipeline, leads, agenda, meuWa, ranking];
     }
     return [home, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching];
 

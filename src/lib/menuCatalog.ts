@@ -15,7 +15,7 @@ export interface MenuCatalogItem {
 export const MENU_CATALOG: MenuCatalogItem[] = [
   { key: "/crm",            label: "Início",            roles: ["owner", "supervisor", "consultant"] },
   
-  { key: "/nilton",         label: "Leads Nilton RS",   roles: ["owner", "supervisor"] },
+  
   { key: "/conversas",      label: "Conversas",         roles: ["owner", "supervisor", "consultant"] },
   { key: "/pipeline",       label: "Pipeline",          roles: ["owner", "supervisor", "consultant"] },
   { key: "/leads",          label: "Leads",             roles: ["owner", "supervisor", "consultant"] },
