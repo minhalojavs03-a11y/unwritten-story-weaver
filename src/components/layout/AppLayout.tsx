@@ -41,7 +41,6 @@ type NavItem = { to: string; label: string; icon: LucideIcon };
 const mobileNav: NavItem[] = [
   { to: "/crm", label: "Início", icon: Home },
   { to: "/leads", label: "Leads", icon: Users },
-  { to: "/leads/fila", label: "Fila", icon: Inbox },
   { to: "/conversas", label: "Conversas", icon: MessageCircle },
 ];
 
