@@ -677,8 +677,8 @@ export default function LeadsPage() {
                       : la.qualification_status === "desqualificado" ? "bg-destructive/10 text-destructive border-destructive/20"
                       : la.qualification_status === "oportunidade_futura" ? "bg-info/10 text-info border-info/20"
                       : "bg-muted text-muted-foreground border-border";
-                    const expanded = expandedId === l.id;
                     const assignedMember = la.assigned_member_id ? memberMap.get(la.assigned_member_id) : null;
+                    void assignedMember;
                     return (
                       <tr
                         key={l.id}
