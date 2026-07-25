@@ -310,6 +310,8 @@ export default function LeadsPage() {
         patch.stage = "agendado";
         patch.lead_phase = "simulacao";
         patch.notes = `${prevNotes}[${nowStamp}] Simulação enviada`;
+      } else if (annotation === "ligacao") {
+        patch.notes = `${prevNotes}[${nowStamp}] Ligação feita`;
       } else if (annotation === "reuniao") {
         patch.stage = "compareceu";
         patch.lead_phase = "negociacao";
