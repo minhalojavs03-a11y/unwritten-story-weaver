@@ -21,15 +21,14 @@ export function ProfileHeroCard({ profile, role, tenantName, editable = false, u
     <section className="relative z-10 -mt-12 rounded-b-2xl border-x border-b bg-card p-5 shadow-sm md:-mt-20 md:rounded-2xl md:border md:p-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
         <div className="relative -mt-20 h-32 w-32 shrink-0 self-start md:-mt-16">
-          <div className="rounded-full ring-4 ring-card">
-            <UserAvatar
-              userId={profile.id}
-              name={profile.full_name ?? profile.email ?? "?"}
-              avatarUrl={profile.avatar_url}
-              avatarColor={profile.avatar_color}
-              size={128}
-            />
-          </div>
+          <UserAvatar
+            userId={profile.id}
+            name={profile.full_name ?? profile.email ?? "?"}
+            avatarUrl={profile.avatar_url}
+            avatarColor={profile.avatar_color}
+            size={128}
+            ringClassName="ring-4 ring-card"
+          />
           {editable && (
             <button
               onClick={() => setOpen(true)}
