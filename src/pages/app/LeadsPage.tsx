@@ -264,7 +264,7 @@ export default function LeadsPage() {
         if (!name.includes(q) && !email.includes(q) && !(digitsQ && phoneDigits.includes(digitsQ))) return false;
       }
       return true;
-    });
+    }).sort((a, b) => new Date(b.created_at as string).getTime() - new Date(a.created_at as string).getTime());
   }, [leads, period, customFrom, customTo, sourceFilter, search]);
 
   // Anotação simplificada — os únicos status que o consultor precisa marcar.
