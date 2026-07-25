@@ -249,6 +249,7 @@ Deno.serve(async (req) => {
 
     const phoneDigits = String(lead.phone).replace(/\D/g, "");
     await randomSendDelay();
+    await sendTypingIndicator(principal.server_url, principal.instance_token, phoneDigits, text);
 
     const r = await fetch(`${principal.server_url.replace(/\/$/, "")}/send/text`, {
       method: "POST",
