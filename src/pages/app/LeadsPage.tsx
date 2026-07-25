@@ -269,10 +269,7 @@ export default function LeadsPage() {
 
   // Anotação simplificada — os únicos status que o consultor precisa marcar.
   const ANNOTATION_OPTIONS = [
-    { value: "simulacao_1", label: "Simulação enviada 1" },
-    { value: "simulacao_2", label: "Simulação enviada 2" },
-    { value: "simulacao_3", label: "Simulação enviada 3" },
-    { value: "simulacao_4", label: "Simulação enviada 4" },
+    { value: "simulacao", label: "Simulação enviada" },
     { value: "reuniao", label: "Reunião" },
     { value: "fechou", label: "Fechou" },
     { value: "nao_fechou", label: "Não fechou" },
@@ -308,11 +305,10 @@ export default function LeadsPage() {
       };
       const nowStamp = new Date().toLocaleString("pt-BR");
       const prevNotes = detailFor.notes ? `${detailFor.notes}\n` : "";
-      if (annotation.startsWith("simulacao_")) {
-        const n = annotation.split("_")[1];
+      if (annotation === "simulacao") {
         patch.stage = "agendado";
         patch.lead_phase = "simulacao";
-        patch.notes = `${prevNotes}[${nowStamp}] Simulação enviada #${n}`;
+        patch.notes = `${prevNotes}[${nowStamp}] Simulação enviada`;
       } else if (annotation === "reuniao") {
         patch.stage = "compareceu";
         patch.lead_phase = "negociacao";
