@@ -86,6 +86,20 @@ async function randomSendDelay(): Promise<void> {
   await new Promise((r) => setTimeout(r, ms));
 }
 
+// Mostra "digitando..." no WhatsApp do lead e aguarda um tempo proporcional
+// ao tamanho da mensagem antes de enviar — humaniza o disparo.
+async function sendTypingIndicator(serverUrl: string, token: string, number: string, text: string): Promise<void> {
+  const delay = Math.min(6000, 900 + text.length * 45);
+  try {
+    await fetch(`${serverUrl.replace(/\/$/, "")}/sendPresence`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", token },
+      body: JSON.stringify({ number, presence: "composing", delay }),
+    });
+  } catch (_) { /* provider pode não suportar; segue o fluxo */ }
+  await new Promise((r) => setTimeout(r, delay));
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -235,6 +249,7 @@ Deno.serve(async (req) => {
 
     const phoneDigits = String(lead.phone).replace(/\D/g, "");
     await randomSendDelay();
+    await sendTypingIndicator(principal.server_url, principal.instance_token, phoneDigits, text);
 
     const r = await fetch(`${principal.server_url.replace(/\/$/, "")}/send/text`, {
       method: "POST",
