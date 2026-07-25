@@ -270,6 +270,7 @@ export default function LeadsPage() {
   // Anotação simplificada — os únicos status que o consultor precisa marcar.
   const ANNOTATION_OPTIONS = [
     { value: "simulacao", label: "Simulação enviada" },
+    { value: "ligacao", label: "Ligação feita" },
     { value: "reuniao", label: "Reunião" },
     { value: "fechou", label: "Fechou" },
     { value: "nao_fechou", label: "Não fechou" },
