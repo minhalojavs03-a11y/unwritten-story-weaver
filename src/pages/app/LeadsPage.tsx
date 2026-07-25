@@ -680,17 +680,13 @@ export default function LeadsPage() {
                     const expanded = expandedId === l.id;
                     const assignedMember = la.assigned_member_id ? memberMap.get(la.assigned_member_id) : null;
                     return (
-                      <React.Fragment key={l.id}>
-                        <tr
-                          className={cn(
-                            "align-middle cursor-pointer transition-colors",
-                            expanded ? "bg-primary/5" : "hover:bg-muted/30",
-                          )}
-                          onClick={() => setExpandedId(expanded ? null : l.id)}
-                        >
+                      <tr
+                        key={l.id}
+                        className="align-middle cursor-pointer transition-colors hover:bg-muted/30"
+                        onClick={() => setDetailFor(l)}
+                      >
                           <td className="px-3 py-2.5">
                             <div className="flex items-center gap-2.5 min-w-0">
-                              <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180 text-primary")} />
                               <InitialsAvatar name={l.name ?? "?"} className="h-9 w-9 shrink-0 text-xs" />
                               <div className="min-w-0 flex-1">
                                 <div className="truncate font-semibold text-[13px]">{l.name ?? "Sem nome"}</div>
@@ -734,96 +730,12 @@ export default function LeadsPage() {
                           <td className="px-2 py-2.5 text-muted-foreground text-[11px] hidden lg:table-cell whitespace-nowrap">{l.last_message_at ? timeAgo(l.last_message_at) : "—"}</td>
                           <td className="px-2 py-2.5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-end gap-1">
-                              <Button size="icon" variant="ghost" className="h-8 w-8" title="Detalhes do lead" onClick={() => setDetailFor(l)}>
-                                <Target className="h-4 w-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" className="h-8 w-8" title="Anotar" onClick={() => setNoteFor(l)}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
                               <Button asChild size="icon" variant="ghost" className="h-8 w-8" title="Abrir conversa">
                                 <Link to={`/conversas?lead=${l.id}`}><MessageCircle className="h-4 w-4" /></Link>
                               </Button>
                             </div>
                           </td>
                         </tr>
-                        {expanded && (
-                          <tr key={`${l.id}-exp`} className="bg-muted/20">
-                            <td colSpan={8} className="px-4 py-4">
-                              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                                <div className="space-y-2 rounded-lg border bg-card p-3">
-                                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Identificação</div>
-                                  <DetailRow icon={UserIcon} label="Nome" value={l.name || "—"} />
-                                  <DetailRow icon={Phone} label="Telefone" value={displayPhone(l.phone, canViewPhoneFn(l as any))} />
-                                  <DetailRow icon={Mail} label="E-mail" value={l.email || "—"} />
-                                  <DetailRow icon={Tag} label="Origem" value={l.source || "—"} />
-                                </div>
-                                <div className="space-y-2 rounded-lg border bg-card p-3">
-                                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Situação comercial</div>
-                                  <DetailRow icon={Target} label="Qualificação" value={qLbl || "—"} />
-                                  <DetailRow icon={ListChecks} label="Fase" value={labelFor(PHASE_OPTIONS, la.lead_phase) || l.stage || "—"} />
-                                  <DetailRow icon={Sparkles} label="Oportunidade" value={labelFor(OPPORTUNITY_OPTIONS, la.opportunity_type) || "—"} />
-                                  <DetailRow icon={Hash} label="Tentativas" value={`${la.contact_attempts ?? 0}/7`} />
-                                  <DetailRow icon={Flame} label="Temperatura" value={l.temperature ?? "—"} />
-                                </div>
-                                <div className="space-y-2 rounded-lg border bg-card p-3">
-                                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Atribuição & datas</div>
-                                  <DetailRow icon={UserIcon} label="Consultor" value={assignedMember ? `${assignedMember.name}${assignedMember.role ? ` · ${assignedMember.role}` : ""}` : "Não atribuído"} />
-                                  <DetailRow icon={CalendarIcon} label="Criado" value={l.created_at ? new Date(l.created_at).toLocaleString("pt-BR") : "—"} />
-                                  <DetailRow icon={MessageCircle} label="Última mensagem" value={l.last_message_at ? `${new Date(l.last_message_at).toLocaleString("pt-BR")} (${timeAgo(l.last_message_at)})` : "—"} />
-                                  <DetailRow icon={Clock} label="Próx. follow-up" value={la.next_followup_at ? new Date(la.next_followup_at).toLocaleString("pt-BR") : "—"} />
-                                  {la.credit_value && (
-                                    <DetailRow icon={Trophy} label="Valor crédito" value={`R$ ${Number(la.credit_value).toLocaleString("pt-BR")}`} />
-                                  )}
-                                  {la.asset_type && (
-                                    <DetailRow icon={Tag} label="Bem" value={labelFor(ASSET_OPTIONS, la.asset_type) || la.asset_type} />
-                                  )}
-                                </div>
-                                {(l.notes || (l.tags && l.tags.length > 0)) && (
-                                  <div className="space-y-2 rounded-lg border bg-card p-3 md:col-span-2 xl:col-span-3">
-                                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                                      <FileText className="h-3 w-3" /> Anotações & tags
-                                    </div>
-                                    {l.notes && <p className="whitespace-pre-wrap text-[12px] leading-relaxed text-foreground/90">{l.notes}</p>}
-                                    {l.tags && l.tags.length > 0 && (
-                                      <div className="flex flex-wrap gap-1.5 pt-1">
-                                        {l.tags.map((t, i) => (
-                                          <span key={i} className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">{t}</span>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                                <div className="flex flex-wrap items-center gap-2 md:col-span-2 xl:col-span-3">
-                                  <Button asChild size="sm" variant="default">
-                                    <Link to={`/conversas?lead=${l.id}`}><MessageCircle className="mr-1.5 h-3.5 w-3.5" />Abrir conversa</Link>
-                                  </Button>
-                                  {canManage && (
-                                    <>
-                                      <Button size="sm" variant="outline" onClick={() => setDetailFor(l)}>
-                                        <Target className="mr-1.5 h-3.5 w-3.5" />Editar detalhes
-                                      </Button>
-                                      <Button size="sm" variant="outline" onClick={() => setNoteFor(l)}>
-                                        <Pencil className="mr-1.5 h-3.5 w-3.5" />Editar anotação
-                                      </Button>
-                                    </>
-                                  )}
-                                  {isManualLead(l as any) && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="text-destructive border-destructive/40 hover:bg-destructive/10"
-                                      onClick={() => deleteManualLead(l.id, l.name)}
-                                    >
-                                      <Trash2 className="mr-1.5 h-3.5 w-3.5" />Excluir lead
-                                    </Button>
-                                  )}
-
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
                     );
                   })}
                 </tbody>
