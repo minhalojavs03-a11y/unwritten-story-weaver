@@ -277,6 +277,16 @@ export default function DashboardPage() {
 
         <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
 
+        {/* NOVO: funil com metas ideais e defasagem (modelo Embracon) — em validação */}
+        <MetaFunnel
+          title={privileged ? "Funil de Vendas · Meta (time · mês)" : "Funil de Vendas · Meta"}
+          subtitle="Realizado x Ideal (meta) x Defasagem"
+          funnel={privileged ? monthFunnelData.funnel : funnelData.funnel}
+          lost={privileged ? monthFunnelData.lost : funnelData.lost}
+        />
+
+
+
         {privileged ? (
           <div className="grid gap-4 xl:grid-cols-2">
             <ConsorcioFunnel
