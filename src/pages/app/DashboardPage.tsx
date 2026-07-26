@@ -17,6 +17,8 @@ import { useReportData } from "@/hooks/useReportData";
 import { useTeamFunnel } from "@/hooks/useTeamFunnel";
 import { HealthScore, InsightsPanel, PipelineIntel, WeeklyActivity, ResponseHeatmap } from "@/components/dashboard/ExecutiveWidgets";
 import { ConsorcioFunnel } from "@/components/dashboard/ConsorcioFunnel";
+import { MetaFunnel } from "@/components/dashboard/MetaFunnel";
+
 import { WeekComparison } from "@/components/dashboard/WeekComparison";
 import { CoachingPanel } from "@/components/dashboard/CoachingPanel";
 import { MyCoachingPanel } from "@/components/dashboard/MyCoachingPanel";
@@ -325,6 +327,15 @@ export default function DashboardPage() {
             />
           </div>
         )}
+
+        {/* NOVO: funil com metas ideais e defasagem (modelo Embracon) — em teste */}
+        <MetaFunnel
+          title={privileged ? "Funil de Vendas · Meta (time · mês)" : "Funil de Vendas · Meta"}
+          subtitle="Realizado x Ideal (meta) x Defasagem — em validação"
+          funnel={privileged ? monthFunnelData.funnel : funnelData.funnel}
+          lost={privileged ? monthFunnelData.lost : funnelData.lost}
+        />
+
 
 
         <ResponseRatePanel memberId={effectiveMemberId} compact />
