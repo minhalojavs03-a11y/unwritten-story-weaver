@@ -185,9 +185,15 @@ export function MetaFunnel({
           <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-info">
             <Target className="h-4 w-4" /> Nossa meta
           </div>
-          <p className="mt-1.5 text-sm font-semibold text-foreground">
-            {goals.simulacoes}% simulações · {goals.reunioes}% reuniões · {goals.fechados}% fechamentos
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm font-semibold text-foreground">
+            <span className="font-mono text-base font-extrabold tabular-nums text-info md:text-lg">{goals.simulacoes}%</span>
+            simulações ·
+            <span className="font-mono text-base font-extrabold tabular-nums text-info md:text-lg">{goals.reunioes}%</span>
+            reuniões ·
+            <span className="font-mono text-base font-extrabold tabular-nums text-info md:text-lg">{goals.fechados}%</span>
+            fechamentos
           </p>
+
         </div>
         <div className="rounded-2xl border-2 border-success/30 bg-success/5 p-4 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-success">
