@@ -328,13 +328,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* NOVO: funil com metas ideais e defasagem (modelo Embracon) — em teste */}
-        <MetaFunnel
-          title={privileged ? "Funil de Vendas · Meta (time · mês)" : "Funil de Vendas · Meta"}
-          subtitle="Realizado x Ideal (meta) x Defasagem — em validação"
-          funnel={privileged ? monthFunnelData.funnel : funnelData.funnel}
-          lost={privileged ? monthFunnelData.lost : funnelData.lost}
-        />
+
 
 
 
