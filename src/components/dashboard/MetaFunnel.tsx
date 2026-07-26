@@ -121,7 +121,7 @@ export function MetaFunnel({
               >
                 <div className="text-center">
                   <div className="font-mono text-2xl font-bold tabular-nums leading-none md:text-3xl">{r.real}</div>
-                  <div className="mt-1.5 inline-block rounded bg-success/10 px-1.5 py-0.5 text-[10px] font-bold text-success">
+                  <div className="mt-1.5 inline-block rounded-md bg-success/15 px-2 py-0.5 text-xs font-extrabold tabular-nums text-success ring-1 ring-success/30 md:text-sm">
                     {fmtPct(r.realPct)}
                   </div>
                 </div>
@@ -129,7 +129,7 @@ export function MetaFunnel({
                   <div className="font-mono text-2xl font-bold tabular-nums leading-none text-muted-foreground md:text-3xl">
                     {r.ideal}
                   </div>
-                  <div className="mt-1.5 inline-block rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
+                  <div className="mt-1.5 inline-block rounded-md bg-muted px-2 py-0.5 text-xs font-extrabold tabular-nums text-muted-foreground ring-1 ring-border md:text-sm">
                     {fmtPct(r.idealPct)}
                   </div>
                 </div>
@@ -137,7 +137,7 @@ export function MetaFunnel({
                   {r.n === "01" ? (
                     <>
                       <div className="font-mono text-2xl font-bold leading-none text-muted-foreground md:text-3xl">—</div>
-                      <div className="mt-1.5 inline-block rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
+                      <div className="mt-1.5 inline-block rounded-md bg-muted px-2 py-0.5 text-xs font-extrabold text-muted-foreground ring-1 ring-border md:text-sm">
                         0%
                       </div>
                     </>
@@ -153,8 +153,10 @@ export function MetaFunnel({
                       </div>
                       <div
                         className={cn(
-                          "mt-1.5 inline-block rounded px-1.5 py-0.5 text-[10px] font-bold",
-                          behind ? "bg-destructive/10 text-destructive" : "bg-success/10 text-success",
+                          "mt-1.5 inline-block rounded-md px-2 py-0.5 text-xs font-extrabold tabular-nums ring-1 md:text-sm",
+                          behind
+                            ? "bg-destructive/15 text-destructive ring-destructive/30"
+                            : "bg-success/15 text-success ring-success/30",
                         )}
                       >
                         {r.gapPp > 0 ? "+" : ""}
@@ -163,6 +165,7 @@ export function MetaFunnel({
                     </>
                   )}
                 </div>
+
               </div>
             );
           })}
@@ -182,9 +185,15 @@ export function MetaFunnel({
           <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-info">
             <Target className="h-4 w-4" /> Nossa meta
           </div>
-          <p className="mt-1.5 text-sm font-semibold text-foreground">
-            {goals.simulacoes}% simulações · {goals.reunioes}% reuniões · {goals.fechados}% fechamentos
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm font-semibold text-foreground">
+            <span className="font-mono text-base font-extrabold tabular-nums text-info md:text-lg">{goals.simulacoes}%</span>
+            simulações ·
+            <span className="font-mono text-base font-extrabold tabular-nums text-info md:text-lg">{goals.reunioes}%</span>
+            reuniões ·
+            <span className="font-mono text-base font-extrabold tabular-nums text-info md:text-lg">{goals.fechados}%</span>
+            fechamentos
           </p>
+
         </div>
         <div className="rounded-2xl border-2 border-success/30 bg-success/5 p-4 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-success">
