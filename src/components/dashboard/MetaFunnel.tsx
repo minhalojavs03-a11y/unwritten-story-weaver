@@ -169,30 +169,33 @@ export function MetaFunnel({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-3">
-        <div className="rounded-xl border bg-muted/30 p-3">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-destructive">
-            <TrendingDown className="h-3.5 w-3.5" /> Principal gargalo
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border-2 border-destructive/30 bg-destructive/5 p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-destructive">
+            <TrendingDown className="h-4 w-4" /> Principal gargalo
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1.5 text-sm font-semibold text-foreground">
             {leads > 0 ? bottleneck.label : "Sem leads no período"}
           </p>
         </div>
-        <div className="rounded-xl border bg-muted/30 p-3">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-info">
-            <Target className="h-3.5 w-3.5" /> Nossa meta
+        <div className="rounded-2xl border-2 border-info/30 bg-info/5 p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-info">
+            <Target className="h-4 w-4" /> Nossa meta
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1.5 text-sm font-semibold text-foreground">
             {goals.simulacoes}% simulações · {goals.reunioes}% reuniões · {goals.fechados}% fechamentos
           </p>
         </div>
-        <div className="rounded-xl border bg-muted/30 p-3">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-success">
-            <Flame className="h-3.5 w-3.5" /> Foco diário
+        <div className="rounded-2xl border-2 border-success/30 bg-success/5 p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-success">
+            <Flame className="h-4 w-4" /> Foco diário
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">Mais simulações, mais reuniões, mais fechamentos.</p>
+          <p className="mt-1.5 text-sm font-semibold text-foreground">
+            Mais simulações, mais reuniões, mais fechamentos.
+          </p>
         </div>
       </div>
+
     </Card>
   );
 }
