@@ -17,6 +17,8 @@ import { useReportData } from "@/hooks/useReportData";
 import { useTeamFunnel } from "@/hooks/useTeamFunnel";
 import { HealthScore, InsightsPanel, PipelineIntel, WeeklyActivity, ResponseHeatmap } from "@/components/dashboard/ExecutiveWidgets";
 import { ConsorcioFunnel } from "@/components/dashboard/ConsorcioFunnel";
+import { MetaFunnel } from "@/components/dashboard/MetaFunnel";
+
 import { WeekComparison } from "@/components/dashboard/WeekComparison";
 import { CoachingPanel } from "@/components/dashboard/CoachingPanel";
 import { MyCoachingPanel } from "@/components/dashboard/MyCoachingPanel";
