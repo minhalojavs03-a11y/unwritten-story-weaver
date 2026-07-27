@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { PageHeader } from "./PageHeader";
 import { TempBadge } from "@/components/oticaflow/TempBadge";
 import { LeadProgressBar } from "@/components/oticaflow/LeadProgressBar";
@@ -25,6 +25,7 @@ import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { useActiveMemberLimit } from "@/hooks/useActiveMemberLimit";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffectiveUser } from "@/hooks/useEffectiveUser";
+import { useLeadSearch } from "@/hooks/useLeadSearch";
 import { cn } from "@/lib/utils";
 import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
 
@@ -215,8 +216,26 @@ export default function LeadsPage() {
   const [customTo, setCustomTo] = useState<string>("");
   type SourceFilter = "all" | "ads" | "import" | "other";
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
   const canManage = canViewAll;
+
+  // Busca no banco (server-side) — encontra também clientes antigos que não
+  // estão na lista carregada em memória.
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+  const { data: remoteLeads = [], isFetching: searchingRemote } = useLeadSearch(debouncedSearch, { limit: 50 });
+
+  // Ao chegar pela busca global (?q= / ?lead=), aplica o termo e abre o lead.
+  const focusLeadId = searchParams.get("lead");
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q && q !== search) setSearch(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const classifySource = (lead: { source?: string | null; imported_from_sheet?: boolean | null }): "ads" | "import" | "other" => {
     const s = (lead.source ?? "").toLowerCase();
@@ -250,9 +269,16 @@ export default function LeadsPage() {
     }
     const q = search.trim().toLowerCase();
     const digitsQ = q.replace(/\D/g, "");
-    return leads.filter((l) => {
+    // Durante uma busca, junta os resultados vindos do banco (clientes antigos)
+    // com os leads já carregados e ignora o filtro de período.
+    let base = leads as any[];
+    if (q) {
+      const seen = new Set(base.map((l) => l.id));
+      base = [...base, ...(remoteLeads as any[]).filter((l) => l?.id && !seen.has(l.id))];
+    }
+    return base.filter((l) => {
       if (sourceFilter !== "all" && classifySource(l as any) !== sourceFilter) return false;
-      if (period !== "all") {
+      if (!q && period !== "all") {
         const t = new Date(l.created_at as string).getTime();
         if (from && t < from.getTime()) return false;
         if (to && t > to.getTime()) return false;
@@ -265,7 +291,20 @@ export default function LeadsPage() {
       }
       return true;
     }).sort((a, b) => new Date(b.created_at as string).getTime() - new Date(a.created_at as string).getTime());
-  }, [leads, period, customFrom, customTo, sourceFilter, search]);
+  }, [leads, remoteLeads, period, customFrom, customTo, sourceFilter, search]);
+
+  // Abre automaticamente o lead vindo da busca global.
+  useEffect(() => {
+    if (!focusLeadId) return;
+    const found = (filteredLeads as any[]).find((l) => l.id === focusLeadId);
+    if (found) {
+      setDetailFor(found as Lead);
+      const next = new URLSearchParams(searchParams);
+      next.delete("lead");
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusLeadId, filteredLeads]);
 
   // Anotação simplificada — os únicos status que o consultor precisa marcar.
   const ANNOTATION_OPTIONS = [
