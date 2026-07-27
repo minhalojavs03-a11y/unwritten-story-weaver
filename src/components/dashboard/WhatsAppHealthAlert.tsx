@@ -197,7 +197,7 @@ export function WhatsAppHealthAlert() {
                     <li key={i.id} className="flex items-center justify-between gap-2 text-xs">
                       <span className="truncate font-medium">{consultantName(i)}</span>
                       <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-                        {i.phone_number || "sem número"}
+                        {i.status === "no_instance" ? "sem WhatsApp vinculado" : i.phone_number || "sem número"}
                       </span>
                     </li>
                   ))}
