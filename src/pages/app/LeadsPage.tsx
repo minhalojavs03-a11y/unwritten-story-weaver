@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { PageHeader } from "./PageHeader";
 import { TempBadge } from "@/components/oticaflow/TempBadge";
 import { LeadProgressBar } from "@/components/oticaflow/LeadProgressBar";
@@ -25,6 +25,7 @@ import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { useActiveMemberLimit } from "@/hooks/useActiveMemberLimit";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffectiveUser } from "@/hooks/useEffectiveUser";
+import { useLeadSearch } from "@/hooks/useLeadSearch";
 import { cn } from "@/lib/utils";
 import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
 
