@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useTenantMembers } from "@/hooks/useData";
 import { useAuth } from "@/contexts/AuthContext";
 import { FERACON_TENANT_ID } from "@/lib/feracon";
+import { GlobalSearch } from "@/components/layout/GlobalSearch";
 
 export type DashboardScope = {
   // Mantido por compatibilidade — sempre Feracon. Não há seletor de tenant.
