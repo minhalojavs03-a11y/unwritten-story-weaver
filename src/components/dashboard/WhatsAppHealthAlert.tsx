@@ -35,12 +35,32 @@ function useFeraconInstances() {
           .in("id", sellerIds);
         byId = new Map((profs ?? []).map((p) => [p.id, p]));
       }
-      return rows
-        .map((r) => ({ ...r, profile: r.seller_user_id ? byId.get(r.seller_user_id) ?? null : null }))
+
+      // Membros ativos que ainda não têm nenhuma instância vinculada
+      const { data: members } = await supabase
+        .from("tenant_members")
+        .select("id,display_name,full_name,user_id,is_active")
+        .eq("tenant_id", FERACON_TENANT_ID)
+        .eq("is_active", true);
+      const linked = new Set(sellerIds);
+      const missing: InstanceRow[] = (members ?? [])
+        .filter((m) => !m.user_id || !linked.has(m.user_id))
+        .map((m) => ({
+          id: `member:${m.id}`,
+          instance_name: m.full_name || m.display_name,
+          phone_number: null,
+          is_connected: false,
+          status: "no_instance",
+          seller_user_id: m.user_id ?? null,
+          profile: null,
+        }));
+
+      return [...rows.map((r) => ({ ...r, profile: r.seller_user_id ? byId.get(r.seller_user_id) ?? null : null })), ...missing]
         .filter((r) => !isHiddenFeraconPerson(r.profile ?? {}) && !isHiddenFeraconPerson({ name: r.instance_name }));
     },
   });
 }
+
 
 function consultantName(r: InstanceRow) {
   return (
