@@ -891,11 +891,11 @@ export default function LeadsPage() {
                 })}
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Marque conforme avançar. O sistema atualiza o pipeline automaticamente.
+                Marque quantas opções precisar. O sistema atualiza o pipeline automaticamente.
               </p>
             </div>
 
-            {annotation === "nao_fechou" && (
+            {annotations.includes("nao_fechou") && (
               <div className="space-y-1.5">
                 <Label className="text-xs">Por que não fechou?</Label>
                 <Textarea
