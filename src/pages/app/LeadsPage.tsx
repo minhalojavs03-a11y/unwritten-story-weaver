@@ -866,12 +866,12 @@ export default function LeadsPage() {
               <Label className="text-xs">Status do atendimento</Label>
               <div className="grid gap-1.5">
                 {ANNOTATION_OPTIONS.map((o) => {
-                  const active = annotation === o.value;
+                  const active = annotations.includes(o.value);
                   return (
                     <button
                       key={o.value}
                       type="button"
-                      onClick={() => setAnnotation(o.value)}
+                      onClick={() => toggleAnnotation(o.value)}
                       className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors ${
                         active
                           ? "border-primary bg-primary/10 text-foreground"
