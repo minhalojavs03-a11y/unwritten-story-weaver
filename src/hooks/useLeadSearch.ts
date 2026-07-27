@@ -40,7 +40,7 @@ export function useLeadSearch(term: string, opts?: { limit?: number }) {
 
       let query = supabase
         .from("leads")
-        .select("id,name,phone,email,stage,status,created_at,assigned_member_id,assigned_to,tenant_id,source,kind")
+        .select("*")
         .or(filters.join(","))
         .order("created_at", { ascending: false })
         .limit(limit);
