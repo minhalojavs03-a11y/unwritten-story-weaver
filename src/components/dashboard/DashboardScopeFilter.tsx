@@ -69,6 +69,8 @@ export function DashboardScopeFilter({ scope, onChange }: Props) {
           Limpar
         </Button>
       )}
+
+      <GlobalSearch className="w-full min-w-[220px] flex-1 sm:w-auto sm:max-w-sm" />
     </div>
   );
 }
