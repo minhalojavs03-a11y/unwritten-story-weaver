@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useTenantMembers } from "@/hooks/useData";
 import { useAuth } from "@/contexts/AuthContext";
 import { FERACON_TENANT_ID } from "@/lib/feracon";
+import { GlobalSearch } from "@/components/layout/GlobalSearch";
 
 export type DashboardScope = {
   // Mantido por compatibilidade — sempre Feracon. Não há seletor de tenant.
@@ -69,6 +70,8 @@ export function DashboardScopeFilter({ scope, onChange }: Props) {
           Limpar
         </Button>
       )}
+
+      <GlobalSearch className="w-full min-w-[220px] flex-1 sm:w-auto sm:max-w-sm" />
     </div>
   );
 }
