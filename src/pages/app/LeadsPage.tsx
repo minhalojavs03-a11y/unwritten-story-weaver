@@ -314,9 +314,13 @@ export default function LeadsPage() {
     { value: "fechou", label: "Fechou" },
     { value: "nao_fechou", label: "Não fechou" },
   ] as const;
-  const [annotation, setAnnotation] = useState<string>("");
+  const [annotations, setAnnotations] = useState<string[]>([]);
   const [notFechouReason, setNotFechouReason] = useState<string>("");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  function toggleAnnotation(value: string) {
+    setAnnotations((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
+  }
 
   useEffect(() => {
     if (noteFor) setNoteText(noteFor.notes ?? "");
@@ -324,18 +328,18 @@ export default function LeadsPage() {
 
   useEffect(() => {
     if (detailFor) {
-      setAnnotation("");
+      setAnnotations([]);
       setNotFechouReason("");
     }
   }, [detailFor]);
 
   async function saveDetail() {
     if (!detailFor) return;
-    if (!annotation) {
-      toast({ title: "Selecione uma opção", variant: "destructive" });
+    if (annotations.length === 0) {
+      toast({ title: "Selecione ao menos uma opção", variant: "destructive" });
       return;
     }
-    if (annotation === "nao_fechou" && !notFechouReason.trim()) {
+    if (annotations.includes("nao_fechou") && !notFechouReason.trim()) {
       toast({ title: "Informe o motivo", description: "Explique brevemente por que não fechou.", variant: "destructive" });
       return;
     }
@@ -345,28 +349,37 @@ export default function LeadsPage() {
       };
       const nowStamp = new Date().toLocaleString("pt-BR");
       const prevNotes = detailFor.notes ? `${detailFor.notes}\n` : "";
-      if (annotation === "simulacao") {
+      const lines: string[] = [];
+      // Ordem de progressão — o estágio final é o mais avançado marcado.
+      const has = (v: string) => annotations.includes(v);
+
+      if (has("simulacao")) {
         patch.stage = "agendado";
         patch.lead_phase = "simulacao";
-        patch.notes = `${prevNotes}[${nowStamp}] Simulação enviada`;
-      } else if (annotation === "ligacao") {
-        patch.notes = `${prevNotes}[${nowStamp}] Ligação feita`;
-      } else if (annotation === "reuniao") {
+        lines.push(`[${nowStamp}] Simulação enviada`);
+      }
+      if (has("ligacao")) {
+        lines.push(`[${nowStamp}] Ligação feita`);
+      }
+      if (has("reuniao")) {
         patch.stage = "compareceu";
         patch.lead_phase = "negociacao";
-        patch.notes = `${prevNotes}[${nowStamp}] Reunião realizada`;
-      } else if (annotation === "fechou") {
+        lines.push(`[${nowStamp}] Reunião realizada`);
+      }
+      if (has("fechou")) {
         patch.stage = "comprou";
         patch.status = "won";
         patch.lead_phase = "pos_venda";
-        patch.notes = `${prevNotes}[${nowStamp}] Fechou negócio`;
-      } else if (annotation === "nao_fechou") {
+        lines.push(`[${nowStamp}] Fechou negócio`);
+      }
+      if (has("nao_fechou")) {
         patch.stage = "perdido";
         patch.status = "lost";
         patch.qualification_status = "desqualificado";
         patch.disqualification_reason = notFechouReason.trim();
-        patch.notes = `${prevNotes}[${nowStamp}] Não fechou: ${notFechouReason.trim()}`;
+        lines.push(`[${nowStamp}] Não fechou: ${notFechouReason.trim()}`);
       }
+      patch.notes = `${prevNotes}${lines.join("\n")}`;
       await update.mutateAsync({ id: detailFor.id, patch });
       toast({ title: "Status atualizado" });
       setDetailFor(null);
@@ -374,6 +387,7 @@ export default function LeadsPage() {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
     }
   }
+
 
 
   async function saveNote() {
