@@ -216,8 +216,26 @@ export default function LeadsPage() {
   const [customTo, setCustomTo] = useState<string>("");
   type SourceFilter = "all" | "ads" | "import" | "other";
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
   const canManage = canViewAll;
+
+  // Busca no banco (server-side) — encontra também clientes antigos que não
+  // estão na lista carregada em memória.
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+  const { data: remoteLeads = [], isFetching: searchingRemote } = useLeadSearch(debouncedSearch, { limit: 50 });
+
+  // Ao chegar pela busca global (?q= / ?lead=), aplica o termo e abre o lead.
+  const focusLeadId = searchParams.get("lead");
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q && q !== search) setSearch(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const classifySource = (lead: { source?: string | null; imported_from_sheet?: boolean | null }): "ads" | "import" | "other" => {
     const s = (lead.source ?? "").toLowerCase();
