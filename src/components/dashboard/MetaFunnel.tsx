@@ -95,7 +95,8 @@ export function MetaFunnel({
               const x4 = cx - wBottom / 2;
               const Icon = r.icon;
               return (
-                <g key={r.n}>
+                <Link key={r.n} to={linkTo(r.metric)} aria-label={`Ver lista: ${r.label}`}>
+
                   <polygon
                     points={`${x1},${y} ${x2},${y} ${x3},${y + ROW_H} ${x4},${y + ROW_H}`}
                     fill={r.tone}
