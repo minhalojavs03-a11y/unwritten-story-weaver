@@ -232,7 +232,7 @@ export default function FunilLeadsPage() {
   };
 
   const selectCls =
-    "w-full rounded-xl border-2 border-primary/25 bg-primary-light/60 px-3 py-2.5 text-sm font-semibold text-foreground shadow-sm focus:border-primary focus:outline-none";
+    "w-full rounded-xl border-2 border-primary/40 bg-card px-3 py-2.5 text-sm font-semibold text-foreground shadow-sm focus:border-primary focus:outline-none";
   const labelCls = "text-[11px] font-bold uppercase tracking-wide text-primary";
 
   return (
@@ -252,7 +252,7 @@ export default function FunilLeadsPage() {
 
       <div className="w-full max-w-full space-y-4 overflow-x-hidden p-3 md:p-8">
         {/* ===== Mobile: filtros compactos em selects ===== */}
-        <div className="grid grid-cols-1 gap-2 rounded-2xl border-2 border-primary/15 bg-primary-light/40 p-3 md:hidden">
+        <div className="grid grid-cols-1 gap-2 rounded-2xl border-2 border-primary/30 bg-muted/40 p-3 md:hidden">
           <label className="space-y-1">
             <span className={labelCls}>Métrica</span>
             <select className={selectCls} value={metric} onChange={(e) => setParam("metric", e.target.value)}>
@@ -303,7 +303,7 @@ export default function FunilLeadsPage() {
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition",
                 k === metric
                   ? "bg-primary text-primary-foreground shadow-sm"
-                  : "border-2 border-primary/20 bg-primary-light/50 text-foreground hover:border-primary/40 hover:bg-primary-light",
+                  : "border-2 border-primary/30 bg-card text-foreground hover:border-primary hover:bg-muted",
               )}
             >
               {METRICS[k].label}
@@ -318,7 +318,7 @@ export default function FunilLeadsPage() {
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition",
                 s === scope
                   ? "bg-foreground text-background shadow-sm"
-                  : "border-2 border-primary/20 bg-primary-light/50 text-foreground hover:border-primary/40 hover:bg-primary-light",
+                  : "border-2 border-primary/30 bg-card text-foreground hover:border-primary hover:bg-muted",
               )}
             >
               {s === "month" ? "Mês atual" : "Tudo"}
@@ -329,7 +329,7 @@ export default function FunilLeadsPage() {
         <div className="hidden flex-wrap items-center gap-2 md:flex">
           <span className="text-xs font-bold uppercase tracking-wide text-primary">Consultor</span>
           <select
-            className="rounded-lg border-2 border-primary/25 bg-primary-light/60 px-3 py-1.5 text-xs font-semibold text-foreground"
+            className="rounded-lg border-2 border-primary/40 bg-card px-3 py-1.5 text-xs font-semibold text-foreground"
             value={consultantFilter}
             onChange={(e) => setParam("consultor", e.target.value)}
           >
@@ -352,7 +352,7 @@ export default function FunilLeadsPage() {
                   "rounded-lg px-3 py-1.5 text-xs font-medium transition",
                   s === stageFilter
                     ? "bg-primary text-primary-foreground shadow-sm"
-                    : "border-2 border-primary/20 bg-primary-light/50 text-foreground hover:border-primary/40 hover:bg-primary-light",
+                    : "border-2 border-primary/30 bg-card text-foreground hover:border-primary hover:bg-muted",
                 )}
               >
                 {s === "todas" ? "Todas" : stageLabels[s]}
@@ -365,7 +365,7 @@ export default function FunilLeadsPage() {
 
 
 
-        <div className="overflow-hidden rounded-2xl border-2 border-primary/15 bg-card shadow-sm">
+        <div className="overflow-hidden rounded-2xl border-2 border-primary/30 bg-card shadow-sm">
           {loading ? (
             <div className="space-y-2 p-4">
               {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
@@ -394,7 +394,7 @@ export default function FunilLeadsPage() {
                     </div>
                     <div className="flex shrink-0 flex-col gap-1.5">
                       <Link to={`/leads?lead=${r.id}`} className="rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-sm transition hover:opacity-90">Abrir</Link>
-                      <Link to={`/conversas?lead=${r.id}`} className="flex justify-center rounded-lg border-2 border-primary/30 bg-primary-light/60 p-1.5 text-primary transition hover:bg-primary-light" aria-label="Abrir conversa">
+                      <Link to={`/conversas?lead=${r.id}`} className="flex justify-center rounded-lg border-2 border-primary/40 bg-card p-1.5 text-primary transition hover:bg-muted" aria-label="Abrir conversa">
                         <MessageCircle className="h-4 w-4" />
                       </Link>
                     </div>
@@ -404,7 +404,7 @@ export default function FunilLeadsPage() {
             </ul>
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
-                <thead className="bg-primary-light/70 text-left text-xs font-bold uppercase tracking-wide text-primary">
+                <thead className="bg-muted text-left text-xs font-bold uppercase tracking-wide text-primary">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Cliente</th>
                     <th className="px-4 py-3 font-semibold">Consultor</th>
@@ -433,7 +433,7 @@ export default function FunilLeadsPage() {
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-2">
                           <Link to={`/leads?lead=${r.id}`} className="rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-sm transition hover:opacity-90">Abrir</Link>
-                          <Link to={`/conversas?lead=${r.id}`} className="rounded-lg border-2 border-primary/30 bg-primary-light/60 p-1.5 text-primary transition hover:bg-primary-light" aria-label="Abrir conversa">
+                          <Link to={`/conversas?lead=${r.id}`} className="rounded-lg border-2 border-primary/40 bg-card p-1.5 text-primary transition hover:bg-muted" aria-label="Abrir conversa">
                             <MessageCircle className="h-4 w-4" />
                           </Link>
                         </div>
