@@ -5,7 +5,7 @@ import { PageHeader } from "./PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { FERACON_TENANT_ID } from "@/lib/feracon";
 import { Skeleton } from "@/components/ui/skeleton";
-import { stageLabels } from "@/data/mock";
+import { stageLabels, stageOrder } from "@/data/mock";
 import { cn } from "@/lib/utils";
 import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
 
