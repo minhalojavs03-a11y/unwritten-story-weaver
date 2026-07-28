@@ -943,6 +943,26 @@ export default function LeadsPage() {
               </p>
             </div>
 
+            {annotations.includes("fechou") && (
+              <div className="grid gap-3 rounded-lg border border-success/30 bg-success/5 p-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Valor da venda (R$)</Label>
+                  <Input
+                    inputMode="decimal"
+                    value={saleValue}
+                    onChange={(e) => setSaleValue(e.target.value)}
+                    placeholder="Ex.: 80000"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Data da venda</Label>
+                  <Input type="date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} />
+                </div>
+              </div>
+            )}
+
+
+
             {annotations.includes("nao_fechou") && (
               <div className="space-y-1.5">
                 <Label className="text-xs">Por que não fechou?</Label>
