@@ -144,7 +144,7 @@ export default function FunilLeadsPage() {
           {(Object.keys(METRICS) as Metric[]).map((k) => (
             <Link
               key={k}
-              to={`/funil/leads?metric=${k}&scope=${scope}`}
+              to={`/funil/leads?metric=${k}&scope=${scope}&stage=${stageFilter}`}
               className={cn(
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition",
                 k === metric ? "bg-foreground text-background" : "border border-black/10 bg-card hover:bg-muted",
@@ -157,7 +157,7 @@ export default function FunilLeadsPage() {
           {(["month", "all"] as const).map((s) => (
             <Link
               key={s}
-              to={`/funil/leads?metric=${metric}&scope=${s}`}
+              to={`/funil/leads?metric=${metric}&scope=${s}&stage=${stageFilter}`}
               className={cn(
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition",
                 s === scope ? "bg-foreground text-background" : "border border-black/10 bg-card hover:bg-muted",
@@ -167,6 +167,27 @@ export default function FunilLeadsPage() {
             </Link>
           ))}
         </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Etapa</span>
+          {(["todas", ...stageOrder] as const).map((s) => {
+            const count = s === "todas" ? rows.length : rows.filter((r) => (r.stage ?? "novo") === s).length;
+            return (
+              <Link
+                key={s}
+                to={`/funil/leads?metric=${metric}&scope=${scope}&stage=${s}`}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                  s === stageFilter ? "bg-primary text-primary-foreground" : "border border-black/10 bg-card hover:bg-muted",
+                )}
+              >
+                {s === "todas" ? "Todas" : stageLabels[s]}
+                <span className="ml-1 tabular-nums opacity-70">{loading ? "" : count}</span>
+              </Link>
+            );
+          })}
+        </div>
+
 
         <div className="overflow-hidden rounded-2xl border bg-card">
           {loading ? (
