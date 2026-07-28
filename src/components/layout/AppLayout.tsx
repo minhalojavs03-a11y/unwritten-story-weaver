@@ -24,7 +24,7 @@ import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { ImpersonateDialog } from "@/components/admin/ImpersonateDialog";
 import { NotificationsBell } from "@/components/layout/NotificationsBell";
 import { WhatsAppStatusPill } from "@/components/layout/WhatsAppStatusPill";
-import { GlobalSearch } from "@/components/layout/GlobalSearch";
+
 import { useNotifications } from "@/hooks/useNotifications";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { useHiddenMenus, type MenuRole } from "@/hooks/useMenuPermissions";
