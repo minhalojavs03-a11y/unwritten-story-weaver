@@ -97,6 +97,7 @@ export default function FunilLeadsPage() {
 
   const [rows, setRows] = useState<Row[]>([]);
   const [members, setMembers] = useState<{ id: string; user_id: string | null; display_name: string }[]>([]);
+  const [computedGap, setComputedGap] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   const setParam = (key: string, value: string) => {
