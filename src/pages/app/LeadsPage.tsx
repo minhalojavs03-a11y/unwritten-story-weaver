@@ -394,8 +394,13 @@ export default function LeadsPage() {
         patch.stage = "comprou";
         patch.status = "won";
         patch.lead_phase = "pos_venda";
-        lines.push(`[${nowStamp}] Fechou negócio`);
+        patch.credit_value = saleAmount;
+        patch.metadata = { ...(detailFor.metadata as any ?? {}), sale_value: saleAmount, sale_date: saleDate };
+        const dateLabel = new Date(`${saleDate}T12:00:00`).toLocaleDateString("pt-BR");
+        const valueLabel = saleAmount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+        lines.push(`[${nowStamp}] Fechou negócio · ${valueLabel} · Data da venda: ${dateLabel}`);
       }
+
       if (has("nao_fechou")) {
         patch.stage = "perdido";
         patch.status = "lost";
