@@ -35,6 +35,7 @@ export function MetaFunnel({
   title = "Funil de Vendas · Meta",
   subtitle = "Realizado x Ideal x Defasagem",
   goals = DEFAULT_GOALS,
+  scope = "month",
   className,
 }: Props) {
   const at = (k: Stage) => funnel.find((f) => f.key === k)?.count ?? 0;
@@ -45,16 +46,19 @@ export function MetaFunnel({
   const simulacoes = at("agendado") + reunioes;
   const leads = at("novo") + at("qualificado") + simulacoes + lost;
 
+  const linkTo = (metric: string) => `/funil/leads?metric=${metric}&scope=${scope}`;
+
   const rows = [
-    { n: "01", label: "Leads / Clientes", icon: Users, real: leads, idealPct: 100, tone: "hsl(var(--stage-new))" },
-    { n: "02", label: "Simulações encaminhadas", icon: ClipboardList, real: simulacoes, idealPct: goals.simulacoes, tone: "hsl(var(--info))" },
-    { n: "03", label: "Reuniões agendadas", icon: CalendarDays, real: reunioes, idealPct: goals.reunioes, tone: "hsl(262 83% 58%)" },
-    { n: "04", label: "Clientes fechados", icon: Handshake, real: fechados, idealPct: goals.fechados, tone: "hsl(var(--success))" },
+    { n: "01", metric: "leads", label: "Leads / Clientes", icon: Users, real: leads, idealPct: 100, tone: "hsl(var(--stage-new))" },
+    { n: "02", metric: "simulacoes", label: "Simulações encaminhadas", icon: ClipboardList, real: simulacoes, idealPct: goals.simulacoes, tone: "hsl(var(--info))" },
+    { n: "03", metric: "reunioes", label: "Reuniões agendadas", icon: CalendarDays, real: reunioes, idealPct: goals.reunioes, tone: "hsl(262 83% 58%)" },
+    { n: "04", metric: "fechados", label: "Clientes fechados", icon: Handshake, real: fechados, idealPct: goals.fechados, tone: "hsl(var(--success))" },
   ].map((r) => {
     const ideal = Math.round((leads * r.idealPct) / 100);
     const realPct = leads > 0 ? (r.real / leads) * 100 : 0;
     return { ...r, ideal, realPct, gap: r.real - ideal, gapPp: realPct - r.idealPct };
   });
+
 
   const fmtPct = (v: number) =>
     `${v.toLocaleString("pt-BR", { minimumFractionDigits: v % 1 === 0 ? 0 : 1, maximumFractionDigits: 1 })}%`;
