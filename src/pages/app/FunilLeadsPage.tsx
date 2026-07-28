@@ -200,7 +200,7 @@ export default function FunilLeadsPage() {
             <>
             {/* Mobile: lista em cartões */}
             <ul className="divide-y md:hidden">
-              {rows.map((r) => (
+              {visibleRows.map((r) => (
                 <li key={r.id} className="p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
@@ -242,7 +242,7 @@ export default function FunilLeadsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {rows.map((r) => (
+                  {visibleRows.map((r) => (
                     <tr key={r.id} className="hover:bg-muted/40">
                       <td className="px-4 py-3">
                         <div className="font-medium text-foreground">{r.name || "Sem nome"}</div>
