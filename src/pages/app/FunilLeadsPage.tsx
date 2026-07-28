@@ -404,7 +404,7 @@ export default function FunilLeadsPage() {
             </ul>
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
-                <thead className="bg-primary-light/70 text-primary text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <thead className="bg-primary-light/70 text-left text-xs font-bold uppercase tracking-wide text-primary">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Cliente</th>
                     <th className="px-4 py-3 font-semibold">Consultor</th>
