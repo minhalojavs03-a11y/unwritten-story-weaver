@@ -35,21 +35,21 @@ const METRICS: Record<Metric, { label: string; subtitle: string; stages: string[
   perdidos: { label: "Leads perdidos", subtitle: "Leads desqualificados", stages: ["perdido"] },
   sem_simulacoes: {
     label: "Sem simulação enviada",
-    subtitle: "Leads que ainda não receberam simulação",
+    subtitle: "Leads ativos que ainda não receberam simulação (não inclui perdidos)",
     stages: null,
-    exclude: ["agendado", "compareceu", "comprou"],
+    exclude: ["agendado", "compareceu", "comprou", "perdido"],
   },
   sem_reunioes: {
     label: "Sem reunião agendada",
-    subtitle: "Leads que ainda não chegaram à reunião",
+    subtitle: "Leads ativos que ainda não chegaram à reunião (não inclui perdidos)",
     stages: null,
-    exclude: ["compareceu", "comprou"],
+    exclude: ["compareceu", "comprou", "perdido"],
   },
   sem_fechados: {
     label: "Não fechados",
-    subtitle: "Leads que ainda não fecharam cota",
+    subtitle: "Leads ativos que ainda não fecharam cota (não inclui perdidos)",
     stages: null,
-    exclude: ["comprou"],
+    exclude: ["comprou", "perdido"],
   },
 };
 
