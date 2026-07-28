@@ -293,6 +293,19 @@ export default function LeadsPage() {
     }).sort((a, b) => new Date(b.created_at as string).getTime() - new Date(a.created_at as string).getTime());
   }, [leads, remoteLeads, period, customFrom, customTo, sourceFilter, search]);
 
+  // Paginação de 100 em 100 para não pesar a renderização.
+  const PAGE_SIZE = 100;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
+  useEffect(() => { setPage(1); }, [period, customFrom, customTo, sourceFilter, search]);
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
+  const pagedLeads = useMemo(
+    () => filteredLeads.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filteredLeads, page],
+  );
+
+
+
   // Abre automaticamente o lead vindo da busca global.
   useEffect(() => {
     if (!focusLeadId) return;
