@@ -472,11 +472,7 @@ export function AppLayout() {
             </DropdownMenu>
           </div>
         </header>
-        {!isConversasMobile && (
-          <div className="mx-3 bg-white px-4 pb-3 md:hidden">
-            <GlobalSearch />
-          </div>
-        )}
+
         <MemberLoginDialog />
         <ImpersonateDialog open={impersonateOpen} onOpenChange={setImpersonateOpen} />
         <TutorialVideoDialog />
