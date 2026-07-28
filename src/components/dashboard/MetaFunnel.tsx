@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
 import { Users, ClipboardList, CalendarDays, Handshake, Target, TrendingDown, Flame } from "lucide-react";
 import type { Stage } from "@/data/mock";
 
@@ -14,10 +15,13 @@ interface Props {
   subtitle?: string;
   /** Metas ideais em % sobre o total de leads. */
   goals?: { simulacoes: number; reunioes: number; fechados: number };
+  /** Recorte usado nos links de detalhamento. */
+  scope?: "month" | "all";
   className?: string;
 }
 
 const DEFAULT_GOALS = { simulacoes: 70, reunioes: 30, fechados: 4 };
+
 
 // Geometria do cone
 const ROW_H = 86;
@@ -31,6 +35,7 @@ export function MetaFunnel({
   title = "Funil de Vendas · Meta",
   subtitle = "Realizado x Ideal x Defasagem",
   goals = DEFAULT_GOALS,
+  scope = "month",
   className,
 }: Props) {
   const at = (k: Stage) => funnel.find((f) => f.key === k)?.count ?? 0;
@@ -41,16 +46,19 @@ export function MetaFunnel({
   const simulacoes = at("agendado") + reunioes;
   const leads = at("novo") + at("qualificado") + simulacoes + lost;
 
+  const linkTo = (metric: string) => `/funil/leads?metric=${metric}&scope=${scope}`;
+
   const rows = [
-    { n: "01", label: "Leads / Clientes", icon: Users, real: leads, idealPct: 100, tone: "hsl(var(--stage-new))" },
-    { n: "02", label: "Simulações encaminhadas", icon: ClipboardList, real: simulacoes, idealPct: goals.simulacoes, tone: "hsl(var(--info))" },
-    { n: "03", label: "Reuniões agendadas", icon: CalendarDays, real: reunioes, idealPct: goals.reunioes, tone: "hsl(262 83% 58%)" },
-    { n: "04", label: "Clientes fechados", icon: Handshake, real: fechados, idealPct: goals.fechados, tone: "hsl(var(--success))" },
+    { n: "01", metric: "leads", label: "Leads / Clientes", icon: Users, real: leads, idealPct: 100, tone: "hsl(var(--stage-new))" },
+    { n: "02", metric: "simulacoes", label: "Simulações encaminhadas", icon: ClipboardList, real: simulacoes, idealPct: goals.simulacoes, tone: "hsl(var(--info))" },
+    { n: "03", metric: "reunioes", label: "Reuniões agendadas", icon: CalendarDays, real: reunioes, idealPct: goals.reunioes, tone: "hsl(262 83% 58%)" },
+    { n: "04", metric: "fechados", label: "Clientes fechados", icon: Handshake, real: fechados, idealPct: goals.fechados, tone: "hsl(var(--success))" },
   ].map((r) => {
     const ideal = Math.round((leads * r.idealPct) / 100);
     const realPct = leads > 0 ? (r.real / leads) * 100 : 0;
     return { ...r, ideal, realPct, gap: r.real - ideal, gapPp: realPct - r.idealPct };
   });
+
 
   const fmtPct = (v: number) =>
     `${v.toLocaleString("pt-BR", { minimumFractionDigits: v % 1 === 0 ? 0 : 1, maximumFractionDigits: 1 })}%`;
@@ -119,21 +127,33 @@ export function MetaFunnel({
                 className="grid grid-cols-3 items-center gap-2 rounded-xl border bg-muted/30 px-3"
                 style={{ minHeight: ROW_H }}
               >
-                <div className="text-center">
-                  <div className="font-mono text-2xl font-bold tabular-nums leading-none md:text-3xl">{r.real}</div>
+                <Link
+                  to={linkTo(r.metric)}
+                  title={`Ver lista: ${r.label}`}
+                  className="rounded-lg py-2 text-center transition hover:bg-background/70"
+                >
+                  <div className="font-mono text-2xl font-bold tabular-nums leading-none underline-offset-4 hover:underline md:text-3xl">{r.real}</div>
                   <div className="mt-1.5 inline-block rounded-md bg-success/15 px-2 py-0.5 text-xs font-extrabold tabular-nums text-success ring-1 ring-success/30 md:text-sm">
                     {fmtPct(r.realPct)}
                   </div>
-                </div>
-                <div className="text-center">
-                  <div className="font-mono text-2xl font-bold tabular-nums leading-none text-muted-foreground md:text-3xl">
+                </Link>
+                <Link
+                  to={linkTo(r.metric)}
+                  title={`Ver lista: ${r.label}`}
+                  className="rounded-lg py-2 text-center transition hover:bg-background/70"
+                >
+                  <div className="font-mono text-2xl font-bold tabular-nums leading-none text-muted-foreground underline-offset-4 hover:underline md:text-3xl">
                     {r.ideal}
                   </div>
                   <div className="mt-1.5 inline-block rounded-md bg-muted px-2 py-0.5 text-xs font-extrabold tabular-nums text-muted-foreground ring-1 ring-border md:text-sm">
                     {fmtPct(r.idealPct)}
                   </div>
-                </div>
-                <div className="text-center">
+                </Link>
+                <Link
+                  to={linkTo(r.metric)}
+                  title={`Ver lista: ${r.label}`}
+                  className="rounded-lg py-2 text-center transition hover:bg-background/70"
+                >
                   {r.n === "01" ? (
                     <>
                       <div className="font-mono text-2xl font-bold leading-none text-muted-foreground md:text-3xl">—</div>
@@ -145,7 +165,7 @@ export function MetaFunnel({
                     <>
                       <div
                         className={cn(
-                          "font-mono text-2xl font-bold tabular-nums leading-none md:text-3xl",
+                          "font-mono text-2xl font-bold tabular-nums leading-none underline-offset-4 hover:underline md:text-3xl",
                           behind ? "text-destructive" : "text-success",
                         )}
                       >
@@ -164,9 +184,10 @@ export function MetaFunnel({
                       </div>
                     </>
                   )}
-                </div>
+                </Link>
 
               </div>
+
             );
           })}
         </div>
