@@ -283,6 +283,7 @@ export default function DashboardPage() {
           subtitle="Realizado x Ideal (meta) x Defasagem"
           funnel={privileged ? monthFunnelData.funnel : funnelData.funnel}
           lost={privileged ? monthFunnelData.lost : funnelData.lost}
+          scope="month"
         />
 
 
