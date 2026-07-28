@@ -150,9 +150,20 @@ export default function FunilLeadsPage() {
       "Sem consultor";
   }, [members]);
 
+  // Quando a célula de Defasagem manda ?gap=-280, a lista precisa mostrar
+  // exatamente esses 280 leads (os mais recentes sem avanço), não o universo inteiro.
+  const gapLimit = useMemo(() => {
+    const raw = params.get("gap");
+    if (!raw) return null;
+    const n = Math.abs(Number(raw));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }, [params]);
+
+  const scopedRows = useMemo(() => (gapLimit ? rows.slice(0, gapLimit) : rows), [rows, gapLimit]);
+
   const visibleRows = useMemo(
-    () => (stageFilter === "todas" ? rows : rows.filter((r) => (r.stage ?? "novo") === stageFilter)),
-    [rows, stageFilter],
+    () => (stageFilter === "todas" ? scopedRows : scopedRows.filter((r) => (r.stage ?? "novo") === stageFilter)),
+    [scopedRows, stageFilter],
   );
   const total = visibleRows.length;
 
@@ -161,7 +172,7 @@ export default function FunilLeadsPage() {
       <PageHeader
         title={`${cfg.label}: ${loading ? "…" : total}`}
         subtitle={`${cfg.subtitle} · ${scope === "month" ? "Mês atual" : "Histórico completo"}${
-          params.get("gap") ? ` · Faltam ${Math.abs(Number(params.get("gap")))} para bater a meta` : ""
+          gapLimit ? ` · Defasagem exata da meta: ${gapLimit} leads` : ""
         }`}
         actions={
           <Link to="/crm" className="inline-flex items-center gap-2 rounded-lg border border-black/10 bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted">
@@ -202,7 +213,7 @@ export default function FunilLeadsPage() {
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Etapa</span>
           {(["todas", ...stageOrder] as const).map((s) => {
-            const count = s === "todas" ? rows.length : rows.filter((r) => (r.stage ?? "novo") === s).length;
+            const count = s === "todas" ? scopedRows.length : scopedRows.filter((r) => (r.stage ?? "novo") === s).length;
             return (
               <Link
                 key={s}
