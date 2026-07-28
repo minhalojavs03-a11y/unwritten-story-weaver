@@ -97,6 +97,7 @@ export default function FunilLeadsPage() {
 
   const [rows, setRows] = useState<Row[]>([]);
   const [members, setMembers] = useState<{ id: string; user_id: string | null; display_name: string }[]>([]);
+  const [computedGap, setComputedGap] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   const setParam = (key: string, value: string) => {
@@ -141,6 +142,38 @@ export default function FunilLeadsPage() {
         .select("id, user_id, display_name")
         .eq("tenant_id", FERACON_TENANT_ID);
       if (cancelled) return;
+
+      // Defasagem exata igual ao Funil de Meta: ideal (% da meta sobre o total
+      // de leads do recorte) menos o realizado da etapa.
+      const GOAL_PCT: Record<string, number> = { sem_simulacoes: 70, sem_reunioes: 30, sem_fechados: 4 };
+      const REALIZED: Record<string, string[]> = {
+        sem_simulacoes: ["agendado", "compareceu", "comprou"],
+        sem_reunioes: ["compareceu", "comprou"],
+        sem_fechados: ["comprou"],
+      };
+      if (GOAL_PCT[metric]) {
+        const base = () => {
+          let q = supabase
+            .from("leads")
+            .select("id", { count: "exact", head: true })
+            .eq("tenant_id", FERACON_TENANT_ID)
+            .eq("kind", "lead");
+          if (scope === "month") q = q.gte("updated_at", monthStartISO());
+          return q;
+        };
+        const [totalRes, realRes] = await Promise.all([
+          base(),
+          base().in("stage", REALIZED[metric]),
+        ]);
+        if (cancelled) return;
+        const totalLeads = totalRes.count ?? 0;
+        const realized = realRes.count ?? 0;
+        const ideal = Math.round((totalLeads * GOAL_PCT[metric]) / 100);
+        setComputedGap(Math.max(0, ideal - realized));
+      } else {
+        setComputedGap(null);
+      }
+
       setRows(all);
       setMembers((membersRes.data ?? []) as any[]);
       setLoading(false);
@@ -158,14 +191,16 @@ export default function FunilLeadsPage() {
       "Sem consultor";
   }, [members]);
 
-  // Quando a célula de Defasagem manda ?gap=-280, a lista precisa mostrar
-  // exatamente esses 280 leads (os mais recentes sem avanço), não o universo inteiro.
+  // A lista de defasagem precisa bater exatamente com o número do Funil de Meta
+  // (ex.: -280 → 280 leads). Usamos o valor calculado na página; o ?gap da URL
+  // serve apenas como fallback enquanto os contadores carregam.
   const gapLimit = useMemo(() => {
+    if (computedGap !== null) return computedGap > 0 ? computedGap : null;
     const raw = params.get("gap");
     if (!raw) return null;
     const n = Math.abs(Number(raw));
     return Number.isFinite(n) && n > 0 ? n : null;
-  }, [params]);
+  }, [params, computedGap]);
 
   const scopedAll = useMemo(() => (gapLimit ? rows.slice(0, gapLimit) : rows), [rows, gapLimit]);
 
