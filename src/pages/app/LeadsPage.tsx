@@ -664,7 +664,7 @@ export default function LeadsPage() {
           <>
             {/* Mobile */}
             <ul className="space-y-2 md:hidden">
-              {filteredLeads.map((l) => {
+              {pagedLeads.map((l) => {
                 const o = outcomeMeta(l);
                 const la = l as any;
                 const expanded = expandedId === l.id;
