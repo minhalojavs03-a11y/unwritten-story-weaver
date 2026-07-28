@@ -24,7 +24,7 @@ import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { ImpersonateDialog } from "@/components/admin/ImpersonateDialog";
 import { NotificationsBell } from "@/components/layout/NotificationsBell";
 import { WhatsAppStatusPill } from "@/components/layout/WhatsAppStatusPill";
-import { GlobalSearch } from "@/components/layout/GlobalSearch";
+
 import { useNotifications } from "@/hooks/useNotifications";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { useHiddenMenus, type MenuRole } from "@/hooks/useMenuPermissions";
@@ -362,9 +362,8 @@ export function AppLayout() {
         )}>
 
 
-          <div className="hidden md:flex min-w-0 flex-1 items-center">
-            <GlobalSearch className="w-full max-w-md" />
-          </div>
+          <div className="hidden md:flex min-w-0 flex-1 items-center" />
+
 
           <div className="flex items-center gap-2 md:hidden">
             <Sheet>
@@ -473,11 +472,7 @@ export function AppLayout() {
             </DropdownMenu>
           </div>
         </header>
-        {!isConversasMobile && (
-          <div className="mx-3 bg-white px-4 pb-3 md:hidden">
-            <GlobalSearch />
-          </div>
-        )}
+
         <MemberLoginDialog />
         <ImpersonateDialog open={impersonateOpen} onOpenChange={setImpersonateOpen} />
         <TutorialVideoDialog />
