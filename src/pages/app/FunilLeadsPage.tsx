@@ -9,9 +9,17 @@ import { stageLabels, stageOrder } from "@/data/mock";
 import { cn } from "@/lib/utils";
 import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
 
-type Metric = "leads" | "simulacoes" | "reunioes" | "fechados" | "perdidos";
+type Metric =
+  | "leads"
+  | "simulacoes"
+  | "reunioes"
+  | "fechados"
+  | "perdidos"
+  | "sem_simulacoes"
+  | "sem_reunioes"
+  | "sem_fechados";
 
-const METRICS: Record<Metric, { label: string; subtitle: string; stages: string[] | null }> = {
+const METRICS: Record<Metric, { label: string; subtitle: string; stages: string[] | null; exclude?: string[] }> = {
   leads: { label: "Leads / Clientes", subtitle: "Todos os leads do período", stages: null },
   simulacoes: {
     label: "Simulações encaminhadas",
@@ -25,7 +33,26 @@ const METRICS: Record<Metric, { label: string; subtitle: string; stages: string[
   },
   fechados: { label: "Clientes fechados", subtitle: "Leads com cota vendida", stages: ["comprou"] },
   perdidos: { label: "Leads perdidos", subtitle: "Leads desqualificados", stages: ["perdido"] },
+  sem_simulacoes: {
+    label: "Sem simulação enviada",
+    subtitle: "Leads que ainda não receberam simulação",
+    stages: null,
+    exclude: ["agendado", "compareceu", "comprou"],
+  },
+  sem_reunioes: {
+    label: "Sem reunião agendada",
+    subtitle: "Leads que ainda não chegaram à reunião",
+    stages: null,
+    exclude: ["compareceu", "comprou"],
+  },
+  sem_fechados: {
+    label: "Não fechados",
+    subtitle: "Leads que ainda não fecharam cota",
+    stages: null,
+    exclude: ["comprou"],
+  },
 };
+
 
 type Row = {
   id: string;
@@ -90,6 +117,8 @@ export default function FunilLeadsPage() {
           .range(page * PAGE, page * PAGE + PAGE - 1);
 
         if (cfg.stages) q = q.in("stage", cfg.stages);
+        if (cfg.exclude) q = q.or(`stage.is.null,stage.not.in.(${cfg.exclude.join(",")})`);
+
         if (scope === "month") q = q.gte("updated_at", monthStartISO());
 
         const { data } = await q;
@@ -131,7 +160,9 @@ export default function FunilLeadsPage() {
     <>
       <PageHeader
         title={`${cfg.label}: ${loading ? "…" : total}`}
-        subtitle={`${cfg.subtitle} · ${scope === "month" ? "Mês atual" : "Histórico completo"}`}
+        subtitle={`${cfg.subtitle} · ${scope === "month" ? "Mês atual" : "Histórico completo"}${
+          params.get("gap") ? ` · Faltam ${Math.abs(Number(params.get("gap")))} para bater a meta` : ""
+        }`}
         actions={
           <Link to="/crm" className="inline-flex items-center gap-2 rounded-lg border border-black/10 bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted">
             <ArrowLeft className="h-3.5 w-3.5" /> Voltar ao Início
