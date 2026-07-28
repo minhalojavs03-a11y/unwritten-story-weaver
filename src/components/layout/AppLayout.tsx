@@ -362,9 +362,8 @@ export function AppLayout() {
         )}>
 
 
-          <div className="hidden md:flex min-w-0 flex-1 items-center">
-            <GlobalSearch className="w-full max-w-md" />
-          </div>
+          <div className="hidden md:flex min-w-0 flex-1 items-center" />
+
 
           <div className="flex items-center gap-2 md:hidden">
             <Sheet>
