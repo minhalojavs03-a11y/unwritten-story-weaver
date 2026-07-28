@@ -117,6 +117,8 @@ export default function FunilLeadsPage() {
           .range(page * PAGE, page * PAGE + PAGE - 1);
 
         if (cfg.stages) q = q.in("stage", cfg.stages);
+        if (cfg.exclude) q = q.or(`stage.is.null,stage.not.in.(${cfg.exclude.join(",")})`);
+
         if (scope === "month") q = q.gte("updated_at", monthStartISO());
 
         const { data } = await q;
