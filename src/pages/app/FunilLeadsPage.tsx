@@ -123,7 +123,7 @@ export default function FunilLeadsPage() {
         }
       />
 
-      <div className="space-y-4 p-4 md:p-8">
+      <div className="w-full max-w-full space-y-4 overflow-x-hidden p-3 md:p-8">
         <div className="flex flex-wrap gap-2">
           {(Object.keys(METRICS) as Metric[]).map((k) => (
             <Link
@@ -160,7 +160,38 @@ export default function FunilLeadsPage() {
           ) : total === 0 ? (
             <div className="p-10 text-center text-sm text-muted-foreground">Nenhum lead encontrado neste recorte.</div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            {/* Mobile: lista em cartões */}
+            <ul className="divide-y md:hidden">
+              {rows.map((r) => (
+                <li key={r.id} className="p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-medium text-foreground">{r.name || "Sem nome"}</div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {displayPhone(r.phone, canViewPhoneFn(r as any))}
+                        {r.email ? ` · ${r.email}` : ""}
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                        <span className="rounded-md bg-muted px-1.5 py-0.5 text-foreground">
+                          {stageLabels[(r.stage ?? "novo") as keyof typeof stageLabels] ?? r.stage}
+                        </span>
+                        <span>{nameOf(r)}</span>
+                        {r.credit_value ? <span className="tabular-nums">· {fmtBRL(r.credit_value)}</span> : null}
+                      </div>
+                      <div className="mt-1 text-[11px] text-muted-foreground">Entrada: {fmtDate(r.created_at)}</div>
+                    </div>
+                    <div className="flex shrink-0 flex-col gap-1.5">
+                      <Link to={`/leads?lead=${r.id}`} className="rounded-lg border px-2 py-1 text-xs hover:bg-muted">Abrir</Link>
+                      <Link to={`/conversas?lead=${r.id}`} className="flex justify-center rounded-lg border p-1.5 hover:bg-muted" aria-label="Abrir conversa">
+                        <MessageCircle className="h-4 w-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
@@ -201,6 +232,7 @@ export default function FunilLeadsPage() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       </div>
