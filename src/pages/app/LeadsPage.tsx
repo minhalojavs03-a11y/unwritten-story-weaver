@@ -807,6 +807,25 @@ export default function LeadsPage() {
               </table>
             </div>
 
+            {filteredLeads.length > PAGE_SIZE && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card px-3 py-2">
+                <span className="text-[11px] text-muted-foreground">
+                  {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredLeads.length)} de {filteredLeads.length}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" className="h-8 rounded-full" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                    Anterior
+                  </Button>
+                  <span className="text-xs text-muted-foreground tabular-nums">{page}/{totalPages}</span>
+                  <Button size="sm" variant="outline" className="h-8 rounded-full" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            )}
+
+
+
           </>
         )}
       </div>
