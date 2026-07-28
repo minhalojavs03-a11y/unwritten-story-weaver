@@ -150,9 +150,20 @@ export default function FunilLeadsPage() {
       "Sem consultor";
   }, [members]);
 
+  // Quando a célula de Defasagem manda ?gap=-280, a lista precisa mostrar
+  // exatamente esses 280 leads (os mais recentes sem avanço), não o universo inteiro.
+  const gapLimit = useMemo(() => {
+    const raw = params.get("gap");
+    if (!raw) return null;
+    const n = Math.abs(Number(raw));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }, [params]);
+
+  const scopedRows = useMemo(() => (gapLimit ? rows.slice(0, gapLimit) : rows), [rows, gapLimit]);
+
   const visibleRows = useMemo(
-    () => (stageFilter === "todas" ? rows : rows.filter((r) => (r.stage ?? "novo") === stageFilter)),
-    [rows, stageFilter],
+    () => (stageFilter === "todas" ? scopedRows : scopedRows.filter((r) => (r.stage ?? "novo") === stageFilter)),
+    [scopedRows, stageFilter],
   );
   const total = visibleRows.length;
 
