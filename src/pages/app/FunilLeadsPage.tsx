@@ -63,6 +63,7 @@ export default function FunilLeadsPage() {
   const [params] = useSearchParams();
   const metric = (params.get("metric") as Metric) || "leads";
   const scope = params.get("scope") === "all" ? "all" : "month";
+  const stageFilter = params.get("stage") || "todas";
   const cfg = METRICS[metric] ?? METRICS.leads;
   const canViewPhoneFn = useCanViewLeadPhone();
 
