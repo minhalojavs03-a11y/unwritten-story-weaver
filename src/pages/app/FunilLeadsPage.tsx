@@ -251,9 +251,9 @@ export default function FunilLeadsPage() {
 
       <div className="w-full max-w-full space-y-4 overflow-x-hidden p-3 md:p-8">
         {/* ===== Mobile: filtros compactos em selects ===== */}
-        <div className="grid grid-cols-1 gap-2 md:hidden">
+        <div className="grid grid-cols-1 gap-2 rounded-2xl border-2 border-primary/15 bg-primary-light/40 p-3 md:hidden">
           <label className="space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Métrica</span>
+            <span className={labelCls}>Métrica</span>
             <select className={selectCls} value={metric} onChange={(e) => setParam("metric", e.target.value)}>
               {(Object.keys(METRICS) as Metric[]).map((k) => (
                 <option key={k} value={k}>{METRICS[k].label}</option>
@@ -262,14 +262,14 @@ export default function FunilLeadsPage() {
           </label>
           <div className="grid grid-cols-2 gap-2">
             <label className="space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Período</span>
+              <span className={labelCls}>Período</span>
               <select className={selectCls} value={scope} onChange={(e) => setParam("scope", e.target.value)}>
                 <option value="month">Mês atual</option>
                 <option value="all">Tudo</option>
               </select>
             </label>
             <label className="space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Etapa</span>
+              <span className={labelCls}>Etapa</span>
               <select className={selectCls} value={stageFilter} onChange={(e) => setParam("stage", e.target.value)}>
                 <option value="todas">Todas ({scopedRows.length})</option>
                 {stageOrder.map((s) => (
@@ -281,7 +281,7 @@ export default function FunilLeadsPage() {
             </label>
           </div>
           <label className="space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Consultor</span>
+            <span className={labelCls}>Consultor</span>
             <select className={selectCls} value={consultantFilter} onChange={(e) => setParam("consultor", e.target.value)}>
               <option value="todos">Todos os consultores ({scopedAll.length})</option>
               {consultantOptions.map(([name, count]) => (
@@ -290,6 +290,7 @@ export default function FunilLeadsPage() {
             </select>
           </label>
         </div>
+
 
         {/* ===== Desktop: chips ===== */}
         <div className="hidden flex-wrap gap-2 md:flex">
