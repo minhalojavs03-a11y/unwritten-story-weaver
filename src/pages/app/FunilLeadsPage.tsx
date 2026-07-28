@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { stageLabels, stageOrder } from "@/data/mock";
 import { cn } from "@/lib/utils";
 import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
+import { StageBadge } from "@/components/oticaflow/StageBadge";
 
 type Metric =
   | "leads"
@@ -231,7 +232,8 @@ export default function FunilLeadsPage() {
   };
 
   const selectCls =
-    "w-full rounded-xl border border-black/10 bg-card px-3 py-2.5 text-sm font-medium text-foreground";
+    "w-full rounded-xl border-2 border-primary/25 bg-primary-light/60 px-3 py-2.5 text-sm font-semibold text-foreground shadow-sm focus:border-primary focus:outline-none";
+  const labelCls = "text-[11px] font-bold uppercase tracking-wide text-primary";
 
   return (
     <>
@@ -241,17 +243,18 @@ export default function FunilLeadsPage() {
           gapLimit ? ` · Defasagem exata da meta: ${gapLimit} leads` : ""
         }`}
         actions={
-          <Link to="/crm" className="inline-flex items-center gap-2 rounded-lg border border-black/10 bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted">
+          <Link to="/crm" className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition hover:opacity-90">
             <ArrowLeft className="h-3.5 w-3.5" /> Voltar ao Início
           </Link>
         }
       />
 
+
       <div className="w-full max-w-full space-y-4 overflow-x-hidden p-3 md:p-8">
         {/* ===== Mobile: filtros compactos em selects ===== */}
-        <div className="grid grid-cols-1 gap-2 md:hidden">
+        <div className="grid grid-cols-1 gap-2 rounded-2xl border-2 border-primary/15 bg-primary-light/40 p-3 md:hidden">
           <label className="space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Métrica</span>
+            <span className={labelCls}>Métrica</span>
             <select className={selectCls} value={metric} onChange={(e) => setParam("metric", e.target.value)}>
               {(Object.keys(METRICS) as Metric[]).map((k) => (
                 <option key={k} value={k}>{METRICS[k].label}</option>
@@ -260,14 +263,14 @@ export default function FunilLeadsPage() {
           </label>
           <div className="grid grid-cols-2 gap-2">
             <label className="space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Período</span>
+              <span className={labelCls}>Período</span>
               <select className={selectCls} value={scope} onChange={(e) => setParam("scope", e.target.value)}>
                 <option value="month">Mês atual</option>
                 <option value="all">Tudo</option>
               </select>
             </label>
             <label className="space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Etapa</span>
+              <span className={labelCls}>Etapa</span>
               <select className={selectCls} value={stageFilter} onChange={(e) => setParam("stage", e.target.value)}>
                 <option value="todas">Todas ({scopedRows.length})</option>
                 {stageOrder.map((s) => (
@@ -279,7 +282,7 @@ export default function FunilLeadsPage() {
             </label>
           </div>
           <label className="space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Consultor</span>
+            <span className={labelCls}>Consultor</span>
             <select className={selectCls} value={consultantFilter} onChange={(e) => setParam("consultor", e.target.value)}>
               <option value="todos">Todos os consultores ({scopedAll.length})</option>
               {consultantOptions.map(([name, count]) => (
@@ -289,6 +292,7 @@ export default function FunilLeadsPage() {
           </label>
         </div>
 
+
         {/* ===== Desktop: chips ===== */}
         <div className="hidden flex-wrap gap-2 md:flex">
           {(Object.keys(METRICS) as Metric[]).map((k) => (
@@ -297,7 +301,9 @@ export default function FunilLeadsPage() {
               to={linkTo({ metric: k })}
               className={cn(
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition",
-                k === metric ? "bg-foreground text-background" : "border border-black/10 bg-card hover:bg-muted",
+                k === metric
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "border-2 border-primary/20 bg-primary-light/50 text-foreground hover:border-primary/40 hover:bg-primary-light",
               )}
             >
               {METRICS[k].label}
@@ -310,7 +316,9 @@ export default function FunilLeadsPage() {
               to={linkTo({ scope: s })}
               className={cn(
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition",
-                s === scope ? "bg-foreground text-background" : "border border-black/10 bg-card hover:bg-muted",
+                s === scope
+                  ? "bg-foreground text-background shadow-sm"
+                  : "border-2 border-primary/20 bg-primary-light/50 text-foreground hover:border-primary/40 hover:bg-primary-light",
               )}
             >
               {s === "month" ? "Mês atual" : "Tudo"}
@@ -319,9 +327,9 @@ export default function FunilLeadsPage() {
         </div>
 
         <div className="hidden flex-wrap items-center gap-2 md:flex">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Consultor</span>
+          <span className="text-xs font-bold uppercase tracking-wide text-primary">Consultor</span>
           <select
-            className="rounded-lg border border-black/10 bg-card px-3 py-1.5 text-xs font-medium text-foreground"
+            className="rounded-lg border-2 border-primary/25 bg-primary-light/60 px-3 py-1.5 text-xs font-semibold text-foreground"
             value={consultantFilter}
             onChange={(e) => setParam("consultor", e.target.value)}
           >
@@ -333,7 +341,7 @@ export default function FunilLeadsPage() {
         </div>
 
         <div className="hidden flex-wrap items-center gap-2 md:flex">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Etapa</span>
+          <span className="text-xs font-bold uppercase tracking-wide text-primary">Etapa</span>
           {(["todas", ...stageOrder] as const).map((s) => {
             const count = s === "todas" ? scopedRows.length : scopedRows.filter((r) => (r.stage ?? "novo") === s).length;
             return (
@@ -342,7 +350,9 @@ export default function FunilLeadsPage() {
                 to={linkTo({ stage: s })}
                 className={cn(
                   "rounded-lg px-3 py-1.5 text-xs font-medium transition",
-                  s === stageFilter ? "bg-primary text-primary-foreground" : "border border-black/10 bg-card hover:bg-muted",
+                  s === stageFilter
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "border-2 border-primary/20 bg-primary-light/50 text-foreground hover:border-primary/40 hover:bg-primary-light",
                 )}
               >
                 {s === "todas" ? "Todas" : stageLabels[s]}
@@ -355,7 +365,7 @@ export default function FunilLeadsPage() {
 
 
 
-        <div className="overflow-hidden rounded-2xl border bg-card">
+        <div className="overflow-hidden rounded-2xl border-2 border-primary/15 bg-card shadow-sm">
           {loading ? (
             <div className="space-y-2 p-4">
               {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
@@ -376,17 +386,15 @@ export default function FunilLeadsPage() {
                         {r.email ? ` · ${r.email}` : ""}
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-                        <span className="rounded-md bg-muted px-1.5 py-0.5 text-foreground">
-                          {stageLabels[(r.stage ?? "novo") as keyof typeof stageLabels] ?? r.stage}
-                        </span>
+                        <StageBadge stage={r.stage ?? "novo"} />
                         <span>{nameOf(r)}</span>
-                        {r.credit_value ? <span className="tabular-nums">· {fmtBRL(r.credit_value)}</span> : null}
+                        {r.credit_value ? <span className="font-semibold tabular-nums text-success">· {fmtBRL(r.credit_value)}</span> : null}
                       </div>
                       <div className="mt-1 text-[11px] text-muted-foreground">Entrada: {fmtDate(r.created_at)}</div>
                     </div>
                     <div className="flex shrink-0 flex-col gap-1.5">
-                      <Link to={`/leads?lead=${r.id}`} className="rounded-lg border px-2 py-1 text-xs hover:bg-muted">Abrir</Link>
-                      <Link to={`/conversas?lead=${r.id}`} className="flex justify-center rounded-lg border p-1.5 hover:bg-muted" aria-label="Abrir conversa">
+                      <Link to={`/leads?lead=${r.id}`} className="rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-sm transition hover:opacity-90">Abrir</Link>
+                      <Link to={`/conversas?lead=${r.id}`} className="flex justify-center rounded-lg border-2 border-primary/30 bg-primary-light/60 p-1.5 text-primary transition hover:bg-primary-light" aria-label="Abrir conversa">
                         <MessageCircle className="h-4 w-4" />
                       </Link>
                     </div>
@@ -396,7 +404,7 @@ export default function FunilLeadsPage() {
             </ul>
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <thead className="bg-primary-light/70 text-left text-xs font-bold uppercase tracking-wide text-primary">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Cliente</th>
                     <th className="px-4 py-3 font-semibold">Consultor</th>
@@ -418,14 +426,14 @@ export default function FunilLeadsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{nameOf(r)}</td>
-                      <td className="px-4 py-3">{stageLabels[(r.stage ?? "novo") as keyof typeof stageLabels] ?? r.stage}</td>
+                      <td className="px-4 py-3"><StageBadge stage={r.stage ?? "novo"} /></td>
                       <td className="px-4 py-3 tabular-nums">{fmtBRL(r.credit_value)}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{fmtDate(r.created_at)}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{fmtDate(r.updated_at)}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-2">
-                          <Link to={`/leads?lead=${r.id}`} className="rounded-lg border px-2 py-1 text-xs hover:bg-muted">Abrir</Link>
-                          <Link to={`/conversas?lead=${r.id}`} className="rounded-lg border p-1.5 hover:bg-muted" aria-label="Abrir conversa">
+                          <Link to={`/leads?lead=${r.id}`} className="rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-sm transition hover:opacity-90">Abrir</Link>
+                          <Link to={`/conversas?lead=${r.id}`} className="rounded-lg border-2 border-primary/30 bg-primary-light/60 p-1.5 text-primary transition hover:bg-primary-light" aria-label="Abrir conversa">
                             <MessageCircle className="h-4 w-4" />
                           </Link>
                         </div>
