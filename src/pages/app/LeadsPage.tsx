@@ -329,6 +329,8 @@ export default function LeadsPage() {
   ] as const;
   const [annotations, setAnnotations] = useState<string[]>([]);
   const [notFechouReason, setNotFechouReason] = useState<string>("");
+  const [saleValue, setSaleValue] = useState<string>("");
+  const [saleDate, setSaleDate] = useState<string>("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   function toggleAnnotation(value: string) {
@@ -343,8 +345,11 @@ export default function LeadsPage() {
     if (detailFor) {
       setAnnotations([]);
       setNotFechouReason("");
+      setSaleValue(detailFor.credit_value ? String(detailFor.credit_value) : "");
+      setSaleDate(new Date().toISOString().slice(0, 10));
     }
   }, [detailFor]);
+
 
   async function saveDetail() {
     if (!detailFor) return;
