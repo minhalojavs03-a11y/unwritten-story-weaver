@@ -150,8 +150,8 @@ export function MetaFunnel({
                   </div>
                 </Link>
                 <Link
-                  to={linkTo(r.metric)}
-                  title={`Ver lista: ${r.label}`}
+                  to={`${linkTo(`sem_${r.metric}`)}&gap=${r.gap}`}
+                  title={`Ver quem ainda não avançou: ${r.label}`}
                   className="rounded-lg py-2 text-center transition hover:bg-background/70"
                 >
                   {r.n === "01" ? (
