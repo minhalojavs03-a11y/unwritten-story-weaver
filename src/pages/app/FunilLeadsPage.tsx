@@ -87,16 +87,24 @@ function monthStartISO() {
 }
 
 export default function FunilLeadsPage() {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const metric = (params.get("metric") as Metric) || "leads";
   const scope = params.get("scope") === "all" ? "all" : "month";
   const stageFilter = params.get("stage") || "todas";
+  const consultantFilter = params.get("consultor") || "todos";
   const cfg = METRICS[metric] ?? METRICS.leads;
   const canViewPhoneFn = useCanViewLeadPhone();
 
   const [rows, setRows] = useState<Row[]>([]);
   const [members, setMembers] = useState<{ id: string; user_id: string | null; display_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const setParam = (key: string, value: string) => {
+    const next = new URLSearchParams(params);
+    next.set(key, value);
+    setParams(next, { replace: true });
+  };
+
 
   useEffect(() => {
     let cancelled = false;
@@ -159,13 +167,36 @@ export default function FunilLeadsPage() {
     return Number.isFinite(n) && n > 0 ? n : null;
   }, [params]);
 
-  const scopedRows = useMemo(() => (gapLimit ? rows.slice(0, gapLimit) : rows), [rows, gapLimit]);
+  const scopedAll = useMemo(() => (gapLimit ? rows.slice(0, gapLimit) : rows), [rows, gapLimit]);
+
+  const consultantOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of scopedAll) {
+      const n = nameOf(r);
+      counts.set(n, (counts.get(n) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [scopedAll, nameOf]);
+
+  const scopedRows = useMemo(
+    () => (consultantFilter === "todos" ? scopedAll : scopedAll.filter((r) => nameOf(r) === consultantFilter)),
+    [scopedAll, consultantFilter, nameOf],
+  );
 
   const visibleRows = useMemo(
     () => (stageFilter === "todas" ? scopedRows : scopedRows.filter((r) => (r.stage ?? "novo") === stageFilter)),
     [scopedRows, stageFilter],
   );
   const total = visibleRows.length;
+
+  const linkTo = (over: Record<string, string>) => {
+    const q = new URLSearchParams(params);
+    for (const [k, v] of Object.entries(over)) q.set(k, v);
+    return `/funil/leads?${q.toString()}`;
+  };
+
+  const selectCls =
+    "w-full rounded-xl border border-black/10 bg-card px-3 py-2.5 text-sm font-medium text-foreground";
 
   return (
     <>
@@ -182,11 +213,53 @@ export default function FunilLeadsPage() {
       />
 
       <div className="w-full max-w-full space-y-4 overflow-x-hidden p-3 md:p-8">
-        <div className="flex flex-wrap gap-2">
+        {/* ===== Mobile: filtros compactos em selects ===== */}
+        <div className="grid grid-cols-1 gap-2 md:hidden">
+          <label className="space-y-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Métrica</span>
+            <select className={selectCls} value={metric} onChange={(e) => setParam("metric", e.target.value)}>
+              {(Object.keys(METRICS) as Metric[]).map((k) => (
+                <option key={k} value={k}>{METRICS[k].label}</option>
+              ))}
+            </select>
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="space-y-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Período</span>
+              <select className={selectCls} value={scope} onChange={(e) => setParam("scope", e.target.value)}>
+                <option value="month">Mês atual</option>
+                <option value="all">Tudo</option>
+              </select>
+            </label>
+            <label className="space-y-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Etapa</span>
+              <select className={selectCls} value={stageFilter} onChange={(e) => setParam("stage", e.target.value)}>
+                <option value="todas">Todas ({scopedRows.length})</option>
+                {stageOrder.map((s) => (
+                  <option key={s} value={s}>
+                    {stageLabels[s]} ({scopedRows.filter((r) => (r.stage ?? "novo") === s).length})
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <label className="space-y-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Consultor</span>
+            <select className={selectCls} value={consultantFilter} onChange={(e) => setParam("consultor", e.target.value)}>
+              <option value="todos">Todos os consultores ({scopedAll.length})</option>
+              {consultantOptions.map(([name, count]) => (
+                <option key={name} value={name}>{name} ({count})</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {/* ===== Desktop: chips ===== */}
+        <div className="hidden flex-wrap gap-2 md:flex">
           {(Object.keys(METRICS) as Metric[]).map((k) => (
             <Link
               key={k}
-              to={`/funil/leads?metric=${k}&scope=${scope}&stage=${stageFilter}`}
+              to={linkTo({ metric: k })}
               className={cn(
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition",
                 k === metric ? "bg-foreground text-background" : "border border-black/10 bg-card hover:bg-muted",
@@ -199,7 +272,7 @@ export default function FunilLeadsPage() {
           {(["month", "all"] as const).map((s) => (
             <Link
               key={s}
-              to={`/funil/leads?metric=${metric}&scope=${s}&stage=${stageFilter}`}
+              to={linkTo({ scope: s })}
               className={cn(
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition",
                 s === scope ? "bg-foreground text-background" : "border border-black/10 bg-card hover:bg-muted",
@@ -210,14 +283,28 @@ export default function FunilLeadsPage() {
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="hidden flex-wrap items-center gap-2 md:flex">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Consultor</span>
+          <select
+            className="rounded-lg border border-black/10 bg-card px-3 py-1.5 text-xs font-medium text-foreground"
+            value={consultantFilter}
+            onChange={(e) => setParam("consultor", e.target.value)}
+          >
+            <option value="todos">Todos os consultores ({scopedAll.length})</option>
+            {consultantOptions.map(([name, count]) => (
+              <option key={name} value={name}>{name} ({count})</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="hidden flex-wrap items-center gap-2 md:flex">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Etapa</span>
           {(["todas", ...stageOrder] as const).map((s) => {
             const count = s === "todas" ? scopedRows.length : scopedRows.filter((r) => (r.stage ?? "novo") === s).length;
             return (
               <Link
                 key={s}
-                to={`/funil/leads?metric=${metric}&scope=${scope}&stage=${s}`}
+                to={linkTo({ stage: s })}
                 className={cn(
                   "rounded-lg px-3 py-1.5 text-xs font-medium transition",
                   s === stageFilter ? "bg-primary text-primary-foreground" : "border border-black/10 bg-card hover:bg-muted",
@@ -229,6 +316,8 @@ export default function FunilLeadsPage() {
             );
           })}
         </div>
+
+
 
 
         <div className="overflow-hidden rounded-2xl border bg-card">
