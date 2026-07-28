@@ -213,7 +213,7 @@ export default function FunilLeadsPage() {
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Etapa</span>
           {(["todas", ...stageOrder] as const).map((s) => {
-            const count = s === "todas" ? rows.length : rows.filter((r) => (r.stage ?? "novo") === s).length;
+            const count = s === "todas" ? scopedRows.length : scopedRows.filter((r) => (r.stage ?? "novo") === s).length;
             return (
               <Link
                 key={s}
