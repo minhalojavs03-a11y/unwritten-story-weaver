@@ -191,14 +191,16 @@ export default function FunilLeadsPage() {
       "Sem consultor";
   }, [members]);
 
-  // Quando a célula de Defasagem manda ?gap=-280, a lista precisa mostrar
-  // exatamente esses 280 leads (os mais recentes sem avanço), não o universo inteiro.
+  // A lista de defasagem precisa bater exatamente com o número do Funil de Meta
+  // (ex.: -280 → 280 leads). Usamos o valor calculado na página; o ?gap da URL
+  // serve apenas como fallback enquanto os contadores carregam.
   const gapLimit = useMemo(() => {
+    if (computedGap !== null) return computedGap > 0 ? computedGap : null;
     const raw = params.get("gap");
     if (!raw) return null;
     const n = Math.abs(Number(raw));
     return Number.isFinite(n) && n > 0 ? n : null;
-  }, [params]);
+  }, [params, computedGap]);
 
   const scopedAll = useMemo(() => (gapLimit ? rows.slice(0, gapLimit) : rows), [rows, gapLimit]);
 
