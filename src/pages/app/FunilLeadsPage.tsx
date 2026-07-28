@@ -74,31 +74,42 @@ export default function FunilLeadsPage() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      let q = supabase
-        .from("leads")
-        .select("id, name, phone, email, stage, source, credit_value, created_at, updated_at, assigned_member_id, assigned_to")
-        .eq("tenant_id", FERACON_TENANT_ID)
-        .eq("kind", "lead")
-        .order("updated_at", { ascending: false })
-        .limit(2000);
 
-      if (cfg.stages) q = q.in("stage", cfg.stages);
-      if (scope === "month") q = q.gte("updated_at", monthStartISO());
+      // PostgREST devolve no máximo 1000 linhas por requisição — paginamos
+      // até trazer todos os leads do recorte.
+      const PAGE = 1000;
+      const all: Row[] = [];
+      for (let page = 0; page < 20; page++) {
+        let q = supabase
+          .from("leads")
+          .select("id, name, phone, email, stage, source, credit_value, created_at, updated_at, assigned_member_id, assigned_to")
+          .eq("tenant_id", FERACON_TENANT_ID)
+          .eq("kind", "lead")
+          .order("updated_at", { ascending: false })
+          .range(page * PAGE, page * PAGE + PAGE - 1);
 
-      const [leadsRes, membersRes] = await Promise.all([
-        q,
-        supabase
-          .from("tenant_members")
-          .select("id, user_id, display_name")
-          .eq("tenant_id", FERACON_TENANT_ID),
-      ]);
+        if (cfg.stages) q = q.in("stage", cfg.stages);
+        if (scope === "month") q = q.gte("updated_at", monthStartISO());
+
+        const { data } = await q;
+        if (cancelled) return;
+        const batch = (data ?? []) as Row[];
+        all.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+
+      const membersRes = await supabase
+        .from("tenant_members")
+        .select("id, user_id, display_name")
+        .eq("tenant_id", FERACON_TENANT_ID);
       if (cancelled) return;
-      setRows((leadsRes.data ?? []) as Row[]);
+      setRows(all);
       setMembers((membersRes.data ?? []) as any[]);
       setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [metric, scope]);
+
 
   const nameOf = useMemo(() => {
     const byId = new Map(members.map((m) => [m.id, m.display_name]));
