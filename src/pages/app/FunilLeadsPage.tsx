@@ -87,12 +87,21 @@ function monthStartISO() {
 }
 
 export default function FunilLeadsPage() {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const metric = (params.get("metric") as Metric) || "leads";
   const scope = params.get("scope") === "all" ? "all" : "month";
   const stageFilter = params.get("stage") || "todas";
+  const memberFilter = params.get("member") || "todos";
+  const qs = (over: Record<string, string>) => {
+    const base = { metric, scope, stage: stageFilter, member: memberFilter, ...over };
+    const sp = new URLSearchParams(base);
+    const gap = params.get("gap");
+    if (gap) sp.set("gap", gap);
+    return `/funil/leads?${sp.toString()}`;
+  };
   const cfg = METRICS[metric] ?? METRICS.leads;
   const canViewPhoneFn = useCanViewLeadPhone();
+
 
   const [rows, setRows] = useState<Row[]>([]);
   const [members, setMembers] = useState<{ id: string; user_id: string | null; display_name: string }[]>([]);
