@@ -160,7 +160,9 @@ export default function FunilLeadsPage() {
     <>
       <PageHeader
         title={`${cfg.label}: ${loading ? "…" : total}`}
-        subtitle={`${cfg.subtitle} · ${scope === "month" ? "Mês atual" : "Histórico completo"}`}
+        subtitle={`${cfg.subtitle} · ${scope === "month" ? "Mês atual" : "Histórico completo"}${
+          params.get("gap") ? ` · Faltam ${Math.abs(Number(params.get("gap")))} para bater a meta` : ""
+        }`}
         actions={
           <Link to="/crm" className="inline-flex items-center gap-2 rounded-lg border border-black/10 bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted">
             <ArrowLeft className="h-3.5 w-3.5" /> Voltar ao Início
