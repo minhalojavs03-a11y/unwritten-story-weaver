@@ -150,15 +150,17 @@ export function MetaFunnel({
                   </div>
                 </Link>
                 <Link
-                  to={`${linkTo(`sem_${r.metric}`)}&gap=${r.gap}`}
-                  title={`Ver quem ainda não avançou: ${r.label}`}
+                  to={r.n === "01" ? linkTo("perdidos") : `${linkTo(`sem_${r.metric}`)}&gap=${r.gap}`}
+                  title={r.n === "01" ? "Ver leads perdidos" : `Ver quem ainda não avançou: ${r.label}`}
                   className="rounded-lg py-2 text-center transition hover:bg-background/70"
                 >
                   {r.n === "01" ? (
                     <>
-                      <div className="font-mono text-2xl font-bold leading-none text-muted-foreground md:text-3xl">—</div>
-                      <div className="mt-1.5 inline-block rounded-md bg-muted px-2 py-0.5 text-xs font-extrabold text-muted-foreground ring-1 ring-border md:text-sm">
-                        0%
+                      <div className="font-mono text-2xl font-bold tabular-nums leading-none text-destructive underline-offset-4 hover:underline md:text-3xl">
+                        {lost}
+                      </div>
+                      <div className="mt-1.5 inline-block rounded-md bg-destructive/15 px-2 py-0.5 text-xs font-extrabold tabular-nums text-destructive ring-1 ring-destructive/30 md:text-sm">
+                        {fmtPct(leads > 0 ? (lost / leads) * 100 : 0)} perdidos
                       </div>
                     </>
                   ) : (
