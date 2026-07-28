@@ -5,7 +5,7 @@ import { PageHeader } from "./PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { FERACON_TENANT_ID } from "@/lib/feracon";
 import { Skeleton } from "@/components/ui/skeleton";
-import { stageLabels } from "@/data/mock";
+import { stageLabels, stageOrder } from "@/data/mock";
 import { cn } from "@/lib/utils";
 import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
 
@@ -63,6 +63,7 @@ export default function FunilLeadsPage() {
   const [params] = useSearchParams();
   const metric = (params.get("metric") as Metric) || "leads";
   const scope = params.get("scope") === "all" ? "all" : "month";
+  const stageFilter = params.get("stage") || "todas";
   const cfg = METRICS[metric] ?? METRICS.leads;
   const canViewPhoneFn = useCanViewLeadPhone();
 
@@ -120,7 +121,11 @@ export default function FunilLeadsPage() {
       "Sem consultor";
   }, [members]);
 
-  const total = rows.length;
+  const visibleRows = useMemo(
+    () => (stageFilter === "todas" ? rows : rows.filter((r) => (r.stage ?? "novo") === stageFilter)),
+    [rows, stageFilter],
+  );
+  const total = visibleRows.length;
 
   return (
     <>
@@ -139,7 +144,7 @@ export default function FunilLeadsPage() {
           {(Object.keys(METRICS) as Metric[]).map((k) => (
             <Link
               key={k}
-              to={`/funil/leads?metric=${k}&scope=${scope}`}
+              to={`/funil/leads?metric=${k}&scope=${scope}&stage=${stageFilter}`}
               className={cn(
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition",
                 k === metric ? "bg-foreground text-background" : "border border-black/10 bg-card hover:bg-muted",
@@ -152,7 +157,7 @@ export default function FunilLeadsPage() {
           {(["month", "all"] as const).map((s) => (
             <Link
               key={s}
-              to={`/funil/leads?metric=${metric}&scope=${s}`}
+              to={`/funil/leads?metric=${metric}&scope=${s}&stage=${stageFilter}`}
               className={cn(
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition",
                 s === scope ? "bg-foreground text-background" : "border border-black/10 bg-card hover:bg-muted",
@@ -162,6 +167,27 @@ export default function FunilLeadsPage() {
             </Link>
           ))}
         </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Etapa</span>
+          {(["todas", ...stageOrder] as const).map((s) => {
+            const count = s === "todas" ? rows.length : rows.filter((r) => (r.stage ?? "novo") === s).length;
+            return (
+              <Link
+                key={s}
+                to={`/funil/leads?metric=${metric}&scope=${scope}&stage=${s}`}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                  s === stageFilter ? "bg-primary text-primary-foreground" : "border border-black/10 bg-card hover:bg-muted",
+                )}
+              >
+                {s === "todas" ? "Todas" : stageLabels[s]}
+                <span className="ml-1 tabular-nums opacity-70">{loading ? "" : count}</span>
+              </Link>
+            );
+          })}
+        </div>
+
 
         <div className="overflow-hidden rounded-2xl border bg-card">
           {loading ? (
@@ -174,7 +200,7 @@ export default function FunilLeadsPage() {
             <>
             {/* Mobile: lista em cartões */}
             <ul className="divide-y md:hidden">
-              {rows.map((r) => (
+              {visibleRows.map((r) => (
                 <li key={r.id} className="p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
@@ -216,7 +242,7 @@ export default function FunilLeadsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {rows.map((r) => (
+                  {visibleRows.map((r) => (
                     <tr key={r.id} className="hover:bg-muted/40">
                       <td className="px-4 py-3">
                         <div className="font-medium text-foreground">{r.name || "Sem nome"}</div>
