@@ -232,7 +232,7 @@ export default function FunilLeadsPage() {
   };
 
   const selectCls =
-    "w-full rounded-xl border-2 border-primary/25 bg-primary-light/60 px-3 py-2.5 text-sm font-semibold text-foreground shadow-sm focus:border-primary focus:outline-none";
+    "w-full rounded-xl border-2 border-primary/40 bg-card px-3 py-2.5 text-sm font-semibold text-foreground shadow-sm focus:border-primary focus:outline-none";
   const labelCls = "text-[11px] font-bold uppercase tracking-wide text-primary";
 
   return (
