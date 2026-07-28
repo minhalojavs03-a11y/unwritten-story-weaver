@@ -734,7 +734,7 @@ export default function LeadsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {filteredLeads.map((l) => {
+                  {pagedLeads.map((l) => {
                     const o = outcomeMeta(l);
                     const la = l as any;
                     const qLbl = labelFor(QUALIFICATION_OPTIONS, la.qualification_status);
