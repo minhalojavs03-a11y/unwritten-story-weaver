@@ -142,6 +142,38 @@ export default function FunilLeadsPage() {
         .select("id, user_id, display_name")
         .eq("tenant_id", FERACON_TENANT_ID);
       if (cancelled) return;
+
+      // Defasagem exata igual ao Funil de Meta: ideal (% da meta sobre o total
+      // de leads do recorte) menos o realizado da etapa.
+      const GOAL_PCT: Record<string, number> = { sem_simulacoes: 70, sem_reunioes: 30, sem_fechados: 4 };
+      const REALIZED: Record<string, string[]> = {
+        sem_simulacoes: ["agendado", "compareceu", "comprou"],
+        sem_reunioes: ["compareceu", "comprou"],
+        sem_fechados: ["comprou"],
+      };
+      if (GOAL_PCT[metric]) {
+        const base = () => {
+          let q = supabase
+            .from("leads")
+            .select("id", { count: "exact", head: true })
+            .eq("tenant_id", FERACON_TENANT_ID)
+            .eq("kind", "lead");
+          if (scope === "month") q = q.gte("updated_at", monthStartISO());
+          return q;
+        };
+        const [totalRes, realRes] = await Promise.all([
+          base(),
+          base().in("stage", REALIZED[metric]),
+        ]);
+        if (cancelled) return;
+        const totalLeads = totalRes.count ?? 0;
+        const realized = realRes.count ?? 0;
+        const ideal = Math.round((totalLeads * GOAL_PCT[metric]) / 100);
+        setComputedGap(Math.max(0, ideal - realized));
+      } else {
+        setComputedGap(null);
+      }
+
       setRows(all);
       setMembers((membersRes.data ?? []) as any[]);
       setLoading(false);
