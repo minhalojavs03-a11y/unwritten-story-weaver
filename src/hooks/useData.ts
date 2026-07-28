@@ -141,15 +141,28 @@ export function useLeads(opts?: { kind?: "lead" | "outros" | "all"; tenantId?: s
     queryKey: ["leads", globalScope ? "__all__" : effectiveTenant, kind, memberId ?? "all", targetUserId ?? "no-user"],
     enabled: globalScope || !!effectiveTenant,
     queryFn: async () => {
-      let query = supabase.from("leads").select("*").order("created_at", { ascending: false }).limit(2000);
-      if (!globalScope) query = query.eq("tenant_id", effectiveTenant!);
-      if (kind !== "all") query = query.eq("kind", kind);
-      if (memberId && targetUserId) query = query.or(`assigned_member_id.eq.${memberId},assigned_to.eq.${targetUserId}`);
-      else if (memberId) query = query.eq("assigned_member_id", memberId);
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data ?? []) as Tables<"leads">[];
+      // PostgREST limita a 1000 linhas por requisição — paginamos para trazer tudo.
+      const PAGE = 1000;
+      const all: Tables<"leads">[] = [];
+      for (let page = 0; page < 20; page++) {
+        let query = supabase
+          .from("leads")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(page * PAGE, page * PAGE + PAGE - 1);
+        if (!globalScope) query = query.eq("tenant_id", effectiveTenant!);
+        if (kind !== "all") query = query.eq("kind", kind);
+        if (memberId && targetUserId) query = query.or(`assigned_member_id.eq.${memberId},assigned_to.eq.${targetUserId}`);
+        else if (memberId) query = query.eq("assigned_member_id", memberId);
+        const { data, error } = await query;
+        if (error) throw error;
+        const batch = (data ?? []) as Tables<"leads">[];
+        all.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+      return all;
     },
+
   });
 
   useEffect(() => {
