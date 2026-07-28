@@ -168,13 +168,37 @@ export default function FunilLeadsPage() {
     return Number.isFinite(n) && n > 0 ? n : null;
   }, [params]);
 
-  const scopedRows = useMemo(() => (gapLimit ? rows.slice(0, gapLimit) : rows), [rows, gapLimit]);
+  const memberKeyOf = useMemo(() => {
+    const byUser = new Map(members.filter((m) => m.user_id).map((m) => [m.user_id as string, m.id]));
+    return (r: Row) =>
+      r.assigned_member_id || (r.assigned_to && byUser.get(r.assigned_to)) || "sem";
+  }, [members]);
+
+  const allRows = useMemo(() => (gapLimit ? rows.slice(0, gapLimit) : rows), [rows, gapLimit]);
+
+  const memberOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    allRows.forEach((r) => {
+      const k = memberKeyOf(r);
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    });
+    const nameById = new Map(members.map((m) => [m.id, m.display_name]));
+    return Array.from(counts.entries())
+      .map(([id, count]) => ({ id, label: id === "sem" ? "Sem consultor" : nameById.get(id) ?? "Consultor", count }))
+      .sort((a, b) => b.count - a.count);
+  }, [allRows, memberKeyOf, members]);
+
+  const scopedRows = useMemo(
+    () => (memberFilter === "todos" ? allRows : allRows.filter((r) => memberKeyOf(r) === memberFilter)),
+    [allRows, memberFilter, memberKeyOf],
+  );
 
   const visibleRows = useMemo(
     () => (stageFilter === "todas" ? scopedRows : scopedRows.filter((r) => (r.stage ?? "novo") === stageFilter)),
     [scopedRows, stageFilter],
   );
   const total = visibleRows.length;
+
 
   return (
     <>
