@@ -231,7 +231,8 @@ export default function FunilLeadsPage() {
   };
 
   const selectCls =
-    "w-full rounded-xl border border-black/10 bg-card px-3 py-2.5 text-sm font-medium text-foreground";
+    "w-full rounded-xl border-2 border-primary/25 bg-primary-light/60 px-3 py-2.5 text-sm font-semibold text-foreground shadow-sm focus:border-primary focus:outline-none";
+  const labelCls = "text-[11px] font-bold uppercase tracking-wide text-primary";
 
   return (
     <>
@@ -241,11 +242,12 @@ export default function FunilLeadsPage() {
           gapLimit ? ` · Defasagem exata da meta: ${gapLimit} leads` : ""
         }`}
         actions={
-          <Link to="/crm" className="inline-flex items-center gap-2 rounded-lg border border-black/10 bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted">
+          <Link to="/crm" className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition hover:opacity-90">
             <ArrowLeft className="h-3.5 w-3.5" /> Voltar ao Início
           </Link>
         }
       />
+
 
       <div className="w-full max-w-full space-y-4 overflow-x-hidden p-3 md:p-8">
         {/* ===== Mobile: filtros compactos em selects ===== */}
