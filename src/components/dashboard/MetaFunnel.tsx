@@ -112,7 +112,7 @@ export function MetaFunnel({
                       </span>
                     </div>
                   </foreignObject>
-                </g>
+                </Link>
               );
             })}
           </svg>
