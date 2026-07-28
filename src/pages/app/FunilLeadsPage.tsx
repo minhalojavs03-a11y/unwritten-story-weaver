@@ -121,7 +121,11 @@ export default function FunilLeadsPage() {
       "Sem consultor";
   }, [members]);
 
-  const total = rows.length;
+  const visibleRows = useMemo(
+    () => (stageFilter === "todas" ? rows : rows.filter((r) => (r.stage ?? "novo") === stageFilter)),
+    [rows, stageFilter],
+  );
+  const total = visibleRows.length;
 
   return (
     <>
