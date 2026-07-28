@@ -293,6 +293,19 @@ export default function LeadsPage() {
     }).sort((a, b) => new Date(b.created_at as string).getTime() - new Date(a.created_at as string).getTime());
   }, [leads, remoteLeads, period, customFrom, customTo, sourceFilter, search]);
 
+  // Paginação de 100 em 100 para não pesar a renderização.
+  const PAGE_SIZE = 100;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
+  useEffect(() => { setPage(1); }, [period, customFrom, customTo, sourceFilter, search]);
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
+  const pagedLeads = useMemo(
+    () => filteredLeads.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filteredLeads, page],
+  );
+
+
+
   // Abre automaticamente o lead vindo da busca global.
   useEffect(() => {
     if (!focusLeadId) return;
@@ -651,7 +664,7 @@ export default function LeadsPage() {
           <>
             {/* Mobile */}
             <ul className="space-y-2 md:hidden">
-              {filteredLeads.map((l) => {
+              {pagedLeads.map((l) => {
                 const o = outcomeMeta(l);
                 const la = l as any;
                 const expanded = expandedId === l.id;
@@ -721,7 +734,7 @@ export default function LeadsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {filteredLeads.map((l) => {
+                  {pagedLeads.map((l) => {
                     const o = outcomeMeta(l);
                     const la = l as any;
                     const qLbl = labelFor(QUALIFICATION_OPTIONS, la.qualification_status);
@@ -793,6 +806,25 @@ export default function LeadsPage() {
                 </tbody>
               </table>
             </div>
+
+            {filteredLeads.length > PAGE_SIZE && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card px-3 py-2">
+                <span className="text-[11px] text-muted-foreground">
+                  {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredLeads.length)} de {filteredLeads.length}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" className="h-8 rounded-full" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                    Anterior
+                  </Button>
+                  <span className="text-xs text-muted-foreground tabular-nums">{page}/{totalPages}</span>
+                  <Button size="sm" variant="outline" className="h-8 rounded-full" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            )}
+
+
 
           </>
         )}
