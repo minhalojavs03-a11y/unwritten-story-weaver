@@ -87,21 +87,12 @@ function monthStartISO() {
 }
 
 export default function FunilLeadsPage() {
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
   const metric = (params.get("metric") as Metric) || "leads";
   const scope = params.get("scope") === "all" ? "all" : "month";
   const stageFilter = params.get("stage") || "todas";
-  const memberFilter = params.get("member") || "todos";
-  const qs = (over: Record<string, string>) => {
-    const base = { metric, scope, stage: stageFilter, member: memberFilter, ...over };
-    const sp = new URLSearchParams(base);
-    const gap = params.get("gap");
-    if (gap) sp.set("gap", gap);
-    return `/funil/leads?${sp.toString()}`;
-  };
   const cfg = METRICS[metric] ?? METRICS.leads;
   const canViewPhoneFn = useCanViewLeadPhone();
-
 
   const [rows, setRows] = useState<Row[]>([]);
   const [members, setMembers] = useState<{ id: string; user_id: string | null; display_name: string }[]>([]);
@@ -168,37 +159,13 @@ export default function FunilLeadsPage() {
     return Number.isFinite(n) && n > 0 ? n : null;
   }, [params]);
 
-  const memberKeyOf = useMemo(() => {
-    const byUser = new Map(members.filter((m) => m.user_id).map((m) => [m.user_id as string, m.id]));
-    return (r: Row) =>
-      r.assigned_member_id || (r.assigned_to && byUser.get(r.assigned_to)) || "sem";
-  }, [members]);
-
-  const allRows = useMemo(() => (gapLimit ? rows.slice(0, gapLimit) : rows), [rows, gapLimit]);
-
-  const memberOptions = useMemo(() => {
-    const counts = new Map<string, number>();
-    allRows.forEach((r) => {
-      const k = memberKeyOf(r);
-      counts.set(k, (counts.get(k) ?? 0) + 1);
-    });
-    const nameById = new Map(members.map((m) => [m.id, m.display_name]));
-    return Array.from(counts.entries())
-      .map(([id, count]) => ({ id, label: id === "sem" ? "Sem consultor" : nameById.get(id) ?? "Consultor", count }))
-      .sort((a, b) => b.count - a.count);
-  }, [allRows, memberKeyOf, members]);
-
-  const scopedRows = useMemo(
-    () => (memberFilter === "todos" ? allRows : allRows.filter((r) => memberKeyOf(r) === memberFilter)),
-    [allRows, memberFilter, memberKeyOf],
-  );
+  const scopedRows = useMemo(() => (gapLimit ? rows.slice(0, gapLimit) : rows), [rows, gapLimit]);
 
   const visibleRows = useMemo(
     () => (stageFilter === "todas" ? scopedRows : scopedRows.filter((r) => (r.stage ?? "novo") === stageFilter)),
     [scopedRows, stageFilter],
   );
   const total = visibleRows.length;
-
 
   return (
     <>
@@ -219,7 +186,7 @@ export default function FunilLeadsPage() {
           {(Object.keys(METRICS) as Metric[]).map((k) => (
             <Link
               key={k}
-              to={qs({ metric: k })}
+              to={`/funil/leads?metric=${k}&scope=${scope}&stage=${stageFilter}`}
               className={cn(
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition",
                 k === metric ? "bg-foreground text-background" : "border border-black/10 bg-card hover:bg-muted",
@@ -232,7 +199,7 @@ export default function FunilLeadsPage() {
           {(["month", "all"] as const).map((s) => (
             <Link
               key={s}
-              to={qs({ scope: s })}
+              to={`/funil/leads?metric=${metric}&scope=${s}&stage=${stageFilter}`}
               className={cn(
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition",
                 s === scope ? "bg-foreground text-background" : "border border-black/10 bg-card hover:bg-muted",
@@ -244,47 +211,13 @@ export default function FunilLeadsPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Consultor</span>
-          <select
-            value={memberFilter}
-            onChange={(e) => {
-              const next = new URLSearchParams(params);
-              if (e.target.value === "todos") next.delete("member");
-              else next.set("member", e.target.value);
-              setParams(next, { replace: true });
-            }}
-            className="max-w-[240px] rounded-lg border border-black/10 bg-card px-3 py-1.5 text-xs font-medium text-foreground"
-          >
-            <option value="todos">Todos os consultores ({allRows.length})</option>
-            {memberOptions.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label} ({m.count})
-              </option>
-            ))}
-          </select>
-          {memberFilter !== "todos" && (
-            <button
-              type="button"
-              onClick={() => {
-                const next = new URLSearchParams(params);
-                next.delete("member");
-                setParams(next, { replace: true });
-              }}
-              className="rounded-lg border border-black/10 bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted"
-            >
-              Limpar
-            </button>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Etapa</span>
           {(["todas", ...stageOrder] as const).map((s) => {
             const count = s === "todas" ? scopedRows.length : scopedRows.filter((r) => (r.stage ?? "novo") === s).length;
             return (
               <Link
                 key={s}
-                to={qs({ stage: s })}
+                to={`/funil/leads?metric=${metric}&scope=${scope}&stage=${s}`}
                 className={cn(
                   "rounded-lg px-3 py-1.5 text-xs font-medium transition",
                   s === stageFilter ? "bg-primary text-primary-foreground" : "border border-black/10 bg-card hover:bg-muted",
@@ -296,7 +229,6 @@ export default function FunilLeadsPage() {
             );
           })}
         </div>
-
 
 
         <div className="overflow-hidden rounded-2xl border bg-card">
