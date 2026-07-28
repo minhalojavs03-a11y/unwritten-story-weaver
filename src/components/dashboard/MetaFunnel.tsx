@@ -127,21 +127,33 @@ export function MetaFunnel({
                 className="grid grid-cols-3 items-center gap-2 rounded-xl border bg-muted/30 px-3"
                 style={{ minHeight: ROW_H }}
               >
-                <div className="text-center">
-                  <div className="font-mono text-2xl font-bold tabular-nums leading-none md:text-3xl">{r.real}</div>
+                <Link
+                  to={linkTo(r.metric)}
+                  title={`Ver lista: ${r.label}`}
+                  className="rounded-lg py-2 text-center transition hover:bg-background/70"
+                >
+                  <div className="font-mono text-2xl font-bold tabular-nums leading-none underline-offset-4 hover:underline md:text-3xl">{r.real}</div>
                   <div className="mt-1.5 inline-block rounded-md bg-success/15 px-2 py-0.5 text-xs font-extrabold tabular-nums text-success ring-1 ring-success/30 md:text-sm">
                     {fmtPct(r.realPct)}
                   </div>
-                </div>
-                <div className="text-center">
-                  <div className="font-mono text-2xl font-bold tabular-nums leading-none text-muted-foreground md:text-3xl">
+                </Link>
+                <Link
+                  to={linkTo(r.metric)}
+                  title={`Ver lista: ${r.label}`}
+                  className="rounded-lg py-2 text-center transition hover:bg-background/70"
+                >
+                  <div className="font-mono text-2xl font-bold tabular-nums leading-none text-muted-foreground underline-offset-4 hover:underline md:text-3xl">
                     {r.ideal}
                   </div>
                   <div className="mt-1.5 inline-block rounded-md bg-muted px-2 py-0.5 text-xs font-extrabold tabular-nums text-muted-foreground ring-1 ring-border md:text-sm">
                     {fmtPct(r.idealPct)}
                   </div>
-                </div>
-                <div className="text-center">
+                </Link>
+                <Link
+                  to={linkTo(r.metric)}
+                  title={`Ver lista: ${r.label}`}
+                  className="rounded-lg py-2 text-center transition hover:bg-background/70"
+                >
                   {r.n === "01" ? (
                     <>
                       <div className="font-mono text-2xl font-bold leading-none text-muted-foreground md:text-3xl">—</div>
@@ -153,7 +165,7 @@ export function MetaFunnel({
                     <>
                       <div
                         className={cn(
-                          "font-mono text-2xl font-bold tabular-nums leading-none md:text-3xl",
+                          "font-mono text-2xl font-bold tabular-nums leading-none underline-offset-4 hover:underline md:text-3xl",
                           behind ? "text-destructive" : "text-success",
                         )}
                       >
@@ -172,9 +184,10 @@ export function MetaFunnel({
                       </div>
                     </>
                   )}
-                </div>
+                </Link>
 
               </div>
+
             );
           })}
         </div>
