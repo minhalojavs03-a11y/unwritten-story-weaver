@@ -361,6 +361,12 @@ export default function LeadsPage() {
       toast({ title: "Informe o motivo", description: "Explique brevemente por que não fechou.", variant: "destructive" });
       return;
     }
+    const saleAmount = Number(saleValue.replace(/\./g, "").replace(",", "."));
+    if (annotations.includes("fechou") && (!saleValue.trim() || !Number.isFinite(saleAmount) || saleAmount <= 0 || !saleDate)) {
+      toast({ title: "Informe valor e data da venda", description: "Preencha o valor e a data para registrar o fechamento.", variant: "destructive" });
+      return;
+    }
+
     try {
       const patch: any = {
         last_interaction_at: new Date().toISOString(),
