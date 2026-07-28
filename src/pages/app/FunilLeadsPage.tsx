@@ -252,7 +252,7 @@ export default function FunilLeadsPage() {
 
       <div className="w-full max-w-full space-y-4 overflow-x-hidden p-3 md:p-8">
         {/* ===== Mobile: filtros compactos em selects ===== */}
-        <div className="grid grid-cols-1 gap-2 rounded-2xl border-2 border-primary/30 bg-muted/40 p-3 md:hidden">>
+        <div className="grid grid-cols-1 gap-2 rounded-2xl border-2 border-primary/30 bg-muted/40 p-3 md:hidden">
           <label className="space-y-1">
             <span className={labelCls}>Métrica</span>
             <select className={selectCls} value={metric} onChange={(e) => setParam("metric", e.target.value)}>
