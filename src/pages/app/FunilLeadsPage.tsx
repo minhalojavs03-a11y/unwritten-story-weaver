@@ -87,16 +87,24 @@ function monthStartISO() {
 }
 
 export default function FunilLeadsPage() {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const metric = (params.get("metric") as Metric) || "leads";
   const scope = params.get("scope") === "all" ? "all" : "month";
   const stageFilter = params.get("stage") || "todas";
+  const consultantFilter = params.get("consultor") || "todos";
   const cfg = METRICS[metric] ?? METRICS.leads;
   const canViewPhoneFn = useCanViewLeadPhone();
 
   const [rows, setRows] = useState<Row[]>([]);
   const [members, setMembers] = useState<{ id: string; user_id: string | null; display_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const setParam = (key: string, value: string) => {
+    const next = new URLSearchParams(params);
+    next.set(key, value);
+    setParams(next, { replace: true });
+  };
+
 
   useEffect(() => {
     let cancelled = false;
