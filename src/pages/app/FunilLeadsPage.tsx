@@ -1,0 +1,209 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { ArrowLeft, MessageCircle } from "lucide-react";
+import { PageHeader } from "./PageHeader";
+import { supabase } from "@/integrations/supabase/client";
+import { FERACON_TENANT_ID } from "@/lib/feracon";
+import { Skeleton } from "@/components/ui/skeleton";
+import { stageLabels } from "@/data/mock";
+import { cn } from "@/lib/utils";
+import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
+
+type Metric = "leads" | "simulacoes" | "reunioes" | "fechados" | "perdidos";
+
+const METRICS: Record<Metric, { label: string; subtitle: string; stages: string[] | null }> = {
+  leads: { label: "Leads / Clientes", subtitle: "Todos os leads do período", stages: null },
+  simulacoes: {
+    label: "Simulações encaminhadas",
+    subtitle: "Leads que avançaram para simulação ou além",
+    stages: ["agendado", "compareceu", "comprou"],
+  },
+  reunioes: {
+    label: "Reuniões agendadas",
+    subtitle: "Leads que chegaram à reunião ou fecharam",
+    stages: ["compareceu", "comprou"],
+  },
+  fechados: { label: "Clientes fechados", subtitle: "Leads com cota vendida", stages: ["comprou"] },
+  perdidos: { label: "Leads perdidos", subtitle: "Leads desqualificados", stages: ["perdido"] },
+};
+
+type Row = {
+  id: string;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  stage: string | null;
+  source: string | null;
+  credit_value: number | null;
+  created_at: string;
+  updated_at: string | null;
+  assigned_member_id: string | null;
+  assigned_to: string | null;
+};
+
+const fmtBRL = (n: number | null | undefined) =>
+  n && n > 0 ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }) : "—";
+
+const fmtDate = (iso: string | null) => {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return "—";
+  }
+};
+
+function monthStartISO() {
+  const now = new Date();
+  const sp = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+  return new Date(Date.UTC(sp.getUTCFullYear(), sp.getUTCMonth(), 1, 3, 0, 0)).toISOString();
+}
+
+export default function FunilLeadsPage() {
+  const [params] = useSearchParams();
+  const metric = (params.get("metric") as Metric) || "leads";
+  const scope = params.get("scope") === "all" ? "all" : "month";
+  const cfg = METRICS[metric] ?? METRICS.leads;
+  const canViewPhoneFn = useCanViewLeadPhone();
+
+  const [rows, setRows] = useState<Row[]>([]);
+  const [members, setMembers] = useState<{ id: string; user_id: string | null; display_name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      let q = supabase
+        .from("leads")
+        .select("id, name, phone, email, stage, source, credit_value, created_at, updated_at, assigned_member_id, assigned_to")
+        .eq("tenant_id", FERACON_TENANT_ID)
+        .eq("kind", "lead")
+        .order("updated_at", { ascending: false })
+        .limit(2000);
+
+      if (cfg.stages) q = q.in("stage", cfg.stages);
+      if (scope === "month") q = q.gte("updated_at", monthStartISO());
+
+      const [leadsRes, membersRes] = await Promise.all([
+        q,
+        supabase
+          .from("tenant_members")
+          .select("id, user_id, display_name")
+          .eq("tenant_id", FERACON_TENANT_ID),
+      ]);
+      if (cancelled) return;
+      setRows((leadsRes.data ?? []) as Row[]);
+      setMembers((membersRes.data ?? []) as any[]);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [metric, scope]);
+
+  const nameOf = useMemo(() => {
+    const byId = new Map(members.map((m) => [m.id, m.display_name]));
+    const byUser = new Map(members.filter((m) => m.user_id).map((m) => [m.user_id as string, m.display_name]));
+    return (r: Row) =>
+      (r.assigned_member_id && byId.get(r.assigned_member_id)) ||
+      (r.assigned_to && byUser.get(r.assigned_to)) ||
+      "Sem consultor";
+  }, [members]);
+
+  const total = rows.length;
+
+  return (
+    <>
+      <PageHeader
+        title={`${cfg.label}: ${loading ? "…" : total}`}
+        subtitle={`${cfg.subtitle} · ${scope === "month" ? "Mês atual" : "Histórico completo"}`}
+        actions={
+          <Link to="/crm" className="inline-flex items-center gap-2 rounded-lg border border-black/10 bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted">
+            <ArrowLeft className="h-3.5 w-3.5" /> Voltar ao Início
+          </Link>
+        }
+      />
+
+      <div className="space-y-4 p-4 md:p-8">
+        <div className="flex flex-wrap gap-2">
+          {(Object.keys(METRICS) as Metric[]).map((k) => (
+            <Link
+              key={k}
+              to={`/funil/leads?metric=${k}&scope=${scope}`}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                k === metric ? "bg-foreground text-background" : "border border-black/10 bg-card hover:bg-muted",
+              )}
+            >
+              {METRICS[k].label}
+            </Link>
+          ))}
+          <span className="mx-1 w-px bg-border" />
+          {(["month", "all"] as const).map((s) => (
+            <Link
+              key={s}
+              to={`/funil/leads?metric=${metric}&scope=${s}`}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                s === scope ? "bg-foreground text-background" : "border border-black/10 bg-card hover:bg-muted",
+              )}
+            >
+              {s === "month" ? "Mês atual" : "Tudo"}
+            </Link>
+          ))}
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border bg-card">
+          {loading ? (
+            <div className="space-y-2 p-4">
+              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+            </div>
+          ) : total === 0 ? (
+            <div className="p-10 text-center text-sm text-muted-foreground">Nenhum lead encontrado neste recorte.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">Cliente</th>
+                    <th className="px-4 py-3 font-semibold">Consultor</th>
+                    <th className="px-4 py-3 font-semibold">Etapa</th>
+                    <th className="px-4 py-3 font-semibold">Valor</th>
+                    <th className="px-4 py-3 font-semibold">Entrada</th>
+                    <th className="px-4 py-3 font-semibold">Atualizado</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {rows.map((r) => (
+                    <tr key={r.id} className="hover:bg-muted/40">
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-foreground">{r.name || "Sem nome"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {displayPhone(r.phone, canViewPhoneFn(r as any))}
+                          {r.email ? ` · ${r.email}` : ""}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{nameOf(r)}</td>
+                      <td className="px-4 py-3">{stageLabels[(r.stage ?? "novo") as keyof typeof stageLabels] ?? r.stage}</td>
+                      <td className="px-4 py-3 tabular-nums">{fmtBRL(r.credit_value)}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{fmtDate(r.created_at)}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{fmtDate(r.updated_at)}</td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-2">
+                          <Link to={`/leads?lead=${r.id}`} className="rounded-lg border px-2 py-1 text-xs hover:bg-muted">Abrir</Link>
+                          <Link to={`/conversas?lead=${r.id}`} className="rounded-lg border p-1.5 hover:bg-muted" aria-label="Abrir conversa">
+                            <MessageCircle className="h-4 w-4" />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
