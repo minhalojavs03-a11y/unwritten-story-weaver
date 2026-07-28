@@ -329,6 +329,8 @@ export default function LeadsPage() {
   ] as const;
   const [annotations, setAnnotations] = useState<string[]>([]);
   const [notFechouReason, setNotFechouReason] = useState<string>("");
+  const [saleValue, setSaleValue] = useState<string>("");
+  const [saleDate, setSaleDate] = useState<string>("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   function toggleAnnotation(value: string) {
@@ -343,8 +345,11 @@ export default function LeadsPage() {
     if (detailFor) {
       setAnnotations([]);
       setNotFechouReason("");
+      setSaleValue(detailFor.credit_value ? String(detailFor.credit_value) : "");
+      setSaleDate(new Date().toISOString().slice(0, 10));
     }
   }, [detailFor]);
+
 
   async function saveDetail() {
     if (!detailFor) return;
@@ -356,6 +361,12 @@ export default function LeadsPage() {
       toast({ title: "Informe o motivo", description: "Explique brevemente por que não fechou.", variant: "destructive" });
       return;
     }
+    const saleAmount = Number(saleValue.replace(/\./g, "").replace(",", "."));
+    if (annotations.includes("fechou") && (!saleValue.trim() || !Number.isFinite(saleAmount) || saleAmount <= 0 || !saleDate)) {
+      toast({ title: "Informe valor e data da venda", description: "Preencha o valor e a data para registrar o fechamento.", variant: "destructive" });
+      return;
+    }
+
     try {
       const patch: any = {
         last_interaction_at: new Date().toISOString(),
@@ -383,8 +394,13 @@ export default function LeadsPage() {
         patch.stage = "comprou";
         patch.status = "won";
         patch.lead_phase = "pos_venda";
-        lines.push(`[${nowStamp}] Fechou negócio`);
+        patch.credit_value = saleAmount;
+        patch.metadata = { ...(detailFor.metadata as any ?? {}), sale_value: saleAmount, sale_date: saleDate };
+        const dateLabel = new Date(`${saleDate}T12:00:00`).toLocaleDateString("pt-BR");
+        const valueLabel = saleAmount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+        lines.push(`[${nowStamp}] Fechou negócio · ${valueLabel} · Data da venda: ${dateLabel}`);
       }
+
       if (has("nao_fechou")) {
         patch.stage = "perdido";
         patch.status = "lost";
@@ -926,6 +942,26 @@ export default function LeadsPage() {
                 Marque quantas opções precisar. O sistema atualiza o pipeline automaticamente.
               </p>
             </div>
+
+            {annotations.includes("fechou") && (
+              <div className="grid gap-3 rounded-lg border border-success/30 bg-success/5 p-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Valor da venda (R$)</Label>
+                  <Input
+                    inputMode="decimal"
+                    value={saleValue}
+                    onChange={(e) => setSaleValue(e.target.value)}
+                    placeholder="Ex.: 80000"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Data da venda</Label>
+                  <Input type="date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} />
+                </div>
+              </div>
+            )}
+
+
 
             {annotations.includes("nao_fechou") && (
               <div className="space-y-1.5">
