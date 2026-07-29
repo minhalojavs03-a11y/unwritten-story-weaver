@@ -23,6 +23,7 @@ const LEAD_DEPENDENT_KEYS = [
   "lead-distribution-today",
   "coaching_insights",
   "coaching_by_member",
+  "nilton_leads_for_reports",
 ];
 
 export function invalidateLeadMetrics(qc: QueryClient) {

@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatTime, timeAgo } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateLeadMetrics } from "@/lib/leadMetrics";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { useEffectiveUser } from "@/hooks/useEffectiveUser";
@@ -1693,7 +1694,7 @@ function LeadInfoPanel({ conv, onClose }: { conv: any; onClose: () => void }) {
     toast({ title: "Lead atualizado" });
     setIsEditing(false);
     queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    queryClient.invalidateQueries({ queryKey: ["leads"] });
+    invalidateLeadMetrics(queryClient);
   }
 
   if (!lead) return null;
