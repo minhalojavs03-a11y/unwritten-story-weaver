@@ -194,7 +194,7 @@ export function useUpdateLead() {
       const { error } = await supabase.from("leads").update(patch).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["leads"] }),
+    onSuccess: () => invalidateLeadMetrics(qc),
   });
 }
 
@@ -212,7 +212,7 @@ export function useCreateLead() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["leads"] }),
+    onSuccess: () => invalidateLeadMetrics(qc),
   });
 }
 
@@ -548,8 +548,7 @@ export function useSendMessage() {
     },
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ["messages", vars.conversationId] });
-      qc.invalidateQueries({ queryKey: ["conversations"] });
-      qc.invalidateQueries({ queryKey: ["leads"] });
+      invalidateLeadMetrics(qc);
     },
   });
 }
@@ -582,8 +581,7 @@ export function useAssumeLead() {
       }
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["leads"] });
-      qc.invalidateQueries({ queryKey: ["conversations"] });
+      invalidateLeadMetrics(qc);
     },
   });
 }
@@ -596,8 +594,7 @@ export function useReleaseLead() {
       if (error) throw new Error(error.message || "Não foi possível liberar o lead.");
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["leads"] });
-      qc.invalidateQueries({ queryKey: ["conversations"] });
+      invalidateLeadMetrics(qc);
     },
   });
 }
