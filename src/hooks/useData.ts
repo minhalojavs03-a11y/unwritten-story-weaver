@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { useEffectiveUser } from "@/hooks/useEffectiveUser";
 import { isHiddenFeraconPerson } from "@/lib/feracon";
+import { invalidateLeadMetrics } from "@/lib/leadMetrics";
 
 const realtimeChannelName = (scope: string, id: string) =>
   `${scope}-${id}-${Math.random().toString(36).slice(2, 10)}`;
