@@ -20,6 +20,7 @@ import { toast } from "@/hooks/use-toast";
 import { Upload, StickyNote, MessageCircle, Phone, Trophy, XCircle, Clock, Sparkles, Pencil, ListChecks, Target, ChevronDown, Calendar as CalendarIcon, User as UserIcon, Mail, Hash, Flame, FileText, Tag, Search, X, Trash2, Check } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateLeadMetrics } from "@/lib/leadMetrics";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { useActiveMemberLimit } from "@/hooks/useActiveMemberLimit";
@@ -161,7 +162,7 @@ export default function LeadsPage() {
       return;
     }
     toast({ title: "Lead excluído" });
-    qc.invalidateQueries({ queryKey: ["leads"] });
+    invalidateLeadMetrics(qc);
   }
 
   const { maxCreditValue } = useActiveMemberLimit();
