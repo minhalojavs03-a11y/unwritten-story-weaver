@@ -301,6 +301,7 @@ export default function FunilLeadsPage() {
               </select>
             </label>
           </div>
+          {seesAll && (
           <label className="space-y-1">
             <span className={labelCls}>Consultor</span>
             <select className={selectCls} value={consultantFilter} onChange={(e) => setParam("consultor", e.target.value)}>
@@ -310,6 +311,7 @@ export default function FunilLeadsPage() {
               ))}
             </select>
           </label>
+          )}
         </div>
 
 
