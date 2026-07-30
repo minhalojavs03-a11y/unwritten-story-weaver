@@ -9,6 +9,9 @@ import { stageLabels, stageOrder } from "@/data/mock";
 import { cn } from "@/lib/utils";
 import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
 import { StageBadge } from "@/components/oticaflow/StageBadge";
+import { useEffectiveRole } from "@/hooks/useEffectiveRole";
+import { useAuth } from "@/contexts/AuthContext";
+import { useActiveMember } from "@/contexts/ActiveMemberContext";
 
 type Metric =
   | "leads"
