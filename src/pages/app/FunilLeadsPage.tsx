@@ -99,6 +99,20 @@ export default function FunilLeadsPage() {
   const cfg = METRICS[metric] ?? METRICS.leads;
   const canViewPhoneFn = useCanViewLeadPhone();
 
+  // Consultor só enxerga os próprios leads no funil — evita ver leads de
+  // outros (ou órfãos "Sem consultor") que ele não pode abrir.
+  const { isOwner, isSupervisor, isSuperadmin } = useEffectiveRole();
+  const { user } = useAuth();
+  const { member } = useActiveMember();
+  const seesAll = isSuperadmin || isOwner || isSupervisor;
+  const myMemberId = member?.id ?? null;
+  const myUserId = user?.id ?? null;
+  const ownFilter = !seesAll
+    ? [myMemberId ? `assigned_member_id.eq.${myMemberId}` : null, myUserId ? `assigned_to.eq.${myUserId}` : null]
+        .filter(Boolean)
+        .join(",")
+    : "";
+
   const [rows, setRows] = useState<Row[]>([]);
   const [members, setMembers] = useState<{ id: string; user_id: string | null; display_name: string }[]>([]);
   const [computedGap, setComputedGap] = useState<number | null>(null);
@@ -131,6 +145,7 @@ export default function FunilLeadsPage() {
 
         if (cfg.stages) q = q.in("stage", cfg.stages);
         if (cfg.exclude) q = q.or(`stage.is.null,stage.not.in.(${cfg.exclude.join(",")})`);
+        if (ownFilter) q = q.or(ownFilter);
 
         if (scope === "month") q = q.gte("updated_at", monthStartISO());
 
@@ -162,6 +177,7 @@ export default function FunilLeadsPage() {
             .select("id", { count: "exact", head: true })
             .eq("tenant_id", FERACON_TENANT_ID)
             .eq("kind", "lead");
+          if (ownFilter) q = q.or(ownFilter);
           if (scope === "month") q = q.gte("updated_at", monthStartISO());
           return q;
         };
@@ -177,6 +193,7 @@ export default function FunilLeadsPage() {
       } else {
         setComputedGap(null);
       }
+
 
       setRows(all);
       setMembers((membersRes.data ?? []) as any[]);
