@@ -9,6 +9,9 @@ import { stageLabels, stageOrder } from "@/data/mock";
 import { cn } from "@/lib/utils";
 import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
 import { StageBadge } from "@/components/oticaflow/StageBadge";
+import { useEffectiveRole } from "@/hooks/useEffectiveRole";
+import { useAuth } from "@/contexts/AuthContext";
+import { useActiveMember } from "@/contexts/ActiveMemberContext";
 
 type Metric =
   | "leads"
@@ -96,6 +99,20 @@ export default function FunilLeadsPage() {
   const cfg = METRICS[metric] ?? METRICS.leads;
   const canViewPhoneFn = useCanViewLeadPhone();
 
+  // Consultor só enxerga os próprios leads no funil — evita ver leads de
+  // outros (ou órfãos "Sem consultor") que ele não pode abrir.
+  const { isOwner, isSupervisor, isSuperadmin } = useEffectiveRole();
+  const { user } = useAuth();
+  const { member } = useActiveMember();
+  const seesAll = isSuperadmin || isOwner || isSupervisor;
+  const myMemberId = member?.id ?? null;
+  const myUserId = user?.id ?? null;
+  const ownFilter = !seesAll
+    ? [myMemberId ? `assigned_member_id.eq.${myMemberId}` : null, myUserId ? `assigned_to.eq.${myUserId}` : null]
+        .filter(Boolean)
+        .join(",")
+    : "";
+
   const [rows, setRows] = useState<Row[]>([]);
   const [members, setMembers] = useState<{ id: string; user_id: string | null; display_name: string }[]>([]);
   const [computedGap, setComputedGap] = useState<number | null>(null);
@@ -128,6 +145,7 @@ export default function FunilLeadsPage() {
 
         if (cfg.stages) q = q.in("stage", cfg.stages);
         if (cfg.exclude) q = q.or(`stage.is.null,stage.not.in.(${cfg.exclude.join(",")})`);
+        if (ownFilter) q = q.or(ownFilter);
 
         if (scope === "month") q = q.gte("updated_at", monthStartISO());
 
@@ -159,6 +177,7 @@ export default function FunilLeadsPage() {
             .select("id", { count: "exact", head: true })
             .eq("tenant_id", FERACON_TENANT_ID)
             .eq("kind", "lead");
+          if (ownFilter) q = q.or(ownFilter);
           if (scope === "month") q = q.gte("updated_at", monthStartISO());
           return q;
         };
@@ -175,12 +194,13 @@ export default function FunilLeadsPage() {
         setComputedGap(null);
       }
 
+
       setRows(all);
       setMembers((membersRes.data ?? []) as any[]);
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [metric, scope]);
+  }, [metric, scope, ownFilter]);
 
 
   const nameOf = useMemo(() => {
@@ -281,6 +301,7 @@ export default function FunilLeadsPage() {
               </select>
             </label>
           </div>
+          {seesAll && (
           <label className="space-y-1">
             <span className={labelCls}>Consultor</span>
             <select className={selectCls} value={consultantFilter} onChange={(e) => setParam("consultor", e.target.value)}>
@@ -290,6 +311,7 @@ export default function FunilLeadsPage() {
               ))}
             </select>
           </label>
+          )}
         </div>
 
 
@@ -326,7 +348,7 @@ export default function FunilLeadsPage() {
           ))}
         </div>
 
-        <div className="hidden flex-wrap items-center gap-2 md:flex">
+        <div className={cn("flex-wrap items-center gap-2", seesAll ? "hidden md:flex" : "hidden")}>
           <span className="text-xs font-bold uppercase tracking-wide text-primary">Consultor</span>
           <select
             className="rounded-lg border-2 border-primary/40 bg-card px-3 py-1.5 text-xs font-semibold text-foreground"
