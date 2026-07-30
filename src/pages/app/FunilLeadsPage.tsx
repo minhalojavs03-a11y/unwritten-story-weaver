@@ -200,7 +200,7 @@ export default function FunilLeadsPage() {
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [metric, scope]);
+  }, [metric, scope, ownFilter]);
 
 
   const nameOf = useMemo(() => {
