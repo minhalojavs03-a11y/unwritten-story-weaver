@@ -1031,28 +1031,16 @@ async function syncProviderStatus(admin: any, instance: any): Promise<{ instance
       return { instance: upd ?? { ...instance, is_connected: false, status: "connecting", qr_code: null }, connected: false };
     }
     const currentQrCode = extractQrCode(d);
-    let connected = !currentQrCode && isConnectedSignal(d);
-    let inst = d.instance ?? d;
-    if (!connected && isDisconnectedSignal(d)) {
-      const verify = await fetch(`${instance.server_url}/instance/connect`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", token: instance.instance_token },
-        body: JSON.stringify({}),
-      });
-      const verified = await parseProviderResponse(verify);
-      const verifiedQrCode = extractQrCode(verified.data);
-      if (verifiedQrCode) {
-        const { data: upd } = await admin.from("whatsapp_instances").update({
-          is_connected: false,
-          status: "connecting",
-          qr_code: verifiedQrCode,
-        }).eq("id", instance.id).select("*").single();
-        return { instance: upd ?? { ...instance, is_connected: false, status: "connecting", qr_code: verifiedQrCode }, connected: false };
-      }
-      if (isConnectedSignal(verified.data)) {
-        connected = true;
-        inst = verified.data.instance ?? verified.data;
-      }
+    const connected = !currentQrCode && isConnectedSignal(d);
+    const inst = d.instance ?? d;
+    // IMPORTANTE: nunca chamar /instance/connect aqui. Esta função é apenas
+    // LEITURA de status (é chamada em polling de 4-5s pelas telas e pelo cron).
+    // Chamar /instance/connect gera um novo QR no provedor, invalida o QR que o
+    // consultor está escaneando e derruba a sessão recém-pareada
+    // (lastDisconnectReason: "QR Code timeout") — causa de "conecta e
+    // desconecta sozinho". Gerar QR só na ação explícita "qrcode".
+    if (currentQrCode && !instance.is_connected && instance.qr_code !== currentQrCode) {
+      await admin.from("whatsapp_instances").update({ qr_code: currentQrCode, status: "connecting" }).eq("id", instance.id);
     }
     const phone = inst?.user?.id?.split?.("@")[0] ?? inst?.owner ?? inst?.phone ?? null;
     const phoneChanged = !!phone && phone !== instance.phone_number;
