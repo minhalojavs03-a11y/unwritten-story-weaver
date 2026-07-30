@@ -348,7 +348,7 @@ export default function FunilLeadsPage() {
           ))}
         </div>
 
-        <div className="hidden flex-wrap items-center gap-2 md:flex">
+        <div className={cn("flex-wrap items-center gap-2", seesAll ? "hidden md:flex" : "hidden")}>
           <span className="text-xs font-bold uppercase tracking-wide text-primary">Consultor</span>
           <select
             className="rounded-lg border-2 border-primary/40 bg-card px-3 py-1.5 text-xs font-semibold text-foreground"
