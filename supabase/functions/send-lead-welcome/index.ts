@@ -15,6 +15,10 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // consultor responsável pelo lead — assim a conversa nasce já no WhatsApp dele.
 const COMPANY_PHONE_DIGITS = "4792352804";
 
+// Consultor Arley Davies (domdaviesdev): o WhatsApp dele atende SOMENTE os leads
+// dele. Nunca pode ser usado como fallback para leads de outros consultores.
+const DAVIES_USER_ID = "9a75e927-4b9b-4666-a0e4-3fd5ae4ee38a";
+
 // Exceção determinada pela operação: Renata recebe boas-vindas pelo número 804
 // enquanto o WhatsApp dela estiver com problema/desconectado.
 const MANUAL_DELIVERY_USER_IDS = new Set<string>([
