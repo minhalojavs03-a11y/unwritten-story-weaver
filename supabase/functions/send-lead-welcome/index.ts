@@ -247,12 +247,20 @@ Deno.serve(async (req) => {
     const interestLine = lead.interest
       ? `Vi aqui que você tem interesse em *${lead.interest}* — me confirma se está correto? `
       : "";
-    const text =
-      `Olá, ${firstName}! 👋 Aqui é o atendimento da *Embracon*. ` +
-      `Você entrou em contato conosco e queremos te ajudar a realizar o seu sonho🏡🚗\n\n` +
-      consultantLine +
-      interestLine +
-      `Posso te enviar agora as opções de carta e parcela que mais se encaixam no seu perfil?`;
+
+    // Consultor Arley Davies: abertura do SDR — sem redundância, já entra na
+    // qualificação (o crédito é para imóvel?) antes de qualquer oferta.
+    const isDavies =
+      lead.assigned_member_id === DAVIES_MEMBER_ID || lead.assigned_to === DAVIES_USER_ID;
+
+    const text = isDavies
+      ? `Olá, ${firstName}! 👋 Aqui é o atendimento da *Embracon*, vou dar seguimento ao seu atendimento.\n\n` +
+        `Só para eu entender melhor o que você precisa: esse crédito seria para *imóvel*?`
+      : `Olá, ${firstName}! 👋 Aqui é o atendimento da *Embracon*. ` +
+        `Você entrou em contato conosco e queremos te ajudar a realizar o seu sonho🏡🚗\n\n` +
+        consultantLine +
+        interestLine +
+        `Posso te enviar agora as opções de carta e parcela que mais se encaixam no seu perfil?`;
 
     const phoneDigits = String(lead.phone).replace(/\D/g, "");
     await randomSendDelay();
