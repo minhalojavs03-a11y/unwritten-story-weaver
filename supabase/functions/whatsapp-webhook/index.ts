@@ -1,4 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  DAVIES_MEMBER_ID,
+  DAVIES_USER_ID,
+  SDR_MUTED_STATES,
+  buildSdrPrompt,
+  parseSdrOutput,
+  type SdrState,
+} from "./sdr-davies.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -633,6 +641,19 @@ async function randomSendDelay(): Promise<void> {
   let ms = 1500 + Math.floor(Math.random() * 2500);
   if (Math.random() < 0.05) ms += 3000 + Math.floor(Math.random() * 7000);
   await new Promise((r) => setTimeout(r, ms));
+}
+
+// Mostra "digitando..." no WhatsApp do lead antes de enviar (humaniza o ritmo).
+async function sendTypingIndicator(serverUrl: string, instanceToken: string, phone: string, text: string): Promise<void> {
+  const delay = Math.min(7000, 900 + text.length * 45);
+  try {
+    await fetch(`${String(serverUrl).replace(/\/$/, "")}/sendPresence`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", token: instanceToken },
+      body: JSON.stringify({ number: phone, presence: "composing", delay }),
+    });
+  } catch (_) { /* provider pode não suportar */ }
+  await new Promise((r) => setTimeout(r, delay));
 }
 
 async function sendText(serverUrl: string, instanceToken: string, phone: string, text: string): Promise<string | null> {
@@ -1405,6 +1426,149 @@ Deno.serve(async (req: Request) => {
       } catch (e) {
         console.error("Nilton city ask send failed", e);
         return ok({ ai_error: "nilton_city_send_failed" });
+      }
+    }
+
+    // === EXCLUSIVO CONSULTOR ARLEY DAVIES ===
+    // Somente os leads do Davies têm atendimento automático completo de IA
+    // (agente SDR de consórcios). Todos os demais consultores seguem a regra
+    // global de "somente boas-vindas".
+    const isDaviesLead =
+      lead?.assigned_member_id === DAVIES_MEMBER_ID || lead?.assigned_to === DAVIES_USER_ID;
+    if (isDaviesLead) {
+      try {
+        const convMeta = (conv?.metadata ?? {}) as Record<string, any>;
+        const sdrMeta = (convMeta.sdr ?? {}) as Record<string, any>;
+        let state: SdrState = (sdrMeta.state as SdrState) ?? "NEW_LEAD";
+        const stateSince = sdrMeta.updated_at ? new Date(sdrMeta.updated_at).getTime() : 0;
+
+        // Se o consultor já digitou manualmente pelo CRM, a IA para de vez.
+        const { data: humanTypedMsgs } = await admin
+          .from("messages")
+          .select("id")
+          .eq("conversation_id", conv!.id)
+          .eq("direction", "outbound")
+          .not("sent_by", "is", null)
+          .limit(1);
+        if (humanTypedMsgs?.length) {
+          console.log("SDR Davies: consultor assumiu a conversa — IA pausada");
+          return ok({ sdr: false, assumed_by_human: true });
+        }
+
+
+
+        // Aguardando as simulações reais: só destrava quando o consultor enviar
+        // mídia (imagem/documento) na conversa após a IA prometer as opções.
+        if (state === "WAITING_FOR_SIMULATION_FILES") {
+          const { data: outMedia } = await admin
+            .from("messages")
+            .select("id, created_at, message_type, media_url")
+            .eq("conversation_id", conv!.id)
+            .eq("direction", "outbound")
+            .order("created_at", { ascending: false })
+            .limit(30);
+          const gotFiles = (outMedia ?? []).some(
+            (m: any) =>
+              !!m.media_url &&
+              ["image", "document", "video"].includes(String(m.message_type ?? "")) &&
+              new Date(m.created_at).getTime() >= stateSince,
+          );
+          if (!gotFiles) {
+            console.log("SDR Davies: aguardando arquivos de simulação — IA em silêncio");
+            return ok({ sdr_state: state, waiting_simulation_files: true });
+          }
+          state = "SIMULATIONS_RECEIVED";
+        }
+
+        if (SDR_MUTED_STATES.includes(state)) {
+          console.log("SDR Davies: estado silencioso", state);
+          return ok({ sdr_state: state, muted: true });
+        }
+
+        const { data: daviesCfg } = await admin
+          .from("ai_config")
+          .select("*")
+          .eq("tenant_id", instance.tenant_id)
+          .maybeSingle();
+        if (daviesCfg && daviesCfg.enabled === false) return ok({ ai_disabled: true });
+
+        const knowledgeParts: string[] = [];
+        if (daviesCfg?.business_description) knowledgeParts.push(`SOBRE:\n${daviesCfg.business_description}`);
+        if (daviesCfg?.services) knowledgeParts.push(`SEGMENTOS:\n${daviesCfg.services}`);
+        if (daviesCfg?.payment_methods) knowledgeParts.push(`PAGAMENTO:\n${daviesCfg.payment_methods}`);
+        if (daviesCfg?.differentials) knowledgeParts.push(`DIFERENCIAIS:\n${daviesCfg.differentials}`);
+        if (daviesCfg?.extra_notes) knowledgeParts.push(`OBSERVAÇÕES:\n${daviesCfg.extra_notes}`);
+        const { data: sdrFaqs } = await admin
+          .from("faqs")
+          .select("question,answer")
+          .eq("tenant_id", instance.tenant_id)
+          .order("position");
+        if (sdrFaqs?.length) {
+          knowledgeParts.push(
+            `FAQ:\n${sdrFaqs.map((f: any) => `P: ${f.question}\nR: ${f.answer}`).join("\n\n")}`,
+          );
+        }
+
+        const sdrPrompt = buildSdrPrompt({
+          leadName: lead?.name ?? null,
+          interest: lead?.interest ?? null,
+          currentState: state,
+          knowledge: knowledgeParts.join("\n\n"),
+        });
+
+        const { data: sdrHistoryRows } = await admin
+          .from("messages")
+          .select("direction, body, created_at")
+          .eq("conversation_id", conv!.id)
+          .order("created_at", { ascending: false })
+          .limit(21);
+        const sdrHistory = (sdrHistoryRows ?? [])
+          .reverse()
+          .slice(0, -1)
+          .map((m: any) => ({
+            role: m.direction === "inbound" ? ("user" as const) : ("assistant" as const),
+            content: m.body ?? "",
+          }))
+          .filter((m: any) => m.content);
+
+        const rawOut = await callAIWithHistory(sdrPrompt, sdrHistory, text);
+        const { messages: sdrMessages, state: nextState } = parseSdrOutput(rawOut);
+
+        const finalState: SdrState = nextState ?? (state === "NEW_LEAD" ? "QUALIFYING" : state);
+
+        for (const msg of sdrMessages) {
+          await sendTypingIndicator(instance.server_url, instance.instance_token, phone, msg);
+          const providerId = await sendText(instance.server_url, instance.instance_token, phone, msg);
+          await admin.from("messages").insert({
+            tenant_id: instance.tenant_id,
+            conversation_id: conv!.id,
+            lead_id: lead!.id,
+            whatsapp_instance_id: instance.id,
+            direction: "outbound",
+            body: msg,
+            external_id: providerId,
+            metadata: { ai: true, sdr: true, sdr_state: finalState },
+          });
+        }
+
+        await admin
+          .from("conversations")
+          .update({
+            metadata: {
+              ...convMeta,
+              sdr: { state: finalState, updated_at: new Date().toISOString() },
+            },
+          })
+          .eq("id", conv!.id);
+
+        if (finalState === "WAITING_HUMAN_INTERVENTION" || finalState === "NEEDS_SPECIALIST") {
+          try { await notifyAllSellersHandoff(admin, instance, lead, text); } catch (e) { console.error("sdr handoff notify failed", e); }
+        }
+
+        return ok({ sdr: true, sent: sdrMessages.length, sdr_state: finalState });
+      } catch (e) {
+        console.error("SDR Davies error", e);
+        return ok({ sdr_error: true });
       }
     }
 
