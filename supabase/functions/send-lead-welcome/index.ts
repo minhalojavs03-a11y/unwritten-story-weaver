@@ -18,6 +18,7 @@ const COMPANY_PHONE_DIGITS = "4792352804";
 // Consultor Arley Davies (domdaviesdev): o WhatsApp dele atende SOMENTE os leads
 // dele. Nunca pode ser usado como fallback para leads de outros consultores.
 const DAVIES_USER_ID = "9a75e927-4b9b-4666-a0e4-3fd5ae4ee38a";
+const DAVIES_MEMBER_ID = "63f6691f-5a2a-4354-958d-515174a1123b";
 
 // Exceção determinada pela operação: Renata recebe boas-vindas pelo número 804
 // enquanto o WhatsApp dela estiver com problema/desconectado.
@@ -247,12 +248,20 @@ Deno.serve(async (req) => {
     const interestLine = lead.interest
       ? `Vi aqui que você tem interesse em *${lead.interest}* — me confirma se está correto? `
       : "";
-    const text =
-      `Olá, ${firstName}! 👋 Aqui é o atendimento da *Embracon*. ` +
-      `Você entrou em contato conosco e queremos te ajudar a realizar o seu sonho🏡🚗\n\n` +
-      consultantLine +
-      interestLine +
-      `Posso te enviar agora as opções de carta e parcela que mais se encaixam no seu perfil?`;
+
+    // Consultor Arley Davies: abertura do SDR — sem redundância, já entra na
+    // qualificação (o crédito é para imóvel?) antes de qualquer oferta.
+    const isDavies =
+      lead.assigned_member_id === DAVIES_MEMBER_ID || lead.assigned_to === DAVIES_USER_ID;
+
+    const text = isDavies
+      ? `Olá, ${firstName}! 👋 Aqui é o atendimento da *Embracon*, vou dar seguimento ao seu atendimento.\n\n` +
+        `Só para eu entender melhor o que você precisa: esse crédito seria para *imóvel*?`
+      : `Olá, ${firstName}! 👋 Aqui é o atendimento da *Embracon*. ` +
+        `Você entrou em contato conosco e queremos te ajudar a realizar o seu sonho🏡🚗\n\n` +
+        consultantLine +
+        interestLine +
+        `Posso te enviar agora as opções de carta e parcela que mais se encaixam no seu perfil?`;
 
     const phoneDigits = String(lead.phone).replace(/\D/g, "");
     await randomSendDelay();
