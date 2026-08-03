@@ -643,6 +643,19 @@ async function randomSendDelay(): Promise<void> {
   await new Promise((r) => setTimeout(r, ms));
 }
 
+// Mostra "digitando..." no WhatsApp do lead antes de enviar (humaniza o ritmo).
+async function sendTypingIndicator(serverUrl: string, instanceToken: string, phone: string, text: string): Promise<void> {
+  const delay = Math.min(7000, 900 + text.length * 45);
+  try {
+    await fetch(`${String(serverUrl).replace(/\/$/, "")}/sendPresence`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", token: instanceToken },
+      body: JSON.stringify({ number: phone, presence: "composing", delay }),
+    });
+  } catch (_) { /* provider pode não suportar */ }
+  await new Promise((r) => setTimeout(r, delay));
+}
+
 async function sendText(serverUrl: string, instanceToken: string, phone: string, text: string): Promise<string | null> {
   await randomSendDelay();
   try {
