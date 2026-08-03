@@ -15,6 +15,10 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // consultor responsável pelo lead — assim a conversa nasce já no WhatsApp dele.
 const COMPANY_PHONE_DIGITS = "4792352804";
 
+// Consultor Arley Davies (domdaviesdev): o WhatsApp dele atende SOMENTE os leads
+// dele. Nunca pode ser usado como fallback para leads de outros consultores.
+const DAVIES_USER_ID = "9a75e927-4b9b-4666-a0e4-3fd5ae4ee38a";
+
 // Exceção determinada pela operação: Renata recebe boas-vindas pelo número 804
 // enquanto o WhatsApp dela estiver com problema/desconectado.
 const MANUAL_DELIVERY_USER_IDS = new Set<string>([
@@ -64,12 +68,15 @@ async function pickCompanyInstance(admin: any, tenantId: string) {
     .limit(1)
     .maybeSingle();
   if (principal?.server_url && principal?.instance_token) return principal;
-  // Fallback (apenas se o número principal estiver fora do ar)
+  // Fallback (apenas se o número principal estiver fora do ar).
+  // NUNCA usar o número do consultor Arley Davies (domdaviesdev) para outros
+  // consultores — o WhatsApp dele responde exclusivamente pelos leads dele.
   const { data: any_ } = await admin
     .from("whatsapp_instances")
     .select("id,server_url,instance_token,phone_number,is_connected,status,updated_at")
     .eq("tenant_id", tenantId)
     .or("is_connected.eq.true,status.eq.connected")
+    .or(`seller_user_id.is.null,seller_user_id.neq.${DAVIES_USER_ID}`)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
