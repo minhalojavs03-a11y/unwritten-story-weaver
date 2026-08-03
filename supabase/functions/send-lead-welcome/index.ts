@@ -18,6 +18,7 @@ const COMPANY_PHONE_DIGITS = "4792352804";
 // Consultor Arley Davies (domdaviesdev): o WhatsApp dele atende SOMENTE os leads
 // dele. Nunca pode ser usado como fallback para leads de outros consultores.
 const DAVIES_USER_ID = "9a75e927-4b9b-4666-a0e4-3fd5ae4ee38a";
+const DAVIES_MEMBER_ID = "63f6691f-5a2a-4354-958d-515174a1123b";
 
 // Exceção determinada pela operação: Renata recebe boas-vindas pelo número 804
 // enquanto o WhatsApp dela estiver com problema/desconectado.
