@@ -20,6 +20,10 @@ async function randomSendDelay(): Promise<void> {
 // "47 9235-2804" → dígitos com DDI: 554792352804.
 const NOTIFIER_PHONE_DIGITS = "4792352804";
 
+// Consultor Arley Davies (domdaviesdev): número exclusivo dos leads dele —
+// nunca usar como remetente de avisos/fallback de outros consultores.
+const DAVIES_USER_ID = "9a75e927-4b9b-4666-a0e4-3fd5ae4ee38a";
+
 // Consultores marcados em `tenant_members.receive_leads_when_offline = true` continuam
 // entrando na rotação mesmo com o WhatsApp deles desconectado — recebem o aviso pelo
 // número 804 e pela notificação no sistema. Este set é preenchido em runtime a partir
