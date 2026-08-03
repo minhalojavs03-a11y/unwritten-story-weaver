@@ -14,6 +14,9 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const NOTIFIER_PHONE_DIGITS = "4792352804";
 
+// Consultor Arley Davies (domdaviesdev): número exclusivo dos leads dele.
+const DAVIES_USER_ID = "9a75e927-4b9b-4666-a0e4-3fd5ae4ee38a";
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
