@@ -1,0 +1,3 @@
+CREATE POLICY "Members can upload member avatars" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = 'members');
+CREATE POLICY "Members can update member avatars" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = 'members') WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = 'members');
+CREATE POLICY "Members can delete member avatars" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = 'members');
