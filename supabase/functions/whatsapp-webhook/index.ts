@@ -1416,6 +1416,134 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // === EXCLUSIVO CONSULTOR ARLEY DAVIES ===
+    // Somente os leads do Davies têm atendimento automático completo de IA
+    // (agente SDR de consórcios). Todos os demais consultores seguem a regra
+    // global de "somente boas-vindas".
+    const isDaviesLead =
+      lead?.assigned_member_id === DAVIES_MEMBER_ID || lead?.assigned_to === DAVIES_USER_ID;
+    if (isDaviesLead) {
+      try {
+        const convMeta = (conv?.metadata ?? {}) as Record<string, any>;
+        const sdrMeta = (convMeta.sdr ?? {}) as Record<string, any>;
+        let state: SdrState = (sdrMeta.state as SdrState) ?? "NEW_LEAD";
+        const stateSince = sdrMeta.updated_at ? new Date(sdrMeta.updated_at).getTime() : 0;
+
+        // Aguardando as simulações reais: só destrava quando o consultor enviar
+        // mídia (imagem/documento) na conversa após a IA prometer as opções.
+        if (state === "WAITING_FOR_SIMULATION_FILES") {
+          const { data: outMedia } = await admin
+            .from("messages")
+            .select("id, created_at, message_type, media_url")
+            .eq("conversation_id", conv!.id)
+            .eq("direction", "outbound")
+            .order("created_at", { ascending: false })
+            .limit(30);
+          const gotFiles = (outMedia ?? []).some(
+            (m: any) =>
+              !!m.media_url &&
+              ["image", "document", "video"].includes(String(m.message_type ?? "")) &&
+              new Date(m.created_at).getTime() >= stateSince,
+          );
+          if (!gotFiles) {
+            console.log("SDR Davies: aguardando arquivos de simulação — IA em silêncio");
+            return ok({ sdr_state: state, waiting_simulation_files: true });
+          }
+          state = "SIMULATIONS_RECEIVED";
+        }
+
+        if (SDR_MUTED_STATES.includes(state)) {
+          console.log("SDR Davies: estado silencioso", state);
+          return ok({ sdr_state: state, muted: true });
+        }
+
+        const { data: daviesCfg } = await admin
+          .from("ai_config")
+          .select("*")
+          .eq("tenant_id", instance.tenant_id)
+          .maybeSingle();
+        if (daviesCfg && daviesCfg.enabled === false) return ok({ ai_disabled: true });
+
+        const knowledgeParts: string[] = [];
+        if (daviesCfg?.business_description) knowledgeParts.push(`SOBRE:\n${daviesCfg.business_description}`);
+        if (daviesCfg?.services) knowledgeParts.push(`SEGMENTOS:\n${daviesCfg.services}`);
+        if (daviesCfg?.payment_methods) knowledgeParts.push(`PAGAMENTO:\n${daviesCfg.payment_methods}`);
+        if (daviesCfg?.differentials) knowledgeParts.push(`DIFERENCIAIS:\n${daviesCfg.differentials}`);
+        if (daviesCfg?.extra_notes) knowledgeParts.push(`OBSERVAÇÕES:\n${daviesCfg.extra_notes}`);
+        const { data: sdrFaqs } = await admin
+          .from("faqs")
+          .select("question,answer")
+          .eq("tenant_id", instance.tenant_id)
+          .order("position");
+        if (sdrFaqs?.length) {
+          knowledgeParts.push(
+            `FAQ:\n${sdrFaqs.map((f: any) => `P: ${f.question}\nR: ${f.answer}`).join("\n\n")}`,
+          );
+        }
+
+        const sdrPrompt = buildSdrPrompt({
+          leadName: lead?.name ?? null,
+          interest: lead?.interest ?? null,
+          currentState: state,
+          knowledge: knowledgeParts.join("\n\n"),
+        });
+
+        const { data: sdrHistoryRows } = await admin
+          .from("messages")
+          .select("direction, body, created_at")
+          .eq("conversation_id", conv!.id)
+          .order("created_at", { ascending: false })
+          .limit(21);
+        const sdrHistory = (sdrHistoryRows ?? [])
+          .reverse()
+          .slice(0, -1)
+          .map((m: any) => ({
+            role: m.direction === "inbound" ? ("user" as const) : ("assistant" as const),
+            content: m.body ?? "",
+          }))
+          .filter((m: any) => m.content);
+
+        const rawOut = await callAIWithHistory(sdrPrompt, sdrHistory, text);
+        const { messages: sdrMessages, state: nextState } = parseSdrOutput(rawOut);
+
+        const finalState: SdrState = nextState ?? (state === "NEW_LEAD" ? "QUALIFYING" : state);
+
+        for (const msg of sdrMessages) {
+          await sendTypingIndicator(instance.server_url, instance.instance_token, phone, msg);
+          const providerId = await sendText(instance.server_url, instance.instance_token, phone, msg);
+          await admin.from("messages").insert({
+            tenant_id: instance.tenant_id,
+            conversation_id: conv!.id,
+            lead_id: lead!.id,
+            whatsapp_instance_id: instance.id,
+            direction: "outbound",
+            body: msg,
+            external_id: providerId,
+            metadata: { ai: true, sdr: true, sdr_state: finalState },
+          });
+        }
+
+        await admin
+          .from("conversations")
+          .update({
+            metadata: {
+              ...convMeta,
+              sdr: { state: finalState, updated_at: new Date().toISOString() },
+            },
+          })
+          .eq("id", conv!.id);
+
+        if (finalState === "WAITING_HUMAN_INTERVENTION" || finalState === "NEEDS_SPECIALIST") {
+          try { await notifyAllSellersHandoff(admin, instance, lead, text); } catch (e) { console.error("sdr handoff notify failed", e); }
+        }
+
+        return ok({ sdr: true, sent: sdrMessages.length, sdr_state: finalState });
+      } catch (e) {
+        console.error("SDR Davies error", e);
+        return ok({ sdr_error: true });
+      }
+    }
+
     // === REGRA GLOBAL ===
     // Pré-atendimento da IA fica restrito à mensagem de boas-vindas (já
     // enviada por `send-lead-welcome`). Nenhuma resposta automática adicional
