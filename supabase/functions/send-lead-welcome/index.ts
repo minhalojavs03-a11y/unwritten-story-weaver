@@ -29,12 +29,9 @@ const MANUAL_DELIVERY_USER_IDS = new Set<string>([
 // Consultores que pediram para NÃO enviar a mensagem automática de boas-vindas
 // no pré-atendimento. Continuam recebendo o aviso do 804 e a notificação
 // interna do sistema — apenas o disparo automático de WhatsApp é suprimido.
-const SKIP_WELCOME_MEMBER_IDS = new Set<string>([
-  "50544b35-6591-4eb7-88f7-e38737a608ee", // David
-]);
-const SKIP_WELCOME_USER_IDS = new Set<string>([
-  "82e0fa88-3a4a-4766-be5f-7c4ed23e5cd7", // David
-]);
+// (David voltou a receber saudação automática — lista vazia.)
+const SKIP_WELCOME_MEMBER_IDS = new Set<string>([]);
+const SKIP_WELCOME_USER_IDS = new Set<string>([]);
 
 async function pickConsultantInstance(admin: any, tenantId: string, assignedMemberId: string | null) {
   if (!assignedMemberId) return null;
