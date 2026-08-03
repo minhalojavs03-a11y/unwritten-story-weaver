@@ -5,18 +5,31 @@ import { StageBadge } from "@/components/oticaflow/StageBadge";
 import { InitialsAvatar } from "@/components/oticaflow/Avatar";
 import { timeAgo } from "@/lib/format";
 import { useLeads, useCreateLead } from "@/hooks/useData";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useEffectiveUser } from "@/hooks/useEffectiveUser";
 
 export default function ClientesPage() {
   const { can } = usePermissions();
-  const { data: leads = [], isLoading } = useLeads(can("view_all_leads") ? { kind: "all" } : undefined);
+  const viewAll = can("view_all_leads");
+  const effectiveUser = useEffectiveUser();
+  const { data: allLeads = [], isLoading } = useLeads(viewAll ? { kind: "all" } : undefined);
+  // Consultor vê somente os clientes atribuídos a ele.
+  const leads = useMemo(() => {
+    if (viewAll) return allLeads;
+    const mid = effectiveUser.memberId;
+    const uid = effectiveUser.id;
+    return allLeads.filter(
+      (l) => (mid && l.assigned_member_id === mid) || (uid && l.assigned_to === uid),
+    );
+  }, [allLeads, viewAll, effectiveUser.memberId, effectiveUser.id]);
   const create = useCreateLead();
+
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
