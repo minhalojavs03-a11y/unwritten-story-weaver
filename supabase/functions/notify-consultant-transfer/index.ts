@@ -40,6 +40,7 @@ async function pickNotifierInstance(admin: any, tenantId: string) {
     .select("server_url,instance_token,status,is_connected,phone_number")
     .eq("tenant_id", tenantId)
     .or("is_connected.eq.true,status.eq.connected")
+    .or(`seller_user_id.is.null,seller_user_id.neq.${DAVIES_USER_ID}`)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
