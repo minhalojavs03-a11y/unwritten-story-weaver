@@ -1442,6 +1442,21 @@ Deno.serve(async (req: Request) => {
         let state: SdrState = (sdrMeta.state as SdrState) ?? "NEW_LEAD";
         const stateSince = sdrMeta.updated_at ? new Date(sdrMeta.updated_at).getTime() : 0;
 
+        // Se o consultor já digitou manualmente pelo CRM, a IA para de vez.
+        const { data: humanTypedMsgs } = await admin
+          .from("messages")
+          .select("id")
+          .eq("conversation_id", conv!.id)
+          .eq("direction", "outbound")
+          .not("sent_by", "is", null)
+          .limit(1);
+        if (humanTypedMsgs?.length) {
+          console.log("SDR Davies: consultor assumiu a conversa — IA pausada");
+          return ok({ sdr: false, assumed_by_human: true });
+        }
+
+
+
         // Aguardando as simulações reais: só destrava quando o consultor enviar
         // mídia (imagem/documento) na conversa após a IA prometer as opções.
         if (state === "WAITING_FOR_SIMULATION_FILES") {
