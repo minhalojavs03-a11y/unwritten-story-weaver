@@ -251,8 +251,21 @@ Deno.serve(async (req) => {
     const isDavies =
       lead.assigned_member_id === DAVIES_MEMBER_ID || lead.assigned_to === DAVIES_USER_ID;
 
+    // Valor que o lead selecionou no formulário (planilha do Meta).
+    const rawCredit =
+      (lead.credit_value != null && Number(lead.credit_value) > 0
+        ? Number(lead.credit_value)
+        : null);
+    const creditLabel = rawCredit
+      ? rawCredit.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })
+      : (lead.interest || "").trim() || null;
+    const daviesValueLine = creditLabel
+      ? `Vi aqui que você demonstrou interesse em um crédito de *${creditLabel}*.\n\n`
+      : "";
+
     const text = isDavies
       ? `Olá, ${firstName}! 👋 Aqui é o atendimento da *Embracon*, vou dar seguimento ao seu atendimento.\n\n` +
+        daviesValueLine +
         `Só para eu entender melhor o que você precisa: esse crédito seria para *imóvel*?`
       : `Olá, ${firstName}! 👋 Aqui é o atendimento da *Embracon*. ` +
         `Você entrou em contato conosco e queremos te ajudar a realizar o seu sonho🏡🚗\n\n` +
