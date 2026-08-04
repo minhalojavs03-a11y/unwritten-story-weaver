@@ -1430,11 +1430,16 @@ Deno.serve(async (req: Request) => {
     }
 
     // === EXCLUSIVO CONSULTOR ARLEY DAVIES ===
-    // Somente os leads do Davies têm atendimento automático completo de IA
-    // (agente SDR de consórcios). Todos os demais consultores seguem a regra
-    // global de "somente boas-vindas".
+    // DESATIVADO temporariamente: a IA envia SOMENTE a saudação inicial
+    // (feita pela função send-lead-welcome). Após a saudação, o consultor
+    // assume a conversa manualmente. Não há mais fluxo SDR automático.
+    const SDR_DAVIES_ENABLED = false;
     const isDaviesLead =
       lead?.assigned_member_id === DAVIES_MEMBER_ID || lead?.assigned_to === DAVIES_USER_ID;
+    if (isDaviesLead && !SDR_DAVIES_ENABLED) {
+      console.log("SDR Davies desativado — apenas saudação; consultor assume a conversa");
+      return ok({ sdr: false, disabled: true });
+    }
     if (isDaviesLead) {
       try {
         const convMeta = (conv?.metadata ?? {}) as Record<string, any>;
