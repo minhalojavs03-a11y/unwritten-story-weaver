@@ -1536,7 +1536,10 @@ Deno.serve(async (req: Request) => {
 
         const finalState: SdrState = nextState ?? (state === "NEW_LEAD" ? "QUALIFYING" : state);
 
+        // Ritmo humano do SDR do Davies: ~30s de pausa antes de CADA mensagem
+        // (inclusive a primeira) para não parecer robô e dar tempo de leitura.
         for (const msg of sdrMessages) {
+          await new Promise((r) => setTimeout(r, 28000 + Math.floor(Math.random() * 5000)));
           await sendTypingIndicator(instance.server_url, instance.instance_token, phone, msg);
           const providerId = await sendText(instance.server_url, instance.instance_token, phone, msg);
           await admin.from("messages").insert({
