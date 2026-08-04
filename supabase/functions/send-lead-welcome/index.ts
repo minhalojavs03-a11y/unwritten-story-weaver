@@ -264,8 +264,12 @@ Deno.serve(async (req) => {
       : "";
 
     const text = isDavies
-      ? `Olá, ${firstName}! 👋 Aqui é o atendimento da *Embracon*, vou dar seguimento ao seu atendimento.\n\n` +
-        daviesValueLine +
+      ? `Olá, ${firstName}! 👋 Aqui é o atendimento da *Embracon*. ` +
+        `Você entrou em contato conosco e queremos te ajudar a realizar o seu sonho🏡🚗\n\n` +
+        (consultantFirstName
+          ? `Seu atendimento será conduzido pelo(a) consultor(a) *${consultantFirstName}*, que vai cuidar de tudo com você. `
+          : "") +
+        (creditLabel ? `Vi aqui que você tem interesse em *${creditLabel}* — me confirma se está correto? ` : "") +
         `Só para eu entender melhor o que você precisa: esse crédito seria para *imóvel*?`
       : `Olá, ${firstName}! 👋 Aqui é o atendimento da *Embracon*. ` +
         `Você entrou em contato conosco e queremos te ajudar a realizar o seu sonho🏡🚗\n\n` +
