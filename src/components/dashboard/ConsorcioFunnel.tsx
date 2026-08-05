@@ -106,14 +106,16 @@ export function ConsorcioFunnel({
   // Usar o MAIOR valor entre todas as etapas como referência de 100% de largura.
   // (antes usava stages[0], que é "Novo Lead" — muitas vezes 0 — quebrando o formato de funil.)
   const top = Math.max(1, ...stages.map((s) => s.count));
-  const FUNNEL_W = 320;        // largura útil do funil
-  const PAD_L = 54;            // espaço à esquerda p/ "-x%"
-  const PAD_R = 150;           // espaço à direita p/ rótulos longos ("Simulação Enviada")
+  // ViewBox compacto: mantém o desenho inteiro legível em telas de 320–390px.
+  // O SVG continua expandindo no desktop, sem depender de uma largura mínima.
+  const FUNNEL_W = 230;
+  const PAD_L = 48;
+  const PAD_R = 122;
   const W = FUNNEL_W + PAD_L + PAD_R;
   const CENTER = PAD_L + FUNNEL_W / 2;
   const H = 60;
   const GAP = 6;
-  const MIN_W = 80;
+  const MIN_W = 58;
 
   const widthFor = (count: number) =>
     Math.min(FUNNEL_W, Math.max(MIN_W, (count / top) * FUNNEL_W));
@@ -121,7 +123,7 @@ export function ConsorcioFunnel({
   const showPeriodPicker = !!period && !!onPeriodChange;
 
   return (
-    <Card className="overflow-hidden p-3 md:p-5">
+    <Card className="min-w-0 overflow-hidden p-3 md:p-5">
       <SectionTitle
         title={title}
         sub={subtitle}
@@ -194,12 +196,12 @@ export function ConsorcioFunnel({
 
 
 
-      <div className={cn("grid gap-5", !compact && "lg:grid-cols-[1.4fr_1fr]")}>
+      <div className={cn("grid min-w-0 gap-5", !compact && "lg:grid-cols-[1.4fr_1fr]")}>
         {/* COLUNA 1 — Funil visual */}
-        <div className="flex flex-col items-center">
+        <div className="flex min-w-0 w-full flex-col items-center overflow-hidden">
           <svg
             viewBox={`0 0 ${W} ${(H + GAP) * stages.length}`}
-            className="block w-full max-w-2xl"
+            className="block h-auto w-full min-w-0 max-w-2xl"
             preserveAspectRatio="xMidYMid meet"
             role="img"
             aria-label="Funil de conversão de consórcio"
@@ -255,7 +257,7 @@ export function ConsorcioFunnel({
                     y={y + H / 2 + 7}
                     textAnchor="middle"
                     className="fill-white font-display pointer-events-none"
-                    style={{ fontSize: 26, fontWeight: 800 }}
+                    style={{ fontSize: 23, fontWeight: 800 }}
                   >
                     {s.count}
                   </text>
@@ -264,7 +266,7 @@ export function ConsorcioFunnel({
                     x={x2 + 10}
                     y={y + H / 2 + 5}
                     className={cn("fill-foreground pointer-events-none", clickable && "underline-offset-2")}
-                    style={{ fontSize: 15, fontWeight: 600 }}
+                    style={{ fontSize: 13, fontWeight: 600 }}
                   >
                     {style.label}{clickable ? "  ›" : ""}
                   </text>
@@ -275,7 +277,7 @@ export function ConsorcioFunnel({
                       y={y + H / 2 + 5}
                       textAnchor="end"
                       className="fill-muted-foreground pointer-events-none"
-                      style={{ fontSize: 13, fontWeight: 600 }}
+                      style={{ fontSize: 12, fontWeight: 600 }}
                     >
                       -{dropPct}%
                     </text>
@@ -286,7 +288,7 @@ export function ConsorcioFunnel({
           </svg>
 
           {/* Desqualificados — base do funil */}
-          <div className="mt-3 inline-flex items-center gap-2 rounded-md border border-rose-500/30 bg-rose-500/5 px-3 py-1.5 text-sm">
+          <div className="mt-3 flex max-w-full items-center gap-2 rounded-md border border-rose-500/30 bg-rose-500/5 px-3 py-1.5 text-xs sm:text-sm">
             <AlertCircle className="h-4 w-4 text-rose-500" />
             <span className="font-semibold text-rose-600 tabular-nums">{lost}</span>
             <span className="text-muted-foreground">desqualificados no período</span>
@@ -295,7 +297,7 @@ export function ConsorcioFunnel({
 
         {/* COLUNA 2 — Motivos / Taxa de conversão */}
         {!compact && (
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             <div>
               <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 <TrendingDown className="h-3.5 w-3.5" /> Conversão por etapa
@@ -373,7 +375,7 @@ export function ConsorcioFunnel({
       </div>
 
       {showSalesInline && sales && sales.length > 0 && (
-        <div className="mt-5 rounded-lg border">
+        <div className="mt-5 min-w-0 overflow-hidden rounded-lg border">
           <div className="flex items-center justify-between gap-2 border-b bg-emerald-500/5 px-3 py-2">
             <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700">
               <DollarSign className="h-4 w-4" />
@@ -383,8 +385,8 @@ export function ConsorcioFunnel({
               {sales.length} · {fmtBRL(sales.reduce((s, x) => s + x.value, 0))}
             </Badge>
           </div>
-          <div className="max-h-72 overflow-auto">
-            <table className="w-full text-sm">
+          <div className="max-h-72 max-w-full overflow-auto">
+            <table className="w-full min-w-[38rem] text-sm">
               <thead className="sticky top-0 bg-muted/60 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2 text-left">Cliente</th>
