@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, Users2, Info, ChevronDown, ChevronUp, Bell, Smartphone, SmartphoneNfc } from "lucide-react";
+import { ShieldAlert, Users2, Info, ChevronDown, ChevronUp, Bell, Smartphone, SmartphoneNfc, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
@@ -40,6 +40,7 @@ type Row = {
   notify_whatsapp: boolean | null;
   phone: string | null;
   receive_leads_when_offline: boolean | null;
+  distribution_priority: number;
 };
 
 function rowKey(r: { id: string | null; user_id: string | null }) {
@@ -154,6 +155,7 @@ export default function DistribuicaoLeadsPage() {
         notify_whatsapp: r.notify_whatsapp ?? true,
         phone: r.phone ?? null,
         receive_leads_when_offline: r.receive_leads_when_offline ?? false,
+        distribution_priority: r.distribution_priority ?? 100,
       }));
     },
   });
@@ -230,6 +232,30 @@ export default function DistribuicaoLeadsPage() {
   const [local, setLocal] = useState<Record<string, Partial<Row>>>({});
   useEffect(() => setLocal({}), [rows.length, effectiveTenant]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  // ---- Ordem de prioridade (arrastar e soltar) ----
+  const [orderKeys, setOrderKeys] = useState<string[] | null>(null);
+  const [dragKey, setDragKey] = useState<string | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
+  useEffect(() => setOrderKeys(null), [rows.length, effectiveTenant]);
+
+  const orderedRows = useMemo(() => {
+    const base = [...rows].sort(
+      (a, b) =>
+        (a.distribution_priority ?? 100) - (b.distribution_priority ?? 100) ||
+        (a.display_name ?? "").localeCompare(b.display_name ?? ""),
+    );
+    if (!orderKeys) return base;
+    const map = new Map(base.map((r) => [rowKey(r), r] as const));
+    const out: Row[] = [];
+    for (const k of orderKeys) {
+      const r = map.get(k);
+      if (r) { out.push(r); map.delete(k); }
+    }
+    for (const r of map.values()) out.push(r);
+    return out;
+  }, [rows, orderKeys]);
+
 
   function valueOf<K extends keyof Row>(r: Row, key: K): Row[K] {
     return (local[rowKey(r)]?.[key] ?? r[key]) as Row[K];
@@ -341,6 +367,49 @@ export default function DistribuicaoLeadsPage() {
     qc.invalidateQueries({ queryKey: ["dist-offline-flag", effectiveTenant] });
   }
 
+  async function persistOrder(list: Row[]) {
+    setOrderKeys(list.map(rowKey));
+    setSavingOrder(true);
+    try {
+      const payload: { member_id: string; priority: number }[] = [];
+      for (let i = 0; i < list.length; i++) {
+        const id = list[i].id ?? (await ensureMemberId(list[i]));
+        if (id) payload.push({ member_id: id, priority: (i + 1) * 10 });
+      }
+      const { error } = await supabase.rpc("set_distribution_priority" as any, { _orders: payload });
+      if (error) throw error;
+      toast.success("Ordem de prioridade salva");
+      qc.invalidateQueries({ queryKey: distQueryKey });
+    } catch (e: any) {
+      toast.error(`Falha ao salvar ordem: ${e.message}`);
+      setOrderKeys(null);
+    } finally {
+      setSavingOrder(false);
+    }
+  }
+
+  function moveRow(index: number, dir: -1 | 1) {
+    const next = [...orderedRows];
+    const target = index + dir;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    persistOrder(next);
+  }
+
+  function handleDrop(targetKey: string) {
+    if (!dragKey || dragKey === targetKey) return;
+    const next = [...orderedRows];
+    const from = next.findIndex((r) => rowKey(r) === dragKey);
+    const to = next.findIndex((r) => rowKey(r) === targetKey);
+    if (from < 0 || to < 0) return;
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    setDragKey(null);
+    persistOrder(next);
+  }
+
+
+
 
 
 
@@ -363,10 +432,12 @@ export default function DistribuicaoLeadsPage() {
         <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            A faixa de carta define o intervalo (mínimo e máximo) de valor de carta de crédito que cada consultor pode receber.
-            Use os dois puxadores para escolher de R$ 300 mil a R$ 2 milhões. O limite diário pausa novos envios após atingir o número definido.
+            <strong className="text-foreground">Ordem de prioridade:</strong> arraste os cards (ou use as setas ▲▼) para definir quem recebe primeiro.
+            Quem está mais acima enche a cota diária antes de liberar leads para o de baixo.
+            A faixa de carta define o intervalo de valor que cada consultor pode receber e o limite diário pausa novos envios ao atingir o número definido.
             Alterações salvam automaticamente.
           </p>
+
         </div>
 
         {isLoading ? (
@@ -382,7 +453,7 @@ export default function DistribuicaoLeadsPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {rows.map((r) => {
+            {orderedRows.map((r, index) => {
               const k = rowKey(r);
               const name = r.display_name || r.username || "Consultor";
               const receives = !!valueOf(r, "receives_leads");
@@ -397,8 +468,44 @@ export default function DistribuicaoLeadsPage() {
               return (
                 <div
                   key={k}
-                  className="rounded-xl border border-border bg-card p-3 transition-shadow hover:shadow-sm md:p-4"
+                  draggable={!savingOrder}
+                  onDragStart={() => setDragKey(k)}
+                  onDragEnd={() => setDragKey(null)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => handleDrop(k)}
+                  className={`rounded-xl border bg-card p-3 transition-shadow hover:shadow-sm md:p-4 ${
+                    dragKey === k ? "border-primary opacity-60" : "border-border"
+                  }`}
                 >
+                  <div className="mb-2 flex items-center gap-2 border-b border-border/60 pb-2">
+                    <GripVertical className="h-4 w-4 cursor-grab text-muted-foreground" />
+                    <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
+                      #{index + 1} na fila
+                    </span>
+                    <div className="ml-auto flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        disabled={index === 0 || savingOrder}
+                        onClick={() => moveRow(index, -1)}
+                        aria-label="Subir prioridade"
+                      >
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        disabled={index === orderedRows.length - 1 || savingOrder}
+                        onClick={() => moveRow(index, 1)}
+                        aria-label="Descer prioridade"
+                      >
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+
                   <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
                     <div className="flex min-w-0 flex-1 items-center gap-3">
                       <UserAvatar
