@@ -432,8 +432,12 @@ export default function DistribuicaoLeadsPage() {
         <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            <strong className="text-foreground">Ordem de prioridade:</strong> arraste os cards (ou use as setas ▲▼) para definir quem recebe primeiro.
-            Quem está mais acima enche a cota diária antes de liberar leads para o de baixo.
+            {isSuperadmin && (
+              <>
+                <strong className="text-foreground">Ordem de prioridade:</strong> arraste os cards (ou use as setas ▲▼) para definir quem recebe primeiro.
+                Quem está mais acima enche a cota diária antes de liberar leads para o de baixo{" "}
+              </>
+            )}
             A faixa de carta define o intervalo de valor que cada consultor pode receber e o limite diário pausa novos envios ao atingir o número definido.
             Alterações salvam automaticamente.
           </p>
