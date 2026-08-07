@@ -510,20 +510,29 @@ Deno.serve(async (req) => {
         skipped: "all consultants reached daily lead limit — lead left unassigned for later retry",
       });
     }
-    // ===== Prioridade operacional: Micaelly e Diéssica primeiro =====
-    // Enquanto qualquer uma delas ainda estiver abaixo da cota diária, TODOS os
-    // leads novos vão para elas. Os demais consultores só entram na rotação
-    // depois que ambas baterem o teto configurado.
-    const PRIORITY_NAMES = ["micaelly", "diessica", "diéssica"];
-    const isPriority = (c: any) => {
-      const n = String(c.display_name || "")
+    // ===== Prioridade operacional: Micaelly, Nilton e David primeiro =====
+    // Enquanto qualquer um deles ainda estiver abaixo da cota diária, TODOS os
+    // leads novos vão para eles. Os demais consultores só entram na rotação
+    // depois que o grupo prioritário bater o teto configurado.
+    // Diéssica é DESPRIORIZADA: só recebe quando ninguém mais estiver abaixo da cota.
+    const PRIORITY_NAMES = ["micaelly", "nilton", "david"];
+    const DEPRIORITY_NAMES = ["diessica"];
+    const normName = (c: any) =>
+      String(c.display_name || "")
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
-      return PRIORITY_NAMES.some((p) => n.includes(p));
-    };
+    const isPriority = (c: any) => PRIORITY_NAMES.some((p) => normName(c).includes(p));
+    const isDeprioritized = (c: any) => DEPRIORITY_NAMES.some((p) => normName(c).includes(p));
     const priorityUnderCota = underCota.filter(isPriority);
-    const pool = priorityUnderCota.length > 0 ? priorityUnderCota : underCota;
+    const regularUnderCota = underCota.filter((c) => !isPriority(c) && !isDeprioritized(c));
+    const pool =
+      priorityUnderCota.length > 0
+        ? priorityUnderCota
+        : regularUnderCota.length > 0
+          ? regularUnderCota
+          : underCota;
+
 
     // Ranking: quem tem MENOS leads absolutos hoje vem primeiro (nivelar antes
     // de encher). Empate: quem tem cota maior leva. Depois: quem recebeu por
