@@ -432,8 +432,12 @@ export default function DistribuicaoLeadsPage() {
         <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            <strong className="text-foreground">Ordem de prioridade:</strong> arraste os cards (ou use as setas ▲▼) para definir quem recebe primeiro.
-            Quem está mais acima enche a cota diária antes de liberar leads para o de baixo.
+            {isSuperadmin && (
+              <>
+                <strong className="text-foreground">Ordem de prioridade:</strong> arraste os cards (ou use as setas ▲▼) para definir quem recebe primeiro.
+                Quem está mais acima enche a cota diária antes de liberar leads para o de baixo{" "}
+              </>
+            )}
             A faixa de carta define o intervalo de valor que cada consultor pode receber e o limite diário pausa novos envios ao atingir o número definido.
             Alterações salvam automaticamente.
           </p>
@@ -468,43 +472,46 @@ export default function DistribuicaoLeadsPage() {
               return (
                 <div
                   key={k}
-                  draggable={!savingOrder}
-                  onDragStart={() => setDragKey(k)}
+                  draggable={isSuperadmin && !savingOrder}
+                  onDragStart={() => isSuperadmin && setDragKey(k)}
                   onDragEnd={() => setDragKey(null)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => handleDrop(k)}
+                  onDragOver={(e) => isSuperadmin && e.preventDefault()}
+                  onDrop={() => isSuperadmin && handleDrop(k)}
                   className={`rounded-xl border bg-card p-3 transition-shadow hover:shadow-sm md:p-4 ${
                     dragKey === k ? "border-primary opacity-60" : "border-border"
                   }`}
                 >
-                  <div className="mb-2 flex items-center gap-2 border-b border-border/60 pb-2">
-                    <GripVertical className="h-4 w-4 cursor-grab text-muted-foreground" />
-                    <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
-                      #{index + 1} na fila
-                    </span>
-                    <div className="ml-auto flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7"
-                        disabled={index === 0 || savingOrder}
-                        onClick={() => moveRow(index, -1)}
-                        aria-label="Subir prioridade"
-                      >
-                        <ArrowUp className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7"
-                        disabled={index === orderedRows.length - 1 || savingOrder}
-                        onClick={() => moveRow(index, 1)}
-                        aria-label="Descer prioridade"
-                      >
-                        <ArrowDown className="h-3.5 w-3.5" />
-                      </Button>
+                  {isSuperadmin && (
+                    <div className="mb-2 flex items-center gap-2 border-b border-border/60 pb-2">
+                      <GripVertical className="h-4 w-4 cursor-grab text-muted-foreground" />
+                      <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
+                        #{index + 1} na fila
+                      </span>
+                      <div className="ml-auto flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-7 w-7"
+                          disabled={index === 0 || savingOrder}
+                          onClick={() => moveRow(index, -1)}
+                          aria-label="Subir prioridade"
+                        >
+                          <ArrowUp className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-7 w-7"
+                          disabled={index === orderedRows.length - 1 || savingOrder}
+                          onClick={() => moveRow(index, 1)}
+                          aria-label="Descer prioridade"
+                        >
+                          <ArrowDown className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
 
                   <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
                     <div className="flex min-w-0 flex-1 items-center gap-3">
