@@ -40,6 +40,7 @@ type Row = {
   notify_whatsapp: boolean | null;
   phone: string | null;
   receive_leads_when_offline: boolean | null;
+  distribution_priority: number;
 };
 
 function rowKey(r: { id: string | null; user_id: string | null }) {
