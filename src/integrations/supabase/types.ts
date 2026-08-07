@@ -2005,6 +2005,7 @@ export type Database = {
           created_at: string
           daily_lead_limit: number | null
           display_name: string
+          distribution_priority: number
           email: string | null
           full_name: string | null
           id: string
@@ -2035,6 +2036,7 @@ export type Database = {
           created_at?: string
           daily_lead_limit?: number | null
           display_name: string
+          distribution_priority?: number
           email?: string | null
           full_name?: string | null
           id?: string
@@ -2065,6 +2067,7 @@ export type Database = {
           created_at?: string
           daily_lead_limit?: number | null
           display_name?: string
+          distribution_priority?: number
           email?: string | null
           full_name?: string | null
           id?: string
@@ -2622,6 +2625,7 @@ export type Database = {
           avatar_url: string
           daily_lead_limit: number
           display_name: string
+          distribution_priority: number
           id: string
           is_active: boolean
           max_credit_value: number
@@ -2629,6 +2633,7 @@ export type Database = {
           notify_inapp: boolean
           notify_whatsapp: boolean
           phone: string
+          receive_leads_when_offline: boolean
           receives_leads: boolean
           receives_leads_02: boolean
           role_label: string
@@ -2673,6 +2678,7 @@ export type Database = {
         Args: { _enabled: boolean; _lead_id: string }
         Returns: undefined
       }
+      set_distribution_priority: { Args: { _orders: Json }; Returns: undefined }
       touch_my_last_seen: { Args: never; Returns: undefined }
       update_member_distribution: {
         Args: {
