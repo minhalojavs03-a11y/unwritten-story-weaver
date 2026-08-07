@@ -233,6 +233,30 @@ export default function DistribuicaoLeadsPage() {
   useEffect(() => setLocal({}), [rows.length, effectiveTenant]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
+  // ---- Ordem de prioridade (arrastar e soltar) ----
+  const [orderKeys, setOrderKeys] = useState<string[] | null>(null);
+  const [dragKey, setDragKey] = useState<string | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
+  useEffect(() => setOrderKeys(null), [rows.length, effectiveTenant]);
+
+  const orderedRows = useMemo(() => {
+    const base = [...rows].sort(
+      (a, b) =>
+        (a.distribution_priority ?? 100) - (b.distribution_priority ?? 100) ||
+        (a.display_name ?? "").localeCompare(b.display_name ?? ""),
+    );
+    if (!orderKeys) return base;
+    const map = new Map(base.map((r) => [rowKey(r), r] as const));
+    const out: Row[] = [];
+    for (const k of orderKeys) {
+      const r = map.get(k);
+      if (r) { out.push(r); map.delete(k); }
+    }
+    for (const r of map.values()) out.push(r);
+    return out;
+  }, [rows, orderKeys]);
+
+
   function valueOf<K extends keyof Row>(r: Row, key: K): Row[K] {
     return (local[rowKey(r)]?.[key] ?? r[key]) as Row[K];
   }
