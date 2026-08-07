@@ -367,6 +367,49 @@ export default function DistribuicaoLeadsPage() {
     qc.invalidateQueries({ queryKey: ["dist-offline-flag", effectiveTenant] });
   }
 
+  async function persistOrder(list: Row[]) {
+    setOrderKeys(list.map(rowKey));
+    setSavingOrder(true);
+    try {
+      const payload: { member_id: string; priority: number }[] = [];
+      for (let i = 0; i < list.length; i++) {
+        const id = list[i].id ?? (await ensureMemberId(list[i]));
+        if (id) payload.push({ member_id: id, priority: (i + 1) * 10 });
+      }
+      const { error } = await supabase.rpc("set_distribution_priority" as any, { _orders: payload });
+      if (error) throw error;
+      toast.success("Ordem de prioridade salva");
+      qc.invalidateQueries({ queryKey: distQueryKey });
+    } catch (e: any) {
+      toast.error(`Falha ao salvar ordem: ${e.message}`);
+      setOrderKeys(null);
+    } finally {
+      setSavingOrder(false);
+    }
+  }
+
+  function moveRow(index: number, dir: -1 | 1) {
+    const next = [...orderedRows];
+    const target = index + dir;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    persistOrder(next);
+  }
+
+  function handleDrop(targetKey: string) {
+    if (!dragKey || dragKey === targetKey) return;
+    const next = [...orderedRows];
+    const from = next.findIndex((r) => rowKey(r) === dragKey);
+    const to = next.findIndex((r) => rowKey(r) === targetKey);
+    if (from < 0 || to < 0) return;
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    setDragKey(null);
+    persistOrder(next);
+  }
+
+
+
 
 
 
