@@ -1461,10 +1461,10 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
         ) : consultantConnected ? (
           <div className="rounded-2xl border border-emerald-300/50 bg-emerald-50 p-5 text-center text-sm text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-900/10 dark:text-emerald-200">
             <p className="font-medium">
-              Que ótimo! Agora que seu dispositivo foi conectado com sucesso, você pode responder direto pelo seu WhatsApp.
+              O envio de mensagens pelo chat do CRM está desativado.
             </p>
             <p className="mt-1 text-xs opacity-80">
-              O envio pelo chat foi desativado — as conversas continuam sincronizadas aqui para histórico.
+              Escaneie o QR em “Meu WhatsApp” e responda o cliente direto pelo aplicativo do WhatsApp — as conversas continuam sincronizadas aqui para histórico e métricas.
             </p>
           </div>
         ) : isRecording ? (
