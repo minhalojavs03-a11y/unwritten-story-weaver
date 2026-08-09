@@ -725,7 +725,11 @@ function ConversationDetail({ conv, onBack, showInfo, onToggleInfo }: { conv: an
     })();
     return () => { cancelled = true; };
   }, [assignedMemberIdForWa, assignedUserIdForWa]);
-  const consultantConnected = assignedHasConnectedWa;
+  // Regra fixa: consultor NUNCA digita pelo chat do CRM, esteja o WhatsApp dele
+  // conectado ou não. O atendimento é feito direto no app do WhatsApp após o QR.
+  // Gestores (superadmin / dono) seguem podendo enviar.
+  const isManagerRole = effectiveRole.isSuperadmin || effectiveRole.isOwner || isSuperadmin || isOwner;
+  const consultantConnected = !isManagerRole || assignedHasConnectedWa === null;
 
 
 
