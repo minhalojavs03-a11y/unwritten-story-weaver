@@ -1296,16 +1296,34 @@ Deno.serve(async (req: Request) => {
           .eq("user_id", sellerUserId)
           .eq("tenant_id", tenantId)
           .maybeSingle();
-        if (!membership) return json({ error: "Vendedor não pertence a esta loja." }, 400);
+        // Fallbacks: alguns consultores existem só em tenant_members ou profiles
+        let fallbackName: string | null = null;
+        if (!membership) {
+          const { data: tm } = await admin
+            .from("tenant_members")
+            .select("display_name, tenant_id")
+            .eq("user_id", sellerUserId)
+            .eq("tenant_id", tenantId)
+            .maybeSingle();
+          const { data: prof0 } = await admin
+            .from("profiles")
+            .select("tenant_id, full_name, display_name, email")
+            .eq("id", sellerUserId)
+            .maybeSingle();
+          const belongs = !!tm || prof0?.tenant_id === tenantId;
+          if (!belongs) return json({ error: "Vendedor não pertence a esta loja." }, 400);
+          fallbackName = tm?.display_name ?? prof0?.display_name ?? prof0?.full_name ?? prof0?.email ?? null;
+        }
         if (!resolvedSellerName) {
           const { data: prof } = await admin
             .from("profiles")
             .select("full_name, display_name, email")
             .eq("id", sellerUserId)
             .maybeSingle();
-          resolvedSellerName = membership.display_name ?? prof?.display_name ?? prof?.full_name ?? prof?.email ?? null;
+          resolvedSellerName = membership?.display_name ?? fallbackName ?? prof?.display_name ?? prof?.full_name ?? prof?.email ?? null;
         }
       }
+
 
       const ensured = await ensureProviderInstance(admin, tenantId, tenant, null, webhookUrl, displayName, {
         seller_user_id: sellerUserId,
