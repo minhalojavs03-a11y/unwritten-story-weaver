@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Activity, ChevronLeft, ChevronRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,8 +7,10 @@ import { InitialsAvatar } from "@/components/oticaflow/Avatar";
 import { timeAgo } from "@/lib/format";
 import { useLeadStageEvents } from "@/hooks/useLeadStageEvents";
 import { useTenantMembers } from "@/hooks/useData";
+import { useIsMobile } from "@/hooks/use-mobile";
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE_DESKTOP = 10;
+const PAGE_SIZE_MOBILE = 5;
 const ALL = "__all__";
 
 type Tone = {
