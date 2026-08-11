@@ -3,6 +3,7 @@ const motion = { div: (props: any) => <div {...props} /> } as any;
 import { Trophy, Medal, Flame, Target, TrendingUp, Users, Clock, DollarSign, Calendar, MessageCircle, Award, AlertTriangle } from "lucide-react";
 import { RankCard } from "@/components/gamification/RankCard";
 import { PublicLeaderboard } from "@/components/gamification/PublicLeaderboard";
+import { DualRanking } from "@/components/gamification/DualRanking";
 import { PrizesBanner } from "@/components/gamification/PrizesBanner";
 import { EloLadder } from "@/components/gamification/EloLadder";
 import { Card } from "@/components/ui/card";
@@ -223,7 +224,13 @@ function ConsultorView() {
       </div>
 
       <div>
+        <h2 className="mb-3 font-display text-lg font-semibold">Ranking por vendas e reuniões</h2>
+        <DualRanking highlightMemberId={myId} />
+      </div>
+
+      <div>
         <h2 className="mb-3 font-display text-lg font-semibold">Ranking &amp; Placar público</h2>
+
         <PublicLeaderboard rows={ranking} config={config} highlightMemberId={myId} />
         {myId && !ranking.some((r) => r.member_id === myId) && (
           <p className="mt-2 text-xs text-muted-foreground">Seu desempenho aparece no ranking assim que você tiver pontos no período.</p>
@@ -269,6 +276,11 @@ function SupervisorView() {
       <EloLadder variant="full" period={period} />
 
       <PrizesBanner />
+
+      <div>
+        <h2 className="mb-3 font-display text-lg font-semibold">Ranking por vendas e reuniões</h2>
+        <DualRanking />
+      </div>
 
       <PublicLeaderboard rows={ranking} config={config} />
 
@@ -416,6 +428,7 @@ function ExecutivoView() {
             <p className="text-xs text-muted-foreground">Classificação consolidada da equipe no período</p>
           </div>
         </div>
+        <DualRanking className="mb-4" />
         <PublicLeaderboard rows={ranking} config={config} />
       </section>
     </div>

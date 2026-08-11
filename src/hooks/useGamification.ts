@@ -113,7 +113,21 @@ export function tierForLevel(current: GamificationLevel, config?: GamificationCo
   return Math.max(1, idx + 1);
 }
 
+/**
+ * Ordenação oficial do ranking: o que vale é VENDAS e, em empate,
+ * REUNIÕES AGENDADAS. Pontos servem apenas como desempate final.
+ */
+export function sortByPerformance<T extends { sales?: number; meetings?: number; points?: number; display_name?: string }>(rows: T[]): T[] {
+  return [...rows].sort((a, b) =>
+    Number(b.sales ?? 0) - Number(a.sales ?? 0) ||
+    Number(b.meetings ?? 0) - Number(a.meetings ?? 0) ||
+    Number(b.points ?? 0) - Number(a.points ?? 0) ||
+    String(a.display_name ?? "").localeCompare(String(b.display_name ?? "")),
+  );
+}
+
 export function useRanking(period: Period = "monthly") {
+
   return useQuery<RankingRow[]>({
     queryKey: ["gamification_ranking", period],
     queryFn: async () => {
