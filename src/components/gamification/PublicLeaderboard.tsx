@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { cn } from "@/lib/utils";
 import { RankEmblem } from "./RankEmblem";
-import { levelFor, tierForLevel, type RankingRow, type GamificationConfig } from "@/hooks/useGamification";
+import { levelFor, tierForLevel, sortByPerformance, type RankingRow, type GamificationConfig } from "@/hooks/useGamification";
 
 type Props = {
   rows: RankingRow[];
