@@ -1045,26 +1045,40 @@ export default function LeadsPage() {
               <div className="grid gap-1.5">
                 {ANNOTATION_OPTIONS.map((o) => {
                   const active = annotations.includes(o.value);
+                  const isMeeting = o.value === "reuniao_agendada";
                   return (
-                    <button
-                      key={o.value}
-                      type="button"
-                      onClick={() => toggleAnnotation(o.value)}
-                      className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors ${
-                        active
-                          ? "border-primary bg-primary/10 text-foreground"
-                          : "border-border bg-card hover:bg-muted/40"
-                      }`}
-                    >
-                      <span
-                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                          active ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"
+                    <React.Fragment key={o.value}>
+                      <button
+                        type="button"
+                        onClick={() => toggleAnnotation(o.value)}
+                        className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors ${
+                          active
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "border-border bg-card hover:bg-muted/40"
                         }`}
                       >
-                        {active && <Check className="h-3 w-3" />}
-                      </span>
-                      <span className="flex-1">{o.label}</span>
-                    </button>
+                        <span
+                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                            active ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"
+                          }`}
+                        >
+                          {active && <Check className="h-3 w-3" />}
+                        </span>
+                        <span className="flex-1">{o.label}</span>
+                      </button>
+                      {isMeeting && annotations.includes("reuniao_agendada") && (
+                        <div className="grid gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 sm:grid-cols-2">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">Data da reunião</Label>
+                            <Input type="date" value={meetingDate} onChange={(e) => setMeetingDate(e.target.value)} />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">Horário</Label>
+                            <Input type="time" value={meetingTime} onChange={(e) => setMeetingTime(e.target.value)} />
+                          </div>
+                        </div>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </div>
@@ -1072,19 +1086,6 @@ export default function LeadsPage() {
                 Marque quantas opções precisar. O sistema atualiza o pipeline automaticamente.
               </p>
             </div>
-
-            {annotations.includes("reuniao_agendada") && (
-              <div className="grid gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Data da reunião</Label>
-                  <Input type="date" value={meetingDate} onChange={(e) => setMeetingDate(e.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Horário</Label>
-                  <Input type="time" value={meetingTime} onChange={(e) => setMeetingTime(e.target.value)} />
-                </div>
-              </div>
-            )}
 
             {annotations.includes("fechou") && (
               <div className="grid gap-3 rounded-lg border border-success/30 bg-success/5 p-3 sm:grid-cols-2">
