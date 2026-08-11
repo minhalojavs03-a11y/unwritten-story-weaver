@@ -431,7 +431,7 @@ export function useReportData(
     return {
       total, contacted, won: won.length, lost: lost.length, inMeeting: inMeeting.length,
       revenue, avgTicket, convRate,
-      funnel, maxStage, campaigns, monthly, lostReasons, memberStats,
+      funnel, maxStage, meetingsScheduled, campaigns, monthly, lostReasons, memberStats,
       weekly: weeklySorted, responseHeatmap, pipelineIntel, healthScore, healthDims, insights,
       sales,
     };
