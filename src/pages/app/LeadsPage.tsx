@@ -1200,55 +1200,6 @@ export default function LeadsPage() {
             )}
 
 
-
-            {annotations.includes("nao_compareceu") && (
-              <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Por que não compareceu?</Label>
-                  <Textarea
-                    value={noShowReason}
-                    onChange={(e) => setNoShowReason(e.target.value)}
-                    placeholder="Ex.: cliente teve imprevisto, não atendeu…"
-                    rows={3}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Reagendou?</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { v: "sim", l: "Reagendou" },
-                      { v: "nao", l: "Não reagendou" },
-                    ].map((o) => (
-                      <button
-                        key={o.v}
-                        type="button"
-                        onClick={() => setRescheduled(o.v as "sim" | "nao")}
-                        className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
-                          rescheduled === o.v
-                            ? "border-primary bg-primary/10 text-foreground"
-                            : "border-border bg-card hover:bg-muted/40"
-                        }`}
-                      >
-                        {o.l}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {rescheduled === "sim" && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Nova data da reunião</Label>
-                      <Input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Novo horário</Label>
-                      <Input type="time" value={rescheduleTime} onChange={(e) => setRescheduleTime(e.target.value)} />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
             {annotations.includes("nao_fechou") && (
               <div className="space-y-1.5">
                 <Label className="text-xs">Por que não fechou?</Label>
