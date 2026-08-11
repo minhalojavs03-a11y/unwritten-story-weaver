@@ -180,7 +180,7 @@ export default function AgendaPage() {
             <ul className="divide-y">
               {items.map((m) => (
                 <li key={m.leadId + m.at.toISOString()}>
-                  <Link to={`/app/leads?lead=${m.leadId}`} className="flex flex-wrap items-center gap-3 px-3 py-3 transition-colors hover:bg-muted/40">
+                  <Link to={`/leads?lead=${m.leadId}`} className="flex flex-wrap items-center gap-3 px-3 py-3 transition-colors hover:bg-muted/40">
                     <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-bold tabular-nums text-primary">
                       {m.at.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                     </span>

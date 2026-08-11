@@ -28,7 +28,7 @@ function money(v: number | null) {
 function MeetingRow({ m }: { m: MeetingItem }) {
   return (
     <Link
-      to={`/app/leads?lead=${m.leadId}`}
+      to={`/leads?lead=${m.leadId}`}
       className="flex items-start gap-3 rounded-lg border border-border/70 bg-card px-3 py-2.5 transition-colors hover:bg-muted/40"
     >
       <span className="mt-0.5 rounded-md bg-primary/10 px-2 py-1 text-xs font-bold tabular-nums text-primary">
@@ -68,7 +68,7 @@ export function CloserAgenda({ scope }: { scope?: { tenantId?: string | null; me
           <CalendarClock className="h-4 w-4 text-primary" />
           Agenda do dia · por closer
         </h2>
-        <Link to="/app/agenda" className="text-xs font-semibold text-primary hover:underline">
+        <Link to="/agenda" className="text-xs font-semibold text-primary hover:underline">
           Ver agenda completa
         </Link>
       </header>
