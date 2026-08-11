@@ -176,6 +176,24 @@ export function useReportData(
     }));
     const maxStage = Math.max(1, ...funnel.map((f) => f.count));
 
+    // Reuniões agendadas pelo consultor nas anotações (stage "agendado" + marcação
+    // de reunião). Usa a data da reunião/atualização — não a de criação do lead —
+    // senão um lead antigo marcado hoje ficaria fora do recorte do mês.
+    const meetingMark = (l: any) =>
+      l?.lead_phase === "apresentacao" || !!(l?.metadata as any)?.meeting_scheduled_at;
+    const meetingTs = (l: any) =>
+      (l?.metadata as any)?.meeting_scheduled_at ?? l?.updated_at ?? l?.created_at ?? null;
+    const inRange = (iso: string | null) => {
+      if (!iso) return !start;
+      const t = new Date(iso).getTime();
+      if (start && t < start.getTime()) return false;
+      if (end && t >= end.getTime()) return false;
+      return true;
+    };
+    const meetingsScheduled = scopedAllLeads.filter(
+      (l: any) => l.stage === "agendado" && meetingMark(l) && inRange(meetingTs(l)),
+    ).length;
+
     const sourceMap = new Map<string, { leads: number; won: number; revenue: number }>();
     leads.forEach((l) => {
       const src = l.source || "Direto";
@@ -413,7 +431,7 @@ export function useReportData(
     return {
       total, contacted, won: won.length, lost: lost.length, inMeeting: inMeeting.length,
       revenue, avgTicket, convRate,
-      funnel, maxStage, campaigns, monthly, lostReasons, memberStats,
+      funnel, maxStage, meetingsScheduled, campaigns, monthly, lostReasons, memberStats,
       weekly: weeklySorted, responseHeatmap, pipelineIntel, healthScore, healthDims, insights,
       sales,
     };

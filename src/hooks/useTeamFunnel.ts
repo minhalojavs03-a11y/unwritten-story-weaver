@@ -7,6 +7,7 @@ import type { SaleEntry } from "@/components/dashboard/ConsorcioFunnel";
 export type TeamFunnelData = {
   funnel: { key: Stage; stage: string; count: number }[];
   lost: number;
+  meetingsScheduled: number;
   lostReasons: { reason: string; count: number; pct: number }[];
   sales: SaleEntry[];
 };
@@ -14,6 +15,7 @@ export type TeamFunnelData = {
 const EMPTY: TeamFunnelData = {
   funnel: stageOrder.filter((s) => s !== "perdido").map((s) => ({ key: s, stage: stageLabels[s], count: 0 })),
   lost: 0,
+  meetingsScheduled: 0,
   lostReasons: [],
   sales: [],
 };
@@ -53,6 +55,7 @@ export function useTeamFunnel(
       const raw = (data ?? {}) as {
         funnel?: { stage: string; count: number }[];
         lost?: number;
+        meetingsScheduled?: number;
         lostReasons?: { reason: string; count: number; pct: number }[];
         sales?: SaleEntry[];
       };
@@ -68,6 +71,7 @@ export function useTeamFunnel(
       return {
         funnel,
         lost: Number(raw.lost ?? 0),
+        meetingsScheduled: Number(raw.meetingsScheduled ?? 0),
         lostReasons: (raw.lostReasons ?? []).map((r) => ({
           reason: r.reason,
           count: Number(r.count) || 0,
