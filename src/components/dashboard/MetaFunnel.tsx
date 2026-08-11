@@ -18,10 +18,13 @@ interface Props {
   goals?: { simulacoes: number; reunioes: number; fechados: number };
   /** Recorte usado nos links de detalhamento. */
   scope?: "month" | "all";
+  /** Nome do consultor selecionado — repassado aos links de detalhamento. */
+  consultant?: string | null;
   /** Seletor de consultor em destaque (desktop no topo, mobile entre funil e números). */
   filterSlot?: ReactNode;
   className?: string;
 }
+
 
 
 const DEFAULT_GOALS = { simulacoes: 70, reunioes: 30, fechados: 4 };
