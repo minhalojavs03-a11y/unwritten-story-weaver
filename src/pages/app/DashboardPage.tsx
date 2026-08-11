@@ -27,7 +27,6 @@ import { RankCard } from "@/components/gamification/RankCard";
 import { PrizesBanner } from "@/components/gamification/PrizesBanner";
 import { EloLadder } from "@/components/gamification/EloLadder";
 import { DualRanking } from "@/components/gamification/DualRanking";
-import { MvpOfMonth } from "@/components/gamification/MvpOfMonth";
 import { useRanking, useGamificationConfig } from "@/hooks/useGamification";
 import { WhatsAppHealthAlert } from "@/components/dashboard/WhatsAppHealthAlert";
 import { ResponseRatePanel } from "@/components/dashboard/ResponseRatePanel";
@@ -355,7 +354,6 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <MvpOfMonth rows={ranking} highlightMemberId={member?.id ?? null} />
 
         {!privileged && member?.id && <MyCoachingPanel memberId={member.id} days={30} />}
 
