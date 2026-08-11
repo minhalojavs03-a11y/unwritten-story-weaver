@@ -374,6 +374,20 @@ export default function LeadsPage() {
       toast({ title: "Seleção inválida", description: "Marque apenas se o lead compareceu OU não compareceu.", variant: "destructive" });
       return;
     }
+    if (annotations.includes("nao_compareceu")) {
+      if (!noShowReason.trim()) {
+        toast({ title: "Informe o motivo", description: "Explique por que o lead não compareceu.", variant: "destructive" });
+        return;
+      }
+      if (!rescheduled) {
+        toast({ title: "Informe se reagendou", description: "Selecione Reagendou ou Não reagendou.", variant: "destructive" });
+        return;
+      }
+      if (rescheduled === "sim" && !rescheduleDate) {
+        toast({ title: "Informe a nova data", description: "Selecione a data da reunião reagendada.", variant: "destructive" });
+        return;
+      }
+    }
     const saleAmount = Number(saleValue.replace(/\./g, "").replace(",", "."));
     if (annotations.includes("fechou") && (!saleValue.trim() || !Number.isFinite(saleAmount) || saleAmount <= 0 || !saleDate)) {
       toast({ title: "Informe valor e data da venda", description: "Preencha o valor e a data para registrar o fechamento.", variant: "destructive" });
