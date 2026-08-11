@@ -984,6 +984,42 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_stage_events: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          lead_id: string | null
+          lead_name: string | null
+          member_id: string | null
+          member_name: string | null
+          stage: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          lead_id?: string | null
+          lead_name?: string | null
+          member_id?: string | null
+          member_name?: string | null
+          stage?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          lead_id?: string | null
+          lead_name?: string | null
+          member_id?: string | null
+          member_name?: string | null
+          stage?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       lead_takeover_requests: {
         Row: {
           created_at: string
