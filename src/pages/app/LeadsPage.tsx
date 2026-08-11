@@ -324,7 +324,9 @@ export default function LeadsPage() {
   const ANNOTATION_OPTIONS = [
     { value: "simulacao", label: "Simulação enviada" },
     { value: "ligacao", label: "Ligação feita" },
-    { value: "reuniao", label: "Reunião" },
+    { value: "reuniao_agendada", label: "Reunião agendada" },
+    { value: "compareceu", label: "Compareceu na reunião" },
+    { value: "nao_compareceu", label: "Não compareceu" },
     { value: "fechou", label: "Fechou" },
     { value: "nao_fechou", label: "Não fechou" },
   ] as const;
@@ -362,6 +364,10 @@ export default function LeadsPage() {
       toast({ title: "Informe o motivo", description: "Explique brevemente por que não fechou.", variant: "destructive" });
       return;
     }
+    if (annotations.includes("compareceu") && annotations.includes("nao_compareceu")) {
+      toast({ title: "Seleção inválida", description: "Marque apenas se o lead compareceu OU não compareceu.", variant: "destructive" });
+      return;
+    }
     const saleAmount = Number(saleValue.replace(/\./g, "").replace(",", "."));
     if (annotations.includes("fechou") && (!saleValue.trim() || !Number.isFinite(saleAmount) || saleAmount <= 0 || !saleDate)) {
       toast({ title: "Informe valor e data da venda", description: "Preencha o valor e a data para registrar o fechamento.", variant: "destructive" });
@@ -386,17 +392,42 @@ export default function LeadsPage() {
       if (has("ligacao")) {
         lines.push(`[${nowStamp}] Ligação feita`);
       }
-      if (has("reuniao")) {
+      if (has("reuniao_agendada")) {
+        patch.stage = "agendado";
+        patch.lead_phase = "apresentacao";
+        patch.metadata = {
+          ...(patch.metadata ?? (detailFor.metadata as any) ?? {}),
+          meeting_scheduled_at: new Date().toISOString(),
+          meeting_attended: null,
+        };
+        lines.push(`[${nowStamp}] Reunião agendada`);
+      }
+      if (has("nao_compareceu")) {
+        patch.stage = "agendado";
+        patch.lead_phase = "apresentacao";
+        patch.metadata = {
+          ...(patch.metadata ?? (detailFor.metadata as any) ?? {}),
+          meeting_attended: false,
+          meeting_no_show_at: new Date().toISOString(),
+        };
+        lines.push(`[${nowStamp}] Não compareceu na reunião`);
+      }
+      if (has("compareceu") || has("reuniao")) {
         patch.stage = "compareceu";
         patch.lead_phase = "negociacao";
-        lines.push(`[${nowStamp}] Reunião realizada`);
+        patch.metadata = {
+          ...(patch.metadata ?? (detailFor.metadata as any) ?? {}),
+          meeting_attended: true,
+          meeting_attended_at: new Date().toISOString(),
+        };
+        lines.push(`[${nowStamp}] Compareceu na reunião`);
       }
       if (has("fechou")) {
         patch.stage = "comprou";
         patch.status = "won";
         patch.lead_phase = "pos_venda";
         patch.credit_value = saleAmount;
-        patch.metadata = { ...(detailFor.metadata as any ?? {}), sale_value: saleAmount, sale_date: saleDate };
+        patch.metadata = { ...(patch.metadata ?? (detailFor.metadata as any) ?? {}), sale_value: saleAmount, sale_date: saleDate };
         const dateLabel = new Date(`${saleDate}T12:00:00`).toLocaleDateString("pt-BR");
         const valueLabel = saleAmount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
         lines.push(`[${nowStamp}] Fechou negócio · ${valueLabel} · Data da venda: ${dateLabel}`);
