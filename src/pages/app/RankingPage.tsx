@@ -277,6 +277,11 @@ function SupervisorView() {
 
       <PrizesBanner />
 
+      <div>
+        <h2 className="mb-3 font-display text-lg font-semibold">Ranking por vendas e reuniões</h2>
+        <DualRanking />
+      </div>
+
       <PublicLeaderboard rows={ranking} config={config} />
 
       {lowPerformer && (
