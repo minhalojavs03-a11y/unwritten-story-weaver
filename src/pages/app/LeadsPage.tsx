@@ -388,10 +388,35 @@ export default function LeadsPage() {
       if (has("ligacao")) {
         lines.push(`[${nowStamp}] Ligação feita`);
       }
-      if (has("reuniao")) {
+      if (has("reuniao_agendada")) {
+        patch.stage = "agendado";
+        patch.lead_phase = "apresentacao";
+        patch.metadata = {
+          ...(patch.metadata ?? (detailFor.metadata as any) ?? {}),
+          meeting_scheduled_at: new Date().toISOString(),
+          meeting_attended: null,
+        };
+        lines.push(`[${nowStamp}] Reunião agendada`);
+      }
+      if (has("nao_compareceu")) {
+        patch.stage = "agendado";
+        patch.lead_phase = "apresentacao";
+        patch.metadata = {
+          ...(patch.metadata ?? (detailFor.metadata as any) ?? {}),
+          meeting_attended: false,
+          meeting_no_show_at: new Date().toISOString(),
+        };
+        lines.push(`[${nowStamp}] Não compareceu na reunião`);
+      }
+      if (has("compareceu") || has("reuniao")) {
         patch.stage = "compareceu";
         patch.lead_phase = "negociacao";
-        lines.push(`[${nowStamp}] Reunião realizada`);
+        patch.metadata = {
+          ...(patch.metadata ?? (detailFor.metadata as any) ?? {}),
+          meeting_attended: true,
+          meeting_attended_at: new Date().toISOString(),
+        };
+        lines.push(`[${nowStamp}] Compareceu na reunião`);
       }
       if (has("fechou")) {
         patch.stage = "comprou";
