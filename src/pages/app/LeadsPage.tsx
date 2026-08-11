@@ -338,6 +338,7 @@ export default function LeadsPage() {
   const [rescheduled, setRescheduled] = useState<"sim" | "nao" | "">("");
   const [rescheduleDate, setRescheduleDate] = useState<string>("");
   const [rescheduleTime, setRescheduleTime] = useState<string>("");
+  const [rescheduleCloser, setRescheduleCloser] = useState<string>("");
   const [meetingDate, setMeetingDate] = useState<string>("");
   const [meetingTime, setMeetingTime] = useState<string>("");
   const [meetingCloser, setMeetingCloser] = useState<string>("");
