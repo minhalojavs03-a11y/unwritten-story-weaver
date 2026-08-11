@@ -502,6 +502,7 @@ export default function LeadsPage() {
       if (has("nao_compareceu")) {
         patch.stage = "agendado";
         patch.lead_phase = "apresentacao";
+        const rescheduleCloserObj = CLOSERS.find((c) => c.id === rescheduleCloser) ?? null;
         patch.metadata = {
           ...(patch.metadata ?? (detailFor.metadata as any) ?? {}),
           meeting_attended: false,
@@ -510,11 +511,13 @@ export default function LeadsPage() {
           meeting_rescheduled: rescheduled === "sim",
           meeting_rescheduled_to: rescheduled === "sim" ? rescheduleDate : null,
           meeting_rescheduled_time: rescheduled === "sim" ? rescheduleTime || null : null,
+          meeting_rescheduled_closer_id: rescheduleCloserObj?.id ?? null,
+          meeting_rescheduled_closer_name: rescheduleCloserObj?.name ?? null,
         };
         lines.push(`[${nowStamp}] Não compareceu na reunião: ${noShowReason.trim()}`);
         lines.push(
           rescheduled === "sim"
-            ? `[${nowStamp}] Reagendou para ${new Date(`${rescheduleDate}T12:00:00`).toLocaleDateString("pt-BR")}${rescheduleTime ? ` às ${rescheduleTime}` : ""}`
+            ? `[${nowStamp}] Reagendou para ${new Date(`${rescheduleDate}T12:00:00`).toLocaleDateString("pt-BR")}${rescheduleTime ? ` às ${rescheduleTime}` : ""}${rescheduleCloserObj ? ` · Closer: ${rescheduleCloserObj.name}` : ""}`
             : `[${nowStamp}] Não reagendou`,
         );
       }
