@@ -137,7 +137,7 @@ export function LeadStageFeed({ tenantId, memberId, privileged }: Props) {
       ) : pageItems.length === 0 ? (
         <p className="py-6 text-center text-xs text-muted-foreground">Nenhuma atualização registrada ainda.</p>
       ) : (
-        <ul className="space-y-2.5">
+        <ul className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
           {pageItems.map((ev) => {
             const tone = toneFor(ev.label, ev.stage);
             return (
@@ -169,7 +169,6 @@ export function LeadStageFeed({ tenantId, memberId, privileged }: Props) {
               </li>
             );
           })}
-
         </ul>
       )}
 
