@@ -82,7 +82,7 @@ export function LeadStageFeed({ tenantId, memberId, privileged }: Props) {
               key={ev.id}
               className="flex items-start gap-3 rounded-xl border border-border/50 bg-background/60 p-3"
             >
-              <InitialsAvatar name={ev.member_name ?? "?"} size="sm" />
+              <InitialsAvatar name={ev.member_name ?? "?"} className="h-8 w-8 text-[11px]" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-semibold">
                   {ev.lead_id ? (
