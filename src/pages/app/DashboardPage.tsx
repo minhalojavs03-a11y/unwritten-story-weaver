@@ -355,7 +355,6 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <MvpOfMonth rows={ranking} highlightMemberId={member?.id ?? null} />
 
         {!privileged && member?.id && <MyCoachingPanel memberId={member.id} days={30} />}
 
