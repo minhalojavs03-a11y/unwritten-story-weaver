@@ -428,6 +428,7 @@ function ExecutivoView() {
             <p className="text-xs text-muted-foreground">Classificação consolidada da equipe no período</p>
           </div>
         </div>
+        <DualRanking className="mb-4" />
         <PublicLeaderboard rows={ranking} config={config} />
       </section>
     </div>
