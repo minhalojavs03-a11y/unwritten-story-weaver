@@ -61,15 +61,18 @@ export function meetingsFromLeads(leads: Tables<"leads">[]): MeetingItem[] {
     if (!raw) continue;
     const at = new Date(raw);
     if (Number.isNaN(at.getTime())) continue;
-    const closer = closerById(meta.meeting_closer_id);
+    const isRescheduled = !!meta.meeting_rescheduled && !!meta.meeting_rescheduled_to;
+    const closerId = isRescheduled ? meta.meeting_rescheduled_closer_id : meta.meeting_closer_id;
+    const closerName = isRescheduled ? meta.meeting_rescheduled_closer_name : meta.meeting_closer_name;
+    const closer = closerById(closerId);
     const { value, source } = leadValueInfo(lead);
     out.push({
       leadId: lead.id,
       leadName: lead.name || lead.phone || "Lead",
       phone: lead.phone,
       at,
-      closerId: closer?.id ?? null,
-      closerName: closer?.name ?? (meta.meeting_closer_name ?? null),
+      closerId: closer?.id ?? closerId ?? null,
+      closerName: closer?.name ?? (closerName ?? null),
       value,
       valueSource: source,
       consultantMemberId: lead.assigned_member_id ?? null,
