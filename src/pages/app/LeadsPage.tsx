@@ -398,6 +398,9 @@ export default function LeadsPage() {
         setMeetingDate("");
         setMeetingTime("");
       }
+      setMeetingCloser(meta.meeting_closer_id ?? "");
+      const autoV = autoLeadValue(detailFor as any);
+      setLeadValue(meta.lead_value ? String(meta.lead_value) : autoV ? String(autoV) : "");
       setSaleValue(detailFor.credit_value ? String(detailFor.credit_value) : meta.sale_value ? String(meta.sale_value) : "");
       setSaleDate(meta.sale_date ? String(meta.sale_date).slice(0, 10) : new Date().toISOString().slice(0, 10));
     }
