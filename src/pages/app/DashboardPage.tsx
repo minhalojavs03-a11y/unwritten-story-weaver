@@ -342,7 +342,7 @@ export default function DashboardPage() {
 
 
 
-        <ResponseRatePanel memberId={effectiveMemberId} compact />
+        
 
 
         <section>
