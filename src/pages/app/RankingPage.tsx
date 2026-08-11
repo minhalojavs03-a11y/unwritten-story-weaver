@@ -3,6 +3,7 @@ const motion = { div: (props: any) => <div {...props} /> } as any;
 import { Trophy, Medal, Flame, Target, TrendingUp, Users, Clock, DollarSign, Calendar, MessageCircle, Award, AlertTriangle } from "lucide-react";
 import { RankCard } from "@/components/gamification/RankCard";
 import { PublicLeaderboard } from "@/components/gamification/PublicLeaderboard";
+import { DualRanking } from "@/components/gamification/DualRanking";
 import { PrizesBanner } from "@/components/gamification/PrizesBanner";
 import { EloLadder } from "@/components/gamification/EloLadder";
 import { Card } from "@/components/ui/card";
