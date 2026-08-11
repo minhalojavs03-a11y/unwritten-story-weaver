@@ -223,7 +223,13 @@ function ConsultorView() {
       </div>
 
       <div>
+        <h2 className="mb-3 font-display text-lg font-semibold">Ranking por vendas e reuniões</h2>
+        <DualRanking highlightMemberId={myId} />
+      </div>
+
+      <div>
         <h2 className="mb-3 font-display text-lg font-semibold">Ranking &amp; Placar público</h2>
+
         <PublicLeaderboard rows={ranking} config={config} highlightMemberId={myId} />
         {myId && !ranking.some((r) => r.member_id === myId) && (
           <p className="mt-2 text-xs text-muted-foreground">Seu desempenho aparece no ranking assim que você tiver pontos no período.</p>
