@@ -29,7 +29,7 @@ import { EloLadder } from "@/components/gamification/EloLadder";
 import { DualRanking } from "@/components/gamification/DualRanking";
 import { useRanking, useGamificationConfig } from "@/hooks/useGamification";
 import { WhatsAppHealthAlert } from "@/components/dashboard/WhatsAppHealthAlert";
-import { ResponseRatePanel } from "@/components/dashboard/ResponseRatePanel";
+
 import { FERACON_TENANT_ID } from "@/lib/feracon";
 
 export default function DashboardPage() {
@@ -342,7 +342,7 @@ export default function DashboardPage() {
 
 
 
-        <ResponseRatePanel memberId={effectiveMemberId} compact />
+        
 
 
         <section>
