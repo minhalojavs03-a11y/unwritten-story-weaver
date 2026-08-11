@@ -429,8 +429,16 @@ export default function LeadsPage() {
           ...(patch.metadata ?? (detailFor.metadata as any) ?? {}),
           meeting_attended: false,
           meeting_no_show_at: new Date().toISOString(),
+          meeting_no_show_reason: noShowReason.trim(),
+          meeting_rescheduled: rescheduled === "sim",
+          meeting_rescheduled_to: rescheduled === "sim" ? rescheduleDate : null,
         };
-        lines.push(`[${nowStamp}] Não compareceu na reunião`);
+        lines.push(`[${nowStamp}] Não compareceu na reunião: ${noShowReason.trim()}`);
+        lines.push(
+          rescheduled === "sim"
+            ? `[${nowStamp}] Reagendou para ${new Date(`${rescheduleDate}T12:00:00`).toLocaleDateString("pt-BR")}`
+            : `[${nowStamp}] Não reagendou`,
+        );
       }
       if (has("compareceu") || has("reuniao")) {
         patch.stage = "compareceu";
