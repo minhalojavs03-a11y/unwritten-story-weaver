@@ -152,6 +152,14 @@ export default function DashboardPage() {
   const allFunnelData = teamAllRpc.data ?? emptyFunnelData;
   const monthFunnelData = teamMonthRpc.data ?? emptyFunnelData;
 
+  // Funil de Meta: gestores podem ver o mês de um consultor específico.
+  const [metaMemberId, setMetaMemberId] = useState<string | null>(null);
+  const { data: metaMembers = [] } = useTenantMembers(
+    effectiveTenantOverride === undefined ? FERACON_TENANT_ID : effectiveTenantOverride,
+  );
+  const metaMemberName = metaMembers.find((mm) => mm.id === metaMemberId)?.display_name ?? "Consultor";
+  const metaMemberData = useReportData("month", "all", metaMemberId, effectiveTenantOverride);
+
   // Speed-to-assume: tempo entre criação do lead e atribuição (em minutos)
   const assignedLeads = leads.filter((l) => l.assigned_member_id && l.assigned_member_at && l.created_at);
   const minutesToAssume = (l: typeof leads[number]) =>
