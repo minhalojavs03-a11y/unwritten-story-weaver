@@ -155,7 +155,7 @@ export function LeadStageFeed({ tenantId, memberId, privileged }: Props) {
                   </span>
                   <p className="mt-1.5 break-words text-sm font-semibold sm:truncate">
                     {ev.lead_id ? (
-                      <Link to={`/leads?lead=${ev.lead_id}`} className="hover:underline">
+                      <Link to={`/conversas?lead=${ev.lead_id}`} className="hover:underline">
                         {ev.lead_name ?? "Lead"}
                       </Link>
                     ) : (
