@@ -444,6 +444,10 @@ export default function LeadsPage() {
         toast({ title: "Informe a nova data", description: "Selecione a data da reunião reagendada.", variant: "destructive" });
         return;
       }
+      if (rescheduled === "sim" && !rescheduleCloser) {
+        toast({ title: "Selecione o closer", description: "Informe quem vai conduzir a reunião reagendada.", variant: "destructive" });
+        return;
+      }
     }
     const saleAmount = Number(saleValue.replace(/\./g, "").replace(",", "."));
     if (annotations.includes("fechou") && (!saleValue.trim() || !Number.isFinite(saleAmount) || saleAmount <= 0 || !saleDate)) {
