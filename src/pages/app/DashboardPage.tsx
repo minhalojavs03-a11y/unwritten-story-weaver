@@ -287,31 +287,6 @@ export default function DashboardPage() {
         <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
 
         {/* NOVO: funil com metas ideais e defasagem (modelo Embracon) — em validação */}
-        {privileged && (
-          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-card/60 px-3 py-2.5 shadow-sm">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Funil de meta · consultor
-            </span>
-            <Select
-              value={metaMemberId ?? "__all__"}
-              onValueChange={(v) => setMetaMemberId(v === "__all__" ? null : v)}
-            >
-              <SelectTrigger className="h-8 min-w-[200px] text-xs">
-                <SelectValue placeholder="Time inteiro" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">Time inteiro</SelectItem>
-                {metaMembers.map((mm) => (
-                  <SelectItem key={mm.id} value={mm.id}>
-                    {mm.display_name}
-                    {mm.role_label ? ` · ${mm.role_label}` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
         <MetaFunnel
           title={
             privileged
@@ -324,7 +299,34 @@ export default function DashboardPage() {
           funnel={privileged ? (metaMemberId ? metaMemberData.funnel : monthFunnelData.funnel) : funnelData.funnel}
           lost={privileged ? (metaMemberId ? metaMemberData.lost : monthFunnelData.lost) : funnelData.lost}
           scope="month"
+          filterSlot={
+            privileged ? (
+              <div className="flex w-full flex-wrap items-center gap-2 rounded-xl border-2 border-primary/40 bg-primary/5 px-3 py-2 shadow-sm ring-1 ring-primary/10">
+                <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">
+                  Consultor
+                </span>
+                <Select
+                  value={metaMemberId ?? "__all__"}
+                  onValueChange={(v) => setMetaMemberId(v === "__all__" ? null : v)}
+                >
+                  <SelectTrigger className="h-9 min-w-[200px] flex-1 border-primary/40 bg-background text-xs font-semibold">
+                    <SelectValue placeholder="Time inteiro" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">Time inteiro</SelectItem>
+                    {metaMembers.map((mm) => (
+                      <SelectItem key={mm.id} value={mm.id}>
+                        {mm.display_name}
+                        {mm.role_label ? ` · ${mm.role_label}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : undefined
+          }
         />
+
 
 
 

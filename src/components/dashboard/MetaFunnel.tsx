@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -17,8 +18,11 @@ interface Props {
   goals?: { simulacoes: number; reunioes: number; fechados: number };
   /** Recorte usado nos links de detalhamento. */
   scope?: "month" | "all";
+  /** Seletor de consultor em destaque (desktop no topo, mobile entre funil e números). */
+  filterSlot?: ReactNode;
   className?: string;
 }
+
 
 const DEFAULT_GOALS = { simulacoes: 70, reunioes: 30, fechados: 4 };
 
@@ -36,6 +40,7 @@ export function MetaFunnel({
   subtitle = "Realizado x Ideal x Defasagem",
   goals = DEFAULT_GOALS,
   scope = "month",
+  filterSlot,
   className,
 }: Props) {
   const at = (k: Stage) => funnel.find((f) => f.key === k)?.count ?? 0;
@@ -73,12 +78,16 @@ export function MetaFunnel({
           <h3 className="font-display text-lg font-semibold">{title}</h3>
           <p className="text-xs text-muted-foreground">{subtitle}</p>
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
-          <span className="rounded-md bg-success/10 px-2 py-1 text-success">Realizado</span>
-          <span className="rounded-md bg-muted px-2 py-1 text-muted-foreground">Ideal (meta)</span>
-          <span className="rounded-md bg-destructive/10 px-2 py-1 text-destructive">Defasagem</span>
+        <div className="flex flex-wrap items-center gap-2">
+          {filterSlot && <div className="hidden lg:block">{filterSlot}</div>}
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
+            <span className="rounded-md bg-success/10 px-2 py-1 text-success">Realizado</span>
+            <span className="rounded-md bg-muted px-2 py-1 text-muted-foreground">Ideal (meta)</span>
+            <span className="rounded-md bg-destructive/10 px-2 py-1 text-destructive">Defasagem</span>
+          </div>
         </div>
       </div>
+
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         {/* Cone do funil */}
@@ -117,6 +126,10 @@ export function MetaFunnel({
             })}
           </svg>
         </div>
+
+        {filterSlot && <div className="lg:hidden">{filterSlot}</div>}
+
+
 
         {/* Colunas de números */}
         <div className="min-w-0 flex-1 space-y-2">
