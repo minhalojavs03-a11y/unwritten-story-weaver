@@ -338,6 +338,7 @@ export default function LeadsPage() {
   const [rescheduled, setRescheduled] = useState<"sim" | "nao" | "">("");
   const [rescheduleDate, setRescheduleDate] = useState<string>("");
   const [rescheduleTime, setRescheduleTime] = useState<string>("");
+  const [rescheduleCloser, setRescheduleCloser] = useState<string>("");
   const [meetingDate, setMeetingDate] = useState<string>("");
   const [meetingTime, setMeetingTime] = useState<string>("");
   const [meetingCloser, setMeetingCloser] = useState<string>("");
@@ -387,6 +388,7 @@ export default function LeadsPage() {
       setRescheduled(meta.meeting_rescheduled ? "sim" : meta.meeting_rescheduled === false ? "nao" : "");
       setRescheduleDate(meta.meeting_rescheduled_to ? String(meta.meeting_rescheduled_to).slice(0, 10) : "");
       setRescheduleTime(meta.meeting_rescheduled_time ? String(meta.meeting_rescheduled_time).slice(0, 5) : "");
+      setRescheduleCloser(meta.meeting_rescheduled_closer_id ?? "");
       if (meta.meeting_scheduled_at) {
         const d = new Date(meta.meeting_scheduled_at);
         if (!Number.isNaN(d.getTime())) {
@@ -440,6 +442,10 @@ export default function LeadsPage() {
       }
       if (rescheduled === "sim" && !rescheduleDate) {
         toast({ title: "Informe a nova data", description: "Selecione a data da reunião reagendada.", variant: "destructive" });
+        return;
+      }
+      if (rescheduled === "sim" && !rescheduleCloser) {
+        toast({ title: "Selecione o closer", description: "Informe quem vai conduzir a reunião reagendada.", variant: "destructive" });
         return;
       }
     }
@@ -496,6 +502,7 @@ export default function LeadsPage() {
       if (has("nao_compareceu")) {
         patch.stage = "agendado";
         patch.lead_phase = "apresentacao";
+        const rescheduleCloserObj = CLOSERS.find((c) => c.id === rescheduleCloser) ?? null;
         patch.metadata = {
           ...(patch.metadata ?? (detailFor.metadata as any) ?? {}),
           meeting_attended: false,
@@ -504,11 +511,13 @@ export default function LeadsPage() {
           meeting_rescheduled: rescheduled === "sim",
           meeting_rescheduled_to: rescheduled === "sim" ? rescheduleDate : null,
           meeting_rescheduled_time: rescheduled === "sim" ? rescheduleTime || null : null,
+          meeting_rescheduled_closer_id: rescheduleCloserObj?.id ?? null,
+          meeting_rescheduled_closer_name: rescheduleCloserObj?.name ?? null,
         };
         lines.push(`[${nowStamp}] Não compareceu na reunião: ${noShowReason.trim()}`);
         lines.push(
           rescheduled === "sim"
-            ? `[${nowStamp}] Reagendou para ${new Date(`${rescheduleDate}T12:00:00`).toLocaleDateString("pt-BR")}${rescheduleTime ? ` às ${rescheduleTime}` : ""}`
+            ? `[${nowStamp}] Reagendou para ${new Date(`${rescheduleDate}T12:00:00`).toLocaleDateString("pt-BR")}${rescheduleTime ? ` às ${rescheduleTime}` : ""}${rescheduleCloserObj ? ` · Closer: ${rescheduleCloserObj.name}` : ""}`
             : `[${nowStamp}] Não reagendou`,
         );
       }
@@ -1153,6 +1162,17 @@ export default function LeadsPage() {
                               <div className="space-y-1.5">
                                 <Label className="text-xs">Novo horário</Label>
                                 <Input type="time" value={rescheduleTime} onChange={(e) => setRescheduleTime(e.target.value)} />
+                              </div>
+                              <div className="space-y-1.5 sm:col-span-2">
+                                <Label className="text-xs">Closer da reunião reagendada</Label>
+                                <Select value={rescheduleCloser} onValueChange={setRescheduleCloser}>
+                                  <SelectTrigger><SelectValue placeholder="Quem vai conduzir?" /></SelectTrigger>
+                                  <SelectContent>
+                                    {CLOSERS.map((c) => (
+                                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                               </div>
                             </div>
                           )}
