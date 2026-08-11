@@ -40,6 +40,7 @@ export function MetaFunnel({
   subtitle = "Realizado x Ideal x Defasagem",
   goals = DEFAULT_GOALS,
   scope = "month",
+  filterSlot,
   className,
 }: Props) {
   const at = (k: Stage) => funnel.find((f) => f.key === k)?.count ?? 0;
