@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Activity, ChevronLeft, ChevronRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,8 +7,10 @@ import { InitialsAvatar } from "@/components/oticaflow/Avatar";
 import { timeAgo } from "@/lib/format";
 import { useLeadStageEvents } from "@/hooks/useLeadStageEvents";
 import { useTenantMembers } from "@/hooks/useData";
+import { useIsMobile } from "@/hooks/use-mobile";
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE_DESKTOP = 10;
+const PAGE_SIZE_MOBILE = 5;
 const ALL = "__all__";
 
 type Tone = {
@@ -73,17 +75,23 @@ export function LeadStageFeed({ tenantId, memberId, privileged }: Props) {
   const [filterMember, setFilterMember] = useState<string>(ALL);
   const [page, setPage] = useState(0);
   const { data: members = [] } = useTenantMembers(tenantId ?? undefined);
+  const isMobile = useIsMobile();
+  const pageSize = isMobile ? PAGE_SIZE_MOBILE : PAGE_SIZE_DESKTOP;
+
+  useEffect(() => {
+    setPage(0);
+  }, [isMobile, filterMember]);
 
   const scopedMemberId = privileged ? (filterMember === ALL ? null : filterMember) : memberId ?? null;
   const blocked = !privileged && !scopedMemberId;
   const { events: allEvents, loading } = useLeadStageEvents({ tenantId, memberId: scopedMemberId, limit: 60 });
   const events = blocked ? [] : allEvents;
 
-  const totalPages = Math.max(1, Math.ceil(events.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(events.length / pageSize));
   const safePage = Math.min(page, totalPages - 1);
   const pageItems = useMemo(
-    () => events.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE),
-    [events, safePage],
+    () => events.slice(safePage * pageSize, safePage * pageSize + pageSize),
+    [events, safePage, pageSize],
   );
 
   return (
@@ -129,7 +137,7 @@ export function LeadStageFeed({ tenantId, memberId, privileged }: Props) {
       ) : pageItems.length === 0 ? (
         <p className="py-6 text-center text-xs text-muted-foreground">Nenhuma atualização registrada ainda.</p>
       ) : (
-        <ul className="space-y-2.5">
+        <ul className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
           {pageItems.map((ev) => {
             const tone = toneFor(ev.label, ev.stage);
             return (
@@ -161,11 +169,10 @@ export function LeadStageFeed({ tenantId, memberId, privileged }: Props) {
               </li>
             );
           })}
-
         </ul>
       )}
 
-      {events.length > PAGE_SIZE && (
+      {events.length > pageSize && (
         <div className="mt-3 flex items-center justify-between">
           <span className="text-[11px] text-muted-foreground">
             Página {safePage + 1} de {totalPages}
