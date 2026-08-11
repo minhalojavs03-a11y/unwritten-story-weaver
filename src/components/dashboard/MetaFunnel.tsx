@@ -127,6 +127,10 @@ export function MetaFunnel({
           </svg>
         </div>
 
+        {filterSlot && <div className="lg:hidden">{filterSlot}</div>}
+
+
+
         {/* Colunas de números */}
         <div className="min-w-0 flex-1 space-y-2">
           {rows.map((r) => {
