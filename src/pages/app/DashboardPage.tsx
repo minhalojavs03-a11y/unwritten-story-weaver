@@ -31,6 +31,8 @@ import { useRanking, useGamificationConfig } from "@/hooks/useGamification";
 import { WhatsAppHealthAlert } from "@/components/dashboard/WhatsAppHealthAlert";
 
 import { FERACON_TENANT_ID } from "@/lib/feracon";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTenantMembers } from "@/hooks/useData";
 
 export default function DashboardPage() {
   const { data: profile } = useMyProfile();
@@ -149,6 +151,14 @@ export default function DashboardPage() {
   const teamFunnelData = teamRpc.data ?? emptyFunnelData;
   const allFunnelData = teamAllRpc.data ?? emptyFunnelData;
   const monthFunnelData = teamMonthRpc.data ?? emptyFunnelData;
+
+  // Funil de Meta: gestores podem ver o mês de um consultor específico.
+  const [metaMemberId, setMetaMemberId] = useState<string | null>(null);
+  const { data: metaMembers = [] } = useTenantMembers(
+    effectiveTenantOverride === undefined ? FERACON_TENANT_ID : effectiveTenantOverride,
+  );
+  const metaMemberName = metaMembers.find((mm) => mm.id === metaMemberId)?.display_name ?? "Consultor";
+  const metaMemberData = useReportData("month", "all", metaMemberId, effectiveTenantOverride);
 
   // Speed-to-assume: tempo entre criação do lead e atribuição (em minutos)
   const assignedLeads = leads.filter((l) => l.assigned_member_id && l.assigned_member_at && l.created_at);
@@ -277,11 +287,42 @@ export default function DashboardPage() {
         <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
 
         {/* NOVO: funil com metas ideais e defasagem (modelo Embracon) — em validação */}
+        {privileged && (
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-card/60 px-3 py-2.5 shadow-sm">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Funil de meta · consultor
+            </span>
+            <Select
+              value={metaMemberId ?? "__all__"}
+              onValueChange={(v) => setMetaMemberId(v === "__all__" ? null : v)}
+            >
+              <SelectTrigger className="h-8 min-w-[200px] text-xs">
+                <SelectValue placeholder="Time inteiro" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Time inteiro</SelectItem>
+                {metaMembers.map((mm) => (
+                  <SelectItem key={mm.id} value={mm.id}>
+                    {mm.display_name}
+                    {mm.role_label ? ` · ${mm.role_label}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <MetaFunnel
-          title={privileged ? "Funil de Vendas · Meta (time · mês)" : "Funil de Vendas · Meta"}
+          title={
+            privileged
+              ? metaMemberId
+                ? `Funil de Vendas · Meta (${metaMemberName} · mês)`
+                : "Funil de Vendas · Meta (time · mês)"
+              : "Funil de Vendas · Meta"
+          }
           subtitle="Realizado x Ideal (meta) x Defasagem"
-          funnel={privileged ? monthFunnelData.funnel : funnelData.funnel}
-          lost={privileged ? monthFunnelData.lost : funnelData.lost}
+          funnel={privileged ? (metaMemberId ? metaMemberData.funnel : monthFunnelData.funnel) : funnelData.funnel}
+          lost={privileged ? (metaMemberId ? metaMemberData.lost : monthFunnelData.lost) : funnelData.lost}
           scope="month"
         />
 
