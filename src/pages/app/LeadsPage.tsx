@@ -340,6 +340,8 @@ export default function LeadsPage() {
   const [rescheduleTime, setRescheduleTime] = useState<string>("");
   const [meetingDate, setMeetingDate] = useState<string>("");
   const [meetingTime, setMeetingTime] = useState<string>("");
+  const [meetingCloser, setMeetingCloser] = useState<string>("");
+  const [leadValue, setLeadValue] = useState<string>("");
   const [saleValue, setSaleValue] = useState<string>("");
   const [saleDate, setSaleDate] = useState<string>("");
   const fileRef = useRef<HTMLInputElement>(null);
