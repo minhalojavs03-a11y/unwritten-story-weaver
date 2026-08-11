@@ -18,10 +18,13 @@ interface Props {
   goals?: { simulacoes: number; reunioes: number; fechados: number };
   /** Recorte usado nos links de detalhamento. */
   scope?: "month" | "all";
+  /** Nome do consultor selecionado — repassado aos links de detalhamento. */
+  consultant?: string | null;
   /** Seletor de consultor em destaque (desktop no topo, mobile entre funil e números). */
   filterSlot?: ReactNode;
   className?: string;
 }
+
 
 
 const DEFAULT_GOALS = { simulacoes: 70, reunioes: 30, fechados: 4 };
@@ -40,6 +43,7 @@ export function MetaFunnel({
   subtitle = "Realizado x Ideal x Defasagem",
   goals = DEFAULT_GOALS,
   scope = "month",
+  consultant,
   filterSlot,
   className,
 }: Props) {
@@ -51,7 +55,9 @@ export function MetaFunnel({
   const simulacoes = at("agendado") + reunioes;
   const leads = at("novo") + at("qualificado") + simulacoes + lost;
 
-  const linkTo = (metric: string) => `/funil/leads?metric=${metric}&scope=${scope}`;
+  const linkTo = (metric: string) =>
+    `/funil/leads?metric=${metric}&scope=${scope}${consultant ? `&consultor=${encodeURIComponent(consultant)}` : ""}`;
+
 
   const rows = [
     { n: "01", metric: "leads", label: "Leads / Clientes", icon: Users, real: leads, idealPct: 100, tone: "hsl(var(--stage-new))" },

@@ -299,6 +299,8 @@ export default function DashboardPage() {
           funnel={privileged ? (metaMemberId ? metaMemberData.funnel : monthFunnelData.funnel) : funnelData.funnel}
           lost={privileged ? (metaMemberId ? metaMemberData.lost : monthFunnelData.lost) : funnelData.lost}
           scope="month"
+          consultant={privileged && metaMemberId ? metaMemberName : null}
+
           filterSlot={
             privileged ? (
               <div className="flex w-full flex-wrap items-center gap-2 rounded-xl border-2 border-primary/40 bg-primary/5 px-3 py-2 shadow-sm ring-1 ring-primary/10">
