@@ -26,7 +26,7 @@ import { DashboardScopeFilter, type DashboardScope } from "@/components/dashboar
 import { RankCard } from "@/components/gamification/RankCard";
 import { PrizesBanner } from "@/components/gamification/PrizesBanner";
 import { EloLadder } from "@/components/gamification/EloLadder";
-import { PublicLeaderboard } from "@/components/gamification/PublicLeaderboard";
+import { DualRanking } from "@/components/gamification/DualRanking";
 import { MvpOfMonth } from "@/components/gamification/MvpOfMonth";
 import { useRanking, useGamificationConfig } from "@/hooks/useGamification";
 import { WhatsAppHealthAlert } from "@/components/dashboard/WhatsAppHealthAlert";
@@ -363,14 +363,19 @@ export default function DashboardPage() {
         {!privileged && <PrizesBanner compact />}
 
 
-        {/* Placar público da equipe — exibe vendas, reuniões, contatos,
-            leads assumidos e tempo médio de atendimento de TODOS. */}
-        <PublicLeaderboard
-          rows={ranking}
-          config={gamConfig}
-          highlightMemberId={member?.id ?? null}
-          timesByMember={timesByMember}
-        />
+        {/* Ranking & Placar público — mesmas regras da página de Ranking:
+            posição definida por cotas vendidas e reuniões marcadas. */}
+        <section>
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <div>
+              <h2 className="font-display text-base font-semibold tracking-tight md:text-lg">Ranking &amp; Placar público</h2>
+              <p className="text-xs text-muted-foreground">Posição por cotas vendidas e reuniões marcadas</p>
+            </div>
+            <Link to="/ranking" className="shrink-0 text-xs font-medium text-primary hover:underline">Ver ranking completo →</Link>
+          </div>
+          <DualRanking highlightMemberId={member?.id ?? null} />
+        </section>
+
 
         {privileged && (
           <section className="space-y-4 md:space-y-5">
