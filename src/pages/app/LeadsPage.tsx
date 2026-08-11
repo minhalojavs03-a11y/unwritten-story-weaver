@@ -29,6 +29,8 @@ import { useEffectiveUser } from "@/hooks/useEffectiveUser";
 import { useLeadSearch } from "@/hooks/useLeadSearch";
 import { cn } from "@/lib/utils";
 import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
+import { CLOSERS } from "@/lib/closers";
+import { autoLeadValue } from "@/hooks/useCloserAgenda";
 
 const QUALIFICATION_OPTIONS = [
   { value: "em_qualificacao", label: "Em qualificação" },
