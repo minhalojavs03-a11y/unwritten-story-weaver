@@ -332,6 +332,9 @@ export default function LeadsPage() {
   ] as const;
   const [annotations, setAnnotations] = useState<string[]>([]);
   const [notFechouReason, setNotFechouReason] = useState<string>("");
+  const [noShowReason, setNoShowReason] = useState<string>("");
+  const [rescheduled, setRescheduled] = useState<"sim" | "nao" | "">("");
+  const [rescheduleDate, setRescheduleDate] = useState<string>("");
   const [saleValue, setSaleValue] = useState<string>("");
   const [saleDate, setSaleDate] = useState<string>("");
   const fileRef = useRef<HTMLInputElement>(null);
