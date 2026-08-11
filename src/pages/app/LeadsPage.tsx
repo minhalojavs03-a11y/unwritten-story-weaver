@@ -1098,6 +1098,17 @@ export default function LeadsPage() {
                             <Label className="text-xs">Horário</Label>
                             <Input type="time" value={meetingTime} onChange={(e) => setMeetingTime(e.target.value)} />
                           </div>
+                          <div className="space-y-1.5 sm:col-span-2">
+                            <Label className="text-xs">Closer da reunião</Label>
+                            <Select value={meetingCloser} onValueChange={setMeetingCloser}>
+                              <SelectTrigger><SelectValue placeholder="Quem vai conduzir?" /></SelectTrigger>
+                              <SelectContent>
+                                {CLOSERS.map((c) => (
+                                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       )}
                     </React.Fragment>
@@ -1108,6 +1119,20 @@ export default function LeadsPage() {
                 Marque quantas opções precisar. O sistema atualiza o pipeline automaticamente.
               </p>
             </div>
+
+            <div className="space-y-1.5 rounded-lg border bg-muted/20 p-3">
+              <Label className="text-xs">Valor do lead (R$)</Label>
+              <Input
+                inputMode="decimal"
+                value={leadValue}
+                onChange={(e) => setLeadValue(e.target.value)}
+                placeholder="Ex.: 120000"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Reconhecido automaticamente quando disponível. Ajuste se precisar — aparece na agenda do closer.
+              </p>
+            </div>
+
 
             {annotations.includes("fechou") && (
               <div className="grid gap-3 rounded-lg border border-success/30 bg-success/5 p-3 sm:grid-cols-2">
