@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -17,8 +18,11 @@ interface Props {
   goals?: { simulacoes: number; reunioes: number; fechados: number };
   /** Recorte usado nos links de detalhamento. */
   scope?: "month" | "all";
+  /** Seletor de consultor em destaque (desktop no topo, mobile entre funil e números). */
+  filterSlot?: ReactNode;
   className?: string;
 }
+
 
 const DEFAULT_GOALS = { simulacoes: 70, reunioes: 30, fechados: 4 };
 
