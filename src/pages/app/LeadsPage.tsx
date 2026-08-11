@@ -425,6 +425,10 @@ export default function LeadsPage() {
       toast({ title: "Informe data e horário", description: "Selecione a data e o horário da reunião agendada.", variant: "destructive" });
       return;
     }
+    if (annotations.includes("reuniao_agendada") && !meetingCloser) {
+      toast({ title: "Selecione o closer", description: "Informe quem vai conduzir a reunião.", variant: "destructive" });
+      return;
+    }
     if (annotations.includes("nao_compareceu")) {
       if (!noShowReason.trim()) {
         toast({ title: "Informe o motivo", description: "Explique por que o lead não compareceu.", variant: "destructive" });
