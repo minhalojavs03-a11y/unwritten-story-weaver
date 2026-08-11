@@ -129,30 +129,39 @@ export function LeadStageFeed({ tenantId, memberId, privileged }: Props) {
       ) : pageItems.length === 0 ? (
         <p className="py-6 text-center text-xs text-muted-foreground">Nenhuma atualização registrada ainda.</p>
       ) : (
-        <ul className="space-y-2">
-          {pageItems.map((ev) => (
-            <li
-              key={ev.id}
-              className="flex items-start gap-3 rounded-xl border border-border/50 bg-background/60 p-3"
-            >
-              <InitialsAvatar name={ev.member_name ?? "?"} className="h-8 w-8 text-[11px]" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-semibold">
-                  {ev.lead_id ? (
-                    <Link to={`/leads?lead=${ev.lead_id}`} className="hover:underline">
-                      {ev.lead_name ?? "Lead"}
-                    </Link>
-                  ) : (
-                    ev.lead_name ?? "Lead"
-                  )}
-                </p>
-                <p className="text-[11px] text-muted-foreground">{ev.label}</p>
-                <p className="mt-0.5 text-[10px] text-muted-foreground/80">
-                  {ev.member_name ?? "Sem consultor"} · {timeAgo(ev.created_at)}
-                </p>
-              </div>
-            </li>
-          ))}
+        <ul className="space-y-2.5">
+          {pageItems.map((ev) => {
+            const tone = toneFor(ev.label, ev.stage);
+            return (
+              <li
+                key={ev.id}
+                className={`relative flex items-start gap-3 overflow-hidden rounded-xl border p-3 pl-4 shadow-sm transition-colors ${tone.card}`}
+              >
+                <span className={`absolute inset-y-0 left-0 w-1.5 ${tone.bar}`} aria-hidden />
+                <InitialsAvatar name={ev.member_name ?? "?"} className="h-9 w-9 text-xs" />
+                <div className="min-w-0 flex-1">
+                  <span
+                    className={`inline-flex max-w-full items-center rounded-lg border px-2.5 py-1 text-sm font-bold leading-tight ${tone.chip}`}
+                  >
+                    <span className="truncate">{ev.label}</span>
+                  </span>
+                  <p className="mt-1.5 truncate text-sm font-semibold">
+                    {ev.lead_id ? (
+                      <Link to={`/leads?lead=${ev.lead_id}`} className="hover:underline">
+                        {ev.lead_name ?? "Lead"}
+                      </Link>
+                    ) : (
+                      ev.lead_name ?? "Lead"
+                    )}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {ev.member_name ?? "Sem consultor"} · {timeAgo(ev.created_at)}
+                  </p>
+                </div>
+              </li>
+            );
+          })}
+
         </ul>
       )}
 
