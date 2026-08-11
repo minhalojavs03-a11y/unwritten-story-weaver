@@ -32,8 +32,8 @@ const METRICS: Record<Metric, { label: string; subtitle: string; stages: string[
   },
   reunioes: {
     label: "Reuniões agendadas",
-    subtitle: "Leads que chegaram à reunião ou fecharam",
-    stages: ["compareceu", "comprou"],
+    subtitle: "Reuniões marcadas pelos consultores, presenças confirmadas e vendas",
+    stages: ["agendado", "compareceu", "comprou"],
   },
   fechados: { label: "Clientes fechados", subtitle: "Leads com cota vendida", stages: ["comprou"] },
   perdidos: { label: "Leads perdidos", subtitle: "Leads desqualificados", stages: ["perdido"] },
@@ -70,7 +70,13 @@ type Row = {
   updated_at: string | null;
   assigned_member_id: string | null;
   assigned_to: string | null;
+  lead_phase: string | null;
+  metadata: any;
 };
+
+// Reunião marcada pelo consultor nas anotações do lead.
+const hasMeetingMark = (r: Row) =>
+  r.lead_phase === "apresentacao" || !!(r.metadata as any)?.meeting_scheduled_at;
 
 const fmtBRL = (n: number | null | undefined) =>
   n && n > 0 ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }) : "—";
@@ -137,7 +143,7 @@ export default function FunilLeadsPage() {
       for (let page = 0; page < 20; page++) {
         let q = supabase
           .from("leads")
-          .select("id, name, phone, email, stage, source, credit_value, created_at, updated_at, assigned_member_id, assigned_to")
+          .select("id, name, phone, email, stage, source, credit_value, created_at, updated_at, assigned_member_id, assigned_to, lead_phase, metadata")
           .eq("tenant_id", FERACON_TENANT_ID)
           .eq("kind", "lead")
           .order("updated_at", { ascending: false })
@@ -152,7 +158,15 @@ export default function FunilLeadsPage() {
         const { data } = await q;
         if (cancelled) return;
         const batch = (data ?? []) as Row[];
-        all.push(...batch);
+        // "agendado" só entra em reuniões se o consultor marcou a reunião;
+        // e sai de "sem reunião" quando marcou.
+        const filtered =
+          metric === "reunioes"
+            ? batch.filter((r) => r.stage !== "agendado" || hasMeetingMark(r))
+            : metric === "sem_reunioes"
+              ? batch.filter((r) => !hasMeetingMark(r))
+              : batch;
+        all.push(...filtered);
         if (batch.length < PAGE) break;
       }
 
