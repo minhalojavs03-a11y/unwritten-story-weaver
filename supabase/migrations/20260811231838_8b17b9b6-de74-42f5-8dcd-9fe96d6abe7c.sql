@@ -1,6 +1,3 @@
--- "Reuniões hoje" passa a considerar também as reuniões marcadas pelos
--- consultores nas anotações do lead (lead_stage_events), além da tabela
--- appointments (agenda/Google Calendar).
 CREATE OR REPLACE FUNCTION public.get_dashboard_metrics_v2(_tenant_id uuid DEFAULT '9ecb99e2-50ee-404f-920b-81cd94cc685e'::uuid, _member_id uuid DEFAULT NULL::uuid)
  RETURNS TABLE(leads_today integer, active_conversations integer, appointments_today integer, hot_opportunities integer, awaiting_response integer)
  LANGUAGE plpgsql
@@ -76,7 +73,6 @@ BEGIN
     JOIN scoped_leads l ON l.id = c.lead_id
     WHERE c.tenant_id = _tenant
   ), meetings_today AS (
-    -- reuniões da agenda formal
     SELECT ('appt:' || a.id::text) AS k
     FROM public.appointments a
     WHERE a.tenant_id = _tenant
@@ -88,7 +84,6 @@ BEGIN
         OR (a.lead_id IS NOT NULL AND EXISTS (SELECT 1 FROM scoped_leads l WHERE l.id = a.lead_id))
       )
     UNION
-    -- reuniões marcadas pelos consultores nas anotações do lead
     SELECT DISTINCT ('lead:' || e.lead_id::text) AS k
     FROM public.lead_stage_events e
     WHERE e.tenant_id = _tenant
