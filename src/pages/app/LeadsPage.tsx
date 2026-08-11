@@ -364,6 +364,10 @@ export default function LeadsPage() {
       toast({ title: "Informe o motivo", description: "Explique brevemente por que não fechou.", variant: "destructive" });
       return;
     }
+    if (annotations.includes("compareceu") && annotations.includes("nao_compareceu")) {
+      toast({ title: "Seleção inválida", description: "Marque apenas se o lead compareceu OU não compareceu.", variant: "destructive" });
+      return;
+    }
     const saleAmount = Number(saleValue.replace(/\./g, "").replace(",", "."));
     if (annotations.includes("fechou") && (!saleValue.trim() || !Number.isFinite(saleAmount) || saleAmount <= 0 || !saleDate)) {
       toast({ title: "Informe valor e data da venda", description: "Preencha o valor e a data para registrar o fechamento.", variant: "destructive" });
