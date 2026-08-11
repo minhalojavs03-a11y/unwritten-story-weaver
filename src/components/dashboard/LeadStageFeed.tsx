@@ -173,7 +173,7 @@ export function LeadStageFeed({ tenantId, memberId, privileged }: Props) {
         </ul>
       )}
 
-      {events.length > PAGE_SIZE && (
+      {events.length > pageSize && (
         <div className="mt-3 flex items-center justify-between">
           <span className="text-[11px] text-muted-foreground">
             Página {safePage + 1} de {totalPages}
