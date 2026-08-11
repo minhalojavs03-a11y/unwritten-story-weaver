@@ -146,6 +146,7 @@ export default function DashboardPage() {
   const emptyFunnelData = {
     funnel: [] as { key: import("@/data/mock").Stage; stage: string; count: number }[],
     lost: 0,
+    meetingsScheduled: 0,
     lostReasons: [] as { reason: string; count: number; pct: number }[],
     sales: [] as import("@/components/dashboard/ConsorcioFunnel").SaleEntry[],
   };
@@ -305,6 +306,13 @@ export default function DashboardPage() {
           subtitle="Realizado x Ideal (meta) x Defasagem"
           funnel={privileged ? (metaMemberId ? metaMemberData.funnel : monthFunnelData.funnel) : funnelData.funnel}
           lost={privileged ? (metaMemberId ? metaMemberData.lost : monthFunnelData.lost) : funnelData.lost}
+          meetingsScheduled={
+            privileged
+              ? metaMemberId
+                ? metaMemberData.meetingsScheduled
+                : monthFunnelData.meetingsScheduled
+              : funnelData.meetingsScheduled
+          }
           scope="month"
           consultant={privileged && metaMemberId ? metaMemberName : null}
 

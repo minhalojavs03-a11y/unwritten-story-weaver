@@ -16,6 +16,7 @@ interface Props {
   subtitle?: string;
   /** Metas ideais em % sobre o total de leads. */
   goals?: { simulacoes: number; reunioes: number; fechados: number };
+  meetingsScheduled?: number;
   /** Recorte usado nos links de detalhamento. */
   scope?: "month" | "all";
   /** Nome do consultor selecionado — repassado aos links de detalhamento. */
@@ -39,6 +40,7 @@ const EDGES = [280, 218, 156, 96, 52]; // largura da boca de cada faixa
 export function MetaFunnel({
   funnel,
   lost = 0,
+  meetingsScheduled = 0,
   title = "Funil de Vendas · Meta",
   subtitle = "Realizado x Ideal x Defasagem",
   goals = DEFAULT_GOALS,
@@ -51,8 +53,10 @@ export function MetaFunnel({
 
   // Etapas cumulativas: quem chegou na reunião também passou pela simulação.
   const fechados = at("comprou");
-  const reunioes = at("compareceu") + fechados;
-  const simulacoes = at("agendado") + reunioes;
+  // Reuniões: presença confirmada + vendas + reuniões marcadas nas anotações
+  // (leads em "agendado" com data de reunião definida pelo consultor).
+  const reunioes = at("compareceu") + fechados + meetingsScheduled;
+  const simulacoes = at("agendado") + at("compareceu") + fechados;
   const leads = at("novo") + at("qualificado") + simulacoes + lost;
 
   const linkTo = (metric: string) =>
