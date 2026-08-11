@@ -335,6 +335,9 @@ export default function LeadsPage() {
   const [noShowReason, setNoShowReason] = useState<string>("");
   const [rescheduled, setRescheduled] = useState<"sim" | "nao" | "">("");
   const [rescheduleDate, setRescheduleDate] = useState<string>("");
+  const [rescheduleTime, setRescheduleTime] = useState<string>("");
+  const [meetingDate, setMeetingDate] = useState<string>("");
+  const [meetingTime, setMeetingTime] = useState<string>("");
   const [saleValue, setSaleValue] = useState<string>("");
   const [saleDate, setSaleDate] = useState<string>("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -379,6 +382,18 @@ export default function LeadsPage() {
       setNoShowReason(meta.meeting_no_show_reason ?? "");
       setRescheduled(meta.meeting_rescheduled ? "sim" : meta.meeting_rescheduled === false ? "nao" : "");
       setRescheduleDate(meta.meeting_rescheduled_to ? String(meta.meeting_rescheduled_to).slice(0, 10) : "");
+      setRescheduleTime(meta.meeting_rescheduled_time ? String(meta.meeting_rescheduled_time).slice(0, 5) : "");
+      if (meta.meeting_scheduled_at) {
+        const d = new Date(meta.meeting_scheduled_at);
+        if (!Number.isNaN(d.getTime())) {
+          const pad = (n: number) => String(n).padStart(2, "0");
+          setMeetingDate(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
+          setMeetingTime(`${pad(d.getHours())}:${pad(d.getMinutes())}`);
+        }
+      } else {
+        setMeetingDate("");
+        setMeetingTime("");
+      }
       setSaleValue(detailFor.credit_value ? String(detailFor.credit_value) : meta.sale_value ? String(meta.sale_value) : "");
       setSaleDate(meta.sale_date ? String(meta.sale_date).slice(0, 10) : new Date().toISOString().slice(0, 10));
     }
@@ -397,6 +412,10 @@ export default function LeadsPage() {
     }
     if (annotations.includes("compareceu") && annotations.includes("nao_compareceu")) {
       toast({ title: "Seleção inválida", description: "Marque apenas se o lead compareceu OU não compareceu.", variant: "destructive" });
+      return;
+    }
+    if (annotations.includes("reuniao_agendada") && (!meetingDate || !meetingTime)) {
+      toast({ title: "Informe data e horário", description: "Selecione a data e o horário da reunião agendada.", variant: "destructive" });
       return;
     }
     if (annotations.includes("nao_compareceu")) {
@@ -440,12 +459,17 @@ export default function LeadsPage() {
       if (has("reuniao_agendada")) {
         patch.stage = "agendado";
         patch.lead_phase = "apresentacao";
+        const meetingAt = new Date(`${meetingDate}T${meetingTime}:00`);
         patch.metadata = {
           ...(patch.metadata ?? (detailFor.metadata as any) ?? {}),
-          meeting_scheduled_at: new Date().toISOString(),
+          meeting_scheduled_at: meetingAt.toISOString(),
+          meeting_date: meetingDate,
+          meeting_time: meetingTime,
           meeting_attended: null,
         };
-        lines.push(`[${nowStamp}] Reunião agendada`);
+        lines.push(
+          `[${nowStamp}] Reunião agendada para ${meetingAt.toLocaleDateString("pt-BR")} às ${meetingTime}`,
+        );
       }
       if (has("nao_compareceu")) {
         patch.stage = "agendado";
@@ -457,11 +481,12 @@ export default function LeadsPage() {
           meeting_no_show_reason: noShowReason.trim(),
           meeting_rescheduled: rescheduled === "sim",
           meeting_rescheduled_to: rescheduled === "sim" ? rescheduleDate : null,
+          meeting_rescheduled_time: rescheduled === "sim" ? rescheduleTime || null : null,
         };
         lines.push(`[${nowStamp}] Não compareceu na reunião: ${noShowReason.trim()}`);
         lines.push(
           rescheduled === "sim"
-            ? `[${nowStamp}] Reagendou para ${new Date(`${rescheduleDate}T12:00:00`).toLocaleDateString("pt-BR")}`
+            ? `[${nowStamp}] Reagendou para ${new Date(`${rescheduleDate}T12:00:00`).toLocaleDateString("pt-BR")}${rescheduleTime ? ` às ${rescheduleTime}` : ""}`
             : `[${nowStamp}] Não reagendou`,
         );
       }
@@ -1048,6 +1073,19 @@ export default function LeadsPage() {
               </p>
             </div>
 
+            {annotations.includes("reuniao_agendada") && (
+              <div className="grid gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Data da reunião</Label>
+                  <Input type="date" value={meetingDate} onChange={(e) => setMeetingDate(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Horário</Label>
+                  <Input type="time" value={meetingTime} onChange={(e) => setMeetingTime(e.target.value)} />
+                </div>
+              </div>
+            )}
+
             {annotations.includes("fechou") && (
               <div className="grid gap-3 rounded-lg border border-success/30 bg-success/5 p-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
@@ -1102,9 +1140,15 @@ export default function LeadsPage() {
                   </div>
                 </div>
                 {rescheduled === "sim" && (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Nova data da reunião</Label>
-                    <Input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Nova data da reunião</Label>
+                      <Input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Novo horário</Label>
+                      <Input type="time" value={rescheduleTime} onChange={(e) => setRescheduleTime(e.target.value)} />
+                    </div>
                   </div>
                 )}
               </div>
