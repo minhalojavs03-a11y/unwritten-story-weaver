@@ -78,12 +78,16 @@ export function MetaFunnel({
           <h3 className="font-display text-lg font-semibold">{title}</h3>
           <p className="text-xs text-muted-foreground">{subtitle}</p>
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
-          <span className="rounded-md bg-success/10 px-2 py-1 text-success">Realizado</span>
-          <span className="rounded-md bg-muted px-2 py-1 text-muted-foreground">Ideal (meta)</span>
-          <span className="rounded-md bg-destructive/10 px-2 py-1 text-destructive">Defasagem</span>
+        <div className="flex flex-wrap items-center gap-2">
+          {filterSlot && <div className="hidden lg:block">{filterSlot}</div>}
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
+            <span className="rounded-md bg-success/10 px-2 py-1 text-success">Realizado</span>
+            <span className="rounded-md bg-muted px-2 py-1 text-muted-foreground">Ideal (meta)</span>
+            <span className="rounded-md bg-destructive/10 px-2 py-1 text-destructive">Defasagem</span>
+          </div>
         </div>
       </div>
+
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         {/* Cone do funil */}
