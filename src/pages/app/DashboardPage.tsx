@@ -13,6 +13,7 @@ import { useActiveMember } from "@/contexts/ActiveMemberContext";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 import { useSupportImpersonation } from "@/hooks/useSupportImpersonation";
 import { LeadsHourlyPanel } from "@/components/dashboard/LeadsHourlyPanel";
+import { LeadStageFeed } from "@/components/dashboard/LeadStageFeed";
 import { useReportData } from "@/hooks/useReportData";
 import { useTeamFunnel } from "@/hooks/useTeamFunnel";
 import { HealthScore, InsightsPanel, PipelineIntel, WeeklyActivity, ResponseHeatmap } from "@/components/dashboard/ExecutiveWidgets";
@@ -285,6 +286,12 @@ export default function DashboardPage() {
         </section>
 
         <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
+
+        <LeadStageFeed
+          tenantId={effectiveTenantOverride === undefined ? FERACON_TENANT_ID : effectiveTenantOverride}
+          memberId={privileged ? null : effectiveMemberId}
+          privileged={privileged}
+        />
 
         {/* NOVO: funil com metas ideais e defasagem (modelo Embracon) — em validação */}
         <MetaFunnel

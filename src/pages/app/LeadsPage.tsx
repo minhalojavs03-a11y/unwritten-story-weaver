@@ -495,6 +495,26 @@ export default function LeadsPage() {
       }
       patch.notes = `${prevNotes}${lines.join("\n")}`;
       await update.mutateAsync({ id: detailFor.id, patch });
+
+      // Registra as atualizações de etapa para o feed em tempo real do painel.
+      try {
+        const evMemberId = (detailFor as any).assigned_member_id ?? member?.id ?? null;
+        const evMemberName =
+          tenantMembers.find((tm) => tm.id === evMemberId)?.display_name ?? member?.display_name ?? null;
+        const rows = lines.map((line) => ({
+          tenant_id: (detailFor as any).tenant_id,
+          lead_id: detailFor.id,
+          lead_name: detailFor.name ?? detailFor.phone ?? "Lead",
+          member_id: evMemberId,
+          member_name: evMemberName,
+          label: line.replace(/^\[[^\]]*\]\s*/, ""),
+          stage: patch.stage ?? detailFor.stage ?? null,
+        }));
+        if (rows.length > 0) await supabase.from("lead_stage_events").insert(rows);
+      } catch (err) {
+        console.warn("lead_stage_events", err);
+      }
+
       toast({ title: "Status atualizado" });
       setDetailFor(null);
     } catch (e: any) {
