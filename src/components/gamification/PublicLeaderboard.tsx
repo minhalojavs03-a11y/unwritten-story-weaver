@@ -37,7 +37,9 @@ const timeTone = (m: number) => {
  * contatos, leads assumidos e tempo de atendimento). Pensado para
  * incentivar competição: cada um vê quem está performando de verdade.
  */
-export function PublicLeaderboard({ rows, config, highlightMemberId, timesByMember, className }: Props) {
+export function PublicLeaderboard({ rows: rawRows, config, highlightMemberId, timesByMember, className }: Props) {
+  const rows = sortByPerformance(rawRows);
+
   if (!rows.length) {
     return (
       <Card className={cn("p-6 text-center text-sm text-muted-foreground", className)}>
@@ -62,6 +64,7 @@ export function PublicLeaderboard({ rows, config, highlightMemberId, timesByMemb
 
       <ul className="divide-y divide-border/60 lg:grid lg:grid-cols-2 lg:divide-y-0 lg:[&>li]:border-b lg:[&>li]:border-border/60 lg:[&>li:nth-child(odd)]:border-r">
         {rows.map((row, i) => {
+
           const { current, next, progress } = levelFor(row.points, config, row.sales ?? 0);
           const tier = tierForLevel(current, config);
           const isMe = highlightMemberId && row.member_id === highlightMemberId;
