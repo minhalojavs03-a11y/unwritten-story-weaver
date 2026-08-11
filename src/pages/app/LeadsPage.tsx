@@ -324,7 +324,9 @@ export default function LeadsPage() {
   const ANNOTATION_OPTIONS = [
     { value: "simulacao", label: "Simulação enviada" },
     { value: "ligacao", label: "Ligação feita" },
-    { value: "reuniao", label: "Reunião" },
+    { value: "reuniao_agendada", label: "Reunião agendada" },
+    { value: "compareceu", label: "Compareceu na reunião" },
+    { value: "nao_compareceu", label: "Não compareceu" },
     { value: "fechou", label: "Fechou" },
     { value: "nao_fechou", label: "Não fechou" },
   ] as const;
