@@ -347,15 +347,40 @@ export default function LeadsPage() {
     if (noteFor) setNoteText(noteFor.notes ?? "");
   }, [noteFor]);
 
+  // Carrega as anotações salvas do lead ao abrir o modal, para que o consultor
+  // veja exatamente o que já foi marcado e possa complementar sem perder estado.
+  function deriveAnnotationsFromLead(l: Lead) {
+    const derived: string[] = [];
+    const meta = (l.metadata ?? {}) as Record<string, any>;
+    const phase = (l as any).lead_phase;
+    const stage = l.stage;
+    const status = l.status;
+    const qStatus = (l as any).qualification_status;
+
+    if (phase === "simulacao") derived.push("simulacao");
+    if (phase === "apresentacao" || meta.meeting_scheduled_at) derived.push("reuniao_agendada");
+    if (stage === "compareceu" || meta.meeting_attended === true) derived.push("compareceu");
+    if (meta.meeting_attended === false || meta.meeting_no_show_reason) derived.push("nao_compareceu");
+    if (stage === "comprou" || status === "won") derived.push("fechou");
+    if (stage === "perdido" || status === "lost" || qStatus === "desqualificado") derived.push("nao_fechou");
+
+    // Ligação não tem campo próprio; inferimos pelo histórico de notes.
+    if ((l.notes ?? "").includes("Ligação feita")) derived.push("ligacao");
+
+    return Array.from(new Set(derived));
+  }
+
   useEffect(() => {
     if (detailFor) {
-      setAnnotations([]);
-      setNotFechouReason("");
-      setNoShowReason("");
-      setRescheduled("");
-      setRescheduleDate("");
-      setSaleValue(detailFor.credit_value ? String(detailFor.credit_value) : "");
-      setSaleDate(new Date().toISOString().slice(0, 10));
+      const savedAnnotations = deriveAnnotationsFromLead(detailFor);
+      const meta = (detailFor.metadata ?? {}) as Record<string, any>;
+      setAnnotations(savedAnnotations);
+      setNotFechouReason(detailFor.disqualification_reason ?? "");
+      setNoShowReason(meta.meeting_no_show_reason ?? "");
+      setRescheduled(meta.meeting_rescheduled ? "sim" : meta.meeting_rescheduled === false ? "nao" : "");
+      setRescheduleDate(meta.meeting_rescheduled_to ? String(meta.meeting_rescheduled_to).slice(0, 10) : "");
+      setSaleValue(detailFor.credit_value ? String(detailFor.credit_value) : meta.sale_value ? String(meta.sale_value) : "");
+      setSaleDate(meta.sale_date ? String(meta.sale_date).slice(0, 10) : new Date().toISOString().slice(0, 10));
     }
   }, [detailFor]);
 
