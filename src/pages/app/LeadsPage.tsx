@@ -332,6 +332,9 @@ export default function LeadsPage() {
   ] as const;
   const [annotations, setAnnotations] = useState<string[]>([]);
   const [notFechouReason, setNotFechouReason] = useState<string>("");
+  const [noShowReason, setNoShowReason] = useState<string>("");
+  const [rescheduled, setRescheduled] = useState<"sim" | "nao" | "">("");
+  const [rescheduleDate, setRescheduleDate] = useState<string>("");
   const [saleValue, setSaleValue] = useState<string>("");
   const [saleDate, setSaleDate] = useState<string>("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -348,6 +351,9 @@ export default function LeadsPage() {
     if (detailFor) {
       setAnnotations([]);
       setNotFechouReason("");
+      setNoShowReason("");
+      setRescheduled("");
+      setRescheduleDate("");
       setSaleValue(detailFor.credit_value ? String(detailFor.credit_value) : "");
       setSaleDate(new Date().toISOString().slice(0, 10));
     }
@@ -367,6 +373,20 @@ export default function LeadsPage() {
     if (annotations.includes("compareceu") && annotations.includes("nao_compareceu")) {
       toast({ title: "Seleção inválida", description: "Marque apenas se o lead compareceu OU não compareceu.", variant: "destructive" });
       return;
+    }
+    if (annotations.includes("nao_compareceu")) {
+      if (!noShowReason.trim()) {
+        toast({ title: "Informe o motivo", description: "Explique por que o lead não compareceu.", variant: "destructive" });
+        return;
+      }
+      if (!rescheduled) {
+        toast({ title: "Informe se reagendou", description: "Selecione Reagendou ou Não reagendou.", variant: "destructive" });
+        return;
+      }
+      if (rescheduled === "sim" && !rescheduleDate) {
+        toast({ title: "Informe a nova data", description: "Selecione a data da reunião reagendada.", variant: "destructive" });
+        return;
+      }
     }
     const saleAmount = Number(saleValue.replace(/\./g, "").replace(",", "."));
     if (annotations.includes("fechou") && (!saleValue.trim() || !Number.isFinite(saleAmount) || saleAmount <= 0 || !saleDate)) {
@@ -409,8 +429,16 @@ export default function LeadsPage() {
           ...(patch.metadata ?? (detailFor.metadata as any) ?? {}),
           meeting_attended: false,
           meeting_no_show_at: new Date().toISOString(),
+          meeting_no_show_reason: noShowReason.trim(),
+          meeting_rescheduled: rescheduled === "sim",
+          meeting_rescheduled_to: rescheduled === "sim" ? rescheduleDate : null,
         };
-        lines.push(`[${nowStamp}] Não compareceu na reunião`);
+        lines.push(`[${nowStamp}] Não compareceu na reunião: ${noShowReason.trim()}`);
+        lines.push(
+          rescheduled === "sim"
+            ? `[${nowStamp}] Reagendou para ${new Date(`${rescheduleDate}T12:00:00`).toLocaleDateString("pt-BR")}`
+            : `[${nowStamp}] Não reagendou`,
+        );
       }
       if (has("compareceu") || has("reuniao")) {
         patch.stage = "compareceu";
@@ -995,6 +1023,48 @@ export default function LeadsPage() {
 
 
 
+            {annotations.includes("nao_compareceu") && (
+              <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Por que não compareceu?</Label>
+                  <Textarea
+                    value={noShowReason}
+                    onChange={(e) => setNoShowReason(e.target.value)}
+                    placeholder="Ex.: cliente teve imprevisto, não atendeu…"
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Reagendou?</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { v: "sim", l: "Reagendou" },
+                      { v: "nao", l: "Não reagendou" },
+                    ].map((o) => (
+                      <button
+                        key={o.v}
+                        type="button"
+                        onClick={() => setRescheduled(o.v as "sim" | "nao")}
+                        className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                          rescheduled === o.v
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "border-border bg-card hover:bg-muted/40"
+                        }`}
+                      >
+                        {o.l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {rescheduled === "sim" && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Nova data da reunião</Label>
+                    <Input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} />
+                  </div>
+                )}
+              </div>
+            )}
+
             {annotations.includes("nao_fechou") && (
               <div className="space-y-1.5">
                 <Label className="text-xs">Por que não fechou?</Label>
@@ -1006,6 +1076,7 @@ export default function LeadsPage() {
                 />
               </div>
             )}
+
           </div>
 
 
