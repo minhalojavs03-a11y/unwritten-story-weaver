@@ -351,6 +351,9 @@ export default function LeadsPage() {
     if (detailFor) {
       setAnnotations([]);
       setNotFechouReason("");
+      setNoShowReason("");
+      setRescheduled("");
+      setRescheduleDate("");
       setSaleValue(detailFor.credit_value ? String(detailFor.credit_value) : "");
       setSaleDate(new Date().toISOString().slice(0, 10));
     }
