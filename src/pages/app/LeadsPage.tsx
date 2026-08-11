@@ -1163,6 +1163,17 @@ export default function LeadsPage() {
                                 <Label className="text-xs">Novo horário</Label>
                                 <Input type="time" value={rescheduleTime} onChange={(e) => setRescheduleTime(e.target.value)} />
                               </div>
+                              <div className="space-y-1.5 sm:col-span-2">
+                                <Label className="text-xs">Closer da reunião reagendada</Label>
+                                <Select value={rescheduleCloser} onValueChange={setRescheduleCloser}>
+                                  <SelectTrigger><SelectValue placeholder="Quem vai conduzir?" /></SelectTrigger>
+                                  <SelectContent>
+                                    {CLOSERS.map((c) => (
+                                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </div>
                           )}
                         </div>
