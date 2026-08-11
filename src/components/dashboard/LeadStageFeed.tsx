@@ -11,6 +11,57 @@ import { useTenantMembers } from "@/hooks/useData";
 const PAGE_SIZE = 5;
 const ALL = "__all__";
 
+type Tone = {
+  card: string;
+  chip: string;
+  bar: string;
+};
+
+const TONES: Record<string, Tone> = {
+  venda: {
+    card: "border-success/40 bg-success/5",
+    chip: "bg-success/15 text-success border-success/30",
+    bar: "bg-success",
+  },
+  reuniao: {
+    card: "border-stage-attended/40 bg-stage-attended/5",
+    chip: "bg-stage-attended/15 text-stage-attended border-stage-attended/30",
+    bar: "bg-stage-attended",
+  },
+  agendado: {
+    card: "border-info/40 bg-info/5",
+    chip: "bg-info/15 text-info border-info/30",
+    bar: "bg-info",
+  },
+  simulacao: {
+    card: "border-warning/40 bg-warning/5",
+    chip: "bg-warning/15 text-warning border-warning/30",
+    bar: "bg-warning",
+  },
+  negativo: {
+    card: "border-destructive/40 bg-destructive/5",
+    chip: "bg-destructive/15 text-destructive border-destructive/30",
+    bar: "bg-destructive",
+  },
+  neutro: {
+    card: "border-border/60 bg-muted/30",
+    chip: "bg-muted text-muted-foreground border-border",
+    bar: "bg-muted-foreground/50",
+  },
+};
+
+function toneFor(label: string, stage?: string | null): Tone {
+  const t = `${label} ${stage ?? ""}`.toLowerCase();
+  if (t.includes("fechou") || t.includes("comprou") || t.includes("vendid") || t.includes("venda")) return TONES.venda;
+  if (t.includes("não compareceu") || t.includes("nao compareceu") || t.includes("perdid") || t.includes("não reagendou") || t.includes("nao reagendou"))
+    return TONES.negativo;
+  if (t.includes("compareceu")) return TONES.reuniao;
+  if (t.includes("reunião") || t.includes("reuniao") || t.includes("reagend") || t.includes("agendad")) return TONES.agendado;
+  if (t.includes("simula") || t.includes("ligação") || t.includes("ligacao") || t.includes("qualific")) return TONES.simulacao;
+  return TONES.neutro;
+}
+
+
 interface Props {
   tenantId?: string | null;
   /** Gestores veem o time todo; consultores recebem o próprio memberId aqui. */
