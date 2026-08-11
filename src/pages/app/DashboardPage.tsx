@@ -31,6 +31,8 @@ import { useRanking, useGamificationConfig } from "@/hooks/useGamification";
 import { WhatsAppHealthAlert } from "@/components/dashboard/WhatsAppHealthAlert";
 
 import { FERACON_TENANT_ID } from "@/lib/feracon";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTenantMembers } from "@/hooks/useData";
 
 export default function DashboardPage() {
   const { data: profile } = useMyProfile();
