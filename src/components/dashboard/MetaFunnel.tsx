@@ -43,6 +43,7 @@ export function MetaFunnel({
   subtitle = "Realizado x Ideal x Defasagem",
   goals = DEFAULT_GOALS,
   scope = "month",
+  consultant,
   filterSlot,
   className,
 }: Props) {
@@ -54,7 +55,9 @@ export function MetaFunnel({
   const simulacoes = at("agendado") + reunioes;
   const leads = at("novo") + at("qualificado") + simulacoes + lost;
 
-  const linkTo = (metric: string) => `/funil/leads?metric=${metric}&scope=${scope}`;
+  const linkTo = (metric: string) =>
+    `/funil/leads?metric=${metric}&scope=${scope}${consultant ? `&consultor=${encodeURIComponent(consultant)}` : ""}`;
+
 
   const rows = [
     { n: "01", metric: "leads", label: "Leads / Clientes", icon: Users, real: leads, idealPct: 100, tone: "hsl(var(--stage-new))" },
