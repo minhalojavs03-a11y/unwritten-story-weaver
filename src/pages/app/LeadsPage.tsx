@@ -388,6 +388,7 @@ export default function LeadsPage() {
       setRescheduled(meta.meeting_rescheduled ? "sim" : meta.meeting_rescheduled === false ? "nao" : "");
       setRescheduleDate(meta.meeting_rescheduled_to ? String(meta.meeting_rescheduled_to).slice(0, 10) : "");
       setRescheduleTime(meta.meeting_rescheduled_time ? String(meta.meeting_rescheduled_time).slice(0, 5) : "");
+      setRescheduleCloser(meta.meeting_rescheduled_closer_id ?? "");
       if (meta.meeting_scheduled_at) {
         const d = new Date(meta.meeting_scheduled_at);
         if (!Number.isNaN(d.getTime())) {
