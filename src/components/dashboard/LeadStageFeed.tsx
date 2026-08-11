@@ -24,7 +24,9 @@ export function LeadStageFeed({ tenantId, memberId, privileged }: Props) {
   const { data: members = [] } = useTenantMembers(tenantId ?? undefined);
 
   const scopedMemberId = privileged ? (filterMember === ALL ? null : filterMember) : memberId ?? null;
-  const { events, loading } = useLeadStageEvents({ tenantId, memberId: scopedMemberId, limit: 60 });
+  const blocked = !privileged && !scopedMemberId;
+  const { events: allEvents, loading } = useLeadStageEvents({ tenantId, memberId: scopedMemberId, limit: 60 });
+  const events = blocked ? [] : allEvents;
 
   const totalPages = Math.max(1, Math.ceil(events.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
