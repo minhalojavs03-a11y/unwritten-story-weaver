@@ -75,17 +75,23 @@ export function LeadStageFeed({ tenantId, memberId, privileged }: Props) {
   const [filterMember, setFilterMember] = useState<string>(ALL);
   const [page, setPage] = useState(0);
   const { data: members = [] } = useTenantMembers(tenantId ?? undefined);
+  const isMobile = useIsMobile();
+  const pageSize = isMobile ? PAGE_SIZE_MOBILE : PAGE_SIZE_DESKTOP;
+
+  useEffect(() => {
+    setPage(0);
+  }, [isMobile, filterMember]);
 
   const scopedMemberId = privileged ? (filterMember === ALL ? null : filterMember) : memberId ?? null;
   const blocked = !privileged && !scopedMemberId;
   const { events: allEvents, loading } = useLeadStageEvents({ tenantId, memberId: scopedMemberId, limit: 60 });
   const events = blocked ? [] : allEvents;
 
-  const totalPages = Math.max(1, Math.ceil(events.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(events.length / pageSize));
   const safePage = Math.min(page, totalPages - 1);
   const pageItems = useMemo(
-    () => events.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE),
-    [events, safePage],
+    () => events.slice(safePage * pageSize, safePage * pageSize + pageSize),
+    [events, safePage, pageSize],
   );
 
   return (
