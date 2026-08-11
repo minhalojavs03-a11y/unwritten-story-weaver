@@ -1140,9 +1140,15 @@ export default function LeadsPage() {
                   </div>
                 </div>
                 {rescheduled === "sim" && (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Nova data da reunião</Label>
-                    <Input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Nova data da reunião</Label>
+                      <Input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Novo horário</Label>
+                      <Input type="time" value={rescheduleTime} onChange={(e) => setRescheduleTime(e.target.value)} />
+                    </div>
                   </div>
                 )}
               </div>
