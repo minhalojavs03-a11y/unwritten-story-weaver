@@ -286,6 +286,12 @@ export default function DashboardPage() {
 
         <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
 
+        <LeadStageFeed
+          tenantId={effectiveTenantOverride === undefined ? FERACON_TENANT_ID : effectiveTenantOverride}
+          memberId={privileged ? null : effectiveMemberId}
+          privileged={privileged}
+        />
+
         {/* NOVO: funil com metas ideais e defasagem (modelo Embracon) — em validação */}
         <MetaFunnel
           title={
