@@ -29,6 +29,8 @@ import { useEffectiveUser } from "@/hooks/useEffectiveUser";
 import { useLeadSearch } from "@/hooks/useLeadSearch";
 import { cn } from "@/lib/utils";
 import { useCanViewLeadPhone, displayPhone } from "@/lib/leadPrivacy";
+import { CLOSERS } from "@/lib/closers";
+import { autoLeadValue } from "@/hooks/useCloserAgenda";
 
 const QUALIFICATION_OPTIONS = [
   { value: "em_qualificacao", label: "Em qualificação" },
@@ -338,6 +340,8 @@ export default function LeadsPage() {
   const [rescheduleTime, setRescheduleTime] = useState<string>("");
   const [meetingDate, setMeetingDate] = useState<string>("");
   const [meetingTime, setMeetingTime] = useState<string>("");
+  const [meetingCloser, setMeetingCloser] = useState<string>("");
+  const [leadValue, setLeadValue] = useState<string>("");
   const [saleValue, setSaleValue] = useState<string>("");
   const [saleDate, setSaleDate] = useState<string>("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -394,6 +398,9 @@ export default function LeadsPage() {
         setMeetingDate("");
         setMeetingTime("");
       }
+      setMeetingCloser(meta.meeting_closer_id ?? "");
+      const autoV = autoLeadValue(detailFor as any);
+      setLeadValue(meta.lead_value ? String(meta.lead_value) : autoV ? String(autoV) : "");
       setSaleValue(detailFor.credit_value ? String(detailFor.credit_value) : meta.sale_value ? String(meta.sale_value) : "");
       setSaleDate(meta.sale_date ? String(meta.sale_date).slice(0, 10) : new Date().toISOString().slice(0, 10));
     }
@@ -416,6 +423,10 @@ export default function LeadsPage() {
     }
     if (annotations.includes("reuniao_agendada") && (!meetingDate || !meetingTime)) {
       toast({ title: "Informe data e horário", description: "Selecione a data e o horário da reunião agendada.", variant: "destructive" });
+      return;
+    }
+    if (annotations.includes("reuniao_agendada") && !meetingCloser) {
+      toast({ title: "Selecione o closer", description: "Informe quem vai conduzir a reunião.", variant: "destructive" });
       return;
     }
     if (annotations.includes("nao_compareceu")) {
@@ -448,6 +459,14 @@ export default function LeadsPage() {
       // Ordem de progressão — o estágio final é o mais avançado marcado.
       const has = (v: string) => annotations.includes(v);
 
+      // Valor do lead (anotado pelo consultor ou reconhecido automaticamente).
+      const leadAmount = Number(String(leadValue).replace(/\./g, "").replace(",", "."));
+      if (Number.isFinite(leadAmount) && leadAmount > 0) {
+        patch.metadata = { ...(patch.metadata ?? (detailFor.metadata as any) ?? {}), lead_value: leadAmount };
+        if (!detailFor.credit_value) patch.credit_value = leadAmount;
+      }
+
+
       if (has("simulacao")) {
         patch.stage = "agendado";
         patch.lead_phase = "simulacao";
@@ -460,15 +479,18 @@ export default function LeadsPage() {
         patch.stage = "agendado";
         patch.lead_phase = "apresentacao";
         const meetingAt = new Date(`${meetingDate}T${meetingTime}:00`);
+        const closer = CLOSERS.find((c) => c.id === meetingCloser) ?? null;
         patch.metadata = {
           ...(patch.metadata ?? (detailFor.metadata as any) ?? {}),
           meeting_scheduled_at: meetingAt.toISOString(),
           meeting_date: meetingDate,
           meeting_time: meetingTime,
           meeting_attended: null,
+          meeting_closer_id: closer?.id ?? null,
+          meeting_closer_name: closer?.name ?? null,
         };
         lines.push(
-          `[${nowStamp}] Reunião agendada para ${meetingAt.toLocaleDateString("pt-BR")} às ${meetingTime}`,
+          `[${nowStamp}] Reunião agendada para ${meetingAt.toLocaleDateString("pt-BR")} às ${meetingTime}${closer ? ` · Closer: ${closer.name}` : ""}`,
         );
       }
       if (has("nao_compareceu")) {
@@ -1076,6 +1098,17 @@ export default function LeadsPage() {
                             <Label className="text-xs">Horário</Label>
                             <Input type="time" value={meetingTime} onChange={(e) => setMeetingTime(e.target.value)} />
                           </div>
+                          <div className="space-y-1.5 sm:col-span-2">
+                            <Label className="text-xs">Closer da reunião</Label>
+                            <Select value={meetingCloser} onValueChange={setMeetingCloser}>
+                              <SelectTrigger><SelectValue placeholder="Quem vai conduzir?" /></SelectTrigger>
+                              <SelectContent>
+                                {CLOSERS.map((c) => (
+                                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       )}
                     </React.Fragment>
@@ -1086,6 +1119,20 @@ export default function LeadsPage() {
                 Marque quantas opções precisar. O sistema atualiza o pipeline automaticamente.
               </p>
             </div>
+
+            <div className="space-y-1.5 rounded-lg border bg-muted/20 p-3">
+              <Label className="text-xs">Valor do lead (R$)</Label>
+              <Input
+                inputMode="decimal"
+                value={leadValue}
+                onChange={(e) => setLeadValue(e.target.value)}
+                placeholder="Ex.: 120000"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Reconhecido automaticamente quando disponível. Ajuste se precisar — aparece na agenda do closer.
+              </p>
+            </div>
+
 
             {annotations.includes("fechou") && (
               <div className="grid gap-3 rounded-lg border border-success/30 bg-success/5 p-3 sm:grid-cols-2">

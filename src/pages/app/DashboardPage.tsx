@@ -14,6 +14,7 @@ import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 import { useSupportImpersonation } from "@/hooks/useSupportImpersonation";
 import { LeadsHourlyPanel } from "@/components/dashboard/LeadsHourlyPanel";
 import { LeadStageFeed } from "@/components/dashboard/LeadStageFeed";
+import { CloserAgenda } from "@/components/dashboard/CloserAgenda";
 import { useReportData } from "@/hooks/useReportData";
 import { useTeamFunnel } from "@/hooks/useTeamFunnel";
 import { HealthScore, InsightsPanel, PipelineIntel, WeeklyActivity, ResponseHeatmap } from "@/components/dashboard/ExecutiveWidgets";
@@ -285,6 +286,8 @@ export default function DashboardPage() {
           <StatCard to="/agenda" icon={Calendar} label="Reuniões hoje" value={m?.appointmentsToday ?? 0} iconColor="bg-sky-500/10 text-sky-600" />
           <StatCard to="/conversas?tab=hot" icon={Flame} label="Leads Quentes" value={m?.hotOpportunities ?? 0} iconColor="bg-rose-500/10 text-rose-600" />
         </section>
+
+        <CloserAgenda scope={{ tenantId: effectiveTenantOverride, memberId: privileged ? null : effectiveMemberId }} />
 
         <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
 
