@@ -459,6 +459,14 @@ export default function LeadsPage() {
       // Ordem de progressão — o estágio final é o mais avançado marcado.
       const has = (v: string) => annotations.includes(v);
 
+      // Valor do lead (anotado pelo consultor ou reconhecido automaticamente).
+      const leadAmount = Number(String(leadValue).replace(/\./g, "").replace(",", "."));
+      if (Number.isFinite(leadAmount) && leadAmount > 0) {
+        patch.metadata = { ...(patch.metadata ?? (detailFor.metadata as any) ?? {}), lead_value: leadAmount };
+        if (!detailFor.credit_value) patch.credit_value = leadAmount;
+      }
+
+
       if (has("simulacao")) {
         patch.stage = "agendado";
         patch.lead_phase = "simulacao";
