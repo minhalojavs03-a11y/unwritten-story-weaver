@@ -467,15 +467,18 @@ export default function LeadsPage() {
         patch.stage = "agendado";
         patch.lead_phase = "apresentacao";
         const meetingAt = new Date(`${meetingDate}T${meetingTime}:00`);
+        const closer = CLOSERS.find((c) => c.id === meetingCloser) ?? null;
         patch.metadata = {
           ...(patch.metadata ?? (detailFor.metadata as any) ?? {}),
           meeting_scheduled_at: meetingAt.toISOString(),
           meeting_date: meetingDate,
           meeting_time: meetingTime,
           meeting_attended: null,
+          meeting_closer_id: closer?.id ?? null,
+          meeting_closer_name: closer?.name ?? null,
         };
         lines.push(
-          `[${nowStamp}] Reunião agendada para ${meetingAt.toLocaleDateString("pt-BR")} às ${meetingTime}`,
+          `[${nowStamp}] Reunião agendada para ${meetingAt.toLocaleDateString("pt-BR")} às ${meetingTime}${closer ? ` · Closer: ${closer.name}` : ""}`,
         );
       }
       if (has("nao_compareceu")) {
