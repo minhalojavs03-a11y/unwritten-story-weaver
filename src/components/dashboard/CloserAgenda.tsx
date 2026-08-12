@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { CalendarClock, User2, BadgeDollarSign } from "lucide-react";
+import { CalendarClock, User2, BadgeDollarSign, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCloserMeetings, type MeetingItem } from "@/hooks/useCloserAgenda";
 import { CLOSERS } from "@/lib/closers";
@@ -40,6 +40,12 @@ function MeetingRow({ m }: { m: MeetingItem }) {
           <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-semibold", statusStyle[m.status])}>
             {statusLabel[m.status]}
           </span>
+          {m.isRescheduled && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-info/30 bg-info/10 px-2 py-0.5 text-[10px] font-semibold text-info">
+              <RotateCcw className="h-3 w-3" />
+              Reagendada
+            </span>
+          )}
           {m.value && (
             <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/5 px-2 py-0.5 text-[10px] font-semibold text-success">
               <BadgeDollarSign className="h-3 w-3" />

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CalendarClock, BadgeDollarSign, User2, Search } from "lucide-react";
+import { CalendarClock, BadgeDollarSign, User2, Search, RotateCcw } from "lucide-react";
 import { useCloserMeetings, type MeetingItem } from "@/hooks/useCloserAgenda";
 import { CLOSERS } from "@/lib/closers";
 import { useTenantMembers } from "@/hooks/useData";
@@ -185,7 +185,14 @@ export default function AgendaPage() {
                       {m.at.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold">{m.leadName}</span>
+                      <span className="flex items-center gap-2">
+                        <span className="truncate text-sm font-semibold">{m.leadName}</span>
+                        {m.isRescheduled && (
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-info/30 bg-info/10 px-2 py-0.5 text-[10px] font-semibold text-info">
+                            <RotateCcw className="h-3 w-3" /> Reagendada
+                          </span>
+                        )}
+                      </span>
                       <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                         <User2 className="h-3 w-3" /> Consultor: {memberName(m.consultantMemberId)}
                       </span>
