@@ -189,18 +189,38 @@ export function CloserAgenda({ scope }: { scope?: { tenantId?: string | null; me
       <div className="grid gap-3 md:grid-cols-2">
         {CLOSERS.map((c) => {
           const items = byCloser.map.get(c.id) ?? [];
+          const closed = items.filter((m) => m.status === "fechou").length;
+          const rate = items.length ? Math.round((closed / items.length) * 100) : 0;
+          const closedValue = items.filter((m) => m.status === "fechou").reduce((a, m) => a + (m.value ?? 0), 0);
           return (
             <div key={c.id} className="rounded-xl border border-border/70 bg-muted/10 p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm font-bold">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ background: c.color }}>
-                    {c.name.slice(0, 2).toUpperCase()}
+              <div className="mb-2 rounded-lg border border-border/60 bg-card px-3 py-2.5 shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-sm font-bold">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ background: c.color }}>
+                      {c.name.slice(0, 2).toUpperCase()}
+                    </span>
+                    <span className="uppercase tracking-wide">{c.name}</span>
                   </span>
-                  {c.name}
-                </span>
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary tabular-nums">
-                  {items.length}
-                </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary tabular-nums">
+                      {items.length}
+                    </span>
+                    <span className="rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[11px] font-bold text-success tabular-nums">
+                      {rate}%
+                    </span>
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <span>Taxa de conversão · {closed}/{items.length} fechados</span>
+                  {closedValue > 0 && <span className="text-success">{money(closedValue)}</span>}
+                </div>
+                <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-success transition-all"
+                    style={{ width: `${rate}%`, background: rate > 0 ? undefined : "transparent" }}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 {items.length === 0 && (
