@@ -205,7 +205,7 @@ Deno.serve(async (req) => {
       // Leads perdidos do consultor — dos mais ANTIGOS para os mais novos.
       const { data: lostLeads } = await admin
         .from("leads")
-        .select("id, tenant_id, name, phone, interest, asset_type, credit_value, temperature, qualification_status, disqualification_reason, stage, status, last_contact_at, last_message_at, created_at, assigned_member_id")
+        .select("id, tenant_id, name, phone, interest, asset_type, credit_value, temperature, qualification_status, disqualification_reason, stage, status, last_contact_at, last_message_at, created_at, assigned_member_id, metadata")
         .eq("tenant_id", member.tenant_id)
         .eq("assigned_member_id", member.id)
         .or("stage.eq.perdido,status.eq.lost")
@@ -308,9 +308,15 @@ Deno.serve(async (req) => {
         });
       }
 
+      const prevMeta = (lead as { metadata?: Record<string, unknown> }).metadata ?? {};
       await admin.from("leads").update({
         last_message_at: new Date().toISOString(),
         last_contact_at: new Date().toISOString(),
+        metadata: {
+          ...(typeof prevMeta === "object" && prevMeta ? prevMeta : {}),
+          reactivated_at: new Date().toISOString(),
+          reactivation_count: Number((prevMeta as Record<string, unknown>)?.reactivation_count ?? 0) + 1,
+        },
       }).eq("id", lead.id);
 
       await admin.from("lead_notifications").insert({
