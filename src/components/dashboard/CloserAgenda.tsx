@@ -1,9 +1,25 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarClock, User2, BadgeDollarSign, RotateCcw } from "lucide-react";
+import { CalendarClock, User2, BadgeDollarSign, RotateCcw, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCloserMeetings, type MeetingItem } from "@/hooks/useCloserAgenda";
+import { useTenantMembers } from "@/hooks/useData";
 import { CLOSERS } from "@/lib/closers";
+
+type Period = "today" | "tomorrow" | "week" | "month" | "all";
+
+function rangeOf(p: Period): { start?: Date; end?: Date } {
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  if (p === "all") return {};
+  if (p === "today") { const e = new Date(start); e.setDate(e.getDate() + 1); return { start, end: e }; }
+  if (p === "tomorrow") { const s = new Date(start); s.setDate(s.getDate() + 1); const e = new Date(s); e.setDate(e.getDate() + 1); return { start: s, end: e }; }
+  if (p === "week") { const e = new Date(start); e.setDate(e.getDate() + 7); return { start, end: e }; }
+  return { start: new Date(start.getFullYear(), start.getMonth(), 1), end: new Date(start.getFullYear(), start.getMonth() + 1, 1) };
+}
+
 
 const statusStyle: Record<MeetingItem["status"], string> = {
   agendado: "bg-warning/10 text-warning border-warning/30",
