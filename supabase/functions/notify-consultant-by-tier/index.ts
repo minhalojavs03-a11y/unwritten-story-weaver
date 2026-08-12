@@ -30,6 +30,9 @@ const DAVIES_USER_ID = "9a75e927-4b9b-4666-a0e4-3fd5ae4ee38a";
 // do banco (config por consultor na página de Distribuição de Leads).
 
 
+// REGRA FIXA: avisos internos SÓ podem sair do número 804. Nunca usar outra
+// instância conectada como remetente. Se o 804 estiver fora, enfileira e avisa
+// no painel (Antonio supervisor, Ediane dona e superadmins).
 async function pickNotifierInstance(admin: any, tenantId: string) {
   const { data: sup } = await admin
     .from("whatsapp_instances")
@@ -41,35 +44,53 @@ async function pickNotifierInstance(admin: any, tenantId: string) {
     .limit(1)
     .maybeSingle();
   if (sup?.server_url && sup?.instance_token) return sup;
-  // Fallback: se o número principal estiver fora do ar, evita blackout total.
-  const { data: any_ } = await admin
-    .from("whatsapp_instances")
-    .select("server_url,instance_token,status,is_connected,phone_number")
-    .eq("tenant_id", tenantId)
-    .or("is_connected.eq.true,status.eq.connected")
-    .or(`seller_user_id.is.null,seller_user_id.neq.${DAVIES_USER_ID}`)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  return any_;
+  return null;
 }
 
-// Lista de instâncias candidatas para enviar o aviso interno: 804 primeiro,
-// depois qualquer outra conectada (evita blackout quando o 804 devolve erro).
-async function listNotifierInstances(admin: any, tenantId: string) {
-  const { data } = await admin
-    .from("whatsapp_instances")
-    .select("server_url,instance_token,phone_number,status,is_connected,updated_at")
-    .eq("tenant_id", tenantId)
-    .or("is_connected.eq.true,status.eq.connected")
-    .order("updated_at", { ascending: false });
-  const rows = (data ?? []).filter((i: any) => i.server_url && i.instance_token);
-  const isNotifier = (i: any) => String(i.phone_number || "").includes(NOTIFIER_PHONE_DIGITS);
-  return [...rows.filter(isNotifier), ...rows.filter((i: any) => !isNotifier(i))];
+// Avisa no painel (in-app) supervisores, donos e superadmins quando o 804 falha.
+async function alertNotifierFailure(admin: any, params: {
+  tenantId: string;
+  leadId: string | null;
+  phone: string;
+  reason: string | null;
+  queued: boolean;
+}) {
+  try {
+    const { tenantId, leadId, phone, reason, queued } = params;
+    const recipients = new Set<string>();
+
+    const { data: staff } = await admin
+      .from("tenant_memberships").select("user_id, role")
+      .eq("tenant_id", tenantId).in("role", ["owner", "supervisor", "admin"]);
+    for (const s of staff || []) if (s.user_id) recipients.add(s.user_id);
+
+    const { data: supers } = await admin
+      .from("user_roles").select("user_id").eq("role", "superadmin");
+    for (const s of supers || []) if (s.user_id) recipients.add(s.user_id);
+
+    if (recipients.size === 0) return;
+
+    const rows = [...recipients].map((uid) => ({
+      tenant_id: tenantId,
+      recipient_user_id: uid,
+      type: "notifier_failure",
+      title: "Aviso do número 804 não enviado",
+      body: `Não foi possível enviar o aviso pelo número 804 para ${phone}. ${
+        queued ? "O envio ficou na fila para nova tentativa." : "O envio falhou."
+      }${reason ? ` (${reason})` : ""}`,
+      lead_id: leadId,
+      metadata: { phone, reason, queued },
+    }));
+
+    const { error } = await admin.from("app_notifications").insert(rows);
+    if (error) console.error("notifier_failure insert error", error);
+  } catch (e) {
+    console.error("alertNotifierFailure error", e);
+  }
 }
 
-// Envia com retry (2 tentativas por instância) e cai para a próxima instância.
-// Se tudo falhar, enfileira em notification_queue para o cron reprocessar.
+// Envia SOMENTE pelo 804 (2 tentativas). Se falhar, enfileira para o cron e
+// dispara aviso no painel. Nunca usa outra instância como remetente.
 async function sendNotifierText(
   admin: any,
   tenantId: string,
@@ -77,10 +98,10 @@ async function sendNotifierText(
   text: string,
   leadId: string | null,
 ): Promise<{ delivered: boolean; status: "sent" | "failed" | "queued"; error: string | null }> {
-  const instances = await listNotifierInstances(admin, tenantId);
-  let lastError = instances.length ? null : "no connected whatsapp instance";
+  const inst = await pickNotifierInstance(admin, tenantId);
+  let lastError: string | null = inst ? null : "notifier 804 instance unavailable";
 
-  for (const inst of instances) {
+  if (inst) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         if (attempt === 0) await randomSendDelay();
@@ -99,7 +120,7 @@ async function sendNotifierText(
     }
   }
 
-  // Fallback final: enfileira para reenvio automático pelo cron.
+  // Nunca cai para outra instância: enfileira e avisa no painel.
   try {
     await admin.from("notification_queue").insert({
       tenant_id: tenantId,
@@ -109,8 +130,14 @@ async function sendNotifierText(
       message_text: text,
       due_at: new Date(Date.now() + 60_000).toISOString(),
     });
+    await alertNotifierFailure({ ...{} as any, ...{} } as any === null ? null as any : admin, {
+      tenantId, leadId, phone, reason: lastError, queued: true,
+    });
     return { delivered: false, status: "queued", error: lastError };
   } catch (e) {
+    await alertNotifierFailure(admin, {
+      tenantId, leadId, phone, reason: `${lastError} / queue: ${String(e)}`, queued: false,
+    });
     return { delivered: false, status: "failed", error: `${lastError} / queue: ${String(e)}` };
   }
 }
