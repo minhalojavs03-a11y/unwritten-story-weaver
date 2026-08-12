@@ -93,10 +93,6 @@ export function CloserAgenda({ scope }: { scope?: { tenantId?: string | null; me
 
   const { start, end } = useMemo(() => rangeOf(period), [period]);
   const { meetings, isLoading } = useCloserMeetings(start, end, scope);
-
-  const monthRange = useMemo(() => rangeOf("month"), []);
-  const { meetings: monthMeetings, isLoading: isLoadingMonth } = useCloserMeetings(monthRange.start, monthRange.end, scope);
-
   const { data: members = [] } = useTenantMembers();
   const memberName = (id: string | null) => members.find((m: any) => m.id === id)?.display_name ?? undefined;
 
@@ -110,16 +106,6 @@ export function CloserAgenda({ scope }: { scope?: { tenantId?: string | null; me
     });
   }, [meetings, statusFilter, closerFilter, search]);
 
-  const monthFiltered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return monthMeetings.filter((m) => {
-      if (statusFilter !== "all" && m.status !== statusFilter) return false;
-      if (closerFilter !== "all" && (m.closerId ?? "none") !== closerFilter) return false;
-      if (q && !m.leadName.toLowerCase().includes(q)) return false;
-      return true;
-    });
-  }, [monthMeetings, statusFilter, closerFilter, search]);
-
   const byCloser = useMemo(() => {
     const map = new Map<string, MeetingItem[]>();
     for (const c of CLOSERS) map.set(c.id, []);
@@ -131,20 +117,10 @@ export function CloserAgenda({ scope }: { scope?: { tenantId?: string | null; me
     return { map, unassigned };
   }, [filtered]);
 
-  const byCloserMonth = useMemo(() => {
-    const map = new Map<string, MeetingItem[]>();
-    for (const c of CLOSERS) map.set(c.id, []);
-    const unassigned: MeetingItem[] = [];
-    for (const m of monthFiltered) {
-      if (m.closerId && map.has(m.closerId)) map.get(m.closerId)!.push(m);
-      else unassigned.push(m);
-    }
-    return { map, unassigned };
-  }, [monthFiltered]);
-
   const totalValue = filtered.reduce((acc, m) => acc + (m.value ?? 0), 0);
   const showDate = period !== "today" && period !== "tomorrow";
   const periodLabel: Record<Period, string> = { today: "Hoje", tomorrow: "Amanhã", week: "7 dias", month: "Mês", all: "Total" };
+
 
 
   return (
