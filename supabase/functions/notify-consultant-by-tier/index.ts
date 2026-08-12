@@ -487,20 +487,16 @@ Deno.serve(async (req) => {
       return cnt < lim;
     });
 
-    // TETO RÍGIDO: se ninguém está abaixo da cota, NÃO estoura. Deixa o lead
-    // livre para ser retomado quando alguém liberar espaço (novo dia SP ou
-    // redistribuição manual). Antes: caía em `consultants` e sobrecarregava.
-    if (underCota.length === 0) {
-      console.log("[notify-tier] all eligible consultants hit daily cap — leaving lead unassigned", {
+    // Se TODOS já bateram a cota, ainda assim atribuímos (nunca deixar lead
+    // sem consultor) — o excedente vai para quem tem MENOS leads hoje.
+    const poolAcimaDaCota = underCota.length === 0;
+    if (poolAcimaDaCota) {
+      console.log("[notify-tier] all consultants at cap — overflow to least loaded", {
         lead_id: lead.id,
-        sheet_source_label: sheetSourceLabel,
         counts: Object.fromEntries(todayCountByMember),
       });
-      return json({
-        ok: true,
-        skipped: "all consultants reached daily lead limit — lead left unassigned for later retry",
-      });
     }
+
     // ===== Prioridade operacional: Micaelly, Nilton e David primeiro =====
     // Enquanto qualquer um deles ainda estiver abaixo da cota diária, TODOS os
     // leads novos vão para eles. Os demais consultores só entram na rotação
