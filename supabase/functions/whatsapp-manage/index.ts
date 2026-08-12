@@ -252,7 +252,20 @@ async function createProviderInstance(tenant: any, slugSuffix: string, displayNa
   if (!createResp.ok) {
     console.error("provider create failed", createResp.status, createUrl, text);
     await deleteProviderInstance(null, null, fullSlug);
-    return { ok: false, status: 502, body: { error: "Falha ao criar instância no provedor", details: data, endpoint: createUrl } };
+    const providerMsg = (data as any)?.error ?? (data as any)?.message ?? text?.slice(0, 200) ?? "";
+    const isTokenError = createResp.status === 401 || /token/i.test(String(providerMsg));
+    return {
+      ok: false,
+      status: 502,
+      body: {
+        error: isTokenError
+          ? "O provedor de WhatsApp recusou a credencial (token inválido). Peça ao administrador para atualizar o token de integração."
+          : `Falha ao criar instância no provedor: ${providerMsg || createResp.status}`,
+        provider_error: providerMsg,
+        details: data,
+        endpoint: createUrl,
+      },
+    };
   }
 
   const details = { ...getProviderDetails(data, tenant) };
