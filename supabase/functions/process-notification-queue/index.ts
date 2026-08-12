@@ -163,7 +163,7 @@ async function processOne(admin: ReturnType<typeof createClient>, type: string) 
     await admin.from("notification_queue").update({
       status: "pending",
       last_error: String(e),
-      due_at: new Date(Date.now() + 5 * 60_000).toISOString(),
+      due_at: new Date(Date.now() + 2 * 60_000).toISOString(),
     }).eq("id", candidate.id);
     return { type, lead_id: candidate.lead_id, ok: false, error: String(e) };
   }
