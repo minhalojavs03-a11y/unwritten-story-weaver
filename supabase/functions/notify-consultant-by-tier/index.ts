@@ -511,14 +511,16 @@ Deno.serve(async (req) => {
         .replace(/[\u0300-\u036f]/g, "");
     const isPriority = (c: any) => PRIORITY_NAMES.some((p) => normName(c).includes(p));
     const isDeprioritized = (c: any) => DEPRIORITY_NAMES.some((p) => normName(c).includes(p));
-    const priorityUnderCota = underCota.filter(isPriority);
-    const regularUnderCota = underCota.filter((c) => !isPriority(c) && !isDeprioritized(c));
+    const base = poolAcimaDaCota ? consultants : underCota;
+    const priorityUnderCota = base.filter(isPriority);
+    const regularUnderCota = base.filter((c) => !isPriority(c) && !isDeprioritized(c));
     const pool =
       priorityUnderCota.length > 0
         ? priorityUnderCota
         : regularUnderCota.length > 0
           ? regularUnderCota
-          : underCota;
+          : base;
+
 
 
     // Ranking: quem tem MENOS leads absolutos hoje vem primeiro (nivelar antes
