@@ -85,8 +85,14 @@ function MeetingRow({ m, consultant, showDate }: { m: MeetingItem; consultant?: 
   );
 }
 
-export function CloserAgenda({ scope }: { scope?: { tenantId?: string | null; memberId?: string | null } }) {
-  const [period, setPeriod] = useState<Period>("today");
+export function CloserAgenda({
+  scope,
+  defaultPeriod,
+}: {
+  scope?: { tenantId?: string | null; memberId?: string | null };
+  defaultPeriod?: Period;
+}) {
+  const [period, setPeriod] = useState<Period>(defaultPeriod ?? "today");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [closerFilter, setCloserFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
