@@ -55,6 +55,38 @@ async function pickConsultantInstance(admin: any, tenantId: string, assignedMemb
   return null;
 }
 
+// Avisa no painel supervisores (Antonio), donos (Ediane) e superadmins.
+async function alertStaffInApp(
+  admin: any,
+  tenantId: string,
+  leadId: string | null,
+  msg: { title: string; body: string },
+) {
+  try {
+    const recipients = new Set<string>();
+    const { data: staff } = await admin
+      .from("tenant_memberships").select("user_id, role")
+      .eq("tenant_id", tenantId).in("role", ["owner", "supervisor", "admin"]);
+    for (const s of staff || []) if (s.user_id) recipients.add(s.user_id);
+    const { data: supers } = await admin
+      .from("user_roles").select("user_id").eq("role", "superadmin");
+    for (const s of supers || []) if (s.user_id) recipients.add(s.user_id);
+    if (recipients.size === 0) return;
+    const rows = [...recipients].map((uid) => ({
+      tenant_id: tenantId,
+      recipient_user_id: uid,
+      type: "notifier_failure",
+      title: msg.title,
+      body: msg.body,
+      lead_id: leadId,
+    }));
+    const { error } = await admin.from("app_notifications").insert(rows);
+    if (error) console.error("alertStaffInApp insert error", error);
+  } catch (e) {
+    console.error("alertStaffInApp error", e);
+  }
+}
+
 async function pickCompanyInstance(admin: any, tenantId: string) {
   const { data: principal } = await admin
     .from("whatsapp_instances")
