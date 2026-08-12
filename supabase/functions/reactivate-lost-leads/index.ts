@@ -100,7 +100,7 @@ function buildMessage(lead: any): string {
     `${greeting}, ${firstName(lead.name)}! 👋 Aqui é da Embracon.\n\n` +
     `Você nos procurou um tempo atrás sobre ${interestLabel(lead)} e estou passando para retomar seu atendimento.\n\n` +
     `Me diz uma coisa: você chegou a resolver essa questão ou ainda está buscando uma opção que faça sentido para você?\n\n` +
-    `Se ainda estiver buscando, posso verificar novamente as melhores opções disponíveis hoje para o seu perfil. 😉`
+    `Se ainda estiver buscando, posso verificar novamente as melhores opções disponíveis hoje para o seu perfil.`
   );
 }
 
