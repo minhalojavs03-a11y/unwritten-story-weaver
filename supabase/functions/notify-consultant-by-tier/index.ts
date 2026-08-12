@@ -428,26 +428,17 @@ Deno.serve(async (req) => {
         if ((i as any).seller_user_id) connectedUserIds.add((i as any).seller_user_id);
       }
     }
-    const connectedConsultants = baseConsultants.filter((c: any) => {
+    const onlineConsultants = baseConsultants.filter((c: any) => {
       if (!c.user_id) return false;
       if (c.receive_leads_when_offline === true) return true;
       return connectedUserIds.has(c.user_id);
     });
-    const fallbackUsedOffline = false;
-    if (connectedConsultants.length === 0) {
-      // Ninguém conectado no momento — NÃO atribui a offline. Deixa o lead
-      // livre para uma nova tentativa quando alguém reconectar. O reprocesso
-      // é acionado por: (a) webhook de status "connected" do WhatsApp,
-      // (b) próxima chegada de lead, (c) botão manual de redistribuir.
-      console.log("[notify-tier] no connected consultants — leaving lead unassigned for retry", {
-        lead_id: lead.id,
-        sheet_source_label: sheetSourceLabel,
-      });
-      return json({
-        ok: true,
-        skipped: "no connected consultant available — lead left unassigned for retry",
-      });
-    }
+    // REGRA DO DONO: nunca deixar lead "sem consultor atribuído".
+    // WhatsApp desconectado NÃO impede a atribuição — se ninguém estiver
+    // conectado, distribui mesmo assim (aviso sai pelo número da empresa).
+    const fallbackUsedOffline = onlineConsultants.length === 0;
+    const connectedConsultants = fallbackUsedOffline ? baseConsultants : onlineConsultants;
+
 
     
 
@@ -496,20 +487,16 @@ Deno.serve(async (req) => {
       return cnt < lim;
     });
 
-    // TETO RÍGIDO: se ninguém está abaixo da cota, NÃO estoura. Deixa o lead
-    // livre para ser retomado quando alguém liberar espaço (novo dia SP ou
-    // redistribuição manual). Antes: caía em `consultants` e sobrecarregava.
-    if (underCota.length === 0) {
-      console.log("[notify-tier] all eligible consultants hit daily cap — leaving lead unassigned", {
+    // Se TODOS já bateram a cota, ainda assim atribuímos (nunca deixar lead
+    // sem consultor) — o excedente vai para quem tem MENOS leads hoje.
+    const poolAcimaDaCota = underCota.length === 0;
+    if (poolAcimaDaCota) {
+      console.log("[notify-tier] all consultants at cap — overflow to least loaded", {
         lead_id: lead.id,
-        sheet_source_label: sheetSourceLabel,
         counts: Object.fromEntries(todayCountByMember),
       });
-      return json({
-        ok: true,
-        skipped: "all consultants reached daily lead limit — lead left unassigned for later retry",
-      });
     }
+
     // ===== Prioridade operacional: Micaelly, Nilton e David primeiro =====
     // Enquanto qualquer um deles ainda estiver abaixo da cota diária, TODOS os
     // leads novos vão para eles. Os demais consultores só entram na rotação
@@ -524,14 +511,16 @@ Deno.serve(async (req) => {
         .replace(/[\u0300-\u036f]/g, "");
     const isPriority = (c: any) => PRIORITY_NAMES.some((p) => normName(c).includes(p));
     const isDeprioritized = (c: any) => DEPRIORITY_NAMES.some((p) => normName(c).includes(p));
-    const priorityUnderCota = underCota.filter(isPriority);
-    const regularUnderCota = underCota.filter((c) => !isPriority(c) && !isDeprioritized(c));
+    const base = poolAcimaDaCota ? consultants : underCota;
+    const priorityUnderCota = base.filter(isPriority);
+    const regularUnderCota = base.filter((c) => !isPriority(c) && !isDeprioritized(c));
     const pool =
       priorityUnderCota.length > 0
         ? priorityUnderCota
         : regularUnderCota.length > 0
           ? regularUnderCota
-          : underCota;
+          : base;
+
 
 
     // Ranking: quem tem MENOS leads absolutos hoje vem primeiro (nivelar antes
@@ -557,38 +546,27 @@ Deno.serve(async (req) => {
     });
 
 
-    const chosen = ranked[0];
-    const chosenPhone = normalizePhone(chosen.phone);
-
-    // ===== Safety net contra estouro de cota =====
-    // Entre a contagem inicial (topo do handler) e este ponto podem ter passado
-    // segundos/minutos. Se outra execução do trigger atribuiu um lead ao mesmo
-    // consultor nesse intervalo, `todayCountByMember` está desatualizado e o
-    // "underCota" fica errado. Recontamos AGORA e abortamos se `chosen` já
-    // bateu a cota — o lead fica livre para próxima retentativa.
-    {
-      const chosenLimit = (chosen.daily_lead_limit as number | null) ?? 1;
-      const { count: freshCount } = await admin
-        .from("leads")
-        .select("id", { count: "exact", head: true })
-        .eq("tenant_id", lead.tenant_id)
-        .eq("kind", "lead")
-        .eq("assigned_member_id", chosen.id)
-        .gte("assigned_member_at", sinceToday.toISOString());
-      if ((freshCount ?? 0) >= chosenLimit) {
-        console.log("[notify-tier] chosen consultant already at cap on recount — aborting", {
-          lead_id: lead.id,
-          chosen_id: chosen.id,
-          chosen_name: chosen.display_name,
-          fresh_count: freshCount,
-          limit: chosenLimit,
-        });
-        return json({
-          ok: true,
-          skipped: `chosen ${chosen.display_name} reached daily cap between selection and assignment — lead left unassigned for retry`,
-        });
+    // ===== Recontagem atômica =====
+    // Entre a contagem inicial e este ponto outra execução pode ter atribuído
+    // leads. Recontamos e escolhemos o primeiro do ranking ainda abaixo da cota.
+    // Se todos estiverem no teto, mantemos o primeiro do ranking (nunca deixar
+    // o lead sem consultor atribuído).
+    let chosen = ranked[0];
+    if (!poolAcimaDaCota) {
+      for (const cand of ranked) {
+        const lim = (cand.daily_lead_limit as number | null) ?? 1;
+        const { count: freshCount } = await admin
+          .from("leads")
+          .select("id", { count: "exact", head: true })
+          .eq("tenant_id", lead.tenant_id)
+          .eq("kind", "lead")
+          .eq("assigned_member_id", cand.id)
+          .gte("assigned_member_at", sinceToday.toISOString());
+        if ((freshCount ?? 0) < lim) { chosen = cand; break; }
       }
     }
+    const chosenPhone = normalizePhone(chosen.phone);
+
 
     // Atribui o lead ao escolhido (com guarda de concorrência: só se ainda estiver livre).
     const { data: assigned, error: assignErr } = await admin
