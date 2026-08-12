@@ -130,7 +130,7 @@ async function sendNotifierText(
       message_text: text,
       due_at: new Date(Date.now() + 60_000).toISOString(),
     });
-    await alertNotifierFailure({ ...{} as any, ...{} } as any === null ? null as any : admin, {
+    await alertNotifierFailure(admin, {
       tenantId, leadId, phone, reason: lastError, queued: true,
     });
     return { delivered: false, status: "queued", error: lastError };
