@@ -205,6 +205,10 @@ Deno.serve(async (req) => {
       }
 
       if (!principal?.server_url || !principal?.instance_token) {
+        await alertStaffInApp(admin, lead.tenant_id, lead.id, {
+          title: "Boas-vindas não enviadas",
+          body: `O lead ${lead.name || "(sem nome)"} não recebeu boas-vindas: o WhatsApp do consultor está desconectado e o envio nunca é feito por outra instância.`,
+        });
         return json({ ok: true, skipped: "consultant whatsapp instance not connected" });
       }
     }
