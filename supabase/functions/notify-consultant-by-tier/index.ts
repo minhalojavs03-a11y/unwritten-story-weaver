@@ -546,38 +546,27 @@ Deno.serve(async (req) => {
     });
 
 
-    const chosen = ranked[0];
-    const chosenPhone = normalizePhone(chosen.phone);
-
-    // ===== Safety net contra estouro de cota =====
-    // Entre a contagem inicial (topo do handler) e este ponto podem ter passado
-    // segundos/minutos. Se outra execução do trigger atribuiu um lead ao mesmo
-    // consultor nesse intervalo, `todayCountByMember` está desatualizado e o
-    // "underCota" fica errado. Recontamos AGORA e abortamos se `chosen` já
-    // bateu a cota — o lead fica livre para próxima retentativa.
-    {
-      const chosenLimit = (chosen.daily_lead_limit as number | null) ?? 1;
-      const { count: freshCount } = await admin
-        .from("leads")
-        .select("id", { count: "exact", head: true })
-        .eq("tenant_id", lead.tenant_id)
-        .eq("kind", "lead")
-        .eq("assigned_member_id", chosen.id)
-        .gte("assigned_member_at", sinceToday.toISOString());
-      if ((freshCount ?? 0) >= chosenLimit) {
-        console.log("[notify-tier] chosen consultant already at cap on recount — aborting", {
-          lead_id: lead.id,
-          chosen_id: chosen.id,
-          chosen_name: chosen.display_name,
-          fresh_count: freshCount,
-          limit: chosenLimit,
-        });
-        return json({
-          ok: true,
-          skipped: `chosen ${chosen.display_name} reached daily cap between selection and assignment — lead left unassigned for retry`,
-        });
+    // ===== Recontagem atômica =====
+    // Entre a contagem inicial e este ponto outra execução pode ter atribuído
+    // leads. Recontamos e escolhemos o primeiro do ranking ainda abaixo da cota.
+    // Se todos estiverem no teto, mantemos o primeiro do ranking (nunca deixar
+    // o lead sem consultor atribuído).
+    let chosen = ranked[0];
+    if (!poolAcimaDaCota) {
+      for (const cand of ranked) {
+        const lim = (cand.daily_lead_limit as number | null) ?? 1;
+        const { count: freshCount } = await admin
+          .from("leads")
+          .select("id", { count: "exact", head: true })
+          .eq("tenant_id", lead.tenant_id)
+          .eq("kind", "lead")
+          .eq("assigned_member_id", cand.id)
+          .gte("assigned_member_at", sinceToday.toISOString());
+        if ((freshCount ?? 0) < lim) { chosen = cand; break; }
       }
     }
+    const chosenPhone = normalizePhone(chosen.phone);
+
 
     // Atribui o lead ao escolhido (com guarda de concorrência: só se ainda estiver livre).
     const { data: assigned, error: assignErr } = await admin
