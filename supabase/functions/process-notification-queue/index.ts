@@ -92,16 +92,30 @@ async function processOne(admin: ReturnType<typeof createClient>, type: string) 
       const phone = String(candidate.recipient_phone || "").replace(/\D/g, "");
       const text = candidate.message_text || "";
       if (!phone || !text) throw new Error("missing phone or message_text");
-      await randomSendDelay();
-      const r = await fetch(`${instance.server_url.replace(/\/$/, "")}/send/text`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", token: instance.instance_token },
-        body: JSON.stringify({ number: phone, text, message: text }),
-      });
-      status = r.status;
-      ok = r.ok;
-      if (!ok) errText = (await r.text()).slice(0, 300);
-      else {
+      // Retry interno com backoff: erros 5xx/429/rede da uazapi costumam ser pontuais.
+      const delays = [0, 3000, 8000, 20000];
+      for (let attempt = 0; attempt < delays.length; attempt++) {
+        if (attempt === 0) await randomSendDelay();
+        else await new Promise((r) => setTimeout(r, delays[attempt]));
+        try {
+          const r = await fetch(`${instance.server_url.replace(/\/$/, "")}/send/text`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", token: instance.instance_token },
+            body: JSON.stringify({ number: phone, text, message: text }),
+          });
+          status = r.status;
+          ok = r.ok;
+          if (ok) break;
+          errText = (await r.text()).slice(0, 300);
+          if (r.status >= 400 && r.status < 500 && r.status !== 429) break;
+        } catch (e) {
+          ok = false;
+          status = 0;
+          errText = String(e).slice(0, 300);
+        }
+      }
+      if (ok) {
+
         await admin.from("lead_notifications").insert({
           tenant_id: candidate.tenant_id,
           lead_id: candidate.lead_id,
@@ -129,12 +143,15 @@ async function processOne(admin: ReturnType<typeof createClient>, type: string) 
     }
 
     if (!ok) {
+      const attempts = (candidate.attempts ?? 0) + 1;
+      // Backoff progressivo: 2, 5, 10, 20, 30... minutos, até 8 rodadas.
+      const backoffMin = Math.min(30, 2 * Math.pow(2, Math.max(0, attempts - 1)));
       await admin.from("notification_queue").update({
-        status: candidate.attempts && candidate.attempts >= 3 ? "error" : "pending",
+        status: attempts >= 8 ? "error" : "pending",
         last_error: errText,
-        due_at: new Date(Date.now() + 5 * 60_000).toISOString(),
+        due_at: new Date(Date.now() + backoffMin * 60_000).toISOString(),
       }).eq("id", candidate.id);
-      return { type, lead_id: candidate.lead_id, ok: false, status };
+      return { type, lead_id: candidate.lead_id, ok: false, status, attempts };
     }
     await admin.from("notification_queue").update({
       status: "done",
@@ -146,7 +163,7 @@ async function processOne(admin: ReturnType<typeof createClient>, type: string) 
     await admin.from("notification_queue").update({
       status: "pending",
       last_error: String(e),
-      due_at: new Date(Date.now() + 5 * 60_000).toISOString(),
+      due_at: new Date(Date.now() + 2 * 60_000).toISOString(),
     }).eq("id", candidate.id);
     return { type, lead_id: candidate.lead_id, ok: false, error: String(e) };
   }
