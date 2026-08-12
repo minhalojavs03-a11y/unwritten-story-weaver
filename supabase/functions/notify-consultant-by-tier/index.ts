@@ -89,8 +89,11 @@ async function alertNotifierFailure(admin: any, params: {
   }
 }
 
-// Envia SOMENTE pelo 804 (2 tentativas). Se falhar, enfileira para o cron e
+// Envia SOMENTE pelo 804, com retry e backoff progressivo (erros 5xx/429/rede
+// da uazapi são pontuais). Se ainda assim falhar, enfileira para o cron e
 // dispara aviso no painel. Nunca usa outra instância como remetente.
+const NOTIFIER_RETRY_DELAYS_MS = [0, 3000, 8000, 20000, 45000];
+
 async function sendNotifierText(
   admin: any,
   tenantId: string,
@@ -102,23 +105,30 @@ async function sendNotifierText(
   let lastError: string | null = inst ? null : "notifier 804 instance unavailable";
 
   if (inst) {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < NOTIFIER_RETRY_DELAYS_MS.length; attempt++) {
       try {
         if (attempt === 0) await randomSendDelay();
-        else await new Promise((r) => setTimeout(r, 2000));
+        else await new Promise((r) => setTimeout(r, NOTIFIER_RETRY_DELAYS_MS[attempt]));
         const r = await fetch(`${String(inst.server_url).replace(/\/$/, "")}/send/text`, {
           method: "POST",
           headers: { "Content-Type": "application/json", token: inst.instance_token },
           body: JSON.stringify({ number: phone, text, message: text }),
         });
-        if (r.ok) return { delivered: true, status: "sent", error: null };
+        if (r.ok) {
+          if (attempt > 0) console.log(`[804] enviado após ${attempt + 1} tentativas`, phone);
+          return { delivered: true, status: "sent", error: null };
+        }
         lastError = `http ${r.status}`;
-        if (r.status >= 400 && r.status < 500) break; // erro do payload: não adianta repetir
+        // 4xx (exceto 429) é erro de payload/credencial: repetir não resolve.
+        if (r.status >= 400 && r.status < 500 && r.status !== 429) break;
+        console.warn(`[804] tentativa ${attempt + 1} falhou (${lastError}) — retry`, phone);
       } catch (e) {
         lastError = String(e);
+        console.warn(`[804] tentativa ${attempt + 1} com erro de rede — retry`, lastError);
       }
     }
   }
+
 
   // Nunca cai para outra instância: enfileira e avisa no painel.
   try {
