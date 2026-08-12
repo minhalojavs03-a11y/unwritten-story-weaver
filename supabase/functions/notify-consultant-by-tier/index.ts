@@ -428,26 +428,17 @@ Deno.serve(async (req) => {
         if ((i as any).seller_user_id) connectedUserIds.add((i as any).seller_user_id);
       }
     }
-    const connectedConsultants = baseConsultants.filter((c: any) => {
+    const onlineConsultants = baseConsultants.filter((c: any) => {
       if (!c.user_id) return false;
       if (c.receive_leads_when_offline === true) return true;
       return connectedUserIds.has(c.user_id);
     });
-    const fallbackUsedOffline = false;
-    if (connectedConsultants.length === 0) {
-      // Ninguém conectado no momento — NÃO atribui a offline. Deixa o lead
-      // livre para uma nova tentativa quando alguém reconectar. O reprocesso
-      // é acionado por: (a) webhook de status "connected" do WhatsApp,
-      // (b) próxima chegada de lead, (c) botão manual de redistribuir.
-      console.log("[notify-tier] no connected consultants — leaving lead unassigned for retry", {
-        lead_id: lead.id,
-        sheet_source_label: sheetSourceLabel,
-      });
-      return json({
-        ok: true,
-        skipped: "no connected consultant available — lead left unassigned for retry",
-      });
-    }
+    // REGRA DO DONO: nunca deixar lead "sem consultor atribuído".
+    // WhatsApp desconectado NÃO impede a atribuição — se ninguém estiver
+    // conectado, distribui mesmo assim (aviso sai pelo número da empresa).
+    const fallbackUsedOffline = onlineConsultants.length === 0;
+    const connectedConsultants = fallbackUsedOffline ? baseConsultants : onlineConsultants;
+
 
     
 
