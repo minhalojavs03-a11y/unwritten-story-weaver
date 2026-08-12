@@ -12,3 +12,7 @@ verify_jwt = false
 [functions.cleanup-storage]
 verify_jwt = false
 
+[functions.reactivate-lost-leads]
+verify_jwt = false
+
+
