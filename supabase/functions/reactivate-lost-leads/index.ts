@@ -67,16 +67,32 @@ function firstName(name: string | null): string {
 }
 
 // "objetivo/interesse" do lead, na ordem: interesse declarado → bem → valor da carta.
+function cleanInterest(raw: string): string {
+  return raw
+    .replace(/[_]+/g, " ")
+    .replace(/\s*-\s*/g, " a ")
+    .replace(/r\$\s*/gi, "R$ ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function interestLabel(lead: any): string {
-  const interest = (lead.interest || "").trim();
-  if (interest) return interest;
-  const asset = (lead.asset_type || "").trim();
+  const asset = (lead.asset_type || "").trim().toLowerCase();
   const credit = lead.credit_value != null && Number(lead.credit_value) > 0 ? Number(lead.credit_value) : null;
-  if (asset && credit) return `um consórcio de ${asset.toLowerCase()} de ${brl(credit)}`;
-  if (asset) return `um consórcio de ${asset.toLowerCase()}`;
+  const interest = cleanInterest(lead.interest || "");
+  // Interesse que é só faixa de valor (ex.: "R$ 300 mil a R$ 500 mil").
+  if (interest && /r\$/i.test(interest) && !/[a-zA-Z]{4,}/.test(interest.replace(/r\$|mil|milh(ã|a)o(es)?/gi, ""))) {
+    return asset
+      ? `um consórcio de ${asset} na faixa de ${interest}`
+      : `uma carta de crédito na faixa de ${interest}`;
+  }
+  if (interest) return interest;
+  if (asset && credit) return `um consórcio de ${asset} de ${brl(credit)}`;
+  if (asset) return `um consórcio de ${asset}`;
   if (credit) return `uma carta de crédito de ${brl(credit)}`;
   return "uma carta de crédito";
 }
+
 
 function buildMessage(lead: any): string {
   const greeting = saoPauloHour() < 12 ? "Bom dia" : "Boa tarde";
