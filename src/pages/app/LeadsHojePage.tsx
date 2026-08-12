@@ -24,6 +24,8 @@ type LeadRow = {
   assigned_member_id: string | null;
   assigned_to: string | null;
   origin: "lead" | "nilton";
+  is_followup?: boolean;
+  followup_at?: string | null;
 };
 
 type MemberRow = {
@@ -126,7 +128,7 @@ export default function LeadsHojePage() {
     const endISO = range.end.toISOString();
     (async () => {
       setLoading(true);
-      const [leadsRes, niltonRes, membersRes] = await Promise.all([
+      const [leadsRes, niltonRes, followupRes, membersRes] = await Promise.all([
         supabase
           .from("leads")
           .select("id, name, phone, stage, source, credit_value, created_at, assigned_member_at, assigned_member_id, assigned_to, kind, metadata")
@@ -150,6 +152,14 @@ export default function LeadsHojePage() {
           )
           .order("created_time", { ascending: false })
           .limit(5000),
+        supabase
+          .from("leads")
+          .select("id, name, phone, stage, source, credit_value, created_at, assigned_member_at, assigned_member_id, assigned_to, kind, metadata")
+          .eq("tenant_id", FERACON_TENANT_ID)
+          .eq("kind", "lead")
+          .gte("metadata->>reactivated_at", startISO)
+          .lt("metadata->>reactivated_at", endISO)
+          .limit(2000),
         supabase
           .from("tenant_members")
           .select("id, user_id, display_name, role_label, avatar_url, avatar_color, is_active")
@@ -196,7 +206,35 @@ export default function LeadsHojePage() {
         sheet_source_label: "Leads Nilton",
       }));
 
-      setLeads([...baseLeads, ...niltonLeads]);
+      const followupLeads: LeadRow[] = ((followupRes.data ?? []) as any[]).map((l) => {
+        const md = (l.metadata ?? {}) as Record<string, unknown>;
+        return {
+          id: l.id,
+          name: l.name ?? null,
+          phone: l.phone ?? null,
+          stage: l.stage ?? null,
+          source: l.source ?? null,
+          credit_value: l.credit_value as number | null,
+          created_at: l.created_at,
+          assigned_at: l.assigned_member_at ?? null,
+          assigned_member_id: l.assigned_member_id ?? null,
+          assigned_to: l.assigned_to ?? null,
+          origin: "lead" as const,
+          sheet_source_label: typeof md.sheet_source_label === "string" ? (md.sheet_source_label as string) : null,
+          is_followup: true,
+          followup_at: typeof md.reactivated_at === "string" ? (md.reactivated_at as string) : null,
+        };
+      });
+
+      const merged = new Map<string, LeadRow>();
+      [...baseLeads, ...niltonLeads].forEach((l) => merged.set(`${l.origin}-${l.id}`, l));
+      followupLeads.forEach((l) => {
+        const key = `lead-${l.id}`;
+        const existing = merged.get(key);
+        merged.set(key, existing ? { ...existing, is_followup: true, followup_at: l.followup_at } : l);
+      });
+
+      setLeads(Array.from(merged.values()));
       setMembers(((membersRes.data ?? []) as Array<{
         id: string; user_id: string | null; display_name: string;
         role_label: string | null; avatar_url: string | null; avatar_color: string | null;
@@ -398,6 +436,11 @@ export default function LeadsHojePage() {
                         <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-600">
                           {l.origin === "nilton" ? "Planilha" : (l.source || "direto")}
                         </span>
+                        {l.is_followup && (
+                          <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                            Follow-up
+                          </span>
+                        )}
                         {canSeeSource && l.sheet_source_label && (
                           <span
                             className={cn(
@@ -414,7 +457,7 @@ export default function LeadsHojePage() {
                         )}
                       </div>
                       <div className="mt-0.5 text-xs text-muted-foreground">
-                        {fmtHora(l.assigned_at ?? l.created_at)} • {stageLabels[(l.stage ?? "novo") as keyof typeof stageLabels] ?? l.stage ?? "—"}
+                        {l.is_followup && l.followup_at ? `Reativado ${fmtHora(l.followup_at)}` : fmtHora(l.assigned_at ?? l.created_at)} • {stageLabels[(l.stage ?? "novo") as keyof typeof stageLabels] ?? l.stage ?? "—"}
                         {l.phone ? ` • ${displayPhone(l.phone, canViewPhoneFn(l as any))}` : ""}
                       </div>
                     </div>
