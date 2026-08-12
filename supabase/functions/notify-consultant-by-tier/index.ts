@@ -667,7 +667,7 @@ Deno.serve(async (req) => {
     // ===== WhatsApp =====
     const text = buildLeadNotice(lead, creditValue);
     let delivered = false;
-    let waStatus: "sent" | "failed" | "skipped" = "skipped";
+    let waStatus: "sent" | "failed" | "skipped" | "queued" = "skipped";
     let waError: string | null = null;
 
     if (skipWhatsappForImported) {
@@ -680,27 +680,10 @@ Deno.serve(async (req) => {
       waStatus = "failed";
       waError = "invalid phone";
     } else {
-      const sender = await pickNotifierInstance(admin, lead.tenant_id);
-      if (sender?.server_url && sender?.instance_token) {
-        try {
-          await randomSendDelay();
-          const r = await fetch(`${sender.server_url}/send/text`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", token: sender.instance_token! },
-            body: JSON.stringify({ number: chosenPhone, text }),
-          });
-          delivered = r.ok;
-          waStatus = r.ok ? "sent" : "failed";
-          if (!r.ok) waError = `http ${r.status}`;
-        } catch (e) {
-          console.error("whatsapp send error", e);
-          waStatus = "failed";
-          waError = String(e);
-        }
-      } else {
-        waStatus = "failed";
-        waError = "no connected whatsapp instance";
-      }
+      const res = await sendNotifierText(admin, lead.tenant_id, chosenPhone, text, lead.id);
+      delivered = res.delivered;
+      waStatus = res.status;
+      waError = res.error;
     }
 
     await admin.from("lead_notifications").insert({
