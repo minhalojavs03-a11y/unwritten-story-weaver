@@ -66,19 +66,9 @@ async function pickCompanyInstance(admin: any, tenantId: string) {
     .limit(1)
     .maybeSingle();
   if (principal?.server_url && principal?.instance_token) return principal;
-  // Fallback (apenas se o número principal estiver fora do ar).
-  // NUNCA usar o número do consultor Arley Davies (domdaviesdev) para outros
-  // consultores — o WhatsApp dele responde exclusivamente pelos leads dele.
-  const { data: any_ } = await admin
-    .from("whatsapp_instances")
-    .select("id,server_url,instance_token,phone_number,is_connected,status,updated_at")
-    .eq("tenant_id", tenantId)
-    .or("is_connected.eq.true,status.eq.connected")
-    .or(`seller_user_id.is.null,seller_user_id.neq.${DAVIES_USER_ID}`)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  return any_;
+  // REGRA FIXA: nunca usar outra instância conectada como remetente.
+  // Se o número da empresa (804) estiver fora do ar, não envia.
+  return null;
 }
 
 
