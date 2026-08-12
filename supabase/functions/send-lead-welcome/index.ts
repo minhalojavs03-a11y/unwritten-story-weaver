@@ -55,6 +55,38 @@ async function pickConsultantInstance(admin: any, tenantId: string, assignedMemb
   return null;
 }
 
+// Avisa no painel supervisores (Antonio), donos (Ediane) e superadmins.
+async function alertStaffInApp(
+  admin: any,
+  tenantId: string,
+  leadId: string | null,
+  msg: { title: string; body: string },
+) {
+  try {
+    const recipients = new Set<string>();
+    const { data: staff } = await admin
+      .from("tenant_memberships").select("user_id, role")
+      .eq("tenant_id", tenantId).in("role", ["owner", "supervisor", "admin"]);
+    for (const s of staff || []) if (s.user_id) recipients.add(s.user_id);
+    const { data: supers } = await admin
+      .from("user_roles").select("user_id").eq("role", "superadmin");
+    for (const s of supers || []) if (s.user_id) recipients.add(s.user_id);
+    if (recipients.size === 0) return;
+    const rows = [...recipients].map((uid) => ({
+      tenant_id: tenantId,
+      recipient_user_id: uid,
+      type: "notifier_failure",
+      title: msg.title,
+      body: msg.body,
+      lead_id: leadId,
+    }));
+    const { error } = await admin.from("app_notifications").insert(rows);
+    if (error) console.error("alertStaffInApp insert error", error);
+  } catch (e) {
+    console.error("alertStaffInApp error", e);
+  }
+}
+
 async function pickCompanyInstance(admin: any, tenantId: string) {
   const { data: principal } = await admin
     .from("whatsapp_instances")
@@ -66,19 +98,9 @@ async function pickCompanyInstance(admin: any, tenantId: string) {
     .limit(1)
     .maybeSingle();
   if (principal?.server_url && principal?.instance_token) return principal;
-  // Fallback (apenas se o número principal estiver fora do ar).
-  // NUNCA usar o número do consultor Arley Davies (domdaviesdev) para outros
-  // consultores — o WhatsApp dele responde exclusivamente pelos leads dele.
-  const { data: any_ } = await admin
-    .from("whatsapp_instances")
-    .select("id,server_url,instance_token,phone_number,is_connected,status,updated_at")
-    .eq("tenant_id", tenantId)
-    .or("is_connected.eq.true,status.eq.connected")
-    .or(`seller_user_id.is.null,seller_user_id.neq.${DAVIES_USER_ID}`)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  return any_;
+  // REGRA FIXA: nunca usar outra instância conectada como remetente.
+  // Se o número da empresa (804) estiver fora do ar, não envia.
+  return null;
 }
 
 
@@ -215,6 +237,10 @@ Deno.serve(async (req) => {
       }
 
       if (!principal?.server_url || !principal?.instance_token) {
+        await alertStaffInApp(admin, lead.tenant_id, lead.id, {
+          title: "Boas-vindas não enviadas",
+          body: `O lead ${lead.name || "(sem nome)"} não recebeu boas-vindas: o WhatsApp do consultor está desconectado e o envio nunca é feito por outra instância.`,
+        });
         return json({ ok: true, skipped: "consultant whatsapp instance not connected" });
       }
     }

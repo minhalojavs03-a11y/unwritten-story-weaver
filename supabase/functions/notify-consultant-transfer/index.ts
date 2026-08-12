@@ -34,17 +34,9 @@ async function pickNotifierInstance(admin: any, tenantId: string) {
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  // REGRA FIXA: avisos internos só saem do 804 — nunca usar outra instância.
   if (sup?.server_url && sup?.instance_token) return sup;
-  const { data: any_ } = await admin
-    .from("whatsapp_instances")
-    .select("server_url,instance_token,status,is_connected,phone_number")
-    .eq("tenant_id", tenantId)
-    .or("is_connected.eq.true,status.eq.connected")
-    .or(`seller_user_id.is.null,seller_user_id.neq.${DAVIES_USER_ID}`)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  return any_;
+  return null;
 }
 
 function onlyDigits(s: string | null | undefined) {
