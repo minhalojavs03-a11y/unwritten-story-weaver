@@ -54,6 +54,67 @@ async function pickNotifierInstance(admin: any, tenantId: string) {
   return any_;
 }
 
+// Lista de instâncias candidatas para enviar o aviso interno: 804 primeiro,
+// depois qualquer outra conectada (evita blackout quando o 804 devolve erro).
+async function listNotifierInstances(admin: any, tenantId: string) {
+  const { data } = await admin
+    .from("whatsapp_instances")
+    .select("server_url,instance_token,phone_number,status,is_connected,updated_at")
+    .eq("tenant_id", tenantId)
+    .or("is_connected.eq.true,status.eq.connected")
+    .order("updated_at", { ascending: false });
+  const rows = (data ?? []).filter((i: any) => i.server_url && i.instance_token);
+  const isNotifier = (i: any) => String(i.phone_number || "").includes(NOTIFIER_PHONE_DIGITS);
+  return [...rows.filter(isNotifier), ...rows.filter((i: any) => !isNotifier(i))];
+}
+
+// Envia com retry (2 tentativas por instância) e cai para a próxima instância.
+// Se tudo falhar, enfileira em notification_queue para o cron reprocessar.
+async function sendNotifierText(
+  admin: any,
+  tenantId: string,
+  phone: string,
+  text: string,
+  leadId: string | null,
+): Promise<{ delivered: boolean; status: "sent" | "failed" | "queued"; error: string | null }> {
+  const instances = await listNotifierInstances(admin, tenantId);
+  let lastError = instances.length ? null : "no connected whatsapp instance";
+
+  for (const inst of instances) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        if (attempt === 0) await randomSendDelay();
+        else await new Promise((r) => setTimeout(r, 2000));
+        const r = await fetch(`${String(inst.server_url).replace(/\/$/, "")}/send/text`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", token: inst.instance_token },
+          body: JSON.stringify({ number: phone, text, message: text }),
+        });
+        if (r.ok) return { delivered: true, status: "sent", error: null };
+        lastError = `http ${r.status}`;
+        if (r.status >= 400 && r.status < 500) break; // erro do payload: não adianta repetir
+      } catch (e) {
+        lastError = String(e);
+      }
+    }
+  }
+
+  // Fallback final: enfileira para reenvio automático pelo cron.
+  try {
+    await admin.from("notification_queue").insert({
+      tenant_id: tenantId,
+      lead_id: leadId,
+      type: "announcement",
+      recipient_phone: phone,
+      message_text: text,
+      due_at: new Date(Date.now() + 60_000).toISOString(),
+    });
+    return { delivered: false, status: "queued", error: lastError };
+  } catch (e) {
+    return { delivered: false, status: "failed", error: `${lastError} / queue: ${String(e)}` };
+  }
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
