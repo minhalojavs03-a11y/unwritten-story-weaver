@@ -128,8 +128,10 @@ export function CloserAgenda({ scope }: { scope?: { tenantId?: string | null; me
           Agenda · por closer
         </h2>
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1 text-xs font-bold text-success">
-            <BadgeDollarSign className="h-3.5 w-3.5" /> {money(totalValue) ?? "R$ 0"}
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2.5 py-1 text-xs font-bold text-success">
+            <BadgeDollarSign className="h-3.5 w-3.5" />
+            <span>Valor em pauta</span>
+            <span className="tabular-nums">{money(totalValue) ?? "R$ 0"}</span>
           </span>
           <Link to="/agenda" className="text-xs font-semibold text-primary hover:underline">
             Ver agenda completa
