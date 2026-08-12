@@ -219,6 +219,12 @@ export function CloserAgenda({ scope }: { scope?: { tenantId?: string | null; me
           const closed = items.filter((m) => m.status === "fechou").length;
           const rate = items.length ? Math.round((closed / items.length) * 100) : 0;
           const closedValue = items.filter((m) => m.status === "fechou").reduce((a, m) => a + (m.value ?? 0), 0);
+
+          const monthItems = byCloserMonth.map.get(c.id) ?? [];
+          const monthClosed = monthItems.filter((m) => m.status === "fechou").length;
+          const monthRate = monthItems.length ? Math.round((monthClosed / monthItems.length) * 100) : 0;
+          const monthClosedValue = monthItems.filter((m) => m.status === "fechou").reduce((a, m) => a + (m.value ?? 0), 0);
+
           return (
             <div key={c.id} className="rounded-xl border border-border/70 bg-muted/10 p-3">
               <div className="mb-2 rounded-lg border border-border/60 bg-card px-3 py-2.5 shadow-sm">
@@ -238,8 +244,10 @@ export function CloserAgenda({ scope }: { scope?: { tenantId?: string | null; me
                     </span>
                   </span>
                 </div>
+
+                {/* Barra 1: período selecionado */}
                 <div className="mt-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  <span>Taxa de conversão · {closed}/{items.length} fechados</span>
+                  <span>Taxa {periodLabel[period]} · {closed}/{items.length} fechados</span>
                   {closedValue > 0 && <span className="text-success">{money(closedValue)}</span>}
                 </div>
                 <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -248,11 +256,23 @@ export function CloserAgenda({ scope }: { scope?: { tenantId?: string | null; me
                     style={{ width: `${rate}%`, background: rate > 0 ? undefined : "transparent" }}
                   />
                 </div>
+
+                {/* Barra 2: mês */}
+                <div className="mt-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <span>Taxa Mês · {monthClosed}/{monthItems.length} fechados</span>
+                  {monthClosedValue > 0 && <span className="text-success">{money(monthClosedValue)}</span>}
+                </div>
+                <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-info transition-all"
+                    style={{ width: `${monthRate}%`, background: monthRate > 0 ? undefined : "transparent" }}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 {items.length === 0 && (
                   <p className="rounded-lg border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
-                    {isLoading ? "Carregando…" : "Nenhuma reunião neste filtro"}
+                    {isLoading || isLoadingMonth ? "Carregando…" : "Nenhuma reunião neste filtro"}
                   </p>
                 )}
                 {items.map((m) => (
@@ -263,6 +283,7 @@ export function CloserAgenda({ scope }: { scope?: { tenantId?: string | null; me
           );
         })}
       </div>
+
 
       {byCloser.unassigned.length > 0 && (
         <div className="mt-3 rounded-xl border border-dashed p-3">
