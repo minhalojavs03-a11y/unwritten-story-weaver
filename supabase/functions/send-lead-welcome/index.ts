@@ -409,7 +409,7 @@ Deno.serve(async (req) => {
       tenant_id: lead.tenant_id,
       lead_id: lead.id,
       type: "welcome",
-      recipient_phone: phoneDigits,
+      recipient_phone: usedPhone,
       message_sent: text,
       delivered: true,
     });
