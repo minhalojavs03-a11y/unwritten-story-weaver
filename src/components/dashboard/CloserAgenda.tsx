@@ -195,14 +195,19 @@ function SlotCell({
   closedSlot?: boolean;
   onPickFree?: (closerId: string, slot: string) => void;
 }) {
-  const blocked = !!closedSlot && items.length === 0;
-  const { setNodeRef, isOver } = useDroppable({ id: `${closerId}__${slot}`, disabled: disabled || blocked });
+  const closed = !!closedSlot;
+  const blocked = closed && items.length === 0;
+  const { setNodeRef, isOver } = useDroppable({ id: `${closerId}__${slot}`, disabled: disabled || closed });
   const free = items.length === 0;
 
   if (blocked) {
     return (
-      <div className="flex min-h-[44px] items-center justify-center rounded-xl border border-dashed border-border/40 bg-muted/10 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">
-        Encerrado
+      <div
+        aria-disabled
+        title="Horário indisponível no momento"
+        className="flex min-h-[44px] cursor-not-allowed select-none items-center justify-center rounded-xl border border-dashed border-border/40 bg-muted/10 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50"
+      >
+        Indisponível
       </div>
     );
   }
@@ -213,25 +218,32 @@ function SlotCell({
       className={cn(
         "min-h-[44px] rounded-xl border p-1 transition-colors",
         free ? "border-dashed border-border/70 bg-muted/20" : "border-transparent",
-        isOver && "border-primary bg-primary/10 ring-2 ring-primary/30",
+        isOver && !closed && "border-primary bg-primary/10 ring-2 ring-primary/30",
+        closed && "opacity-70",
       )}
     >
       {free ? (
         <button
           type="button"
-          onClick={() => onPickFree?.(closerId, slot)}
-          className="flex h-full min-h-[36px] w-full items-center justify-center gap-1 rounded-lg text-[11px] font-semibold text-muted-foreground/70 transition-colors hover:bg-primary/10 hover:text-primary"
+          disabled={closed}
+          onClick={() => !closed && onPickFree?.(closerId, slot)}
+          className="flex h-full min-h-[36px] w-full items-center justify-center gap-1 rounded-lg text-[11px] font-semibold text-muted-foreground/70 transition-colors hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-muted-foreground/50"
         >
           <Plus className="h-3 w-3" /> Livre
         </button>
       ) : (
         <div className="space-y-1.5">
+          {closed && (
+            <p className="px-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+              Indisponível
+            </p>
+          )}
           {items.map((m) => (
             <MeetingCard
               key={m.leadId}
               m={m}
               consultant={consultantName(m.consultantMemberId)}
-              draggable={!disabled}
+              draggable={!disabled && !closed}
               compact
             />
           ))}
@@ -240,6 +252,7 @@ function SlotCell({
     </div>
   );
 }
+
 
 
 
