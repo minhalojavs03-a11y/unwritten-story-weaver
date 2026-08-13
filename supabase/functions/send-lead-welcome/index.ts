@@ -304,19 +304,54 @@ Deno.serve(async (req) => {
         `Posso te enviar agora as opções de carta e parcela que mais se encaixam no seu perfil?`;
 
     const phoneDigits = String(lead.phone).replace(/\D/g, "");
+    // Alguns números do Meta chegam com/sem o nono dígito. Se o provedor disser
+    // que "não está no WhatsApp", tentamos a variante antes de desistir.
+    function phoneVariants(d: string): string[] {
+      const out = [d];
+      const m = d.match(/^55(\d{2})(\d+)$/);
+      if (m) {
+        const [, ddd, rest] = m;
+        if (rest.length === 9 && rest.startsWith("9")) out.push(`55${ddd}${rest.slice(1)}`);
+        else if (rest.length === 8) out.push(`55${ddd}9${rest}`);
+      }
+      return [...new Set(out)];
+    }
+
     await randomSendDelay();
     await sendTypingIndicator(principal.server_url, principal.instance_token, phoneDigits, text);
 
-    const r = await fetch(`${principal.server_url.replace(/\/$/, "")}/send/text`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", token: principal.instance_token },
-      body: JSON.stringify({ number: phoneDigits, text, message: text }),
-    });
-    const { raw, data } = await parseProviderResponse(r);
-    const providerId = providerMessageId(data);
+    let r!: Response, raw = "", data: any = {}, providerId: string | null = null;
+    let usedPhone = phoneDigits;
+    for (const candidate of phoneVariants(phoneDigits)) {
+      usedPhone = candidate;
+      r = await fetch(`${principal.server_url.replace(/\/$/, "")}/send/text`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", token: principal.instance_token },
+        body: JSON.stringify({ number: candidate, text, message: text }),
+      });
+      ({ raw, data } = await parseProviderResponse(r));
+      providerId = providerMessageId(data);
+      if (r.ok && providerId) break;
+      if (!/not on whatsapp|não está no whatsapp/i.test(raw)) break;
+      console.warn("[welcome] number not on whatsapp, trying variant", candidate);
+    }
     if (!r.ok || !providerId) {
       const detail = (!providerId && r.ok ? `provider accepted without message id: ${raw}` : raw).slice(0, 300);
       console.error("welcome send failed", r.status, "instance", principal.id, detail);
+      if (/not on whatsapp|não está no whatsapp/i.test(detail)) {
+        await alertStaffInApp(admin, lead.tenant_id, lead.id, {
+          title: "Boas-vindas não enviadas (número inválido)",
+          body: `O lead ${lead.name || "(sem nome)"} (${lead.phone}) não tem WhatsApp nesse número. Confirmar o contato manualmente.`,
+        });
+        await admin.from("lead_notifications").insert({
+          tenant_id: lead.tenant_id,
+          lead_id: lead.id,
+          type: "welcome",
+          recipient_phone: phoneDigits,
+          message_sent: "[falhou: número não está no WhatsApp]",
+          delivered: false,
+        });
+      }
       if (r.status === 503 && /not reconnectable|disconnected/i.test(detail)) {
         await admin.from("whatsapp_instances")
           .update({ is_connected: false, status: "disconnected", updated_at: new Date().toISOString() })
@@ -324,6 +359,7 @@ Deno.serve(async (req) => {
       }
       return json({ error: `provider ${r.status}`, detail }, 502);
     }
+
     const instance = principal;
 
 
@@ -373,7 +409,7 @@ Deno.serve(async (req) => {
       tenant_id: lead.tenant_id,
       lead_id: lead.id,
       type: "welcome",
-      recipient_phone: phoneDigits,
+      recipient_phone: usedPhone,
       message_sent: text,
       delivered: true,
     });
