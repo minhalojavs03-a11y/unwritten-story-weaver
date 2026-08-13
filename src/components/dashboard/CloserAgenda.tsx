@@ -226,10 +226,15 @@ export function CloserAgenda({
   const [closerFilter, setCloserFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [dragging, setDragging] = useState<MeetingItem | null>(null);
+  const [picker, setPicker] = useState<{ closerId: string; slot: string } | null>(null);
+  const [pickerSearch, setPickerSearch] = useState("");
+  const isMobile = useIsMobile();
+  const [activeCloser, setActiveCloser] = useState<string>(CLOSERS[0]?.id ?? "");
 
   const { start, end } = useMemo(() => rangeOf(period), [period]);
   const { meetings, isLoading } = useCloserMeetings(start, end, scope);
   const { data: members = [] } = useTenantMembers();
+  const { data: allLeads = [] } = useLeads({ kind: "all", ...(scope ?? {}) });
   const updateLead = useUpdateLead();
   const memberName = (id: string | null) => members.find((m: any) => m.id === id)?.display_name ?? undefined;
 
