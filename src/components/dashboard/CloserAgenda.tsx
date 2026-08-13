@@ -184,6 +184,7 @@ function SlotCell({
   items,
   consultantName,
   disabled,
+  closedSlot,
   onPickFree,
 }: {
   closerId: string;
@@ -191,10 +192,20 @@ function SlotCell({
   items: MeetingItem[];
   consultantName: (id: string | null) => string | undefined;
   disabled?: boolean;
+  closedSlot?: boolean;
   onPickFree?: (closerId: string, slot: string) => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `${closerId}__${slot}`, disabled });
+  const blocked = !!closedSlot && items.length === 0;
+  const { setNodeRef, isOver } = useDroppable({ id: `${closerId}__${slot}`, disabled: disabled || blocked });
   const free = items.length === 0;
+
+  if (blocked) {
+    return (
+      <div className="flex min-h-[44px] items-center justify-center rounded-xl border border-dashed border-border/40 bg-muted/10 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">
+        Encerrado
+      </div>
+    );
+  }
 
   return (
     <div
@@ -229,6 +240,7 @@ function SlotCell({
     </div>
   );
 }
+
 
 
 /* ---------------- Componente principal ---------------- */
