@@ -520,6 +520,32 @@ export function CloserAgenda({
                 <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                   <div className="h-full rounded-full bg-success transition-all" style={{ width: `${rate}%` }} />
                 </div>
+                {isDayView && (
+                  <button
+                    type="button"
+                    onClick={() => toggleNight(c.id)}
+                    aria-pressed={!!nightOpen[c.id]}
+                    className={cn(
+                      "mt-2 flex w-full items-center justify-between gap-2 rounded-lg border px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors",
+                      nightOpen[c.id]
+                        ? "border-success/40 bg-success/10 text-success"
+                        : "border-border bg-muted/30 text-muted-foreground hover:bg-muted/60",
+                    )}
+                  >
+                    <span className="flex items-center gap-1">
+                      <Moon className="h-3 w-3" /> 18h–21h
+                    </span>
+                    <span className={cn(
+                      "flex h-4 w-8 shrink-0 items-center rounded-full p-0.5 transition-colors",
+                      nightOpen[c.id] ? "bg-success" : "bg-muted-foreground/30",
+                    )}>
+                      <span className={cn(
+                        "h-3 w-3 rounded-full bg-white transition-transform",
+                        nightOpen[c.id] && "translate-x-4",
+                      )} />
+                    </span>
+                  </button>
+                )}
               </div>
             );
           })}
@@ -546,10 +572,12 @@ export function CloserAgenda({
                         slot={slot}
                         items={items}
                         consultantName={memberName}
+                        closedSlot={isNightSlot(slot) && !nightOpen[c.id]}
                         onPickFree={(closerId, s) => setPicker({ closerId, slot: s })}
                       />
                     );
                   })}
+
                 </div>
               );
             })}
