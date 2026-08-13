@@ -17,9 +17,11 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCloserMeetings, type MeetingItem } from "@/hooks/useCloserAgenda";
-import { useTenantMembers, useUpdateLead } from "@/hooks/useData";
+import { useTenantMembers, useUpdateLead, useLeads } from "@/hooks/useData";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { CLOSERS } from "@/lib/closers";
 
 type Period = "today" | "tomorrow" | "week" | "month" | "all";
@@ -163,12 +165,14 @@ function SlotCell({
   items,
   consultantName,
   disabled,
+  onPickFree,
 }: {
   closerId: string;
   slot: string;
   items: MeetingItem[];
   consultantName: (id: string | null) => string | undefined;
   disabled?: boolean;
+  onPickFree?: (closerId: string, slot: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `${closerId}__${slot}`, disabled });
   const free = items.length === 0;
@@ -183,9 +187,13 @@ function SlotCell({
       )}
     >
       {free ? (
-        <div className="flex h-full min-h-[36px] items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground/70">
+        <button
+          type="button"
+          onClick={() => onPickFree?.(closerId, slot)}
+          className="flex h-full min-h-[36px] w-full items-center justify-center gap-1 rounded-lg text-[11px] font-semibold text-muted-foreground/70 transition-colors hover:bg-primary/10 hover:text-primary"
+        >
           <Plus className="h-3 w-3" /> Livre
-        </div>
+        </button>
       ) : (
         <div className="space-y-1.5">
           {items.map((m) => (
@@ -203,6 +211,7 @@ function SlotCell({
   );
 }
 
+
 /* ---------------- Componente principal ---------------- */
 
 export function CloserAgenda({
@@ -217,10 +226,15 @@ export function CloserAgenda({
   const [closerFilter, setCloserFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [dragging, setDragging] = useState<MeetingItem | null>(null);
+  const [picker, setPicker] = useState<{ closerId: string; slot: string } | null>(null);
+  const [pickerSearch, setPickerSearch] = useState("");
+  const isMobile = useIsMobile();
+  const [activeCloser, setActiveCloser] = useState<string>(CLOSERS[0]?.id ?? "");
 
   const { start, end } = useMemo(() => rangeOf(period), [period]);
   const { meetings, isLoading } = useCloserMeetings(start, end, scope);
   const { data: members = [] } = useTenantMembers();
+  const { data: allLeads = [] } = useLeads({ kind: "all", ...(scope ?? {}) });
   const updateLead = useUpdateLead();
   const memberName = (id: string | null) => members.find((m: any) => m.id === id)?.display_name ?? undefined;
 
@@ -309,96 +323,157 @@ export function CloserAgenda({
     void moveMeeting(m, closerId, slot);
   }
 
+  /** Agenda um lead existente no horário/closer escolhido. */
+  async function scheduleLeadAt(lead: any, closerId: string, slot: string) {
+    const closer = CLOSERS.find((c) => c.id === closerId);
+    if (!closer) return;
+    const [h, min] = slot.split(":").map(Number);
+    const target = new Date(dayDate);
+    target.setHours(h, min, 0, 0);
+    const meta: Record<string, any> = { ...((lead.metadata ?? {}) as Record<string, any>) };
+    meta.meeting_scheduled_at = `${dateKey(target)}T${pad(h)}:${pad(min)}:00`;
+    meta.meeting_closer_id = closerId;
+    meta.meeting_closer_name = closer.name;
+    delete meta.meeting_rescheduled;
+    delete meta.meeting_rescheduled_to;
+    try {
+      await updateLead.mutateAsync({ id: lead.id, patch: { metadata: meta } });
+      toast.success(`${lead.name || lead.phone} agendado com ${closer.name} às ${slot}`);
+      setPicker(null);
+      setPickerSearch("");
+    } catch (e: any) {
+      toast.error("Não foi possível agendar", { description: e?.message });
+    }
+  }
+
+  const pickerLeads = useMemo(() => {
+    if (!picker) return [];
+    const q = pickerSearch.trim().toLowerCase();
+    const scheduled = new Set(filtered.map((m) => m.leadId));
+    return (allLeads as any[])
+      .filter((l) => !scheduled.has(l.id))
+      .filter((l) => !q || `${l.name ?? ""} ${l.phone ?? ""}`.toLowerCase().includes(q))
+      .slice(0, 40);
+  }, [picker, pickerSearch, allLeads, filtered]);
+
+  const visibleClosers = isMobile ? CLOSERS.filter((c) => c.id === activeCloser) : CLOSERS;
+  const gridCols = isMobile ? "grid-cols-[48px_1fr]" : "grid-cols-[56px_1fr_1fr]";
+
   return (
-    <section className="rounded-2xl border bg-card p-4 md:p-5">
-      <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
+    <section className="rounded-2xl border bg-card p-3 md:p-5">
+      <header className="mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-foreground">
           <CalendarClock className="h-4 w-4 text-primary" />
           Agenda · por closer
         </h2>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end sm:gap-3">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2.5 py-1 text-xs font-bold text-success">
-            <BadgeDollarSign className="h-3.5 w-3.5" />
+            <BadgeDollarSign className="h-3.5 w-3.5 shrink-0" />
             <span>Valor em pauta</span>
             <span className="tabular-nums">{money(totalValue) ?? "R$ 0"}</span>
           </span>
-          <Link to="/agenda" className="text-xs font-semibold text-primary hover:underline">
+          <Link to="/agenda" className="shrink-0 text-xs font-semibold text-primary hover:underline">
             Ver agenda completa
           </Link>
         </div>
       </header>
 
       {/* Filtros */}
-      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border bg-muted/20 p-2">
-        {([
-          { v: "today", l: "Hoje" },
-          { v: "tomorrow", l: "Amanhã" },
-          { v: "week", l: "7 dias" },
-          { v: "month", l: "Mês" },
-          { v: "all", l: "Todas" },
-        ] as { v: Period; l: string }[]).map((o) => (
-          <Button
-            key={o.v}
-            size="sm"
-            variant={period === o.v ? "default" : "outline"}
-            className="h-7 rounded-full px-3 text-xs"
-            onClick={() => setPeriod(o.v)}
-          >
-            {o.l}
-          </Button>
-        ))}
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            {Object.keys(statusLabel).map((k) => (
-              <SelectItem key={k} value={k}>{statusLabel[k as MeetingItem["status"]]}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={closerFilter} onValueChange={setCloserFilter}>
-          <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os closers</SelectItem>
-            {CLOSERS.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-            <SelectItem value="none">Sem closer</SelectItem>
-          </SelectContent>
-        </Select>
-        <div className="relative ml-auto min-w-[160px] flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar lead…"
-            className="h-8 rounded-full pl-8 text-xs"
-          />
+      <div className="mb-3 space-y-2 rounded-xl border bg-muted/20 p-2">
+        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {([
+            { v: "today", l: "Hoje" },
+            { v: "tomorrow", l: "Amanhã" },
+            { v: "week", l: "7 dias" },
+            { v: "month", l: "Mês" },
+            { v: "all", l: "Todas" },
+          ] as { v: Period; l: string }[]).map((o) => (
+            <Button
+              key={o.v}
+              size="sm"
+              variant={period === o.v ? "default" : "outline"}
+              className="h-7 shrink-0 rounded-full px-3 text-xs"
+              onClick={() => setPeriod(o.v)}
+            >
+              {o.l}
+            </Button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-8 min-w-0 flex-1 text-xs sm:w-[150px] sm:flex-none"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              {Object.keys(statusLabel).map((k) => (
+                <SelectItem key={k} value={k}>{statusLabel[k as MeetingItem["status"]]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={closerFilter} onValueChange={setCloserFilter}>
+            <SelectTrigger className="h-8 min-w-0 flex-1 text-xs sm:w-[150px] sm:flex-none"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os closers</SelectItem>
+              {CLOSERS.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              <SelectItem value="none">Sem closer</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="relative w-full min-w-[160px] sm:ml-auto sm:w-auto sm:flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar lead…"
+              className="h-8 rounded-full pl-8 text-xs"
+            />
+          </div>
         </div>
       </div>
 
+
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+        {/* Seletor de closer (mobile) */}
+        {isMobile && (
+          <div className="mb-2 grid grid-cols-2 gap-1.5 rounded-xl bg-muted/40 p-1">
+            {CLOSERS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setActiveCloser(c.id)}
+                className={cn(
+                  "flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition-colors",
+                  activeCloser === c.id ? "bg-card shadow-sm" : "text-muted-foreground",
+                )}
+              >
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.color }} />
+                <span className="truncate">{c.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Cabeçalho dos closers */}
-        <div className="grid grid-cols-[56px_1fr_1fr] gap-2">
+        <div className={cn("grid gap-2", gridCols)}>
           <div />
-          {CLOSERS.map((c) => {
+          {visibleClosers.map((c) => {
             const items = byCloser.map.get(c.id) ?? [];
             const closed = items.filter((m) => m.status === "fechou").length;
             const rate = items.length ? Math.round((closed / items.length) * 100) : 0;
             return (
-              <div key={c.id} className="rounded-xl border border-border bg-card px-3 py-2.5 shadow-sm">
+              <div key={c.id} className="min-w-0 rounded-xl border border-border bg-card px-2.5 py-2 shadow-sm md:px-3 md:py-2.5">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2 text-sm font-bold">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ background: c.color }}>
+                  <span className="flex min-w-0 items-center gap-2 text-sm font-bold">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white md:h-7 md:w-7" style={{ background: c.color }}>
                       {c.name.slice(0, 2).toUpperCase()}
                     </span>
-                    <span className="uppercase tracking-wide">{c.name}</span>
+                    <span className="truncate uppercase tracking-wide">{c.name}</span>
                   </span>
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex shrink-0 items-center gap-1.5">
                     <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">{items.length}</span>
                     <span className="rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-bold text-success">{rate}%</span>
                   </span>
                 </div>
                 <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Taxa de conversão · {closed}/{items.length} fechados
+                  Conversão · {closed}/{items.length} fechados
                 </p>
                 <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                   <div className="h-full rounded-full bg-success transition-all" style={{ width: `${rate}%` }} />
@@ -413,14 +488,14 @@ export function CloserAgenda({
             {slots.map((slot) => {
               const isHour = slot.endsWith(":00");
               return (
-                <div key={slot} className="grid grid-cols-[56px_1fr_1fr] items-stretch gap-2">
+                <div key={slot} className={cn("grid items-stretch gap-2", gridCols)}>
                   <div className={cn(
-                    "flex items-center justify-center rounded-lg border text-xs font-extrabold tabular-nums",
+                    "flex items-center justify-center rounded-lg border text-[11px] font-extrabold tabular-nums md:text-xs",
                     isHour ? "border-border bg-muted/50 text-foreground" : "border-transparent bg-transparent text-muted-foreground/70",
                   )}>
                     {slot}
                   </div>
-                  {CLOSERS.map((c) => {
+                  {visibleClosers.map((c) => {
                     const items = (byCloser.map.get(c.id) ?? []).filter((m) => snapToSlot(m.at) === slot);
                     return (
                       <SlotCell
@@ -429,6 +504,7 @@ export function CloserAgenda({
                         slot={slot}
                         items={items}
                         consultantName={memberName}
+                        onPickFree={(closerId, s) => setPicker({ closerId, slot: s })}
                       />
                     );
                   })}
@@ -436,7 +512,7 @@ export function CloserAgenda({
               );
             })}
             <p className="pt-1 text-center text-[11px] text-muted-foreground">
-              Arraste pelo ícone <GripVertical className="inline h-3 w-3" /> para mudar o horário ou o closer da reunião.
+              Toque em <span className="font-semibold">Livre</span> para encaixar um lead, ou arraste pelo ícone <GripVertical className="inline h-3 w-3" /> para mudar horário/closer.
             </p>
           </div>
         ) : (
@@ -488,6 +564,53 @@ export function CloserAgenda({
           As reuniões aparecem aqui assim que o consultor marcar “Reunião agendada” nos status do lead.
         </p>
       )}
+
+      {/* Escolher lead para o horário livre */}
+      <Dialog open={!!picker} onOpenChange={(o) => { if (!o) { setPicker(null); setPickerSearch(""); } }}>
+        <DialogContent className="max-h-[85vh] w-[95vw] max-w-md overflow-hidden p-4">
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              Encaixar lead às {picker?.slot}
+              {picker && (
+                <span className="ml-1 text-sm font-semibold text-muted-foreground">
+                  · {CLOSERS.find((c) => c.id === picker.closerId)?.name}
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={pickerSearch}
+              onChange={(e) => setPickerSearch(e.target.value)}
+              placeholder="Buscar por nome ou telefone…"
+              className="h-9 rounded-full pl-8 text-sm"
+            />
+          </div>
+          <div className="max-h-[55vh] space-y-1.5 overflow-y-auto pr-1">
+            {pickerLeads.length === 0 && (
+              <p className="py-6 text-center text-xs text-muted-foreground">Nenhum lead encontrado.</p>
+            )}
+            {pickerLeads.map((l: any) => (
+              <button
+                key={l.id}
+                type="button"
+                disabled={updateLead.isPending}
+                onClick={() => picker && scheduleLeadAt(l, picker.closerId, picker.slot)}
+                className="flex w-full items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/50 hover:bg-primary/5 disabled:opacity-50"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-bold">{l.name || l.phone || "Lead"}</span>
+                  <span className="block truncate text-[11px] text-muted-foreground">
+                    {l.phone ?? "—"} · {memberName(l.assigned_member_id) ?? "Sem consultor"}
+                  </span>
+                </span>
+                <Plus className="h-4 w-4 shrink-0 text-primary" />
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
