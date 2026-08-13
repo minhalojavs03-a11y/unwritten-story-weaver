@@ -323,6 +323,42 @@ export function CloserAgenda({
     void moveMeeting(m, closerId, slot);
   }
 
+  /** Agenda um lead existente no horário/closer escolhido. */
+  async function scheduleLeadAt(lead: any, closerId: string, slot: string) {
+    const closer = CLOSERS.find((c) => c.id === closerId);
+    if (!closer) return;
+    const [h, min] = slot.split(":").map(Number);
+    const target = new Date(dayDate);
+    target.setHours(h, min, 0, 0);
+    const meta: Record<string, any> = { ...((lead.metadata ?? {}) as Record<string, any>) };
+    meta.meeting_scheduled_at = `${dateKey(target)}T${pad(h)}:${pad(min)}:00`;
+    meta.meeting_closer_id = closerId;
+    meta.meeting_closer_name = closer.name;
+    delete meta.meeting_rescheduled;
+    delete meta.meeting_rescheduled_to;
+    try {
+      await updateLead.mutateAsync({ id: lead.id, patch: { metadata: meta } });
+      toast.success(`${lead.name || lead.phone} agendado com ${closer.name} às ${slot}`);
+      setPicker(null);
+      setPickerSearch("");
+    } catch (e: any) {
+      toast.error("Não foi possível agendar", { description: e?.message });
+    }
+  }
+
+  const pickerLeads = useMemo(() => {
+    if (!picker) return [];
+    const q = pickerSearch.trim().toLowerCase();
+    const scheduled = new Set(filtered.map((m) => m.leadId));
+    return (allLeads as any[])
+      .filter((l) => !scheduled.has(l.id))
+      .filter((l) => !q || `${l.name ?? ""} ${l.phone ?? ""}`.toLowerCase().includes(q))
+      .slice(0, 40);
+  }, [picker, pickerSearch, allLeads, filtered]);
+
+  const visibleClosers = isMobile ? CLOSERS.filter((c) => c.id === activeCloser) : CLOSERS;
+  const gridCols = isMobile ? "grid-cols-[48px_1fr]" : "grid-cols-[56px_1fr_1fr]";
+
   return (
     <section className="rounded-2xl border bg-card p-4 md:p-5">
       <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
