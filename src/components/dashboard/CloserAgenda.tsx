@@ -431,29 +431,49 @@ export function CloserAgenda({
 
 
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+        {/* Seletor de closer (mobile) */}
+        {isMobile && (
+          <div className="mb-2 grid grid-cols-2 gap-1.5 rounded-xl bg-muted/40 p-1">
+            {CLOSERS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setActiveCloser(c.id)}
+                className={cn(
+                  "flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition-colors",
+                  activeCloser === c.id ? "bg-card shadow-sm" : "text-muted-foreground",
+                )}
+              >
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.color }} />
+                <span className="truncate">{c.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Cabeçalho dos closers */}
-        <div className="grid grid-cols-[56px_1fr_1fr] gap-2">
+        <div className={cn("grid gap-2", gridCols)}>
           <div />
-          {CLOSERS.map((c) => {
+          {visibleClosers.map((c) => {
             const items = byCloser.map.get(c.id) ?? [];
             const closed = items.filter((m) => m.status === "fechou").length;
             const rate = items.length ? Math.round((closed / items.length) * 100) : 0;
             return (
-              <div key={c.id} className="rounded-xl border border-border bg-card px-3 py-2.5 shadow-sm">
+              <div key={c.id} className="min-w-0 rounded-xl border border-border bg-card px-2.5 py-2 shadow-sm md:px-3 md:py-2.5">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2 text-sm font-bold">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ background: c.color }}>
+                  <span className="flex min-w-0 items-center gap-2 text-sm font-bold">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white md:h-7 md:w-7" style={{ background: c.color }}>
                       {c.name.slice(0, 2).toUpperCase()}
                     </span>
-                    <span className="uppercase tracking-wide">{c.name}</span>
+                    <span className="truncate uppercase tracking-wide">{c.name}</span>
                   </span>
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex shrink-0 items-center gap-1.5">
                     <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">{items.length}</span>
                     <span className="rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-bold text-success">{rate}%</span>
                   </span>
                 </div>
                 <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Taxa de conversão · {closed}/{items.length} fechados
+                  Conversão · {closed}/{items.length} fechados
                 </p>
                 <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                   <div className="h-full rounded-full bg-success transition-all" style={{ width: `${rate}%` }} />
@@ -468,14 +488,14 @@ export function CloserAgenda({
             {slots.map((slot) => {
               const isHour = slot.endsWith(":00");
               return (
-                <div key={slot} className="grid grid-cols-[56px_1fr_1fr] items-stretch gap-2">
+                <div key={slot} className={cn("grid items-stretch gap-2", gridCols)}>
                   <div className={cn(
-                    "flex items-center justify-center rounded-lg border text-xs font-extrabold tabular-nums",
+                    "flex items-center justify-center rounded-lg border text-[11px] font-extrabold tabular-nums md:text-xs",
                     isHour ? "border-border bg-muted/50 text-foreground" : "border-transparent bg-transparent text-muted-foreground/70",
                   )}>
                     {slot}
                   </div>
-                  {CLOSERS.map((c) => {
+                  {visibleClosers.map((c) => {
                     const items = (byCloser.map.get(c.id) ?? []).filter((m) => snapToSlot(m.at) === slot);
                     return (
                       <SlotCell
@@ -484,6 +504,7 @@ export function CloserAgenda({
                         slot={slot}
                         items={items}
                         consultantName={memberName}
+                        onPickFree={(closerId, s) => setPicker({ closerId, slot: s })}
                       />
                     );
                   })}
@@ -491,7 +512,7 @@ export function CloserAgenda({
               );
             })}
             <p className="pt-1 text-center text-[11px] text-muted-foreground">
-              Arraste pelo ícone <GripVertical className="inline h-3 w-3" /> para mudar o horário ou o closer da reunião.
+              Toque em <span className="font-semibold">Livre</span> para encaixar um lead, ou arraste pelo ícone <GripVertical className="inline h-3 w-3" /> para mudar horário/closer.
             </p>
           </div>
         ) : (
