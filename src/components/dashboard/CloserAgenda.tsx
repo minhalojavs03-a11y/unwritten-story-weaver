@@ -253,7 +253,11 @@ export function CloserAgenda({
   const totalValue = filtered.reduce((acc, m) => acc + (m.value ?? 0), 0);
   const isDayView = period === "today" || period === "tomorrow";
   const showDate = !isDayView;
-  const slots = useMemo(() => daySlots(), []);
+  const slots = useMemo(() => {
+    const base = new Set(daySlots());
+    for (const m of filtered) base.add(snapToSlot(m.at));
+    return Array.from(base).sort();
+  }, [filtered]);
   const dayDate = useMemo(() => {
     const d = new Date(); d.setHours(0, 0, 0, 0);
     if (period === "tomorrow") d.setDate(d.getDate() + 1);
@@ -455,6 +459,20 @@ export function CloserAgenda({
           </div>
         )}
 
+        {byCloser.unassigned.length > 0 && (
+          <div className="mt-3 rounded-xl border border-dashed p-3">
+            <p className="mb-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                <User2 className="h-3.5 w-3.5" /> Sem closer definido ({byCloser.unassigned.length})
+            </p>
+            <div className="space-y-2">
+                {byCloser.unassigned.map((m) => (
+                  <MeetingCard key={m.leadId + m.at.toISOString()} m={m} consultant={memberName(m.consultantMemberId)} showDate={showDate} draggable />
+                ))}
+            </div>
+          </div>
+        )}
+
+
         <DragOverlay dropAnimation={null}>
           {dragging ? (
             <div className="rounded-xl border border-primary bg-card px-3 py-2 text-sm font-bold shadow-lg">
@@ -464,19 +482,6 @@ export function CloserAgenda({
           ) : null}
         </DragOverlay>
       </DndContext>
-
-      {byCloser.unassigned.length > 0 && (
-        <div className="mt-3 rounded-xl border border-dashed p-3">
-          <p className="mb-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-            <User2 className="h-3.5 w-3.5" /> Sem closer definido ({byCloser.unassigned.length})
-          </p>
-          <div className="space-y-2">
-            {byCloser.unassigned.map((m) => (
-              <MeetingCard key={m.leadId + m.at.toISOString()} m={m} consultant={memberName(m.consultantMemberId)} showDate={showDate} />
-            ))}
-          </div>
-        </div>
-      )}
 
       {!isLoading && filtered.length === 0 && !isDayView && (
         <p className="mt-3 text-center text-xs text-muted-foreground">
