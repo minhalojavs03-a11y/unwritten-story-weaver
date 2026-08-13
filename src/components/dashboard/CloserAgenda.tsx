@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarClock, User2, BadgeDollarSign, RotateCcw, Search, GripVertical, Plus } from "lucide-react";
+import { CalendarClock, User2, BadgeDollarSign, RotateCcw, Search, GripVertical, Plus, Moon } from "lucide-react";
 import { toast } from "sonner";
 import {
   DndContext,
