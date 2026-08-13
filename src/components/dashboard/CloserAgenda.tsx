@@ -306,11 +306,14 @@ export function CloserAgenda({
   const totalValue = filtered.reduce((acc, m) => acc + (m.value ?? 0), 0);
   const isDayView = period === "today" || period === "tomorrow";
   const showDate = !isDayView;
+  const anyNight = CLOSERS.some((c) => nightOpen[c.id]);
   const slots = useMemo(() => {
     const base = new Set(daySlots());
+    if (anyNight) for (const s of nightSlots()) base.add(s);
     for (const m of filtered) base.add(snapToSlot(m.at));
     return Array.from(base).sort();
-  }, [filtered]);
+  }, [filtered, anyNight]);
+
   const dayDate = useMemo(() => {
     const d = new Date(); d.setHours(0, 0, 0, 0);
     if (period === "tomorrow") d.setDate(d.getDate() + 1);
