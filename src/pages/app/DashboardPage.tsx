@@ -287,7 +287,7 @@ export default function DashboardPage() {
           <StatCard to="/conversas?tab=hot" icon={Flame} label="Leads Quentes" value={m?.hotOpportunities ?? 0} iconColor="bg-rose-500/10 text-rose-600" />
         </section>
 
-        <CloserAgenda defaultPeriod="all" scope={{ tenantId: effectiveTenantOverride, memberId: privileged ? null : effectiveMemberId }} />
+        <CloserAgenda defaultPeriod="today" scope={{ tenantId: effectiveTenantOverride, memberId: privileged ? null : effectiveMemberId }} />
 
         <LeadsHourlyPanel days={30} tenantId={effectiveTenantOverride} memberId={effectiveMemberId} />
 
