@@ -59,17 +59,36 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const hhmm = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const dateKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-/** Slots do dia (30 em 30 minutos). */
+/** Slots do dia (30 em 30 minutos). Expediente padrão encerra às 18h. */
 const SLOT_START_HOUR = 8;
-const SLOT_END_HOUR = 20;
-function daySlots(): string[] {
+const SLOT_END_HOUR = 18;
+const NIGHT_END_HOUR = 21;
+function buildSlots(from: number, to: number): string[] {
   const out: string[] = [];
-  for (let h = SLOT_START_HOUR; h <= SLOT_END_HOUR; h++) {
+  for (let h = from; h <= to; h++) {
     out.push(`${pad(h)}:00`);
-    if (h !== SLOT_END_HOUR) out.push(`${pad(h)}:30`);
+    if (h !== to) out.push(`${pad(h)}:30`);
   }
   return out;
 }
+function daySlots(): string[] {
+  return buildSlots(SLOT_START_HOUR, SLOT_END_HOUR);
+}
+/** 18:30 → 21:00 (horários extras, liberados por closer). */
+function nightSlots(): string[] {
+  return buildSlots(SLOT_END_HOUR, NIGHT_END_HOUR).filter((s) => s > `${pad(SLOT_END_HOUR)}:00`);
+}
+const isNightSlot = (s: string) => s > `${pad(SLOT_END_HOUR)}:00`;
+
+const NIGHT_KEY = "closer-agenda-night-slots";
+function loadNightPrefs(): Record<string, boolean> {
+  try {
+    return JSON.parse(localStorage.getItem(NIGHT_KEY) || "{}") ?? {};
+  } catch {
+    return {};
+  }
+}
+
 
 function snapToSlot(d: Date) {
   const m = d.getMinutes() < 30 ? 0 : 30;
