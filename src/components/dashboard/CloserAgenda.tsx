@@ -271,13 +271,18 @@ export function CloserAgenda({
   const [search, setSearch] = useState("");
   const [dragging, setDragging] = useState<MeetingItem | null>(null);
   const [picker, setPicker] = useState<{ closerId: string; slot: string } | null>(null);
+  const { member: activeMember } = useActiveMember();
+  const canToggleNight = (closerId: string) => activeMember?.id === closerId;
   const [nightOpen, setNightOpen] = useState<Record<string, boolean>>(() => loadNightPrefs());
-  const toggleNight = (id: string) =>
+  const toggleNight = (id: string) => {
+    if (!canToggleNight(id)) return;
     setNightOpen((prev) => {
       const next = { ...prev, [id]: !prev[id] };
       try { localStorage.setItem(NIGHT_KEY, JSON.stringify(next)); } catch { /* noop */ }
       return next;
     });
+  };
+
 
   const [pickerSearch, setPickerSearch] = useState("");
   const isMobile = useIsMobile();
