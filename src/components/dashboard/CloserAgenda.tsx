@@ -360,70 +360,75 @@ export function CloserAgenda({
   const gridCols = isMobile ? "grid-cols-[48px_1fr]" : "grid-cols-[56px_1fr_1fr]";
 
   return (
-    <section className="rounded-2xl border bg-card p-4 md:p-5">
-      <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
+    <section className="rounded-2xl border bg-card p-3 md:p-5">
+      <header className="mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-foreground">
           <CalendarClock className="h-4 w-4 text-primary" />
           Agenda · por closer
         </h2>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end sm:gap-3">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2.5 py-1 text-xs font-bold text-success">
-            <BadgeDollarSign className="h-3.5 w-3.5" />
+            <BadgeDollarSign className="h-3.5 w-3.5 shrink-0" />
             <span>Valor em pauta</span>
             <span className="tabular-nums">{money(totalValue) ?? "R$ 0"}</span>
           </span>
-          <Link to="/agenda" className="text-xs font-semibold text-primary hover:underline">
+          <Link to="/agenda" className="shrink-0 text-xs font-semibold text-primary hover:underline">
             Ver agenda completa
           </Link>
         </div>
       </header>
 
       {/* Filtros */}
-      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border bg-muted/20 p-2">
-        {([
-          { v: "today", l: "Hoje" },
-          { v: "tomorrow", l: "Amanhã" },
-          { v: "week", l: "7 dias" },
-          { v: "month", l: "Mês" },
-          { v: "all", l: "Todas" },
-        ] as { v: Period; l: string }[]).map((o) => (
-          <Button
-            key={o.v}
-            size="sm"
-            variant={period === o.v ? "default" : "outline"}
-            className="h-7 rounded-full px-3 text-xs"
-            onClick={() => setPeriod(o.v)}
-          >
-            {o.l}
-          </Button>
-        ))}
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            {Object.keys(statusLabel).map((k) => (
-              <SelectItem key={k} value={k}>{statusLabel[k as MeetingItem["status"]]}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={closerFilter} onValueChange={setCloserFilter}>
-          <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os closers</SelectItem>
-            {CLOSERS.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-            <SelectItem value="none">Sem closer</SelectItem>
-          </SelectContent>
-        </Select>
-        <div className="relative ml-auto min-w-[160px] flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar lead…"
-            className="h-8 rounded-full pl-8 text-xs"
-          />
+      <div className="mb-3 space-y-2 rounded-xl border bg-muted/20 p-2">
+        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {([
+            { v: "today", l: "Hoje" },
+            { v: "tomorrow", l: "Amanhã" },
+            { v: "week", l: "7 dias" },
+            { v: "month", l: "Mês" },
+            { v: "all", l: "Todas" },
+          ] as { v: Period; l: string }[]).map((o) => (
+            <Button
+              key={o.v}
+              size="sm"
+              variant={period === o.v ? "default" : "outline"}
+              className="h-7 shrink-0 rounded-full px-3 text-xs"
+              onClick={() => setPeriod(o.v)}
+            >
+              {o.l}
+            </Button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-8 min-w-0 flex-1 text-xs sm:w-[150px] sm:flex-none"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              {Object.keys(statusLabel).map((k) => (
+                <SelectItem key={k} value={k}>{statusLabel[k as MeetingItem["status"]]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={closerFilter} onValueChange={setCloserFilter}>
+            <SelectTrigger className="h-8 min-w-0 flex-1 text-xs sm:w-[150px] sm:flex-none"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os closers</SelectItem>
+              {CLOSERS.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              <SelectItem value="none">Sem closer</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="relative w-full min-w-[160px] sm:ml-auto sm:w-auto sm:flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar lead…"
+              className="h-8 rounded-full pl-8 text-xs"
+            />
+          </div>
         </div>
       </div>
+
 
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         {/* Cabeçalho dos closers */}
