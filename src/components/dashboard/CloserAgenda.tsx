@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarClock, User2, BadgeDollarSign, RotateCcw, Search, GripVertical, Plus } from "lucide-react";
+import { CalendarClock, User2, BadgeDollarSign, RotateCcw, Search, GripVertical, Plus, Moon } from "lucide-react";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -59,17 +59,36 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const hhmm = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const dateKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-/** Slots do dia (30 em 30 minutos). */
+/** Slots do dia (30 em 30 minutos). Expediente padrão encerra às 18h. */
 const SLOT_START_HOUR = 8;
-const SLOT_END_HOUR = 20;
-function daySlots(): string[] {
+const SLOT_END_HOUR = 18;
+const NIGHT_END_HOUR = 21;
+function buildSlots(from: number, to: number): string[] {
   const out: string[] = [];
-  for (let h = SLOT_START_HOUR; h <= SLOT_END_HOUR; h++) {
+  for (let h = from; h <= to; h++) {
     out.push(`${pad(h)}:00`);
-    if (h !== SLOT_END_HOUR) out.push(`${pad(h)}:30`);
+    if (h !== to) out.push(`${pad(h)}:30`);
   }
   return out;
 }
+function daySlots(): string[] {
+  return buildSlots(SLOT_START_HOUR, SLOT_END_HOUR);
+}
+/** 18:30 → 21:00 (horários extras, liberados por closer). */
+function nightSlots(): string[] {
+  return buildSlots(SLOT_END_HOUR, NIGHT_END_HOUR).filter((s) => s > `${pad(SLOT_END_HOUR)}:00`);
+}
+const isNightSlot = (s: string) => s > `${pad(SLOT_END_HOUR)}:00`;
+
+const NIGHT_KEY = "closer-agenda-night-slots";
+function loadNightPrefs(): Record<string, boolean> {
+  try {
+    return JSON.parse(localStorage.getItem(NIGHT_KEY) || "{}") ?? {};
+  } catch {
+    return {};
+  }
+}
+
 
 function snapToSlot(d: Date) {
   const m = d.getMinutes() < 30 ? 0 : 30;
@@ -165,6 +184,7 @@ function SlotCell({
   items,
   consultantName,
   disabled,
+  closedSlot,
   onPickFree,
 }: {
   closerId: string;
@@ -172,10 +192,20 @@ function SlotCell({
   items: MeetingItem[];
   consultantName: (id: string | null) => string | undefined;
   disabled?: boolean;
+  closedSlot?: boolean;
   onPickFree?: (closerId: string, slot: string) => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `${closerId}__${slot}`, disabled });
+  const blocked = !!closedSlot && items.length === 0;
+  const { setNodeRef, isOver } = useDroppable({ id: `${closerId}__${slot}`, disabled: disabled || blocked });
   const free = items.length === 0;
+
+  if (blocked) {
+    return (
+      <div className="flex min-h-[44px] items-center justify-center rounded-xl border border-dashed border-border/40 bg-muted/10 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">
+        Encerrado
+      </div>
+    );
+  }
 
   return (
     <div
@@ -212,6 +242,7 @@ function SlotCell({
 }
 
 
+
 /* ---------------- Componente principal ---------------- */
 
 export function CloserAgenda({
@@ -227,6 +258,14 @@ export function CloserAgenda({
   const [search, setSearch] = useState("");
   const [dragging, setDragging] = useState<MeetingItem | null>(null);
   const [picker, setPicker] = useState<{ closerId: string; slot: string } | null>(null);
+  const [nightOpen, setNightOpen] = useState<Record<string, boolean>>(() => loadNightPrefs());
+  const toggleNight = (id: string) =>
+    setNightOpen((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      try { localStorage.setItem(NIGHT_KEY, JSON.stringify(next)); } catch { /* noop */ }
+      return next;
+    });
+
   const [pickerSearch, setPickerSearch] = useState("");
   const isMobile = useIsMobile();
   const [activeCloser, setActiveCloser] = useState<string>(CLOSERS[0]?.id ?? "");
@@ -267,11 +306,14 @@ export function CloserAgenda({
   const totalValue = filtered.reduce((acc, m) => acc + (m.value ?? 0), 0);
   const isDayView = period === "today" || period === "tomorrow";
   const showDate = !isDayView;
+  const anyNight = CLOSERS.some((c) => nightOpen[c.id]);
   const slots = useMemo(() => {
     const base = new Set(daySlots());
+    if (anyNight) for (const s of nightSlots()) base.add(s);
     for (const m of filtered) base.add(snapToSlot(m.at));
     return Array.from(base).sort();
-  }, [filtered]);
+  }, [filtered, anyNight]);
+
   const dayDate = useMemo(() => {
     const d = new Date(); d.setHours(0, 0, 0, 0);
     if (period === "tomorrow") d.setDate(d.getDate() + 1);
@@ -478,6 +520,32 @@ export function CloserAgenda({
                 <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                   <div className="h-full rounded-full bg-success transition-all" style={{ width: `${rate}%` }} />
                 </div>
+                {isDayView && (
+                  <button
+                    type="button"
+                    onClick={() => toggleNight(c.id)}
+                    aria-pressed={!!nightOpen[c.id]}
+                    className={cn(
+                      "mt-2 flex w-full items-center justify-between gap-2 rounded-lg border px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors",
+                      nightOpen[c.id]
+                        ? "border-success/40 bg-success/10 text-success"
+                        : "border-border bg-muted/30 text-muted-foreground hover:bg-muted/60",
+                    )}
+                  >
+                    <span className="flex items-center gap-1">
+                      <Moon className="h-3 w-3" /> 18h–21h
+                    </span>
+                    <span className={cn(
+                      "flex h-4 w-8 shrink-0 items-center rounded-full p-0.5 transition-colors",
+                      nightOpen[c.id] ? "bg-success" : "bg-muted-foreground/30",
+                    )}>
+                      <span className={cn(
+                        "h-3 w-3 rounded-full bg-white transition-transform",
+                        nightOpen[c.id] && "translate-x-4",
+                      )} />
+                    </span>
+                  </button>
+                )}
               </div>
             );
           })}
@@ -504,10 +572,12 @@ export function CloserAgenda({
                         slot={slot}
                         items={items}
                         consultantName={memberName}
+                        closedSlot={isNightSlot(slot) && !nightOpen[c.id]}
                         onPickFree={(closerId, s) => setPicker({ closerId, slot: s })}
                       />
                     );
                   })}
+
                 </div>
               );
             })}
