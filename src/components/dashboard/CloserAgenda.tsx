@@ -564,6 +564,55 @@ export function CloserAgenda({
           As reuniões aparecem aqui assim que o consultor marcar “Reunião agendada” nos status do lead.
         </p>
       )}
+
+      {/* Escolher lead para o horário livre */}
+      <Dialog open={!!picker} onOpenChange={(o) => { if (!o) { setPicker(null); setPickerSearch(""); } }}>
+        <DialogContent className="max-h-[85vh] w-[95vw] max-w-md overflow-hidden p-4">
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              Encaixar lead às {picker?.slot}
+              {picker && (
+                <span className="ml-1 text-sm font-semibold text-muted-foreground">
+                  · {CLOSERS.find((c) => c.id === picker.closerId)?.name}
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={pickerSearch}
+              onChange={(e) => setPickerSearch(e.target.value)}
+              placeholder="Buscar por nome ou telefone…"
+              className="h-9 rounded-full pl-8 text-sm"
+            />
+          </div>
+          <div className="max-h-[55vh] space-y-1.5 overflow-y-auto pr-1">
+            {pickerLeads.length === 0 && (
+              <p className="py-6 text-center text-xs text-muted-foreground">Nenhum lead encontrado.</p>
+            )}
+            {pickerLeads.map((l: any) => (
+              <button
+                key={l.id}
+                type="button"
+                disabled={updateLead.isPending}
+                onClick={() => picker && scheduleLeadAt(l, picker.closerId, picker.slot)}
+                className="flex w-full items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/50 hover:bg-primary/5 disabled:opacity-50"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-bold">{l.name || l.phone || "Lead"}</span>
+                  <span className="block truncate text-[11px] text-muted-foreground">
+                    {l.phone ?? "—"} · {memberName(l.assigned_member_id) ?? "Sem consultor"}
+                  </span>
+                </span>
+                <Plus className="h-4 w-4 shrink-0 text-primary" />
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
+  );
+}
   );
 }
