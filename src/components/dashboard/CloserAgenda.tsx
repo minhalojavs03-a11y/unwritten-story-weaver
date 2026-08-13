@@ -23,6 +23,8 @@ import { useCloserMeetings, type MeetingItem } from "@/hooks/useCloserAgenda";
 import { useTenantMembers, useUpdateLead, useLeads } from "@/hooks/useData";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CLOSERS } from "@/lib/closers";
+import { useActiveMember } from "@/contexts/ActiveMemberContext";
+
 
 type Period = "today" | "tomorrow" | "week" | "month" | "all";
 
