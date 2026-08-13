@@ -543,13 +543,18 @@ export function CloserAgenda({
                 {isDayView && (
                   <button
                     type="button"
+                    disabled={!canToggleNight(c.id)}
+                    title={canToggleNight(c.id) ? undefined : `Somente ${c.name} pode alterar este horário`}
                     onClick={() => toggleNight(c.id)}
                     aria-pressed={!!nightOpen[c.id]}
                     className={cn(
                       "mt-2 flex w-full items-center justify-between gap-2 rounded-lg border px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors",
                       nightOpen[c.id]
                         ? "border-success/40 bg-success/10 text-success"
-                        : "border-border bg-muted/30 text-muted-foreground hover:bg-muted/60",
+                        : "border-border bg-muted/30 text-muted-foreground",
+                      canToggleNight(c.id)
+                        ? !nightOpen[c.id] && "hover:bg-muted/60"
+                        : "cursor-not-allowed opacity-70",
                     )}
                   >
                     <span className="flex items-center gap-1">
@@ -566,6 +571,7 @@ export function CloserAgenda({
                     </span>
                   </button>
                 )}
+
               </div>
             );
           })}
