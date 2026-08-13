@@ -16,6 +16,7 @@ export type MeetingItem = {
   status: "agendado" | "compareceu" | "nao_compareceu" | "fechou" | "perdido";
   rescheduledTo: string | null;
   isRescheduled: boolean;
+  meta: Record<string, any>;
 };
 
 /** Reconhece o valor do lead automaticamente quando o consultor não anotou. */
@@ -80,6 +81,7 @@ export function meetingsFromLeads(leads: Tables<"leads">[]): MeetingItem[] {
       status: statusOf(lead),
       rescheduledTo: meta.meeting_rescheduled_to ?? null,
       isRescheduled,
+      meta,
     });
   }
   return out.sort((a, b) => a.at.getTime() - b.at.getTime());
