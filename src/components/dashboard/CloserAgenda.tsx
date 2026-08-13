@@ -17,9 +17,11 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCloserMeetings, type MeetingItem } from "@/hooks/useCloserAgenda";
-import { useTenantMembers, useUpdateLead } from "@/hooks/useData";
+import { useTenantMembers, useUpdateLead, useLeads } from "@/hooks/useData";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { CLOSERS } from "@/lib/closers";
 
 type Period = "today" | "tomorrow" | "week" | "month" | "all";
