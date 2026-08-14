@@ -4,9 +4,40 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { LifeBuoy, MessageCircle, ImagePlus, X, Send, Clock, CheckCircle2 } from "lucide-react";
+import { MessageCircle, ImagePlus, X, Send, Clock, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+/** Ícone vetorial de atendente com headset (pessoa + fone de atendimento). */
+function HeadsetAgentIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      {/* Cabeça */}
+      <circle cx="12" cy="10" r="4" />
+      {/* Ombros */}
+      <path d="M6 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+      {/* Arco do headset */}
+      <path d="M4 12c0-4.4 3.6-8 8-8s8 3.6 8 8" />
+      {/* Concha auricular esquerda */}
+      <rect x="3" y="10" width="3" height="4" rx="1" />
+      {/* Concha auricular direita */}
+      <rect x="18" y="10" width="3" height="4" rx="1" />
+      {/* Haste do microfone */}
+      <path d="M18 13c0 3-2.5 5-5 5" />
+      {/* Ponta do microfone */}
+      <circle cx="13" cy="18" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
 import {
   SUPPORT_HOURS_LABEL,
   SUPPORT_LABEL,
@@ -40,7 +71,7 @@ export function SupportTab() {
         )}
         style={{ writingMode: "vertical-rl" }}
       >
-        <LifeBuoy className="h-4 w-4 rotate-90" />
+        <HeadsetAgentIcon className="h-4 w-4 rotate-90" />
         <span className="text-xs font-semibold tracking-wide">Suporte</span>
         <span
           className={cn(
@@ -57,14 +88,14 @@ export function SupportTab() {
         aria-label="Abrir suporte técnico"
         className="fixed bottom-20 right-3 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-[#0f766e] text-white shadow-lg md:hidden"
       >
-        <LifeBuoy className="h-5 w-5" />
+        <HeadsetAgentIcon className="h-5 w-5" />
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md p-0">
           <DialogHeader className="rounded-t-lg bg-[#0f766e] px-5 py-4 text-white">
             <DialogTitle className="flex items-center gap-2 text-base text-white">
-              <LifeBuoy className="h-5 w-5" /> {SUPPORT_LABEL}
+              <HeadsetAgentIcon className="h-5 w-5" /> {SUPPORT_LABEL}
             </DialogTitle>
             <p className="text-xs text-white/80">
               {SUPPORT_NAME} · {SUPPORT_PHONE_DISPLAY}
