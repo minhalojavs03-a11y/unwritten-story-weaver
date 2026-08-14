@@ -20,7 +20,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const NOTIF_TYPE = "reactivation";
-const DAILY_LIMIT_PER_CONSULTANT = 2;
+const DAILY_LIMIT_PER_CONSULTANT = 5;
 const MIN_SCORE = 3;
 const MIN_DAYS_SINCE_LAST_CONTACT = 7;   // não reabordar leads mexidos há poucos dias
 const REACTIVATION_COOLDOWN_DAYS = 60;   // não repetir reativação no mesmo lead
