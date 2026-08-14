@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Home, MessageCircle, Kanban, Calendar, Users, Settings, LogOut, Shield, Smartphone, Menu, Inbox, User as UserIcon, Users2, ChevronLeft, ChevronRight, Trophy, BarChart3, Target, Repeat, Share2, ChevronDown, type LucideIcon } from "lucide-react";
+import { LifeBuoy, Home, MessageCircle, Kanban, Calendar, Users, Settings, LogOut, Shield, Smartphone, Menu, Inbox, User as UserIcon, Users2, ChevronLeft, ChevronRight, Trophy, BarChart3, Target, Repeat, Share2, ChevronDown, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -31,6 +31,8 @@ import { useHiddenMenus, type MenuRole } from "@/hooks/useMenuPermissions";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { TutorialVideoDialog } from "@/components/TutorialVideoDialog";
+import { SupportTab } from "@/components/support/SupportTab";
+import { useIsSupportRole } from "@/hooks/useSupportTickets";
 import logoCatelanWhite from "@/assets/logo-catelan-white.png";
 import logoFeraconDark from "@/assets/logo-feracon-dark.png";
 import logoFeraconMark from "@/assets/logo-feracon-mark.png";
@@ -53,6 +55,7 @@ export function AppLayout() {
   const { data: profile } = useMyProfile();
   const { member, clearMember } = useActiveMember();
   const { data: members = [] } = useTenantMembers();
+  const isSupportAccount = useIsSupportRole();
   useUpdateLastSeen();
   
 
@@ -114,12 +117,17 @@ export function AppLayout() {
     const distribuicao: NavItem = { to: "/distribuicao", label: "Distribuição", icon: Share2 };
     const meuWa: NavItem = { to: "/meu-whatsapp", label: "Meu WhatsApp", icon: Smartphone };
     const config: NavItem = { to: "/configuracoes", label: "Configurações", icon: Settings };
+    const tickets: NavItem = { to: "/tickets", label: "Tickets", icon: LifeBuoy };
+
+    if (isSupportAccount) {
+      return [home, tickets, conversas, pipeline, leads, agenda, ranking, relatorios, coaching];
+    }
 
     if (impersonating && !isOwner && !isSupervisor) {
       return [home, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, config];
     }
     if (isSuperadmin) {
-      return [home, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
+      return [home, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, tickets, config];
     }
     if (isOwner) {
       return [home, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching, consultores, distribuicao, config];
@@ -132,7 +140,7 @@ export function AppLayout() {
     }
     return [home, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching];
 
-  }, [isOwner, isSuperadmin, isSupervisor, impersonating, isNilton]);
+  }, [isOwner, isSuperadmin, isSupervisor, impersonating, isNilton, isSupportAccount]);
 
   // Aplicar overrides do superadmin (Controle de Menus). Superadmin (real, fora
   // de impersonation) nunca tem itens ocultos. Durante impersonation, usamos a
@@ -352,6 +360,7 @@ export function AppLayout() {
         "flex min-w-0 flex-1 flex-col pb-16 md:pb-0 bg-[#d11e26] md:bg-transparent",
         lockViewport && "min-h-0 overflow-hidden",
       )}>
+        {!isSupportAccount && <SupportTab />}
         <ImpersonationBanner />
         <WhatsAppDisconnectBanner />
         <TopAlertBanner />

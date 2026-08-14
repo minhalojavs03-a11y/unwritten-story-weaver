@@ -18,7 +18,7 @@ export interface RoleInvite {
   created_at: string;
 }
 
-export const ROLE_ORDER: TenantRole[] = ["owner", "supervisor", "consultant", "attendant"];
+export const ROLE_ORDER: TenantRole[] = ["owner", "supervisor", "consultant", "attendant", "support"];
 
 export const ROLE_LABELS: Record<TenantRole, string> = {
   owner: "Dono da Unidade",
@@ -26,6 +26,7 @@ export const ROLE_LABELS: Record<TenantRole, string> = {
   consultant: "Consultor",
   consultor: "Consultor",
   attendant: "Atendente",
+  support: "Suporte técnico",
 };
 
 export function buildRoleInviteLink(token: string) {

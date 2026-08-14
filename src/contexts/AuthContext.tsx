@@ -3,7 +3,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { LOGIN_BLOCKED, SUPERADMIN_BLOCKED } from "@/lib/loginGate";
 
-type AppRole = "superadmin" | "owner" | "supervisor" | "consultant" | "attendant";
+type AppRole = "superadmin" | "owner" | "supervisor" | "consultant" | "attendant" | "support";
 
 type AuthContextRow = {
   tenant_id: string | null;

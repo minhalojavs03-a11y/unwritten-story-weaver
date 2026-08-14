@@ -29,14 +29,17 @@ export function useEffectiveRole() {
   const supportIsOwner = isImpersonating && supportRole === "owner";
   const supportIsSupervisor = isImpersonating && supportRole === "supervisor";
   const hasSupervisorRole = !isImpersonating && (roles ?? []).includes("supervisor" as never);
+  // Conta de Suporte: enxerga tudo do time, mas somente leitura (nunca owner).
+  const hasSupportRole = !isImpersonating && (roles ?? []).includes("support" as never);
 
-  const effectiveIsOwner = authIsSuperadmin || supportIsOwner || hasSupervisorRole || (authIsOwner && memberIsOwner) || supportIsSupervisor || memberIsSupervisor;
+  const effectiveIsOwner = !hasSupportRole && (authIsSuperadmin || supportIsOwner || hasSupervisorRole || (authIsOwner && memberIsOwner) || supportIsSupervisor || memberIsSupervisor);
 
   // Supervisor é true quando:
   //  - não é owner efetivo, E
   //  - o membro ativo tem label de supervisão, OU
   //  - não há membro ativo (ou membro é genérico) e o role de auth é supervisor.
   const effectiveIsSupervisor = !effectiveIsOwner && (
+    hasSupportRole ||
     supportIsSupervisor ||
     memberIsSupervisor ||
     (!memberIsConsultant && hasSupervisorRole)

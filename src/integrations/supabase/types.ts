@@ -1842,6 +1842,101 @@ export type Database = {
         }
         Relationships: []
       }
+      support_ticket_messages: {
+        Row: {
+          author_id: string
+          author_name: string | null
+          body: string
+          created_at: string
+          id: string
+          images: string[]
+          is_support: boolean
+          ticket_id: string
+        }
+        Insert: {
+          author_id?: string
+          author_name?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          images?: string[]
+          is_support?: boolean
+          ticket_id: string
+        }
+        Update: {
+          author_id?: string
+          author_name?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          images?: string[]
+          is_support?: boolean
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          images: string[]
+          priority: string
+          requester_email: string | null
+          requester_name: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          status: string
+          subject: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string
+          description: string
+          id?: string
+          images?: string[]
+          priority?: string
+          requester_email?: string | null
+          requester_name?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: string
+          subject: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          images?: string[]
+          priority?: string
+          requester_email?: string | null
+          requester_name?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: string
+          subject?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       team_invites: {
         Row: {
           accepted_at: string | null
@@ -2650,6 +2745,7 @@ export type Database = {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean
       }
+      is_support_staff: { Args: { _user_id: string }; Returns: boolean }
       is_tenant_member: {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean

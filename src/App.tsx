@@ -43,6 +43,7 @@ import CoachingPage from "./pages/app/CoachingPage";
 import NiltonLeadsPage from "./pages/app/NiltonLeadsPage";
 import LeadsHojePage from "./pages/app/LeadsHojePage";
 import FunilLeadsPage from "./pages/app/FunilLeadsPage";
+import TicketsPage from "./pages/app/TicketsPage";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClientes from "./pages/admin/AdminClientes";
@@ -184,6 +185,7 @@ const App = () => (
               <Route path="/distribuicao" element={<ProtectedRoute requireOwner allowSupervisor><DistribuicaoLeadsPage /></ProtectedRoute>} />
               <Route path="/mensagens-prontas" element={<MensagensProntasPage />} />
               <Route path="/changelog" element={<ChangelogPage />} />
+              <Route path="/tickets" element={<TicketsPage />} />
               <Route path="/ranking" element={<RankingPage />} />
               <Route path="/relatorios" element={<ProtectedRoute><RelatoriosPage /></ProtectedRoute>} />
               <Route path="/coaching" element={<ProtectedRoute><CoachingPage /></ProtectedRoute>} />
