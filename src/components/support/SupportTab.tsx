@@ -71,7 +71,7 @@ export function SupportTab() {
         )}
         style={{ writingMode: "vertical-rl" }}
       >
-        <LifeBuoy className="h-4 w-4 rotate-90" />
+        <HeadsetAgentIcon className="h-4 w-4 rotate-90" />
         <span className="text-xs font-semibold tracking-wide">Suporte</span>
         <span
           className={cn(
@@ -88,14 +88,14 @@ export function SupportTab() {
         aria-label="Abrir suporte técnico"
         className="fixed bottom-20 right-3 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-[#0f766e] text-white shadow-lg md:hidden"
       >
-        <LifeBuoy className="h-5 w-5" />
+        <HeadsetAgentIcon className="h-5 w-5" />
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md p-0">
           <DialogHeader className="rounded-t-lg bg-[#0f766e] px-5 py-4 text-white">
             <DialogTitle className="flex items-center gap-2 text-base text-white">
-              <LifeBuoy className="h-5 w-5" /> {SUPPORT_LABEL}
+              <HeadsetAgentIcon className="h-5 w-5" /> {SUPPORT_LABEL}
             </DialogTitle>
             <p className="text-xs text-white/80">
               {SUPPORT_NAME} · {SUPPORT_PHONE_DISPLAY}
