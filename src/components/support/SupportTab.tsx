@@ -71,7 +71,7 @@ export function SupportTab() {
         )}
         style={{ writingMode: "vertical-rl" }}
       >
-        <HeadsetAgentIcon className="h-4 w-4 rotate-90" />
+        <HeadsetAgentIcon className="h-4 w-4" />
         <span className="text-xs font-semibold tracking-wide">Suporte</span>
         <span
           className={cn(
