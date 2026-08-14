@@ -2772,12 +2772,14 @@ export type Database = {
         | "supervisor"
         | "consultant"
         | "attendant"
+        | "support"
       tenant_role:
         | "owner"
         | "supervisor"
         | "consultor"
         | "consultant"
         | "attendant"
+        | "support"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2911,6 +2913,7 @@ export const Constants = {
         "supervisor",
         "consultant",
         "attendant",
+        "support",
       ],
       tenant_role: [
         "owner",
@@ -2918,6 +2921,7 @@ export const Constants = {
         "consultor",
         "consultant",
         "attendant",
+        "support",
       ],
     },
   },
