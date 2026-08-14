@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-export type AppRole = "superadmin" | "owner" | "supervisor" | "consultant" | "attendant";
+export type AppRole = "superadmin" | "owner" | "supervisor" | "consultant" | "attendant" | "support";
 
 const ROLE_CONFIG: Record<AppRole, { label: string; bg: string; text: string }> = {
   superadmin: { label: "Super Admin",    bg: "#1E1B4B", text: "#A5B4FC" },
@@ -8,6 +8,7 @@ const ROLE_CONFIG: Record<AppRole, { label: string; bg: string; text: string }> 
   supervisor: { label: "Supervisor",     bg: "#14532D", text: "#86EFAC" },
   consultant: { label: "Consultor",      bg: "#1E3A5F", text: "#93C5FD" },
   attendant:  { label: "Atendente",      bg: "#3B1F2B", text: "#F9A8D4" },
+  support:    { label: "Suporte técnico",bg: "#0F2A2E", text: "#5EEAD4" },
 };
 
 interface RoleBadgeProps {

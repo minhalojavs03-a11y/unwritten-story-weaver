@@ -32,10 +32,10 @@ type Permission =
 const MATRIX: Record<Permission, AppRole[]> = {
   // Supervisor é READ-ONLY: pode ver tudo do tenant, mas não altera nada.
   // A única exceção de escrita é "request_lead_takeover", tratado em código.
-  view_all_leads:        ["superadmin", "owner", "supervisor"],
+  view_all_leads:        ["superadmin", "owner", "supervisor", "support"],
   assume_any_lead:       ["superadmin", "owner"],
   transfer_lead:         ["superadmin", "owner"],
-  view_team_metrics:     ["superadmin", "owner", "supervisor"],
+  view_team_metrics:     ["superadmin", "owner", "supervisor", "support"],
   view_whatsapp:         ["superadmin", "owner", "supervisor"],
 
   configure_sheets:      ["superadmin", "owner"],
@@ -43,7 +43,7 @@ const MATRIX: Record<Permission, AppRole[]> = {
   configure_whatsapp:    ["superadmin", "owner"],
   configure_ai:          ["superadmin", "owner"],
   configure_integrations:["superadmin", "owner"],
-  view_financial:        ["superadmin", "owner", "supervisor"],
+  view_financial:        ["superadmin", "owner", "supervisor", "support"],
 
   access_superadmin:     ["superadmin"],
 };
@@ -52,6 +52,7 @@ function getMemberRole(member: ReturnType<typeof useActiveMember>["member"]): Ap
   if (!member) return null;
   const value = `${member.role_label ?? ""} ${member.username ?? ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   if (/(dono|owner|proprietario)/.test(value)) return "owner";
+  if (/(suporte|support)/.test(value)) return "support";
   if (/(supervisor|gerente|gestor)/.test(value)) return "supervisor";
   if (/(consultor|vendedor|seller)/.test(value)) return "consultant";
   if (/(atendente|attendant|menor|aprendiz|estagiario|trainee)/.test(value)) return "attendant";
