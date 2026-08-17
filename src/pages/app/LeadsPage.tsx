@@ -438,12 +438,10 @@ export default function LeadsPage() {
       }
 
 
-      if (has("simulacao_1") || has("simulacao_2") || has("simulacao_3") || has("simulacao_4")) {
+      if (has("simulacao")) {
         patch.stage = "agendado";
         patch.lead_phase = "simulacao";
-        const simType = annotations.find(a => a.startsWith("simulacao_"));
-        const simLabel = ANNOTATION_OPTIONS.find(o => o.value === simType)?.label || "Simulação enviada";
-        lines.push(`[${nowStamp}] ${simLabel}`);
+        lines.push(`[${nowStamp}] Simulação enviada`);
         
         // Update total simulation count
         const currentCount = (detailFor as any).simulation_count || 0;
