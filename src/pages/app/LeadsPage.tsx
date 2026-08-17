@@ -324,10 +324,7 @@ export default function LeadsPage() {
 
   // Anotação simplificada — agora com estágios fixos
   const ANNOTATION_OPTIONS = [
-    { value: "simulacao_1", label: "Simulação enviada 1" },
-    { value: "simulacao_2", label: "Simulação enviada 2" },
-    { value: "simulacao_3", label: "Simulação enviada 3" },
-    { value: "simulacao_4", label: "Simulação enviada 4" },
+    { value: "simulacao", label: "Simulação enviada" },
     { value: "reuniao", label: "Reunião" },
     { value: "fechou", label: "Fechou" },
     { value: "nao_fechou", label: "Não fechou" },
@@ -441,12 +438,10 @@ export default function LeadsPage() {
       }
 
 
-      if (has("simulacao_1") || has("simulacao_2") || has("simulacao_3") || has("simulacao_4")) {
+      if (has("simulacao")) {
         patch.stage = "agendado";
         patch.lead_phase = "simulacao";
-        const simType = annotations.find(a => a.startsWith("simulacao_"));
-        const simLabel = ANNOTATION_OPTIONS.find(o => o.value === simType)?.label || "Simulação enviada";
-        lines.push(`[${nowStamp}] ${simLabel}`);
+        lines.push(`[${nowStamp}] Simulação enviada`);
         
         // Update total simulation count
         const currentCount = (detailFor as any).simulation_count || 0;
