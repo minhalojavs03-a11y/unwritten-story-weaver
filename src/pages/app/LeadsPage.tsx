@@ -325,12 +325,16 @@ export default function LeadsPage() {
   // Anotação simplificada — agora com estágios fixos
   const ANNOTATION_OPTIONS = [
     { value: "simulacao", label: "Simulação enviada" },
-    { value: "reuniao", label: "Reunião" },
+    { value: "ligacao", label: "Ligação feita" },
+    { value: "reuniao", label: "Reunião agendada" },
+    { value: "compareceu", label: "Compareceu na reunião" },
+    { value: "nao_compareceu", label: "Não compareceu" },
     { value: "fechou", label: "Fechou" },
     { value: "nao_fechou", label: "Não fechou" },
   ] as const;
   const [annotations, setAnnotations] = useState<string[]>([]);
   const [notFechouReason, setNotFechouReason] = useState<string>("");
+  const [noShowReason, setNoShowReason] = useState<string>("");
   const [meetingDate, setMeetingDate] = useState<string>("");
   const [meetingTime, setMeetingTime] = useState<string>("");
   const [meetingCloser, setMeetingCloser] = useState<string>("");
@@ -442,12 +446,12 @@ export default function LeadsPage() {
         patch.stage = "agendado";
         patch.lead_phase = "simulacao";
         lines.push(`[${nowStamp}] Simulação enviada`);
-        
-        // Update total simulation count
         const currentCount = (detailFor as any).simulation_count || 0;
         patch.simulation_count = currentCount + 1;
       }
-
+      if (has("ligacao")) {
+        lines.push(`[${nowStamp}] Ligação feita`);
+      }
       if (has("reuniao")) {
         patch.stage = "agendado";
         patch.lead_phase = "apresentacao";
@@ -462,9 +466,22 @@ export default function LeadsPage() {
           meeting_closer_id: closer?.id ?? null,
           meeting_closer_name: closer?.name ?? null,
         };
-        lines.push(
-          `[${nowStamp}] Reunião agendada para ${meetingAt.toLocaleDateString("pt-BR")} às ${meetingTime}${closer ? ` · Closer: ${closer.name}` : ""}`,
-        );
+        lines.push(`[${nowStamp}] Reunião agendada para ${meetingAt.toLocaleDateString("pt-BR")} às ${meetingTime}${closer ? ` · Closer: ${closer.name}` : ""}`);
+      }
+      if (has("compareceu")) {
+        patch.stage = "compareceu";
+        patch.lead_phase = "negociacao";
+        patch.metadata = { ...(patch.metadata ?? (detailFor.metadata as any) ?? {}), meeting_attended: true };
+        lines.push(`[${nowStamp}] Compareceu na reunião`);
+      }
+      if (has("nao_compareceu")) {
+        patch.stage = "agendado";
+        patch.metadata = { 
+          ...(patch.metadata ?? (detailFor.metadata as any) ?? {}), 
+          meeting_attended: false,
+          meeting_no_show_reason: noShowReason.trim()
+        };
+        lines.push(`[${nowStamp}] Não compareceu: ${noShowReason.trim()}`);
       }
       if (has("fechou")) {
         patch.stage = "comprou";
@@ -476,7 +493,6 @@ export default function LeadsPage() {
         const valueLabel = saleAmount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
         lines.push(`[${nowStamp}] Fechou negócio · ${valueLabel} · Data da venda: ${dateLabel}`);
       }
-
       if (has("nao_fechou")) {
         patch.stage = "perdido";
         patch.status = "lost";
@@ -1012,6 +1028,8 @@ export default function LeadsPage() {
                 {ANNOTATION_OPTIONS.map((o) => {
                   const active = annotations.includes(o.value);
                   const isMeeting = o.value === "reuniao";
+
+
                   return (
                     <React.Fragment key={o.value}>
                       <button
@@ -1019,7 +1037,7 @@ export default function LeadsPage() {
                         onClick={() => toggleAnnotation(o.value)}
                         className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors ${
                           active
-                            ? "border-primary bg-primary/10 text-foreground"
+                            ? "border-primary bg-primary/10 text-foreground ring-1 ring-primary/20 shadow-sm"
                             : "border-border bg-card hover:bg-muted/40"
                         }`}
                       >
@@ -1109,7 +1127,19 @@ export default function LeadsPage() {
               </div>
             )}
 
+            {annotations.includes("nao_compareceu") && (
+              <div className="space-y-1.5 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                <Label className="text-xs">Por que não compareceu?</Label>
+                <Textarea
+                  value={noShowReason}
+                  onChange={(e) => setNoShowReason(e.target.value)}
+                  placeholder="Explique o motivo (ex: reagendou, não atendeu)..."
+                  rows={2}
+                />
+              </div>
+            )}
           </div>
+
 
 
 
