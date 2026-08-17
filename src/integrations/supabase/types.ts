@@ -1151,6 +1151,7 @@ export type Database = {
           qualification_status: string | null
           score: number
           sheet_row_index: number | null
+          simulation_count: number
           source: string | null
           stage: string | null
           status: string
@@ -1187,6 +1188,7 @@ export type Database = {
           qualification_status?: string | null
           score?: number
           sheet_row_index?: number | null
+          simulation_count?: number
           source?: string | null
           stage?: string | null
           status?: string
@@ -1223,6 +1225,7 @@ export type Database = {
           qualification_status?: string | null
           score?: number
           sheet_row_index?: number | null
+          simulation_count?: number
           source?: string | null
           stage?: string | null
           status?: string

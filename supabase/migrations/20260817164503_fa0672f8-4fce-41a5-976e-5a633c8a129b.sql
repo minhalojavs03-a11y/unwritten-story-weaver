@@ -1,0 +1,1 @@
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS simulation_count int NOT NULL DEFAULT 0;
