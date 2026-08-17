@@ -334,6 +334,7 @@ export default function LeadsPage() {
   ] as const;
   const [annotations, setAnnotations] = useState<string[]>([]);
   const [notFechouReason, setNotFechouReason] = useState<string>("");
+  const [noShowReason, setNoShowReason] = useState<string>("");
   const [meetingDate, setMeetingDate] = useState<string>("");
   const [meetingTime, setMeetingTime] = useState<string>("");
   const [meetingCloser, setMeetingCloser] = useState<string>("");
