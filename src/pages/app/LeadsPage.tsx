@@ -1028,7 +1028,9 @@ export default function LeadsPage() {
                 {ANNOTATION_OPTIONS.map((o) => {
                   const active = annotations.includes(o.value);
                   const isMeeting = o.value === "reuniao";
-
+                  const isNoShow = o.value === "nao_compareceu";
+                  const isWon = o.value === "fechou";
+                  const isLost = o.value === "nao_fechou";
 
                   return (
                     <React.Fragment key={o.value}>
@@ -1050,7 +1052,8 @@ export default function LeadsPage() {
                         </span>
                         <span className="flex-1">{o.label}</span>
                       </button>
-                      {isMeeting && annotations.includes("reuniao") && (
+
+                      {isMeeting && active && (
                         <div className="grid gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 sm:grid-cols-2">
                           <div className="space-y-1.5">
                             <Label className="text-xs">Data da reunião</Label>
@@ -1071,6 +1074,48 @@ export default function LeadsPage() {
                               </SelectContent>
                             </Select>
                           </div>
+                        </div>
+                      )}
+
+                      {isNoShow && active && (
+                        <div className="space-y-1.5 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                          <Label className="text-xs">Por que não compareceu?</Label>
+                          <Textarea
+                            value={noShowReason}
+                            onChange={(e) => setNoShowReason(e.target.value)}
+                            placeholder="Explique o motivo (ex: reagendou, não atendeu)..."
+                            rows={2}
+                          />
+                        </div>
+                      )}
+
+                      {isWon && active && (
+                        <div className="grid gap-3 rounded-lg border border-success/30 bg-success/5 p-3 sm:grid-cols-2">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">Valor da venda (R$)</Label>
+                            <Input
+                              inputMode="decimal"
+                              value={saleValue}
+                              onChange={(e) => setSaleValue(e.target.value)}
+                              placeholder="Ex.: 80000"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">Data da venda</Label>
+                            <Input type="date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} />
+                          </div>
+                        </div>
+                      )}
+
+                      {isLost && active && (
+                        <div className="space-y-1.5 rounded-lg border border-border bg-muted/20 p-3">
+                          <Label className="text-xs">Por que não fechou?</Label>
+                          <Textarea
+                            value={notFechouReason}
+                            onChange={(e) => setNotFechouReason(e.target.value)}
+                            placeholder="Explique brevemente o motivo…"
+                            rows={3}
+                          />
                         </div>
                       )}
                     </React.Fragment>
@@ -1094,50 +1139,6 @@ export default function LeadsPage() {
                 Reconhecido automaticamente quando disponível. Ajuste se precisar — aparece na agenda do closer.
               </p>
             </div>
-
-
-            {annotations.includes("fechou") && (
-              <div className="grid gap-3 rounded-lg border border-success/30 bg-success/5 p-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Valor da venda (R$)</Label>
-                  <Input
-                    inputMode="decimal"
-                    value={saleValue}
-                    onChange={(e) => setSaleValue(e.target.value)}
-                    placeholder="Ex.: 80000"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Data da venda</Label>
-                  <Input type="date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} />
-                </div>
-              </div>
-            )}
-
-
-            {annotations.includes("nao_fechou") && (
-              <div className="space-y-1.5">
-                <Label className="text-xs">Por que não fechou?</Label>
-                <Textarea
-                  value={notFechouReason}
-                  onChange={(e) => setNotFechouReason(e.target.value)}
-                  placeholder="Explique brevemente o motivo…"
-                  rows={3}
-                />
-              </div>
-            )}
-
-            {annotations.includes("nao_compareceu") && (
-              <div className="space-y-1.5 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                <Label className="text-xs">Por que não compareceu?</Label>
-                <Textarea
-                  value={noShowReason}
-                  onChange={(e) => setNoShowReason(e.target.value)}
-                  placeholder="Explique o motivo (ex: reagendou, não atendeu)..."
-                  rows={2}
-                />
-              </div>
-            )}
           </div>
 
 
