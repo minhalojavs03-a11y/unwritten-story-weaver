@@ -13,25 +13,25 @@ export interface MenuCatalogItem {
 }
 
 export const MENU_CATALOG: MenuCatalogItem[] = [
-  { key: "/crm",            label: "Início",            roles: ["owner", "supervisor", "consultant"] },
-  
-  
-  { key: "/conversas",      label: "Conversas",         roles: ["owner", "supervisor", "consultant"] },
-  { key: "/pipeline",       label: "Pipeline",          roles: ["owner", "supervisor", "consultant"] },
-  { key: "/leads",          label: "Leads",             roles: ["owner", "supervisor", "consultant"] },
-  { key: "/distribuicao",   label: "Distribuição",      roles: ["owner", "supervisor"] },
-  { key: "/agenda",         label: "Agenda",            roles: ["owner", "supervisor", "consultant"] },
-  { key: "/meu-whatsapp",   label: "Meu WhatsApp",      roles: ["owner", "supervisor", "consultant"] },
-  { key: "/ranking",        label: "Ranking",           roles: ["owner", "supervisor", "consultant"] },
-  { key: "/relatorios",     label: "Relatórios",        roles: ["owner", "supervisor", "consultant"] },
-  { key: "/coaching",       label: "Coaching IA",       roles: ["owner", "supervisor", "consultant"] },
-  { key: "/consultores",    label: "Consultores",       roles: ["owner", "supervisor"] },
-  { key: "/equipe",         label: "Equipe",            roles: ["owner", "supervisor"] },
-  { key: "/configuracoes",  label: "Configurações",     roles: ["owner", "supervisor", "consultant"] },
+  { key: "/crm",            label: "Início",            roles: ["owner", "supervisor", "consultant", "support"] },
+  { key: "/tickets",        label: "Tickets",           roles: ["support"] },
+  { key: "/conversas",      label: "Conversas",         roles: ["owner", "supervisor", "consultant", "support"] },
+  { key: "/pipeline",       label: "Pipeline",          roles: ["owner", "supervisor", "consultant", "support"] },
+  { key: "/leads",          label: "Leads",             roles: ["owner", "supervisor", "consultant", "support"] },
+  { key: "/distribuicao",   label: "Distribuição",      roles: ["owner", "supervisor", "support"] },
+  { key: "/agenda",         label: "Agenda",            roles: ["owner", "supervisor", "consultant", "support"] },
+  { key: "/meu-whatsapp",   label: "Meu WhatsApp",      roles: ["owner", "supervisor", "consultant", "support"] },
+  { key: "/ranking",        label: "Ranking",           roles: ["owner", "supervisor", "consultant", "support"] },
+  { key: "/relatorios",     label: "Relatórios",        roles: ["owner", "supervisor", "consultant", "support"] },
+  { key: "/coaching",       label: "Coaching IA",       roles: ["owner", "supervisor", "consultant", "support"] },
+  { key: "/consultores",    label: "Consultores",       roles: ["owner", "supervisor", "support"] },
+  { key: "/equipe",         label: "Equipe",            roles: ["owner", "supervisor", "support"] },
+  { key: "/configuracoes",  label: "Configurações",     roles: ["owner", "supervisor", "consultant", "support"] },
 ];
 
 export const ROLE_LABEL: Record<MenuRole, string> = {
   owner: "Dono",
   supervisor: "Supervisor",
   consultant: "Consultor",
+  support: "Suporte",
 };

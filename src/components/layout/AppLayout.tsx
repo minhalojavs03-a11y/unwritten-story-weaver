@@ -151,11 +151,13 @@ export function AppLayout() {
   const memberRoleLabel = (member?.role_label ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
   const memberMenuRole: MenuRole | null = !member
     ? null
-    : /(dono|owner|proprietario)/.test(memberRoleLabel)
-      ? "owner"
-      : /(supervisor|gerente|gestor)/.test(memberRoleLabel)
-        ? "supervisor"
-        : "consultant";
+    : /(suporte|support)/.test(memberRoleLabel)
+      ? "support"
+      : /(dono|owner|proprietario)/.test(memberRoleLabel)
+        ? "owner"
+        : /(supervisor|gerente|gestor)/.test(memberRoleLabel)
+          ? "supervisor"
+          : "consultant";
   const impersonationTargetRole = (impersonating?.target_role ?? "").toLowerCase();
   const impersonationMenuRole: MenuRole | null = !impersonating
     ? null
@@ -163,15 +165,19 @@ export function AppLayout() {
       ? "owner"
       : impersonationTargetRole === "supervisor"
         ? "supervisor"
-        : impersonationTargetRole === "consultant" || impersonationTargetRole === "attendant"
-          ? "consultant"
-          : memberMenuRole;
+        : impersonationTargetRole === "support"
+          ? "support"
+          : impersonationTargetRole === "consultant" || impersonationTargetRole === "attendant"
+            ? "consultant"
+            : memberMenuRole;
   const effectiveMenuRole: MenuRole | null = impersonating
     ? impersonationMenuRole
     : realIsSuperadmin
       ? null
-      : memberMenuRole
-        ?? (isOwner ? "owner" : isSupervisor ? "supervisor" : "consultant");
+      : isSupportAccount
+        ? "support"
+        : memberMenuRole
+          ?? (isOwner ? "owner" : isSupervisor ? "supervisor" : "consultant");
   const hiddenMenus = useHiddenMenus(effectiveMenuRole);
   const visibleNavItems = useMemo(() => {
     if (!hiddenMenus.size) return navItems;
