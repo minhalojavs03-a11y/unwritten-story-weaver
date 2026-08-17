@@ -25,6 +25,11 @@ const MIN_SCORE = 3;
 const MIN_DAYS_SINCE_LAST_CONTACT = 7;   // não reabordar leads mexidos há poucos dias
 const REACTIVATION_COOLDOWN_DAYS = 60;   // não repetir reativação no mesmo lead
 
+// IDs de membros que NÃO devem participar da reativação automática (ex.: supervisores).
+const SKIP_MEMBER_IDS = new Set([
+  "a1f959f9-8318-42c6-a843-6804fddef7c0", // Antonio Junior
+]);
+
 // Motivos de perda que eliminam qualquer chance real de retomada.
 const HARD_LOSS_PATTERNS = [
   /n(ã|a)o\s*(é|e)\s*o?\s*titular/i,
@@ -186,6 +191,7 @@ Deno.serve(async (req) => {
 
     for (const member of members ?? []) {
       if (onlyMemberId && member.id !== onlyMemberId) continue;
+      if (SKIP_MEMBER_IDS.has(member.id)) continue;
 
       // Cota diária.
       const { data: sentToday } = await admin
