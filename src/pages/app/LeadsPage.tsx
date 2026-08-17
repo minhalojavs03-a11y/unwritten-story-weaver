@@ -379,11 +379,6 @@ export default function LeadsPage() {
       const meta = (detailFor.metadata ?? {}) as Record<string, any>;
       setAnnotations(savedAnnotations);
       setNotFechouReason(detailFor.disqualification_reason ?? "");
-      setNoShowReason(meta.meeting_no_show_reason ?? "");
-      setRescheduled(meta.meeting_rescheduled ? "sim" : meta.meeting_rescheduled === false ? "nao" : "");
-      setRescheduleDate(meta.meeting_rescheduled_to ? String(meta.meeting_rescheduled_to).slice(0, 10) : "");
-      setRescheduleTime(meta.meeting_rescheduled_time ? String(meta.meeting_rescheduled_time).slice(0, 5) : "");
-      setRescheduleCloser(meta.meeting_rescheduled_closer_id ?? "");
       if (meta.meeting_scheduled_at) {
         const d = new Date(meta.meeting_scheduled_at);
         if (!Number.isNaN(d.getTime())) {
@@ -1021,7 +1016,7 @@ export default function LeadsPage() {
               <div className="grid gap-1.5">
                 {ANNOTATION_OPTIONS.map((o) => {
                   const active = annotations.includes(o.value);
-                  const isMeeting = o.value === "reuniao_agendada";
+                  const isMeeting = o.value === "reuniao";
                   return (
                     <React.Fragment key={o.value}>
                       <button
@@ -1042,7 +1037,7 @@ export default function LeadsPage() {
                         </span>
                         <span className="flex-1">{o.label}</span>
                       </button>
-                      {isMeeting && annotations.includes("reuniao_agendada") && (
+                      {isMeeting && annotations.includes("reuniao") && (
                         <div className="grid gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 sm:grid-cols-2">
                           <div className="space-y-1.5">
                             <Label className="text-xs">Data da reunião</Label>
@@ -1063,64 +1058,6 @@ export default function LeadsPage() {
                               </SelectContent>
                             </Select>
                           </div>
-                        </div>
-                      )}
-                      {o.value === "nao_compareceu" && annotations.includes("nao_compareceu") && (
-                        <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs">Por que não compareceu?</Label>
-                            <Textarea
-                              value={noShowReason}
-                              onChange={(e) => setNoShowReason(e.target.value)}
-                              placeholder="Ex.: cliente teve imprevisto, não atendeu…"
-                              rows={3}
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs">Reagendou?</Label>
-                            <div className="grid grid-cols-2 gap-2">
-                              {[
-                                { v: "sim", l: "Reagendou" },
-                                { v: "nao", l: "Não reagendou" },
-                              ].map((opt) => (
-                                <button
-                                  key={opt.v}
-                                  type="button"
-                                  onClick={() => setRescheduled(opt.v as "sim" | "nao")}
-                                  className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
-                                    rescheduled === opt.v
-                                      ? "border-primary bg-primary/10 text-foreground"
-                                      : "border-border bg-card hover:bg-muted/40"
-                                  }`}
-                                >
-                                  {opt.l}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          {rescheduled === "sim" && (
-                            <div className="grid gap-3 sm:grid-cols-2">
-                              <div className="space-y-1.5">
-                                <Label className="text-xs">Nova data da reunião</Label>
-                                <Input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} />
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label className="text-xs">Novo horário</Label>
-                                <Input type="time" value={rescheduleTime} onChange={(e) => setRescheduleTime(e.target.value)} />
-                              </div>
-                              <div className="space-y-1.5 sm:col-span-2">
-                                <Label className="text-xs">Closer da reunião reagendada</Label>
-                                <Select value={rescheduleCloser} onValueChange={setRescheduleCloser}>
-                                  <SelectTrigger><SelectValue placeholder="Quem vai conduzir?" /></SelectTrigger>
-                                  <SelectContent>
-                                    {CLOSERS.map((c) => (
-                                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       )}
                     </React.Fragment>
