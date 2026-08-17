@@ -67,7 +67,7 @@ export default function AdminEquipes() {
           </div>
           <Link to="/admin/auth">
             <Button variant="outline" className="w-full sm:w-auto">
-              <ShieldAlert className="mr-2 h-4 w-4 text-primary" />
+              <UserPlus className="mr-2 h-4 w-4 text-primary" />
               Gestão de Acessos Manual
             </Button>
           </Link>
