@@ -6,7 +6,7 @@ import { useMenuPermissions, useToggleMenuPermission, type MenuRole } from "@/ho
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-const ROLES: MenuRole[] = ["owner", "supervisor", "consultant"];
+const ROLES: MenuRole[] = ["owner", "supervisor", "consultant", "support"];
 
 export default function AdminMenus() {
   const [activeRole, setActiveRole] = useState<MenuRole>("consultant");

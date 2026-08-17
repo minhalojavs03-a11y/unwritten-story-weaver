@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type MenuRole = "owner" | "supervisor" | "consultant";
+export type MenuRole = "owner" | "supervisor" | "consultant" | "support";
 
 export interface MenuPermission {
   id: string;
