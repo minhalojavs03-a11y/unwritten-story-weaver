@@ -1028,6 +1028,7 @@ export default function LeadsPage() {
                 {ANNOTATION_OPTIONS.map((o) => {
                   const active = annotations.includes(o.value);
                   const isMeeting = o.value === "reuniao";
+
                   return (
                     <React.Fragment key={o.value}>
                       <button
