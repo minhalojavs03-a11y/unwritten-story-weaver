@@ -184,7 +184,7 @@ Deno.serve(async (req) => {
     // Consultores ativos que possuem leads perdidos.
     const { data: members } = await admin
       .from("tenant_members")
-      .select("id, tenant_id, user_id, display_name")
+      .select("id, tenant_id, user_id, display_name, followup_active, followup_daily_limit")
       .eq("is_active", true);
 
     const results: any[] = [];
@@ -192,6 +192,9 @@ Deno.serve(async (req) => {
     for (const member of members ?? []) {
       if (onlyMemberId && member.id !== onlyMemberId) continue;
       if (SKIP_MEMBER_IDS.has(member.id)) continue;
+      if (member.followup_active !== true) continue;
+
+      const dailyLimit = member.followup_daily_limit ?? DAILY_LIMIT_PER_CONSULTANT;
 
       // Cota diária.
       const { data: sentToday } = await admin
@@ -200,7 +203,7 @@ Deno.serve(async (req) => {
         .eq("type", NOTIF_TYPE)
         .eq("recipient_member_id", member.id)
         .gte("sent_at", startOfDayISO);
-      if ((sentToday?.length ?? 0) >= DAILY_LIMIT_PER_CONSULTANT) continue;
+      if ((sentToday?.length ?? 0) >= dailyLimit) continue;
 
       const instance = await consultantInstance(admin, member.tenant_id, member.user_id);
       if (!instance) {
