@@ -1125,7 +1125,19 @@ export default function LeadsPage() {
               </div>
             )}
 
+            {annotations.includes("nao_compareceu") && (
+              <div className="space-y-1.5 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                <Label className="text-xs">Por que não compareceu?</Label>
+                <Textarea
+                  value={noShowReason}
+                  onChange={(e) => setNoShowReason(e.target.value)}
+                  placeholder="Explique o motivo (ex: reagendou, não atendeu)..."
+                  rows={2}
+                />
+              </div>
+            )}
           </div>
+
 
 
 
