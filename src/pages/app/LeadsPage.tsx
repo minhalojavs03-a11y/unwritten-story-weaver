@@ -446,12 +446,12 @@ export default function LeadsPage() {
         patch.stage = "agendado";
         patch.lead_phase = "simulacao";
         lines.push(`[${nowStamp}] Simulação enviada`);
-        
-        // Update total simulation count
         const currentCount = (detailFor as any).simulation_count || 0;
         patch.simulation_count = currentCount + 1;
       }
-
+      if (has("ligacao")) {
+        lines.push(`[${nowStamp}] Ligação feita`);
+      }
       if (has("reuniao")) {
         patch.stage = "agendado";
         patch.lead_phase = "apresentacao";
@@ -466,9 +466,22 @@ export default function LeadsPage() {
           meeting_closer_id: closer?.id ?? null,
           meeting_closer_name: closer?.name ?? null,
         };
-        lines.push(
-          `[${nowStamp}] Reunião agendada para ${meetingAt.toLocaleDateString("pt-BR")} às ${meetingTime}${closer ? ` · Closer: ${closer.name}` : ""}`,
-        );
+        lines.push(`[${nowStamp}] Reunião agendada para ${meetingAt.toLocaleDateString("pt-BR")} às ${meetingTime}${closer ? ` · Closer: ${closer.name}` : ""}`);
+      }
+      if (has("compareceu")) {
+        patch.stage = "compareceu";
+        patch.lead_phase = "negociacao";
+        patch.metadata = { ...(patch.metadata ?? (detailFor.metadata as any) ?? {}), meeting_attended: true };
+        lines.push(`[${nowStamp}] Compareceu na reunião`);
+      }
+      if (has("nao_compareceu")) {
+        patch.stage = "agendado";
+        patch.metadata = { 
+          ...(patch.metadata ?? (detailFor.metadata as any) ?? {}), 
+          meeting_attended: false,
+          meeting_no_show_reason: noShowReason.trim()
+        };
+        lines.push(`[${nowStamp}] Não compareceu: ${noShowReason.trim()}`);
       }
       if (has("fechou")) {
         patch.stage = "comprou";
@@ -480,7 +493,6 @@ export default function LeadsPage() {
         const valueLabel = saleAmount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
         lines.push(`[${nowStamp}] Fechou negócio · ${valueLabel} · Data da venda: ${dateLabel}`);
       }
-
       if (has("nao_fechou")) {
         patch.stage = "perdido";
         patch.status = "lost";
