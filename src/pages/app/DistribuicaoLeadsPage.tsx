@@ -216,7 +216,7 @@ export default function DistribuicaoLeadsPage() {
   const { data: offlineFlagMap = {} } = useQuery({
     queryKey: ["dist-extra-flags", effectiveTenant, rows.map((r) => r.id).join(",")],
     enabled: rows.length > 0,
-    queryFn: async (): Promise<Record<string, boolean>> => {
+    queryFn: async (): Promise<Record<string, Partial<Row>>> => {
       const ids = rows.map((r) => r.id).filter((x): x is string => !!x);
       if (ids.length === 0) return {};
       const { data, error } = await supabase
@@ -667,7 +667,7 @@ export default function DistribuicaoLeadsPage() {
                         </p>
                       </div>
                       <Switch
-                        checked={r.id ? !!offlineFlagMap[r.id]?.receive_leads_when_offline : false}
+                        checked={r.id ? !!(offlineFlagMap[r.id] as any)?.receive_leads_when_offline : false}
                         onCheckedChange={(v) => saveOfflineFlag(r, v)}
                       />
                     </div>
@@ -684,7 +684,7 @@ export default function DistribuicaoLeadsPage() {
                         <div className="flex items-center gap-2">
                           <Label className="text-[10px] text-muted-foreground uppercase">Qtd:</Label>
                           <select
-                            value={r.id ? (offlineFlagMap[r.id]?.followup_daily_limit ?? 5) : 5}
+                            value={r.id ? ((offlineFlagMap[r.id] as any)?.followup_daily_limit ?? 5) : 5}
                             onChange={(e) => saveFollowupConfig(r, { followup_daily_limit: Number(e.target.value) })}
                             className="h-8 w-16 rounded-md border border-emerald-500/30 bg-background px-1 text-xs"
                           >
@@ -694,7 +694,7 @@ export default function DistribuicaoLeadsPage() {
                           </select>
                         </div>
                         <Switch
-                          checked={r.id ? !!offlineFlagMap[r.id]?.followup_active : false}
+                          checked={r.id ? !!(offlineFlagMap[r.id] as any)?.followup_active : false}
                           onCheckedChange={(v) => saveFollowupConfig(r, { followup_active: v })}
                         />
                       </div>
