@@ -5,8 +5,10 @@ import { UserAvatar } from "@/components/ui/UserAvatar";
 import { OnlineStatusDot } from "@/components/ui/OnlineStatusDot";
 import { RoleBadge, type AppRole } from "@/components/ui/RoleBadge";
 import { Input } from "@/components/ui/input";
-import { Building2, ChevronDown, ChevronRight, Mail, Search, UserPlus, Users } from "lucide-react";
+import { Building2, ChevronDown, ChevronRight, Mail, Search, ShieldAlert, UserPlus, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export default function AdminEquipes() {
   const { data: teams = [], isLoading } = useAllTeams();
@@ -53,14 +55,22 @@ export default function AdminEquipes() {
           <SummaryTile icon={Mail} label="Convites pendentes" value={totals.pending} />
         </div>
 
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por unidade, nome ou e-mail..."
-            className="pl-9"
-          />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por unidade, nome ou e-mail..."
+              className="pl-9"
+            />
+          </div>
+          <Link to="/admin/auth">
+            <Button variant="outline" className="w-full sm:w-auto">
+              <ShieldAlert className="mr-2 h-4 w-4 text-primary" />
+              Gestão de Acessos Manual
+            </Button>
+          </Link>
         </div>
 
         {isLoading && <div className="text-sm text-muted-foreground">Carregando…</div>}

@@ -322,23 +322,18 @@ export default function LeadsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusLeadId, filteredLeads]);
 
-  // Anotação simplificada — os únicos status que o consultor precisa marcar.
+  // Anotação simplificada — agora com estágios fixos
   const ANNOTATION_OPTIONS = [
-    { value: "simulacao", label: "Simulação enviada" },
-    { value: "ligacao", label: "Ligação feita" },
-    { value: "reuniao_agendada", label: "Reunião agendada" },
-    { value: "compareceu", label: "Compareceu na reunião" },
-    { value: "nao_compareceu", label: "Não compareceu" },
+    { value: "simulacao_1", label: "Simulação enviada 1" },
+    { value: "simulacao_2", label: "Simulação enviada 2" },
+    { value: "simulacao_3", label: "Simulação enviada 3" },
+    { value: "simulacao_4", label: "Simulação enviada 4" },
+    { value: "reuniao", label: "Reunião" },
     { value: "fechou", label: "Fechou" },
     { value: "nao_fechou", label: "Não fechou" },
   ] as const;
   const [annotations, setAnnotations] = useState<string[]>([]);
   const [notFechouReason, setNotFechouReason] = useState<string>("");
-  const [noShowReason, setNoShowReason] = useState<string>("");
-  const [rescheduled, setRescheduled] = useState<"sim" | "nao" | "">("");
-  const [rescheduleDate, setRescheduleDate] = useState<string>("");
-  const [rescheduleTime, setRescheduleTime] = useState<string>("");
-  const [rescheduleCloser, setRescheduleCloser] = useState<string>("");
   const [meetingDate, setMeetingDate] = useState<string>("");
   const [meetingTime, setMeetingTime] = useState<string>("");
   const [meetingCloser, setMeetingCloser] = useState<string>("");
@@ -384,11 +379,6 @@ export default function LeadsPage() {
       const meta = (detailFor.metadata ?? {}) as Record<string, any>;
       setAnnotations(savedAnnotations);
       setNotFechouReason(detailFor.disqualification_reason ?? "");
-      setNoShowReason(meta.meeting_no_show_reason ?? "");
-      setRescheduled(meta.meeting_rescheduled ? "sim" : meta.meeting_rescheduled === false ? "nao" : "");
-      setRescheduleDate(meta.meeting_rescheduled_to ? String(meta.meeting_rescheduled_to).slice(0, 10) : "");
-      setRescheduleTime(meta.meeting_rescheduled_time ? String(meta.meeting_rescheduled_time).slice(0, 5) : "");
-      setRescheduleCloser(meta.meeting_rescheduled_closer_id ?? "");
       if (meta.meeting_scheduled_at) {
         const d = new Date(meta.meeting_scheduled_at);
         if (!Number.isNaN(d.getTime())) {
@@ -419,35 +409,13 @@ export default function LeadsPage() {
       toast({ title: "Informe o motivo", description: "Explique brevemente por que não fechou.", variant: "destructive" });
       return;
     }
-    if (annotations.includes("compareceu") && annotations.includes("nao_compareceu")) {
-      toast({ title: "Seleção inválida", description: "Marque apenas se o lead compareceu OU não compareceu.", variant: "destructive" });
-      return;
-    }
-    if (annotations.includes("reuniao_agendada") && (!meetingDate || !meetingTime)) {
+    if (annotations.includes("reuniao") && (!meetingDate || !meetingTime)) {
       toast({ title: "Informe data e horário", description: "Selecione a data e o horário da reunião agendada.", variant: "destructive" });
       return;
     }
-    if (annotations.includes("reuniao_agendada") && !meetingCloser) {
+    if (annotations.includes("reuniao") && !meetingCloser) {
       toast({ title: "Selecione o closer", description: "Informe quem vai conduzir a reunião.", variant: "destructive" });
       return;
-    }
-    if (annotations.includes("nao_compareceu")) {
-      if (!noShowReason.trim()) {
-        toast({ title: "Informe o motivo", description: "Explique por que o lead não compareceu.", variant: "destructive" });
-        return;
-      }
-      if (!rescheduled) {
-        toast({ title: "Informe se reagendou", description: "Selecione Reagendou ou Não reagendou.", variant: "destructive" });
-        return;
-      }
-      if (rescheduled === "sim" && !rescheduleDate) {
-        toast({ title: "Informe a nova data", description: "Selecione a data da reunião reagendada.", variant: "destructive" });
-        return;
-      }
-      if (rescheduled === "sim" && !rescheduleCloser) {
-        toast({ title: "Selecione o closer", description: "Informe quem vai conduzir a reunião reagendada.", variant: "destructive" });
-        return;
-      }
     }
     const saleAmount = Number(saleValue.replace(/\./g, "").replace(",", "."));
     if (annotations.includes("fechou") && (!saleValue.trim() || !Number.isFinite(saleAmount) || saleAmount <= 0 || !saleDate)) {
@@ -473,15 +441,19 @@ export default function LeadsPage() {
       }
 
 
-      if (has("simulacao")) {
+      if (has("simulacao_1") || has("simulacao_2") || has("simulacao_3") || has("simulacao_4")) {
         patch.stage = "agendado";
         patch.lead_phase = "simulacao";
-        lines.push(`[${nowStamp}] Simulação enviada`);
+        const simType = annotations.find(a => a.startsWith("simulacao_"));
+        const simLabel = ANNOTATION_OPTIONS.find(o => o.value === simType)?.label || "Simulação enviada";
+        lines.push(`[${nowStamp}] ${simLabel}`);
+        
+        // Update total simulation count
+        const currentCount = (detailFor as any).simulation_count || 0;
+        patch.simulation_count = currentCount + 1;
       }
-      if (has("ligacao")) {
-        lines.push(`[${nowStamp}] Ligação feita`);
-      }
-      if (has("reuniao_agendada")) {
+
+      if (has("reuniao")) {
         patch.stage = "agendado";
         patch.lead_phase = "apresentacao";
         const meetingAt = new Date(`${meetingDate}T${meetingTime}:00`);
@@ -498,38 +470,6 @@ export default function LeadsPage() {
         lines.push(
           `[${nowStamp}] Reunião agendada para ${meetingAt.toLocaleDateString("pt-BR")} às ${meetingTime}${closer ? ` · Closer: ${closer.name}` : ""}`,
         );
-      }
-      if (has("nao_compareceu")) {
-        patch.stage = "agendado";
-        patch.lead_phase = "apresentacao";
-        const rescheduleCloserObj = CLOSERS.find((c) => c.id === rescheduleCloser) ?? null;
-        patch.metadata = {
-          ...(patch.metadata ?? (detailFor.metadata as any) ?? {}),
-          meeting_attended: false,
-          meeting_no_show_at: new Date().toISOString(),
-          meeting_no_show_reason: noShowReason.trim(),
-          meeting_rescheduled: rescheduled === "sim",
-          meeting_rescheduled_to: rescheduled === "sim" ? rescheduleDate : null,
-          meeting_rescheduled_time: rescheduled === "sim" ? rescheduleTime || null : null,
-          meeting_rescheduled_closer_id: rescheduleCloserObj?.id ?? null,
-          meeting_rescheduled_closer_name: rescheduleCloserObj?.name ?? null,
-        };
-        lines.push(`[${nowStamp}] Não compareceu na reunião: ${noShowReason.trim()}`);
-        lines.push(
-          rescheduled === "sim"
-            ? `[${nowStamp}] Reagendou para ${new Date(`${rescheduleDate}T12:00:00`).toLocaleDateString("pt-BR")}${rescheduleTime ? ` às ${rescheduleTime}` : ""}${rescheduleCloserObj ? ` · Closer: ${rescheduleCloserObj.name}` : ""}`
-            : `[${nowStamp}] Não reagendou`,
-        );
-      }
-      if (has("compareceu") || has("reuniao")) {
-        patch.stage = "compareceu";
-        patch.lead_phase = "negociacao";
-        patch.metadata = {
-          ...(patch.metadata ?? (detailFor.metadata as any) ?? {}),
-          meeting_attended: true,
-          meeting_attended_at: new Date().toISOString(),
-        };
-        lines.push(`[${nowStamp}] Compareceu na reunião`);
       }
       if (has("fechou")) {
         patch.stage = "comprou";
@@ -1076,7 +1016,7 @@ export default function LeadsPage() {
               <div className="grid gap-1.5">
                 {ANNOTATION_OPTIONS.map((o) => {
                   const active = annotations.includes(o.value);
-                  const isMeeting = o.value === "reuniao_agendada";
+                  const isMeeting = o.value === "reuniao";
                   return (
                     <React.Fragment key={o.value}>
                       <button
@@ -1097,7 +1037,7 @@ export default function LeadsPage() {
                         </span>
                         <span className="flex-1">{o.label}</span>
                       </button>
-                      {isMeeting && annotations.includes("reuniao_agendada") && (
+                      {isMeeting && annotations.includes("reuniao") && (
                         <div className="grid gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 sm:grid-cols-2">
                           <div className="space-y-1.5">
                             <Label className="text-xs">Data da reunião</Label>
@@ -1118,64 +1058,6 @@ export default function LeadsPage() {
                               </SelectContent>
                             </Select>
                           </div>
-                        </div>
-                      )}
-                      {o.value === "nao_compareceu" && annotations.includes("nao_compareceu") && (
-                        <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs">Por que não compareceu?</Label>
-                            <Textarea
-                              value={noShowReason}
-                              onChange={(e) => setNoShowReason(e.target.value)}
-                              placeholder="Ex.: cliente teve imprevisto, não atendeu…"
-                              rows={3}
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs">Reagendou?</Label>
-                            <div className="grid grid-cols-2 gap-2">
-                              {[
-                                { v: "sim", l: "Reagendou" },
-                                { v: "nao", l: "Não reagendou" },
-                              ].map((opt) => (
-                                <button
-                                  key={opt.v}
-                                  type="button"
-                                  onClick={() => setRescheduled(opt.v as "sim" | "nao")}
-                                  className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
-                                    rescheduled === opt.v
-                                      ? "border-primary bg-primary/10 text-foreground"
-                                      : "border-border bg-card hover:bg-muted/40"
-                                  }`}
-                                >
-                                  {opt.l}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          {rescheduled === "sim" && (
-                            <div className="grid gap-3 sm:grid-cols-2">
-                              <div className="space-y-1.5">
-                                <Label className="text-xs">Nova data da reunião</Label>
-                                <Input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} />
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label className="text-xs">Novo horário</Label>
-                                <Input type="time" value={rescheduleTime} onChange={(e) => setRescheduleTime(e.target.value)} />
-                              </div>
-                              <div className="space-y-1.5 sm:col-span-2">
-                                <Label className="text-xs">Closer da reunião reagendada</Label>
-                                <Select value={rescheduleCloser} onValueChange={setRescheduleCloser}>
-                                  <SelectTrigger><SelectValue placeholder="Quem vai conduzir?" /></SelectTrigger>
-                                  <SelectContent>
-                                    {CLOSERS.map((c) => (
-                                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       )}
                     </React.Fragment>
