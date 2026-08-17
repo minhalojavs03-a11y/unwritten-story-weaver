@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Building2, ChevronDown, ChevronRight, Mail, Search, ShieldAlert, UserPlus, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export default function AdminEquipes() {
   const { data: teams = [], isLoading } = useAllTeams();
