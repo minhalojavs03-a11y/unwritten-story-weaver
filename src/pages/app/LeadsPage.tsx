@@ -324,10 +324,7 @@ export default function LeadsPage() {
 
   // Anotação simplificada — agora com estágios fixos
   const ANNOTATION_OPTIONS = [
-    { value: "simulacao_1", label: "Simulação enviada 1" },
-    { value: "simulacao_2", label: "Simulação enviada 2" },
-    { value: "simulacao_3", label: "Simulação enviada 3" },
-    { value: "simulacao_4", label: "Simulação enviada 4" },
+    { value: "simulacao", label: "Simulação enviada" },
     { value: "reuniao", label: "Reunião" },
     { value: "fechou", label: "Fechou" },
     { value: "nao_fechou", label: "Não fechou" },
