@@ -322,23 +322,18 @@ export default function LeadsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusLeadId, filteredLeads]);
 
-  // Anotação simplificada — os únicos status que o consultor precisa marcar.
+  // Anotação simplificada — agora com estágios fixos
   const ANNOTATION_OPTIONS = [
-    { value: "simulacao", label: "Simulação enviada" },
-    { value: "ligacao", label: "Ligação feita" },
-    { value: "reuniao_agendada", label: "Reunião agendada" },
-    { value: "compareceu", label: "Compareceu na reunião" },
-    { value: "nao_compareceu", label: "Não compareceu" },
+    { value: "simulacao_1", label: "Simulação enviada 1" },
+    { value: "simulacao_2", label: "Simulação enviada 2" },
+    { value: "simulacao_3", label: "Simulação enviada 3" },
+    { value: "simulacao_4", label: "Simulação enviada 4" },
+    { value: "reuniao", label: "Reunião" },
     { value: "fechou", label: "Fechou" },
     { value: "nao_fechou", label: "Não fechou" },
   ] as const;
   const [annotations, setAnnotations] = useState<string[]>([]);
   const [notFechouReason, setNotFechouReason] = useState<string>("");
-  const [noShowReason, setNoShowReason] = useState<string>("");
-  const [rescheduled, setRescheduled] = useState<"sim" | "nao" | "">("");
-  const [rescheduleDate, setRescheduleDate] = useState<string>("");
-  const [rescheduleTime, setRescheduleTime] = useState<string>("");
-  const [rescheduleCloser, setRescheduleCloser] = useState<string>("");
   const [meetingDate, setMeetingDate] = useState<string>("");
   const [meetingTime, setMeetingTime] = useState<string>("");
   const [meetingCloser, setMeetingCloser] = useState<string>("");
