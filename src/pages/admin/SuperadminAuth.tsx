@@ -45,7 +45,8 @@ export default function SuperadminAuthPage() {
           username: email,
           display_name: displayName,
           role_label: "Consultor",
-          is_active: true
+          is_active: true,
+          password_hash: "temporary_hash"
         })
         .select()
         .single();
