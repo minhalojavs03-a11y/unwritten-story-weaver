@@ -41,6 +41,8 @@ type Row = {
   phone: string | null;
   receive_leads_when_offline: boolean | null;
   distribution_priority: number;
+  followup_active: boolean | null;
+  followup_daily_limit: number | null;
 };
 
 function rowKey(r: { id: string | null; user_id: string | null }) {
@@ -156,6 +158,8 @@ export default function DistribuicaoLeadsPage() {
         phone: r.phone ?? null,
         receive_leads_when_offline: r.receive_leads_when_offline ?? false,
         distribution_priority: r.distribution_priority ?? 100,
+        followup_active: r.followup_active ?? false,
+        followup_daily_limit: r.followup_daily_limit ?? 5,
       }));
     },
   });
@@ -210,19 +214,23 @@ export default function DistribuicaoLeadsPage() {
 
   // Complementa a lista com a flag `receive_leads_when_offline` (RPC não devolve).
   const { data: offlineFlagMap = {} } = useQuery({
-    queryKey: ["dist-offline-flag", effectiveTenant, rows.map((r) => r.id).join(",")],
+    queryKey: ["dist-extra-flags", effectiveTenant, rows.map((r) => r.id).join(",")],
     enabled: rows.length > 0,
-    queryFn: async (): Promise<Record<string, boolean>> => {
+    queryFn: async (): Promise<Record<string, Partial<Row>>> => {
       const ids = rows.map((r) => r.id).filter((x): x is string => !!x);
       if (ids.length === 0) return {};
       const { data, error } = await supabase
         .from("tenant_members")
-        .select("id, receive_leads_when_offline")
+        .select("id, receive_leads_when_offline, followup_active, followup_daily_limit")
         .in("id", ids);
       if (error) throw error;
-      const map: Record<string, boolean> = {};
+      const map: Record<string, Partial<Row>> = {};
       for (const r of (data ?? []) as any[]) {
-        map[r.id] = r.receive_leads_when_offline === true;
+        map[r.id] = {
+          receive_leads_when_offline: r.receive_leads_when_offline === true,
+          followup_active: r.followup_active === true,
+          followup_daily_limit: r.followup_daily_limit ?? 5,
+        };
       }
       return map;
     },
@@ -364,7 +372,22 @@ export default function DistribuicaoLeadsPage() {
         ? "Consultor continua na rotação mesmo com WhatsApp desconectado."
         : "Consultor só recebe leads com WhatsApp conectado.",
     );
-    qc.invalidateQueries({ queryKey: ["dist-offline-flag", effectiveTenant] });
+    qc.invalidateQueries({ queryKey: ["dist-extra-flags", effectiveTenant] });
+  }
+
+  async function saveFollowupConfig(r: Row, patch: Partial<Row>) {
+    const memberId = await ensureMemberId(r);
+    if (!memberId) return;
+    const { error } = await supabase
+      .from("tenant_members")
+      .update(patch as any)
+      .eq("id", memberId);
+    if (error) {
+      toast.error(`Falha ao salvar follow-up: ${error.message}`);
+      return;
+    }
+    toast.success("Configuração de follow-up salva");
+    qc.invalidateQueries({ queryKey: ["dist-extra-flags", effectiveTenant] });
   }
 
   async function persistOrder(list: Row[]) {
@@ -644,11 +667,38 @@ export default function DistribuicaoLeadsPage() {
                         </p>
                       </div>
                       <Switch
-                        checked={r.id ? !!offlineFlagMap[r.id] : false}
+                        checked={r.id ? !!(offlineFlagMap[r.id] as any)?.receive_leads_when_offline : false}
                         onCheckedChange={(v) => saveOfflineFlag(r, v)}
                       />
                     </div>
-                  </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2">
+                      <div className="min-w-0">
+                        <Label className="text-xs font-medium text-foreground">🔄 Follow-up Automático (Reativação)</Label>
+                        <p className="text-[11px] text-muted-foreground">
+                          Reativação automática de leads perdidos via WhatsApp do consultor.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-[10px] text-muted-foreground uppercase">Qtd:</Label>
+                          <select
+                            value={r.id ? ((offlineFlagMap[r.id] as any)?.followup_daily_limit ?? 5) : 5}
+                            onChange={(e) => saveFollowupConfig(r, { followup_daily_limit: Number(e.target.value) })}
+                            className="h-8 w-16 rounded-md border border-emerald-500/30 bg-background px-1 text-xs"
+                          >
+                            {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                              <option key={n} value={n}>{n}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <Switch
+                          checked={r.id ? !!(offlineFlagMap[r.id] as any)?.followup_active : false}
+                          onCheckedChange={(v) => saveFollowupConfig(r, { followup_active: v })}
+                        />
+                      </div>
+                    </div>
 
                   {/* Canais de aviso */}
                   <div className="mt-3 grid grid-cols-1 gap-2 border-t border-border pt-3 sm:grid-cols-2">
