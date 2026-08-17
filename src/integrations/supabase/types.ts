@@ -2138,6 +2138,8 @@ export type Database = {
           display_name: string
           distribution_priority: number
           email: string | null
+          followup_active: boolean | null
+          followup_daily_limit: number | null
           full_name: string | null
           id: string
           is_active: boolean
@@ -2169,6 +2171,8 @@ export type Database = {
           display_name: string
           distribution_priority?: number
           email?: string | null
+          followup_active?: boolean | null
+          followup_daily_limit?: number | null
           full_name?: string | null
           id?: string
           is_active?: boolean
@@ -2200,6 +2204,8 @@ export type Database = {
           display_name?: string
           distribution_priority?: number
           email?: string | null
+          followup_active?: boolean | null
+          followup_daily_limit?: number | null
           full_name?: string | null
           id?: string
           is_active?: boolean
