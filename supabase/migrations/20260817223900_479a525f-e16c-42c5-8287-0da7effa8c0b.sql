@@ -1,0 +1,2 @@
+ALTER TABLE public.menu_permissions DROP CONSTRAINT menu_permissions_role_check;
+ALTER TABLE public.menu_permissions ADD CONSTRAINT menu_permissions_role_check CHECK (role = ANY (ARRAY['owner'::text,'supervisor'::text,'consultant'::text,'attendant'::text,'support'::text]));
