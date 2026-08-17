@@ -120,7 +120,7 @@ export function AppLayout() {
     const tickets: NavItem = { to: "/tickets", label: "Tickets", icon: LifeBuoy };
 
     if (isSupportAccount) {
-      return [home, tickets, conversas, pipeline, leads, agenda, ranking, relatorios, coaching];
+      return [home, tickets, conversas, pipeline, leads, agenda, meuWa, ranking, relatorios, coaching];
     }
 
     if (impersonating && !isOwner && !isSupervisor) {
