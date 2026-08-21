@@ -578,39 +578,57 @@ export function CloserAgenda({
         </div>
 
         {isDayView ? (
-          <div className="mt-2 space-y-1.5">
-            {slots.map((slot) => {
-              const isHour = slot.endsWith(":00");
-              return (
-                <div key={slot} className={cn("grid items-stretch gap-2", gridCols)}>
-                  <div className={cn(
-                    "flex items-center justify-center rounded-lg border text-[11px] font-extrabold tabular-nums md:text-xs",
-                    isHour ? "border-border bg-muted/50 text-foreground" : "border-transparent bg-transparent text-muted-foreground/70",
-                  )}>
-                    {slot}
-                  </div>
-                  {visibleClosers.map((c) => {
-                    const items = (byCloser.map.get(c.id) ?? []).filter((m) => snapToSlot(m.at) === slot);
-                    return (
-                      <SlotCell
-                        key={c.id + slot}
-                        closerId={c.id}
-                        slot={slot}
-                        items={items}
-                        consultantName={memberName}
-                        closedSlot={isNightSlot(slot) && !nightOpen[c.id]}
-                        onPickFree={(closerId, s) => setPicker({ closerId, slot: s })}
-                      />
-                    );
-                  })}
-
+          <div className="mt-2 grid grid-cols-2 items-start gap-1.5 md:gap-4">
+            {slotGroups.map((group, gi) => (
+              <div key={gi} className="min-w-0 space-y-1">
+                <div className="grid items-end gap-1 md:gap-1.5" style={colStyle}>
+                  <span className="pb-0.5 text-center text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
+                    {gi === 0 ? "1º" : "2º"}
+                  </span>
+                  {visibleClosers.map((c) => (
+                    <span
+                      key={c.id}
+                      className="flex min-w-0 items-center justify-center gap-1 rounded-md bg-muted/50 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground"
+                    >
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: c.color }} />
+                      <span className="truncate">{c.name}</span>
+                    </span>
+                  ))}
                 </div>
-              );
-            })}
-            <p className="pt-1 text-center text-[11px] text-muted-foreground">
+                {group.map((slot) => {
+                  const isHour = slot.endsWith(":00");
+                  return (
+                    <div key={slot} className="grid items-stretch gap-1 md:gap-1.5" style={colStyle}>
+                      <div className={cn(
+                        "flex items-center justify-center rounded-md text-[10px] font-extrabold tabular-nums md:text-[11px]",
+                        isHour ? "bg-muted/60 text-foreground" : "text-muted-foreground/60",
+                      )}>
+                        {slot}
+                      </div>
+                      {visibleClosers.map((c) => {
+                        const items = (byCloser.map.get(c.id) ?? []).filter((m) => snapToSlot(m.at) === slot);
+                        return (
+                          <SlotCell
+                            key={c.id + slot}
+                            closerId={c.id}
+                            slot={slot}
+                            items={items}
+                            consultantName={memberName}
+                            closedSlot={isNightSlot(slot) && !nightOpen[c.id]}
+                            onPickFree={(closerId, s) => setPicker({ closerId, slot: s })}
+                          />
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+            <p className="col-span-2 pt-1 text-center text-[10px] text-muted-foreground">
               Toque em <span className="font-semibold">Livre</span> para encaixar um lead, ou arraste pelo ícone <GripVertical className="inline h-3 w-3" /> para mudar horário/closer.
             </p>
           </div>
+
         ) : (
           <div className="mt-2 grid gap-3 md:grid-cols-2">
             {CLOSERS.map((c) => {
