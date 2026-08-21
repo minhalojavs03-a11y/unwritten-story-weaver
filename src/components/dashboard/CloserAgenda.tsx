@@ -247,10 +247,8 @@ function SlotCell({
       <div
         aria-disabled
         title="Horário indisponível no momento"
-        className="flex min-h-[44px] cursor-not-allowed select-none items-center justify-center rounded-xl border border-dashed border-border/40 bg-muted/10 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50"
-      >
-        Indisponível
-      </div>
+        className="min-h-[26px] cursor-not-allowed select-none rounded-md border border-dashed border-border/40 bg-muted/10"
+      />
     );
   }
 
@@ -258,8 +256,8 @@ function SlotCell({
     <div
       ref={setNodeRef}
       className={cn(
-        "min-h-[44px] rounded-xl border p-1 transition-colors",
-        free ? "border-dashed border-border/70 bg-muted/20" : "border-transparent",
+        "min-h-[26px] rounded-md border p-0.5 transition-colors",
+        free ? "border-dashed border-border/60 bg-muted/20" : "border-transparent",
         isOver && !closed && "border-primary bg-primary/10 ring-2 ring-primary/30",
         closed && "opacity-70",
       )}
@@ -269,17 +267,13 @@ function SlotCell({
           type="button"
           disabled={closed}
           onClick={() => !closed && onPickFree?.(closerId, slot)}
-          className="flex h-full min-h-[36px] w-full items-center justify-center gap-1 rounded-lg text-[11px] font-semibold text-muted-foreground/70 transition-colors hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-muted-foreground/50"
+          aria-label={`Encaixar lead às ${slot}`}
+          className="flex h-full min-h-[22px] w-full items-center justify-center gap-1 rounded text-[10px] font-semibold text-muted-foreground/50 transition-colors hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed"
         >
-          <Plus className="h-3 w-3" /> Livre
+          <Plus className="h-2.5 w-2.5" />
         </button>
       ) : (
-        <div className="space-y-1.5">
-          {closed && (
-            <p className="px-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-              Indisponível
-            </p>
-          )}
+        <div className="space-y-0.5">
           {items.map((m) => (
             <MeetingCard
               key={m.leadId}
@@ -291,6 +285,10 @@ function SlotCell({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
     </div>
   );
 }
