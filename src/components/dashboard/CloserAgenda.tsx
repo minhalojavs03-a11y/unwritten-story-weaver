@@ -289,9 +289,7 @@ function SlotCell({
   );
 }
 
-    </div>
-  );
-}
+
 
 
 
