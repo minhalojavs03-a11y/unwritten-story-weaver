@@ -514,29 +514,29 @@ export function CloserAgenda({
         )}
 
         {/* Cabeçalho dos closers */}
-        <div className={cn("grid gap-2", gridCols)}>
-          <div />
+        <div className="grid gap-1.5 sm:grid-cols-2 md:gap-2">
           {visibleClosers.map((c) => {
             const items = byCloser.map.get(c.id) ?? [];
             const closed = items.filter((m) => m.status === "fechou").length;
             const rate = items.length ? Math.round((closed / items.length) * 100) : 0;
             return (
-              <div key={c.id} className="min-w-0 rounded-xl border border-border bg-card px-2.5 py-2 shadow-sm md:px-3 md:py-2.5">
+              <div key={c.id} className="min-w-0 rounded-xl border border-border bg-card px-2.5 py-1.5 shadow-sm">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="flex min-w-0 items-center gap-2 text-sm font-bold">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white md:h-7 md:w-7" style={{ background: c.color }}>
+                  <span className="flex min-w-0 items-center gap-1.5 text-xs font-bold">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ background: c.color }}>
                       {c.name.slice(0, 2).toUpperCase()}
                     </span>
                     <span className="truncate uppercase tracking-wide">{c.name}</span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-1.5">
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">{items.length}</span>
-                    <span className="rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-bold text-success">{rate}%</span>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">{items.length}</span>
+                    <span className="rounded-full bg-success/10 px-1.5 py-0.5 text-[10px] font-bold text-success">{rate}%</span>
                   </span>
                 </div>
-                <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Conversão · {closed}/{items.length} fechados
-                </p>
+                <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
+                  <div className="h-full rounded-full bg-success transition-all" style={{ width: `${rate}%` }} />
+                </div>
+
                 <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                   <div className="h-full rounded-full bg-success transition-all" style={{ width: `${rate}%` }} />
                 </div>
