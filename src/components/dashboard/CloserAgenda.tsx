@@ -419,7 +419,16 @@ export function CloserAgenda({
   }, [picker, pickerSearch, allLeads, filtered]);
 
   const visibleClosers = isMobile ? CLOSERS.filter((c) => c.id === activeCloser) : CLOSERS;
-  const gridCols = isMobile ? "grid-cols-[48px_1fr]" : "grid-cols-[56px_1fr_1fr]";
+  const colStyle = useMemo(
+    () => ({ gridTemplateColumns: `${isMobile ? 30 : 38}px repeat(${Math.max(visibleClosers.length, 1)}, minmax(0, 1fr))` }),
+    [isMobile, visibleClosers.length],
+  );
+  /** Divide os horários em 2 colunas para reduzir a rolagem. */
+  const slotGroups = useMemo(() => {
+    const half = Math.ceil(slots.length / 2);
+    return [slots.slice(0, half), slots.slice(half)].filter((g) => g.length > 0);
+  }, [slots]);
+
 
   return (
     <section className="rounded-2xl border bg-card p-3 md:p-5">
