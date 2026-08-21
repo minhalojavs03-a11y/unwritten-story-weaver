@@ -118,6 +118,47 @@ function MeetingCard({
     data: { meeting: m },
   });
 
+  const statusDot: Record<MeetingItem["status"], string> = {
+    agendado: "bg-warning",
+    compareceu: "bg-info",
+    fechou: "bg-success",
+    nao_compareceu: "bg-destructive",
+    perdido: "bg-muted-foreground/50",
+  };
+
+  if (compact) {
+    return (
+      <div
+        ref={setNodeRef}
+        className={cn(
+          "flex min-w-0 items-center gap-1 rounded-lg border border-border bg-card px-1 py-0.5 shadow-sm transition-colors hover:border-primary/40",
+          isDragging && "opacity-40",
+        )}
+        title={`${hhmm(m.at)} · ${m.leadName}${consultant ? ` · ${consultant}` : ""} · ${statusLabel[m.status]}`}
+      >
+        {draggable && (
+          <button
+            type="button"
+            {...listeners}
+            {...attributes}
+            aria-label="Arrastar reunião"
+            className="shrink-0 cursor-grab touch-none text-muted-foreground/70 hover:text-primary active:cursor-grabbing"
+          >
+            <GripVertical className="h-3 w-3" />
+          </button>
+        )}
+        <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", statusDot[m.status])} />
+        <Link to={`/leads?lead=${m.leadId}`} className="min-w-0 flex-1 leading-tight">
+          <span className="block truncate text-[11px] font-bold">{m.leadName}</span>
+          {consultant && (
+            <span className="block truncate text-[9px] text-muted-foreground">{consultant}</span>
+          )}
+        </Link>
+        {m.isRescheduled && <RotateCcw className="h-2.5 w-2.5 shrink-0 text-info" />}
+      </div>
+    );
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -137,9 +178,9 @@ function MeetingCard({
           <GripVertical className="h-4 w-4" />
         </button>
       )}
-      <Link to={`/leads?lead=${m.leadId}`} className="min-w-0 flex-1 px-3 py-2.5">
+      <Link to={`/leads?lead=${m.leadId}`} className="min-w-0 flex-1 px-3 py-2">
         <div className="flex items-center gap-2">
-          <span className="shrink-0 rounded-lg bg-primary px-2.5 py-1 text-sm font-extrabold tabular-nums leading-none text-primary-foreground">
+          <span className="shrink-0 rounded-lg bg-primary px-2 py-0.5 text-xs font-extrabold tabular-nums leading-none text-primary-foreground">
             {hhmm(m.at)}
           </span>
           {showDate && (
@@ -150,29 +191,28 @@ function MeetingCard({
           <span className="min-w-0 flex-1 truncate text-sm font-bold">{m.leadName}</span>
         </div>
         {consultant && (
-          <span className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+          <span className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
             <User2 className="h-3 w-3" /> {consultant}
           </span>
         )}
-        {!compact && (
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-semibold", statusStyle[m.status])}>
-              {statusLabel[m.status]}
+        <div className="mt-1 flex flex-wrap items-center gap-1">
+          <span className={cn("rounded-full border px-1.5 py-0.5 text-[10px] font-semibold", statusStyle[m.status])}>
+            {statusLabel[m.status]}
+          </span>
+          {m.isRescheduled && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-info/30 bg-info/10 px-1.5 py-0.5 text-[10px] font-semibold text-info">
+              <RotateCcw className="h-3 w-3" /> Reagendada
             </span>
-            {m.isRescheduled && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-info/30 bg-info/10 px-2 py-0.5 text-[10px] font-semibold text-info">
-                <RotateCcw className="h-3 w-3" /> Reagendada
-              </span>
-            )}
-            {m.value && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/5 px-2 py-0.5 text-[10px] font-semibold text-success">
-                <BadgeDollarSign className="h-3 w-3" />
-                {money(m.value)}
-                {m.valueSource === "auto" && <span className="opacity-70">auto</span>}
-              </span>
-            )}
-          </div>
-        )}
+          )}
+          {m.value && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/5 px-1.5 py-0.5 text-[10px] font-semibold text-success">
+              <BadgeDollarSign className="h-3 w-3" />
+              {money(m.value)}
+              {m.valueSource === "auto" && <span className="opacity-70">auto</span>}
+            </span>
+          )}
+        </div>
+
       </Link>
     </div>
   );
