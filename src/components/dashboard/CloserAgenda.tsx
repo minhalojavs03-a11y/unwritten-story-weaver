@@ -536,10 +536,6 @@ export function CloserAgenda({
                 <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
                   <div className="h-full rounded-full bg-success transition-all" style={{ width: `${rate}%` }} />
                 </div>
-
-                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-success transition-all" style={{ width: `${rate}%` }} />
-                </div>
                 {isDayView && (
                   <button
                     type="button"
@@ -548,7 +544,8 @@ export function CloserAgenda({
                     onClick={() => toggleNight(c.id)}
                     aria-pressed={!!nightOpen[c.id]}
                     className={cn(
-                      "mt-2 flex w-full items-center justify-between gap-2 rounded-lg border px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors",
+                      "mt-1.5 flex w-full items-center justify-between gap-2 rounded-lg border px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition-colors",
+
                       nightOpen[c.id]
                         ? "border-success/40 bg-success/10 text-success"
                         : "border-border bg-muted/30 text-muted-foreground",
