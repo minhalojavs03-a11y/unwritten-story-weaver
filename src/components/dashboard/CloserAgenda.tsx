@@ -118,6 +118,47 @@ function MeetingCard({
     data: { meeting: m },
   });
 
+  const statusDot: Record<MeetingItem["status"], string> = {
+    agendado: "bg-warning",
+    compareceu: "bg-info",
+    fechou: "bg-success",
+    nao_compareceu: "bg-destructive",
+    perdido: "bg-muted-foreground/50",
+  };
+
+  if (compact) {
+    return (
+      <div
+        ref={setNodeRef}
+        className={cn(
+          "flex min-w-0 items-center gap-1 rounded-lg border border-border bg-card px-1 py-0.5 shadow-sm transition-colors hover:border-primary/40",
+          isDragging && "opacity-40",
+        )}
+        title={`${hhmm(m.at)} · ${m.leadName}${consultant ? ` · ${consultant}` : ""} · ${statusLabel[m.status]}`}
+      >
+        {draggable && (
+          <button
+            type="button"
+            {...listeners}
+            {...attributes}
+            aria-label="Arrastar reunião"
+            className="shrink-0 cursor-grab touch-none text-muted-foreground/70 hover:text-primary active:cursor-grabbing"
+          >
+            <GripVertical className="h-3 w-3" />
+          </button>
+        )}
+        <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", statusDot[m.status])} />
+        <Link to={`/leads?lead=${m.leadId}`} className="min-w-0 flex-1 leading-tight">
+          <span className="block truncate text-[11px] font-bold">{m.leadName}</span>
+          {consultant && (
+            <span className="block truncate text-[9px] text-muted-foreground">{consultant}</span>
+          )}
+        </Link>
+        {m.isRescheduled && <RotateCcw className="h-2.5 w-2.5 shrink-0 text-info" />}
+      </div>
+    );
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -137,9 +178,9 @@ function MeetingCard({
           <GripVertical className="h-4 w-4" />
         </button>
       )}
-      <Link to={`/leads?lead=${m.leadId}`} className="min-w-0 flex-1 px-3 py-2.5">
+      <Link to={`/leads?lead=${m.leadId}`} className="min-w-0 flex-1 px-3 py-2">
         <div className="flex items-center gap-2">
-          <span className="shrink-0 rounded-lg bg-primary px-2.5 py-1 text-sm font-extrabold tabular-nums leading-none text-primary-foreground">
+          <span className="shrink-0 rounded-lg bg-primary px-2 py-0.5 text-xs font-extrabold tabular-nums leading-none text-primary-foreground">
             {hhmm(m.at)}
           </span>
           {showDate && (
@@ -150,29 +191,28 @@ function MeetingCard({
           <span className="min-w-0 flex-1 truncate text-sm font-bold">{m.leadName}</span>
         </div>
         {consultant && (
-          <span className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+          <span className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
             <User2 className="h-3 w-3" /> {consultant}
           </span>
         )}
-        {!compact && (
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-semibold", statusStyle[m.status])}>
-              {statusLabel[m.status]}
+        <div className="mt-1 flex flex-wrap items-center gap-1">
+          <span className={cn("rounded-full border px-1.5 py-0.5 text-[10px] font-semibold", statusStyle[m.status])}>
+            {statusLabel[m.status]}
+          </span>
+          {m.isRescheduled && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-info/30 bg-info/10 px-1.5 py-0.5 text-[10px] font-semibold text-info">
+              <RotateCcw className="h-3 w-3" /> Reagendada
             </span>
-            {m.isRescheduled && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-info/30 bg-info/10 px-2 py-0.5 text-[10px] font-semibold text-info">
-                <RotateCcw className="h-3 w-3" /> Reagendada
-              </span>
-            )}
-            {m.value && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/5 px-2 py-0.5 text-[10px] font-semibold text-success">
-                <BadgeDollarSign className="h-3 w-3" />
-                {money(m.value)}
-                {m.valueSource === "auto" && <span className="opacity-70">auto</span>}
-              </span>
-            )}
-          </div>
-        )}
+          )}
+          {m.value && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/5 px-1.5 py-0.5 text-[10px] font-semibold text-success">
+              <BadgeDollarSign className="h-3 w-3" />
+              {money(m.value)}
+              {m.valueSource === "auto" && <span className="opacity-70">auto</span>}
+            </span>
+          )}
+        </div>
+
       </Link>
     </div>
   );
@@ -207,10 +247,8 @@ function SlotCell({
       <div
         aria-disabled
         title="Horário indisponível no momento"
-        className="flex min-h-[44px] cursor-not-allowed select-none items-center justify-center rounded-xl border border-dashed border-border/40 bg-muted/10 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50"
-      >
-        Indisponível
-      </div>
+        className="min-h-[26px] cursor-not-allowed select-none rounded-md border border-dashed border-border/40 bg-muted/10"
+      />
     );
   }
 
@@ -218,8 +256,8 @@ function SlotCell({
     <div
       ref={setNodeRef}
       className={cn(
-        "min-h-[44px] rounded-xl border p-1 transition-colors",
-        free ? "border-dashed border-border/70 bg-muted/20" : "border-transparent",
+        "min-h-[26px] rounded-md border p-0.5 transition-colors",
+        free ? "border-dashed border-border/60 bg-muted/20" : "border-transparent",
         isOver && !closed && "border-primary bg-primary/10 ring-2 ring-primary/30",
         closed && "opacity-70",
       )}
@@ -229,17 +267,13 @@ function SlotCell({
           type="button"
           disabled={closed}
           onClick={() => !closed && onPickFree?.(closerId, slot)}
-          className="flex h-full min-h-[36px] w-full items-center justify-center gap-1 rounded-lg text-[11px] font-semibold text-muted-foreground/70 transition-colors hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-muted-foreground/50"
+          aria-label={`Encaixar lead às ${slot}`}
+          className="flex h-full min-h-[22px] w-full items-center justify-center gap-1 rounded text-[10px] font-semibold text-muted-foreground/50 transition-colors hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed"
         >
-          <Plus className="h-3 w-3" /> Livre
+          <Plus className="h-2.5 w-2.5" />
         </button>
       ) : (
-        <div className="space-y-1.5">
-          {closed && (
-            <p className="px-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-              Indisponível
-            </p>
-          )}
+        <div className="space-y-0.5">
           {items.map((m) => (
             <MeetingCard
               key={m.leadId}
@@ -254,6 +288,8 @@ function SlotCell({
     </div>
   );
 }
+
+
 
 
 
@@ -419,7 +455,16 @@ export function CloserAgenda({
   }, [picker, pickerSearch, allLeads, filtered]);
 
   const visibleClosers = isMobile ? CLOSERS.filter((c) => c.id === activeCloser) : CLOSERS;
-  const gridCols = isMobile ? "grid-cols-[48px_1fr]" : "grid-cols-[56px_1fr_1fr]";
+  const colStyle = useMemo(
+    () => ({ gridTemplateColumns: `${isMobile ? 30 : 38}px repeat(${Math.max(visibleClosers.length, 1)}, minmax(0, 1fr))` }),
+    [isMobile, visibleClosers.length],
+  );
+  /** Divide os horários em 2 colunas para reduzir a rolagem. */
+  const slotGroups = useMemo(() => {
+    const half = Math.ceil(slots.length / 2);
+    return [slots.slice(0, half), slots.slice(half)].filter((g) => g.length > 0);
+  }, [slots]);
+
 
   return (
     <section className="rounded-2xl border bg-card p-3 md:p-5">
@@ -514,30 +559,26 @@ export function CloserAgenda({
         )}
 
         {/* Cabeçalho dos closers */}
-        <div className={cn("grid gap-2", gridCols)}>
-          <div />
+        <div className="grid gap-1.5 sm:grid-cols-2 md:gap-2">
           {visibleClosers.map((c) => {
             const items = byCloser.map.get(c.id) ?? [];
             const closed = items.filter((m) => m.status === "fechou").length;
             const rate = items.length ? Math.round((closed / items.length) * 100) : 0;
             return (
-              <div key={c.id} className="min-w-0 rounded-xl border border-border bg-card px-2.5 py-2 shadow-sm md:px-3 md:py-2.5">
+              <div key={c.id} className="min-w-0 rounded-xl border border-border bg-card px-2.5 py-1.5 shadow-sm">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="flex min-w-0 items-center gap-2 text-sm font-bold">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white md:h-7 md:w-7" style={{ background: c.color }}>
+                  <span className="flex min-w-0 items-center gap-1.5 text-xs font-bold">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ background: c.color }}>
                       {c.name.slice(0, 2).toUpperCase()}
                     </span>
                     <span className="truncate uppercase tracking-wide">{c.name}</span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-1.5">
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">{items.length}</span>
-                    <span className="rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-bold text-success">{rate}%</span>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">{items.length}</span>
+                    <span className="rounded-full bg-success/10 px-1.5 py-0.5 text-[10px] font-bold text-success">{rate}%</span>
                   </span>
                 </div>
-                <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Conversão · {closed}/{items.length} fechados
-                </p>
-                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
                   <div className="h-full rounded-full bg-success transition-all" style={{ width: `${rate}%` }} />
                 </div>
                 {isDayView && (
@@ -548,7 +589,8 @@ export function CloserAgenda({
                     onClick={() => toggleNight(c.id)}
                     aria-pressed={!!nightOpen[c.id]}
                     className={cn(
-                      "mt-2 flex w-full items-center justify-between gap-2 rounded-lg border px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors",
+                      "mt-1.5 flex w-full items-center justify-between gap-2 rounded-lg border px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition-colors",
+
                       nightOpen[c.id]
                         ? "border-success/40 bg-success/10 text-success"
                         : "border-border bg-muted/30 text-muted-foreground",
@@ -578,39 +620,57 @@ export function CloserAgenda({
         </div>
 
         {isDayView ? (
-          <div className="mt-2 space-y-1.5">
-            {slots.map((slot) => {
-              const isHour = slot.endsWith(":00");
-              return (
-                <div key={slot} className={cn("grid items-stretch gap-2", gridCols)}>
-                  <div className={cn(
-                    "flex items-center justify-center rounded-lg border text-[11px] font-extrabold tabular-nums md:text-xs",
-                    isHour ? "border-border bg-muted/50 text-foreground" : "border-transparent bg-transparent text-muted-foreground/70",
-                  )}>
-                    {slot}
-                  </div>
-                  {visibleClosers.map((c) => {
-                    const items = (byCloser.map.get(c.id) ?? []).filter((m) => snapToSlot(m.at) === slot);
-                    return (
-                      <SlotCell
-                        key={c.id + slot}
-                        closerId={c.id}
-                        slot={slot}
-                        items={items}
-                        consultantName={memberName}
-                        closedSlot={isNightSlot(slot) && !nightOpen[c.id]}
-                        onPickFree={(closerId, s) => setPicker({ closerId, slot: s })}
-                      />
-                    );
-                  })}
-
+          <div className="mt-2 grid grid-cols-2 items-start gap-1.5 md:gap-4">
+            {slotGroups.map((group, gi) => (
+              <div key={gi} className="min-w-0 space-y-1">
+                <div className="grid items-end gap-1 md:gap-1.5" style={colStyle}>
+                  <span className="pb-0.5 text-center text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
+                    {gi === 0 ? "1º" : "2º"}
+                  </span>
+                  {visibleClosers.map((c) => (
+                    <span
+                      key={c.id}
+                      className="flex min-w-0 items-center justify-center gap-1 rounded-md bg-muted/50 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground"
+                    >
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: c.color }} />
+                      <span className="truncate">{c.name}</span>
+                    </span>
+                  ))}
                 </div>
-              );
-            })}
-            <p className="pt-1 text-center text-[11px] text-muted-foreground">
+                {group.map((slot) => {
+                  const isHour = slot.endsWith(":00");
+                  return (
+                    <div key={slot} className="grid items-stretch gap-1 md:gap-1.5" style={colStyle}>
+                      <div className={cn(
+                        "flex items-center justify-center rounded-md text-[10px] font-extrabold tabular-nums md:text-[11px]",
+                        isHour ? "bg-muted/60 text-foreground" : "text-muted-foreground/60",
+                      )}>
+                        {slot}
+                      </div>
+                      {visibleClosers.map((c) => {
+                        const items = (byCloser.map.get(c.id) ?? []).filter((m) => snapToSlot(m.at) === slot);
+                        return (
+                          <SlotCell
+                            key={c.id + slot}
+                            closerId={c.id}
+                            slot={slot}
+                            items={items}
+                            consultantName={memberName}
+                            closedSlot={isNightSlot(slot) && !nightOpen[c.id]}
+                            onPickFree={(closerId, s) => setPicker({ closerId, slot: s })}
+                          />
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+            <p className="col-span-2 pt-1 text-center text-[10px] text-muted-foreground">
               Toque em <span className="font-semibold">Livre</span> para encaixar um lead, ou arraste pelo ícone <GripVertical className="inline h-3 w-3" /> para mudar horário/closer.
             </p>
           </div>
+
         ) : (
           <div className="mt-2 grid gap-3 md:grid-cols-2">
             {CLOSERS.map((c) => {
